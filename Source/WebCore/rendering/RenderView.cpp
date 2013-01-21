@@ -69,10 +69,6 @@ RenderView::RenderView(Document* document)
     , m_renderCounterCount(0)
     , m_layoutPhase(RenderViewNormalLayout)
 {
-    // Clear our anonymous bit, set because RenderObject assumes
-    // any renderer with document as the node is anonymous.
-    setIsAnonymous(false);
-
     // init RenderObject attributes
     setInline(false);
     
@@ -845,6 +841,16 @@ IntRect RenderView::unscaledDocumentRect() const
     LayoutRect overflowRect(layoutOverflowRect());
     flipForWritingMode(overflowRect);
     return pixelSnappedIntRect(overflowRect);
+}
+
+bool RenderView::rootBackgroundIsEntirelyFixed() const
+{
+    RenderObject* rootObject = document()->documentElement() ? document()->documentElement()->renderer() : 0;
+    if (!rootObject)
+        return false;
+
+    RenderObject* rootRenderer = rootObject->rendererForRootBackground();
+    return rootRenderer->hasEntirelyFixedBackground();
 }
 
 LayoutRect RenderView::backgroundRect(RenderBox* backgroundRenderer) const

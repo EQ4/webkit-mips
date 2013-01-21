@@ -50,10 +50,6 @@
 #include <wtf/Deque.h>
 #include <wtf/OwnPtr.h>
 
-namespace WebKit {
-class WebGeolocationClientMock;
-}
-
 namespace webkit_support {
 class ScopedTempDirectory;
 }
@@ -101,44 +97,6 @@ public:
 
     // Delays completion of the test until the policy delegate runs.
     void waitForPolicyDelegate(const CppArgumentList&, CppVariant*);
-
-    // Causes WillSendRequest to clear certain headers.
-    void setWillSendRequestClearHeader(const CppArgumentList&, CppVariant*);
-
-    // Causes WillSendRequest to block redirects.
-    void setWillSendRequestReturnsNullOnRedirect(const CppArgumentList&, CppVariant*);
-
-    // Causes WillSendRequest to return an empty request.
-    void setWillSendRequestReturnsNull(const CppArgumentList&, CppVariant*);
-
-#if ENABLE(NOTIFICATIONS)
-    // Grants permission for desktop notifications to an origin
-    void grantWebNotificationPermission(const CppArgumentList&, CppVariant*);
-    // Simulates a click on a desktop notification.
-    void simulateLegacyWebNotificationClick(const CppArgumentList&, CppVariant*);
-#endif
-
-    void display(const CppArgumentList&, CppVariant*);
-    void displayInvalidatedRegion(const CppArgumentList&, CppVariant*);
-
-    // Gets the number of geolocation permissions requests pending.
-    void numberOfPendingGeolocationPermissionRequests(const CppArgumentList&, CppVariant*);
-
-    // Geolocation related functions.
-    void setGeolocationPermission(const CppArgumentList&, CppVariant*);
-    void setMockGeolocationPosition(const CppArgumentList&, CppVariant*);
-    void setMockGeolocationPositionUnavailableError(const CppArgumentList&, CppVariant*);
-
-    // Speech input related functions.
-#if ENABLE(INPUT_SPEECH)
-    void addMockSpeechInputResult(const CppArgumentList&, CppVariant*);
-    void setMockSpeechInputDumpRect(const CppArgumentList&, CppVariant*);
-#endif
-#if ENABLE(SCRIPTED_SPEECH)
-    void addMockSpeechRecognitionResult(const CppArgumentList&, CppVariant*);
-    void setMockSpeechRecognitionError(const CppArgumentList&, CppVariant*);
-    void wasMockSpeechRecognitionAborted(const CppArgumentList&, CppVariant*);
-#endif
 
 public:
     // The following methods are not exposed to JavaScript.

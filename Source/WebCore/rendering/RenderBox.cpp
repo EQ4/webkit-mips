@@ -85,6 +85,11 @@ static OverrideSizeMap* gOverrideWidthMap = 0;
 static OverrideSizeMap* gOverrideContainingBlockLogicalHeightMap = 0;
 static OverrideSizeMap* gOverrideContainingBlockLogicalWidthMap = 0;
 
+
+// Size of border belt for autoscroll. When mouse pointer in border belt,
+// autoscroll is started.
+static const int autoscrollBeltSize = 20;
+
 bool RenderBox::s_hadOverflowClip = false;
 
 RenderBox::RenderBox(ContainerNode* node)
@@ -300,6 +305,12 @@ void RenderBox::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle
 #if ENABLE(CSS_EXCLUSIONS)
     updateExclusionShapeOutsideInfoAfterStyleChange(style()->shapeOutside(), oldStyle ? oldStyle->shapeOutside() : 0);
 #endif
+
+    if (oldStyle && (newStyle->boxSizing() == BORDER_BOX || oldStyle->boxSizing() == BORDER_BOX)
+        && (newStyle->paddingBox() != oldStyle->paddingBox() || newStyle->border() != oldStyle->border())) {
+        for (RenderObject* child = firstChild(); child; child = child->nextSibling())
+            child->setChildNeedsLayout(true, MarkOnlyThis);
+    }
 }
 
 #if ENABLE(CSS_EXCLUSIONS)
@@ -708,10 +719,10 @@ bool RenderBox::usesCompositedScrolling() const
     return hasOverflowClip() && hasLayer() && layer()->usesCompositedScrolling();
 }
 
-void RenderBox::autoscroll()
+void RenderBox::autoscroll(const IntPoint& position)
 {
     if (layer())
-        layer()->autoscroll();
+        layer()->autoscroll(position);
 }
 
 // There are two kinds of renderer that can autoscroll.
@@ -733,6 +744,33 @@ bool RenderBox::canAutoscroll() const
         return false;
     Page* page = frame->page();
     return page && page->mainFrame() == frame;
+}
+
+// If specified point is in border belt, returned offset denotes direction of
+// scrolling.
+IntSize RenderBox::calculateAutoscrollDirection(const IntPoint& windowPoint) const
+{
+    if (!frame())
+        return IntSize();
+
+    FrameView* frameView = frame()->view();
+    if (!frameView)
+        return IntSize();
+
+    IntSize offset;
+    IntPoint point = frameView->windowToContents(windowPoint);
+    IntRect box(absoluteBoundingBoxRect());
+
+    if (point.x() < box.x() + autoscrollBeltSize)
+        point.move(-autoscrollBeltSize, 0);
+    else if (point.x() > box.maxX() - autoscrollBeltSize)
+        point.move(autoscrollBeltSize, 0);
+
+    if (point.y() < box.y() + autoscrollBeltSize)
+        point.move(0, -autoscrollBeltSize);
+    else if (point.y() > box.maxY() - autoscrollBeltSize)
+        point.move(0, autoscrollBeltSize);
+    return frameView->contentsToWindow(point) - windowPoint;
 }
 
 RenderBox* RenderBox::findAutoscrollable(RenderObject* renderer)

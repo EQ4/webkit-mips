@@ -1494,6 +1494,13 @@ void FrameView::removeViewportConstrainedObject(RenderObject* object)
     }
 }
 
+LayoutRect FrameView::viewportConstrainedVisibleContentRect() const
+{
+    LayoutRect viewportRect = visibleContentRect();
+    viewportRect.setLocation(toPoint(scrollOffsetForFixedPosition()));
+    return viewportRect;
+}
+
 IntSize FrameView::scrollOffsetForFixedPosition() const
 {
     IntRect visibleContentRect = this->visibleContentRect();
@@ -1792,6 +1799,7 @@ void FrameView::setFixedVisibleContentRect(const IntRect& visibleContentRect)
     IntSize offset = scrollOffset();
     ScrollView::setFixedVisibleContentRect(visibleContentRect);
     if (offset != scrollOffset()) {
+        repaintFixedElementsAfterScrolling();
         if (m_frame->page()->settings()->acceleratedCompositingForFixedPositionEnabled())
             updateFixedElementsAfterScrolling();
         scrollAnimator()->setCurrentPosition(scrollPosition());
@@ -3015,7 +3023,7 @@ void FrameView::updateScrollCorner()
 
     if (cornerStyle) {
         if (!m_scrollCorner)
-            m_scrollCorner = new (renderer->renderArena()) RenderScrollbarPart(renderer->document());
+            m_scrollCorner = RenderScrollbarPart::createAnonymous(renderer->document());
         m_scrollCorner->setStyle(cornerStyle.release());
         invalidateScrollCorner(cornerRect);
     } else if (m_scrollCorner) {

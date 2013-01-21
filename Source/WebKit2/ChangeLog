@@ -1,3 +1,292 @@
+2013-01-21  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r139781.
+        http://trac.webkit.org/changeset/139781
+        https://bugs.webkit.org/show_bug.cgi?id=107443
+
+        This patch seems to cause flakiness on Qt (Requested by chris-
+        qBT_work on #webkit).
+
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp:
+        (WebKit::CoordinatedLayerTreeHost::forceRepaintAsync):
+
+2013-01-21  Thiago Marcos P. Santos  <thiago.santos@intel.com>
+
+        REGRESSION (r140285): EFL uses WKPageResourceLoadClient which was removed
+        https://bugs.webkit.org/show_bug.cgi?id=107417
+
+        Reviewed by Gyuyoung Kim.
+
+        We had no choice but remove the ResourceLoadClientEfl after r140285
+        and thus our public API signals depending on it. The test_ewk2_auth_request
+        unit test was skipped because it depends these signals and will be fixed in a
+        different patch.
+
+        * PlatformEfl.cmake:
+        * UIProcess/API/efl/EWebKit2.h:
+        * UIProcess/API/efl/EwkViewCallbacks.h:
+        * UIProcess/API/efl/EwkViewImpl.cpp:
+        (EwkViewImpl::EwkViewImpl):
+        * UIProcess/API/efl/EwkViewImpl.h:
+        (WebKit):
+        (EwkViewImpl):
+        * UIProcess/API/efl/ewk_resource.cpp: Removed.
+        * UIProcess/API/efl/ewk_resource.h: Removed.
+        * UIProcess/API/efl/ewk_resource_private.h: Removed.
+        * UIProcess/API/efl/ewk_view.cpp:
+        * UIProcess/API/efl/ewk_view.h:
+        * UIProcess/efl/ResourceLoadClientEfl.cpp: Removed.
+        * UIProcess/efl/ResourceLoadClientEfl.h: Removed.
+
+2013-01-20  Viatcheslav Ostapenko  <sl.ostapenko@samsung.com>
+
+        Remove support getting per-resource callbacks in the UIProcess
+        https://bugs.webkit.org/show_bug.cgi?id=107405
+
+        Reviewed by Sam Weinig.
+
+        EFL, GTK and Qt WebKit2 build fixes after r140285.
+        Remove from build WebResourceLoadClient.{cpp,h} deleted by r140285.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * Target.pri:
+
+2013-01-20  Sam Weinig  <sam@webkit.org>
+
+        Remove support getting per-resource callbacks in the UIProcess
+        https://bugs.webkit.org/show_bug.cgi?id=107405
+
+        Reviewed by Anders Carlsson.
+
+        Removes support for the WKPageResourceLoadClient. Access to per-resource
+        callbacks are still available in the bundle, and via the WebInspector.
+
+        * UIProcess/API/C/WKPage.cpp:
+        * UIProcess/API/C/WKPage.h:
+        * UIProcess/WebPageProxy.cpp:
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in:
+        Stop handling per-resource messages and forwarding them to the API.
+
+        * UIProcess/WebResourceLoadClient.cpp: Removed.
+        * UIProcess/WebResourceLoadClient.h: Removed.
+        * WebKit2.xcodeproj/project.pbxproj:
+        Remove the files.
+
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::assignIdentifierToInitialRequest):
+        (WebKit::WebFrameLoaderClient::dispatchWillSendRequest):
+        (WebKit::WebFrameLoaderClient::dispatchDidReceiveResponse):
+        (WebKit::WebFrameLoaderClient::dispatchDidReceiveContentLength):
+        (WebKit::WebFrameLoaderClient::dispatchDidFinishLoading):
+        (WebKit::WebFrameLoaderClient::dispatchDidFailLoading):
+        Stop sending per-resource messages to the UIProcess.
+
+2013-01-20  Gustavo Noronha Silva  <gns@gnome.org>
+
+        Unreviewed. Simple indentation fix.
+
+        * GNUmakefile.am:
+
+2013-01-20  Alexey Proskuryakov  <ap@apple.com>
+
+        Remove obsolete plug-in sandboxing code.
+        https://bugs.webkit.org/show_bug.cgi?id=107362
+
+        Reviewed by Darin Adler.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        * DerivedSources.make:
+        * PluginProcess/mac/com.apple.WebKit.PluginProcess.sb.in: Removed.
+
+        * PluginProcess/mac/PluginProcessMac.mm:
+        (WebKit::initializeSandbox): Fixed a memory leak in code that stays.
+
+        * WebProcess/Plugins/Netscape/NetscapeBrowserFuncs.cpp:
+        (WebKit::NPN_GetValue):
+
+        * WebProcess/Plugins/Netscape/mac/NetscapeSandboxFunctions.h:
+        * WebProcess/Plugins/Netscape/mac/NetscapeSandboxFunctions.mm:
+        Removed API related parts. Remaining code will move to a better place in a follow-up
+        patch, just keeping it here for easier reviewing.
+        (enterSandbox): Removed no longer used arguments.
+
+2013-01-17  Sam Weinig  <sam@webkit.org>
+
+        Don't initialize AppKit for processes that don't use it
+        https://bugs.webkit.org/show_bug.cgi?id=107216
+
+        Reviewed by Alexey Proskuryakov.
+
+        * PluginProcess/mac/PluginProcessMainMac.mm:
+        (WebKit::PluginProcessMainDelegate::doPreInitializationWork):
+        * WebProcess/mac/WebProcessMainMac.mm:
+        (WebKit::WebProcessMainDelegate::doPreInitializationWork):
+        Move AppKit initialization to the two places it is used, the WebProcessMain and the PluginProcessMain.
+
+        * Shared/ChildProcess.cpp:
+        (WebKit::ChildProcess::initialize):
+        Remove redundant call to InitializeWebKit2().
+
+        * Shared/mac/ChildProcessMain.h:
+        (WebKit::ChildProcessMain):
+        Remove initialization of AppKit now that the delegate does it if necessary,
+        and move InitializeWebKit2() to after delegate.doPreInitializationWork(), so
+        the delegate has a chance to set things up it, in this case, calling 
+        RunLoop::setUseApplicationRunLoopOnMainRunLoop if needed.
+
+        * PluginProcess/mac/PluginProcessMac.mm:
+        (WebKit::PluginProcess::platformInitializePluginProcess):
+        * WebProcess/mac/WebProcessMac.mm:
+        (WebKit::WebProcess::platformInitializeProcess):
+        Remove now redundant call to RunLoop::setUseApplicationRunLoopOnMainRunLoop().
+
+        * WebProcess/mac/WebProcessServiceEntryPoints.mm:
+        (WebKit::WebProcessServiceEventHandler):
+        (webProcessServiceMain):
+        (initializeWebProcessForWebProcessServiceForWebKitDevelopment):
+        Call WebCore::RunLoop::setUseApplicationRunLoopOnMainRunLoop() and make call to InitializeWebKit2()
+        more consistent.
+
+2013-01-18  Tim Horton  <timothy_horton@apple.com>
+
+        [wk2] Intrinsic content size should report a flexible width if the content is not wider than the minimum layout width
+        https://bugs.webkit.org/show_bug.cgi?id=107334
+        <rdar://problem/12960009>
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/API/mac/WKView.mm:
+        (-[WKView _setIntrinsicContentSize:]): If the content is laid-out at or below the minimum layout width, it's flexible; otherwise, we need to inform autolayout that we require more space via our intrinsic content size.
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::transitionToCommittedForNewPage): Allow auto-sizing to expand its width beyond the minimum if needed.
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::setMinimumLayoutWidth): Allow auto-sizing to expand its width beyond the minimum if needed.
+
+2013-01-18  Alexey Proskuryakov  <ap@apple.com>
+
+        <rdar://problem/13042826> REGRESSION (r139985): Full Screen Youtube loses keyboard and mouse control
+        https://bugs.webkit.org/show_bug.cgi?id=107191
+
+        Reviewed by Darin Adler.
+
+        Moved initialization from platformInitializePluginProcess to platformInitializeProcess,
+        because the former is called too late. In r139985, I used a correct location for
+        WebProcess, but not for PluginProcess.
+
+        * PluginProcess/mac/PluginProcessMac.mm:
+        (WebKit::PluginProcess::platformInitializeProcess):
+        (WebKit::PluginProcess::platformInitializePluginProcess):
+
+2013-01-18  Brady Eidson  <beidson@apple.com>
+
+        Rework NetworkProcess resource load identifiers.
+        <rdar://problem/12934449> and https://bugs.webkit.org/show_bug.cgi?id=107192
+
+        Reviewed by Alexey Proskuryakov.
+
+        Having the NetworkProcess vend out identifiers to WebProcesses was a bad idea.
+        This patch reverts that so that WebProcesses are in control of their own unique identifiers.
+
+        The NetworkProcess doesn't need identifiers at all.
+        It can represent outstanding loads with the loaders themselves.
+
+        This patch adds a "SchedulableLoader" base class for normal and synchronous loaders.
+        It reworks each use of identifiers into using SchedulableLoaders instead.
+
+        This also gave an opportunity to move the serving of pending requests for a host into the 
+        HostRecord itself which cleans certain things up nicely.
+
+        Change HostRecord to have queues of SchedulableLoaders instead of identifiers.
+        Make HostRecord responsible for actually starting the loaders in its queues:
+        * NetworkProcess/HostRecord.cpp:
+        (WebKit::HostRecord::~HostRecord):
+        (WebKit::HostRecord::scheduleResourceLoader):
+        (WebKit::HostRecord::addLoaderInProgress):
+        (WebKit::HostRecord::removeLoader):
+        (WebKit::HostRecord::hasRequests):
+        (WebKit::HostRecord::servePendingRequestsForQueue):
+        (WebKit::HostRecord::servePendingRequests):
+        (WebKit::HostRecord::limitsRequests):
+        * NetworkProcess/HostRecord.h:
+        (WebKit::HostRecord::create): HostRecord is now also RefCounted. new and delete are so 2004.
+
+        * NetworkProcess/NetworkConnectionToWebProcess.cpp:
+        (WebKit::NetworkConnectionToWebProcess::scheduleResourceLoad): Create the loader then schedule
+          it with the scheduler, instead of having the scheduler create it.
+        (WebKit::NetworkConnectionToWebProcess::performSynchronousLoad):
+        (WebKit::NetworkConnectionToWebProcess::removeLoadIdentifier):
+        * NetworkProcess/NetworkConnectionToWebProcess.h:
+        * NetworkProcess/NetworkConnectionToWebProcess.messages.in:
+
+        Remove maps and sets of identifiers, replacing them with sets of SchedulableLoaders where needed.
+        Rely on HostRecords to actually manage sets of SchedulableLoaders.
+        Rely on HostRecord to do the actual serving of its pending requests:
+        * NetworkProcess/NetworkResourceLoadScheduler.cpp:
+        (WebKit::NetworkResourceLoadScheduler::NetworkResourceLoadScheduler):
+        (WebKit::NetworkResourceLoadScheduler::scheduleLoader):
+        (WebKit::NetworkResourceLoadScheduler::hostForURL):
+        (WebKit::NetworkResourceLoadScheduler::removeLoader):
+        (WebKit::NetworkResourceLoadScheduler::receivedRedirect):
+        (WebKit::NetworkResourceLoadScheduler::servePendingRequests):
+        (WebKit::NetworkResourceLoadScheduler::removeScheduledLoaders):
+        (WebKit::NetworkResourceLoadScheduler::scheduleRemoveLoader):
+        * NetworkProcess/NetworkResourceLoadScheduler.h:
+
+        A new base class for all loaders that the scheduler and HostRecords might need to know about:
+        * NetworkProcess/SchedulableLoader.cpp:
+        (WebKit::SchedulableLoader::SchedulableLoader):
+        (WebKit::SchedulableLoader::~SchedulableLoader):
+        * NetworkProcess/SchedulableLoader.h:
+        (WebKit::SchedulableLoader::loadParameters):
+        (WebKit::SchedulableLoader::connectionToWebProcess):
+        (WebKit::SchedulableLoader::isSynchronous):
+        (WebKit::SchedulableLoader::setHostRecord):
+        (WebKit::SchedulableLoader::hostRecord):
+
+        Change to inherit from SchedulableLoader, removing some of the duplicated data and methods:
+        * NetworkProcess/NetworkResourceLoader.cpp:
+        (WebKit::NetworkResourceLoader::NetworkResourceLoader):
+        (WebKit::NetworkResourceLoader::connection):
+        (WebKit::NetworkResourceLoader::destinationID):
+        (WebKit::NetworkResourceLoader::start):
+        (WebKit::NetworkResourceLoader::stop):
+        (WebKit::NetworkResourceLoader::didReceiveResponse):
+        (WebKit::NetworkResourceLoader::didFail):
+        (WebKit::NetworkResourceLoader::willSendRequest):
+        (WebKit::NetworkResourceLoader::shouldUseCredentialStorage):
+        * NetworkProcess/NetworkResourceLoader.h:
+        (WebKit::NetworkResourceLoader::create):
+
+        Change to inherit from SchedulableLoader, removing some of the duplicated data and methods:
+        * NetworkProcess/SyncNetworkResourceLoader.cpp:
+        (WebKit::SyncNetworkResourceLoader::SyncNetworkResourceLoader):
+        (WebKit::SyncNetworkResourceLoader::start):
+        * NetworkProcess/SyncNetworkResourceLoader.h:
+        (WebKit::SyncNetworkResourceLoader::create):
+        (WebKit::SyncNetworkResourceLoader::isSynchronous):
+
+        Fold the WebProcess resource load identifier in with the load parameters:
+        * Shared/Network/NetworkResourceLoadParameters.cpp:
+        (WebKit::NetworkResourceLoadParameters::NetworkResourceLoadParameters):
+        (WebKit::NetworkResourceLoadParameters::encode):
+        (WebKit::NetworkResourceLoadParameters::decode):
+        * Shared/Network/NetworkResourceLoadParameters.h:
+        (WebKit::NetworkResourceLoadParameters::identifier):
+
+        The identifier is preset in the WebProcess and doesn't come from the NetworkProcess,
+        so the message to schedule a load can now be asynchronous:
+        * WebProcess/Network/WebResourceLoadScheduler.cpp:
+        (WebKit::WebResourceLoadScheduler::scheduleLoad):
+
+        Update to include a WebProcess generated identifier along with synchronous loads:
+        * WebProcess/WebCoreSupport/WebPlatformStrategies.cpp:
+        (WebKit::WebPlatformStrategies::loadResourceSynchronously):
+        * WebProcess/WebCoreSupport/WebPlatformStrategies.h:
+
+        * WebKit2.xcodeproj/project.pbxproj:
+
 2013-01-18  Huang Dongsung  <luxtella@company100.net>
 
         Coordinated Graphics: CoordinatedTile::updateBackBuffer() returns a dirty rect.

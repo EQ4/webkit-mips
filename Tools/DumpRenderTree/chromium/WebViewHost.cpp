@@ -894,6 +894,9 @@ static bool hostIsUsedBySomeTestsToGenerateError(const string& host)
 
 void WebViewHost::willSendRequest(WebFrame* frame, unsigned identifier, WebURLRequest& request, const WebURLResponse& redirectResponse)
 {
+    if (request.url().isEmpty())
+        return;
+
     // Need to use GURL for host() and SchemeIs()
     GURL url = request.url();
     string requestURL = url.possibly_invalid_spec();
@@ -901,17 +904,6 @@ void WebViewHost::willSendRequest(WebFrame* frame, unsigned identifier, WebURLRe
     GURL mainDocumentURL = request.firstPartyForCookies();
 
     request.setExtraData(webkit_support::CreateWebURLRequestExtraData(frame->document().referrerPolicy()));
-
-    if (!redirectResponse.isNull() && m_blocksRedirects) {
-        fputs("Returning null for this redirect\n", stdout);
-        blockRequest(request);
-        return;
-    }
-
-    if (m_requestReturnNull) {
-        blockRequest(request);
-        return;
-    }
 
     string host = url.host();
     if (!host.empty() && (url.SchemeIs("http") || url.SchemeIs("https"))) {
@@ -923,10 +915,6 @@ void WebViewHost::willSendRequest(WebFrame* frame, unsigned identifier, WebURLRe
             return;
         }
     }
-
-    HashSet<String>::const_iterator end = m_clearHeaders.end();
-    for (HashSet<String>::const_iterator header = m_clearHeaders.begin(); header != end; ++header)
-        request.clearHTTPHeaderField(WebString(header->characters(), header->length()));
 
     // Set the new substituted URL.
     request.setURL(webkit_support::RewriteLayoutTestsURL(request.url().spec()));
@@ -1140,6 +1128,93 @@ void WebViewHost::setDeviceOrientation(WebKit::WebDeviceOrientation& orientation
     deviceOrientationClientMock()->setOrientation(orientation);
 }
 
+int WebViewHost::numberOfPendingGeolocationPermissionRequests()
+{
+    Vector<WebViewHost*> windowList = m_shell->windowList();
+    int numberOfRequests = 0;
+    for (size_t i = 0; i < windowList.size(); i++)
+        numberOfRequests += windowList[i]->geolocationClientMock()->numberOfPendingPermissionRequests();
+    return numberOfRequests;
+}
+
+void WebViewHost::setGeolocationPermission(bool allowed)
+{
+    Vector<WebViewHost*> windowList = m_shell->windowList();
+    for (size_t i = 0; i < windowList.size(); i++)
+        windowList[i]->geolocationClientMock()->setPermission(allowed);
+}
+
+void WebViewHost::setMockGeolocationPosition(double latitude, double longitude, double accuracy)
+{
+    Vector<WebViewHost*> windowList = m_shell->windowList();
+    for (size_t i = 0; i < windowList.size(); i++)
+        windowList[i]->geolocationClientMock()->setPosition(latitude, longitude, accuracy);
+}
+
+void WebViewHost::setMockGeolocationPositionUnavailableError(const std::string& message)
+{
+    Vector<WebViewHost*> windowList = m_shell->windowList();
+    // FIXME: Benjamin
+    for (size_t i = 0; i < windowList.size(); i++)
+        windowList[i]->geolocationClientMock()->setPositionUnavailableError(WebString::fromUTF8(message));
+}
+
+#if ENABLE(NOTIFICATIONS)
+void WebViewHost::grantWebNotificationPermission(const std::string& origin)
+{
+    m_shell->notificationPresenter()->grantPermission(WebString::fromUTF8(origin));
+}
+
+bool WebViewHost::simulateLegacyWebNotificationClick(const std::string& notificationIdentifier)
+{
+    return m_shell->notificationPresenter()->simulateClick(WebString::fromUTF8(notificationIdentifier));
+}
+#endif
+
+#if ENABLE(INPUT_SPEECH)
+void WebViewHost::addMockSpeechInputResult(const std::string& result, double confidence, const std::string& language)
+{
+    m_speechInputControllerMock->addMockRecognitionResult(WebString::fromUTF8(result), confidence, WebString::fromUTF8(language));
+}
+
+void WebViewHost::setMockSpeechInputDumpRect(bool dumpRect)
+{
+    m_speechInputControllerMock->setDumpRect(dumpRect);
+}
+#endif
+
+#if ENABLE(SCRIPTED_SPEECH)
+void WebViewHost::addMockSpeechRecognitionResult(const std::string& transcript, double confidence)
+{
+    m_mockSpeechRecognizer->addMockResult(WebString::fromUTF8(transcript), confidence);
+}
+
+void WebViewHost::setMockSpeechRecognitionError(const std::string& error, const std::string& message)
+{
+    m_mockSpeechRecognizer->setError(WebString::fromUTF8(error), WebString::fromUTF8(message));
+}
+
+bool WebViewHost::wasMockSpeechRecognitionAborted()
+{
+    return m_mockSpeechRecognizer->wasAborted();
+}
+#endif
+
+void WebViewHost::display()
+{
+    const WebKit::WebSize& size = webView()->size();
+    WebRect rect(0, 0, size.width, size.height);
+    proxy()->setPaintRect(rect);
+    paintInvalidatedRegion();
+    displayRepaintMask();
+}
+
+void WebViewHost::displayInvalidatedRegion()
+{
+    paintInvalidatedRegion();
+    displayRepaintMask();
+}
+
 // Public functions -----------------------------------------------------------
 
 WebViewHost::WebViewHost(TestShell* shell)
@@ -1222,8 +1297,6 @@ void WebViewHost::reset()
 #else
     m_selectTrailingWhitespaceEnabled = false;
 #endif
-    m_blocksRedirects = false;
-    m_requestReturnNull = false;
     m_isPainting = false;
     m_canvas.clear();
 #if ENABLE(POINTER_LOCK)
@@ -1234,7 +1307,6 @@ void WebViewHost::reset()
     m_navigationController = adoptPtr(new TestNavigationController(this));
 
     m_pendingExtraData.clear();
-    m_clearHeaders.clear();
     m_editCommandName.clear();
     m_editCommandValue.clear();
 

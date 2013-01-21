@@ -99,6 +99,19 @@ public:
     virtual void didLosePointerLock() { }
     virtual void setPointerLockWillRespondAsynchronously() { }
     virtual void setPointerLockWillFailSynchronously() { }
+    virtual int numberOfPendingGeolocationPermissionRequests() { return 0; }
+    virtual void setGeolocationPermission(bool) { }
+    virtual void setMockGeolocationPosition(double, double, double) { }
+    virtual void setMockGeolocationPositionUnavailableError(const std::string&) { }
+    virtual void grantWebNotificationPermission(const std::string&) { }
+    virtual bool simulateLegacyWebNotificationClick(const std::string&) { return false; }
+    virtual void addMockSpeechInputResult(const std::string&, double, const std::string&) { }
+    virtual void setMockSpeechInputDumpRect(bool) { }
+    virtual void addMockSpeechRecognitionResult(const std::string&, double) { }
+    virtual void setMockSpeechRecognitionError(const std::string&, const std::string&) { }
+    virtual bool wasMockSpeechRecognitionAborted() { return false; }
+    virtual void display() { }
+    virtual void displayInvalidatedRegion() { }
 };
 
 }

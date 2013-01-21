@@ -53,7 +53,6 @@
 #include "DocumentLoader.h"
 #include "DragController.h"
 #include "DragData.h"
-#include "DragScrollTimer.h"
 #include "DragSession.h"
 #include "Editor.h"
 #include "EventHandler.h"
@@ -415,7 +414,6 @@ WebViewImpl::WebViewImpl(WebViewClient* client)
     , m_autofillPopup(0)
     , m_isTransparent(false)
     , m_tabsToLinks(false)
-    , m_dragScrollTimer(adoptPtr(new DragScrollTimer))
     , m_isCancelingFullScreen(false)
     , m_benchmarkSupport(this)
 #if USE(ACCELERATED_COMPOSITING)
@@ -449,6 +447,7 @@ WebViewImpl::WebViewImpl(WebViewClient* client)
     , m_navigatorContentUtilsClient(NavigatorContentUtilsClientImpl::create(this))
 #endif
     , m_flingModifier(0)
+    , m_flingSourceDevice(false)
     , m_validationMessage(ValidationMessageClientImpl::create(*client))
     , m_suppressInvalidations(false)
     , m_showFPSCounter(false)
@@ -658,22 +657,39 @@ bool WebViewImpl::handleMouseWheel(Frame& mainFrame, const WebMouseWheelEvent& e
 
 void WebViewImpl::scrollBy(const WebPoint& delta)
 {
-    WebMouseWheelEvent syntheticWheel;
-    const float tickDivisor = WebCore::WheelEvent::tickMultiplier;
+    if (m_flingSourceDevice == WebGestureEvent::Touchpad) {
+        WebMouseWheelEvent syntheticWheel;
+        const float tickDivisor = WebCore::WheelEvent::tickMultiplier;
 
-    syntheticWheel.deltaX = delta.x;
-    syntheticWheel.deltaY = delta.y;
-    syntheticWheel.wheelTicksX = delta.x / tickDivisor;
-    syntheticWheel.wheelTicksY = delta.y / tickDivisor;
-    syntheticWheel.hasPreciseScrollingDeltas = true;
-    syntheticWheel.x = m_lastWheelPosition.x;
-    syntheticWheel.y = m_lastWheelPosition.y;
-    syntheticWheel.globalX = m_lastWheelGlobalPosition.x;
-    syntheticWheel.globalY = m_lastWheelGlobalPosition.y;
-    syntheticWheel.modifiers = m_flingModifier;
+        syntheticWheel.deltaX = delta.x;
+        syntheticWheel.deltaY = delta.y;
+        syntheticWheel.wheelTicksX = delta.x / tickDivisor;
+        syntheticWheel.wheelTicksY = delta.y / tickDivisor;
+        syntheticWheel.hasPreciseScrollingDeltas = true;
+        syntheticWheel.x = m_positionOnFlingStart.x;
+        syntheticWheel.y = m_positionOnFlingStart.y;
+        syntheticWheel.globalX = m_globalPositionOnFlingStart.x;
+        syntheticWheel.globalY = m_globalPositionOnFlingStart.y;
+        syntheticWheel.modifiers = m_flingModifier;
 
-    if (m_page && m_page->mainFrame() && m_page->mainFrame()->view())
-        handleMouseWheel(*m_page->mainFrame(), syntheticWheel);
+        if (m_page && m_page->mainFrame() && m_page->mainFrame()->view())
+            handleMouseWheel(*m_page->mainFrame(), syntheticWheel);
+    } else {
+        WebGestureEvent syntheticGestureEvent;
+
+        syntheticGestureEvent.type = WebInputEvent::GestureScrollUpdate;
+        syntheticGestureEvent.data.scrollUpdate.deltaX = delta.x;
+        syntheticGestureEvent.data.scrollUpdate.deltaY = delta.y;
+        syntheticGestureEvent.x = m_positionOnFlingStart.x;
+        syntheticGestureEvent.y = m_positionOnFlingStart.y;
+        syntheticGestureEvent.globalX = m_globalPositionOnFlingStart.x;
+        syntheticGestureEvent.globalY = m_globalPositionOnFlingStart.y;
+        syntheticGestureEvent.modifiers = m_flingModifier;
+        syntheticGestureEvent.sourceDevice = WebGestureEvent::Touchscreen;
+
+        if (m_page && m_page->mainFrame() && m_page->mainFrame()->view())
+            handleGestureEvent(syntheticGestureEvent);
+    }
 }
 
 #if ENABLE(GESTURE_EVENTS)
@@ -706,9 +722,10 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
         if (mainFrameImpl()->frame()->eventHandler()->isScrollbarHandlingGestures())
             break;
         m_client->cancelScheduledContentIntents();
-        m_lastWheelPosition = WebPoint(event.x, event.y);
-        m_lastWheelGlobalPosition = WebPoint(event.globalX, event.globalY);
+        m_positionOnFlingStart = WebPoint(event.x, event.y);
+        m_globalPositionOnFlingStart = WebPoint(event.globalX, event.globalY);
         m_flingModifier = event.modifiers;
+        m_flingSourceDevice = event.sourceDevice;
         OwnPtr<WebGestureCurve> flingCurve = adoptPtr(Platform::current()->createFlingAnimationCurve(event.sourceDevice, WebFloatPoint(event.data.flingStart.velocityX, event.data.flingStart.velocityY), WebSize()));
         m_gestureAnimation = WebActiveGestureAnimation::createAtAnimationStart(flingCurve.release(), this);
         scheduleAnimation();
@@ -811,8 +828,8 @@ void WebViewImpl::transferActiveWheelFlingAnimation(const WebActiveWheelFlingPar
 {
     TRACE_EVENT0("webkit", "WebViewImpl::transferActiveWheelFlingAnimation");
     ASSERT(!m_gestureAnimation);
-    m_lastWheelPosition = parameters.point;
-    m_lastWheelGlobalPosition = parameters.globalPoint;
+    m_positionOnFlingStart = parameters.point;
+    m_globalPositionOnFlingStart = parameters.globalPoint;
     m_flingModifier = parameters.modifiers;
     OwnPtr<WebGestureCurve> curve = adoptPtr(Platform::current()->createFlingAnimationCurve(parameters.sourceDevice, WebFloatPoint(parameters.delta), parameters.cumulativeScroll));
     m_gestureAnimation = WebActiveGestureAnimation::createWithTimeOffset(curve.release(), this, parameters.startTime);
@@ -3271,7 +3288,6 @@ void WebViewImpl::dragSourceEndedAt(
                            false, 0);
     m_page->mainFrame()->eventHandler()->dragSourceEndedAt(pme,
         static_cast<DragOperation>(operation));
-    m_dragScrollTimer->stop();
 }
 
 void WebViewImpl::dragSourceMovedTo(
@@ -3279,7 +3295,6 @@ void WebViewImpl::dragSourceMovedTo(
     const WebPoint& screenPoint,
     WebDragOperation operation)
 {
-    m_dragScrollTimer->triggerScroll(mainFrameImpl()->frameView(), clientPoint);
 }
 
 void WebViewImpl::dragSourceSystemDragEnded()
@@ -3365,8 +3380,6 @@ void WebViewImpl::dragTargetDrop(const WebPoint& clientPoint,
 
     m_dragOperation = WebDragOperationNone;
     m_currentDragData = 0;
-
-    m_dragScrollTimer->stop();
 }
 
 WebDragOperation WebViewImpl::dragTargetDragEnterOrOver(const WebPoint& clientPoint, const WebPoint& screenPoint, DragAction dragAction, int keyModifiers)
@@ -3393,11 +3406,6 @@ WebDragOperation WebViewImpl::dragTargetDragEnterOrOver(const WebPoint& clientPo
         dropEffect = DragOperationNone;
 
      m_dragOperation = static_cast<WebDragOperation>(dropEffect);
-
-    if (dragAction == DragOver)
-        m_dragScrollTimer->triggerScroll(mainFrameImpl()->frameView(), clientPoint);
-    else
-        m_dragScrollTimer->stop();
 
     return m_dragOperation;
 }

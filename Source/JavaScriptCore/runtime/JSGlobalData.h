@@ -42,6 +42,7 @@
 #include "NumericStrings.h"
 #include "ProfilerDatabase.h"
 #include "PrivateName.h"
+#include "PrototypeMap.h"
 #include "SmallStrings.h"
 #include "Strong.h"
 #include "Terminator.h"
@@ -290,7 +291,7 @@ namespace JSC {
         bool canUseRegExpJIT() { return false; } // interpreter only
 #endif
 
-        PrivateName m_inheritorIDKey;
+        PrototypeMap prototypeMap;
 
         OwnPtr<ParserArena> parserArena;
         OwnPtr<Keywords> keywords;

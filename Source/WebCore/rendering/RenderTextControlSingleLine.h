@@ -32,7 +32,7 @@ class HTMLInputElement;
 
 class RenderTextControlSingleLine : public RenderTextControl {
 public:
-    RenderTextControlSingleLine(ContainerNode*);
+    RenderTextControlSingleLine(Element*);
     virtual ~RenderTextControlSingleLine();
     // FIXME: Move create*Style() to their classes.
     virtual PassRefPtr<RenderStyle> createInnerTextStyle(const RenderStyle* startStyle) const;
@@ -58,7 +58,7 @@ private:
 
     virtual bool nodeAtPoint(const HitTestRequest&, HitTestResult&, const HitTestLocation& locationInContainer, const LayoutPoint& accumulatedOffset, HitTestAction) OVERRIDE;
 
-    virtual void autoscroll();
+    virtual void autoscroll(const IntPoint&);
 
     // Subclassed to forward to our inner div.
     virtual int scrollLeft() const;
@@ -110,7 +110,7 @@ void toRenderTextControlSingleLine(const RenderTextControlSingleLine*);
 
 class RenderTextControlInnerBlock : public RenderBlock {
 public:
-    RenderTextControlInnerBlock(ContainerNode* node) : RenderBlock(node) { }
+    RenderTextControlInnerBlock(Element* element) : RenderBlock(element) { }
 
 private:
     virtual bool hasLineIfEmpty() const { return true; }

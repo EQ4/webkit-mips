@@ -93,8 +93,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     void waitForPolicyDelegate();
     void setCustomPolicyDelegate(bool, bool);
     WebKit::WebFrame* topLoadingFrame() { return m_topLoadingFrame; }
-    void setBlockRedirects(bool block) { m_blocksRedirects = block; }
-    void setRequestReturnNull(bool returnNull) { m_requestReturnNull = returnNull; }
     void setPendingExtraData(PassOwnPtr<TestShellExtraData>);
 
     void paintRect(const WebKit::WebRect&);
@@ -106,8 +104,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     void loadURLForFrame(const WebKit::WebURL&, const WebKit::WebString& frameName);
     TestNavigationController* navigationController() { return m_navigationController.get(); }
 
-    void addClearHeader(const WTF::String& header) { m_clearHeaders.add(header); }
-    const HashSet<WTF::String>& clearHeaders() const { return m_clearHeaders; }
     void closeWidget();
 
 #if ENABLE(INPUT_SPEECH)
@@ -160,6 +156,25 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     virtual void setPointerLockWillRespondAsynchronously() OVERRIDE { m_pointerLockPlannedResult = PointerLockWillRespondAsync; }
     virtual void setPointerLockWillFailSynchronously() OVERRIDE { m_pointerLockPlannedResult = PointerLockWillFailSync; }
 #endif
+    virtual int numberOfPendingGeolocationPermissionRequests() OVERRIDE;
+    virtual void setGeolocationPermission(bool) OVERRIDE;
+    virtual void setMockGeolocationPosition(double, double, double) OVERRIDE;
+    virtual void setMockGeolocationPositionUnavailableError(const std::string&) OVERRIDE;
+#if ENABLE(NOTIFICATIONS)
+    virtual void grantWebNotificationPermission(const std::string&) OVERRIDE;
+    virtual bool simulateLegacyWebNotificationClick(const std::string&) OVERRIDE;
+#endif
+#if ENABLE(INPUT_SPEECH)
+    virtual void addMockSpeechInputResult(const std::string&, double, const std::string&) OVERRIDE;
+    virtual void setMockSpeechInputDumpRect(bool) OVERRIDE;
+#endif
+#if ENABLE(SCRIPTED_SPEECH)
+    virtual void addMockSpeechRecognitionResult(const std::string&, double) OVERRIDE;
+    virtual void setMockSpeechRecognitionError(const std::string&, const std::string&) OVERRIDE;
+    virtual bool wasMockSpeechRecognitionAborted() OVERRIDE;
+#endif
+    virtual void display() OVERRIDE;
+    virtual void displayInvalidatedRegion() OVERRIDE;
 
     // NavigationHost
     virtual bool navigate(const TestNavigationEntry&, bool reload);
@@ -382,15 +397,6 @@ private:
 
     // true if whatever is sent to the console should be logged to stdout.
     bool m_logConsoleOutput;
-
-    // Set of headers to clear in willSendRequest.
-    HashSet<WTF::String> m_clearHeaders;
-
-    // true if we should block any redirects
-    bool m_blocksRedirects;
-
-    // true if we should block (set an empty request for) any requests
-    bool m_requestReturnNull;
 
     // Edit command associated to the current keyboard event.
     std::string m_editCommandName;

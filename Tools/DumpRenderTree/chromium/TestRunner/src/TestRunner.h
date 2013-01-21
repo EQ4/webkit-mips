@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Google Inc. All rights reserved.
  * Copyright (C) 2010 Pawel Hajdan (phajdan.jr@chromium.org)
+ * Copyright (C) 2012 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -94,6 +95,9 @@ public:
     virtual bool isPrinting() const OVERRIDE;
     virtual bool shouldStayOnPageAfterHandlingBeforeUnload() const OVERRIDE;
     virtual void setTitleTextDirection(WebKit::WebTextDirection) OVERRIDE;
+    virtual const std::set<std::string>* httpHeadersToClear() const OVERRIDE;
+    virtual bool shouldBlockRedirects() const OVERRIDE;
+    virtual bool willSendRequestShouldReturnNull() const OVERRIDE;
 
 protected:
     // FIXME: make these private once the move from DRTTestRunner to TestRunner
@@ -326,6 +330,15 @@ private:
 
     void setShouldStayOnPageAfterHandlingBeforeUnload(const CppArgumentList&, CppVariant*);
 
+    // Causes WillSendRequest to clear certain headers.
+    void setWillSendRequestClearHeader(const CppArgumentList&, CppVariant*);
+
+    // Causes WillSendRequest to block redirects.
+    void setWillSendRequestReturnsNullOnRedirect(const CppArgumentList&, CppVariant*);
+
+    // Causes WillSendRequest to return an empty request.
+    void setWillSendRequestReturnsNull(const CppArgumentList&, CppVariant*);
+
     ///////////////////////////////////////////////////////////////////////////
     // Methods interacting with the WebTestProxy
 
@@ -366,6 +379,35 @@ private:
     // Calls setlocale(LC_ALL, ...) for a specified locale.
     // Resets between tests.
     void setPOSIXLocale(const CppArgumentList&, CppVariant*);
+
+    // Gets the number of geolocation permissions requests pending.
+    void numberOfPendingGeolocationPermissionRequests(const CppArgumentList&, CppVariant*);
+
+    // Geolocation related functions.
+    void setGeolocationPermission(const CppArgumentList&, CppVariant*);
+    void setMockGeolocationPosition(const CppArgumentList&, CppVariant*);
+    void setMockGeolocationPositionUnavailableError(const CppArgumentList&, CppVariant*);
+
+#if ENABLE(NOTIFICATIONS)
+    // Grants permission for desktop notifications to an origin
+    void grantWebNotificationPermission(const CppArgumentList&, CppVariant*);
+    // Simulates a click on a desktop notification.
+    void simulateLegacyWebNotificationClick(const CppArgumentList&, CppVariant*);
+#endif
+
+    // Speech input related functions.
+#if ENABLE(INPUT_SPEECH)
+    void addMockSpeechInputResult(const CppArgumentList&, CppVariant*);
+    void setMockSpeechInputDumpRect(const CppArgumentList&, CppVariant*);
+#endif
+#if ENABLE(SCRIPTED_SPEECH)
+    void addMockSpeechRecognitionResult(const CppArgumentList&, CppVariant*);
+    void setMockSpeechRecognitionError(const CppArgumentList&, CppVariant*);
+    void wasMockSpeechRecognitionAborted(const CppArgumentList&, CppVariant*);
+#endif
+
+    void display(const CppArgumentList&, CppVariant*);
+    void displayInvalidatedRegion(const CppArgumentList&, CppVariant*);
 
     ///////////////////////////////////////////////////////////////////////////
     // Properties
@@ -492,6 +534,12 @@ private:
     bool m_isPrinting;
 
     bool m_shouldStayOnPageAfterHandlingBeforeUnload;
+
+    bool m_shouldBlockRedirects;
+
+    bool m_willSendRequestShouldReturnNull;
+
+    std::set<std::string> m_httpHeadersToClear;
 
     // WAV audio data is stored here.
     WebKit::WebArrayBufferView m_audioData;

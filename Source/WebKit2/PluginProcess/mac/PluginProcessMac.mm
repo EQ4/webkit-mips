@@ -272,6 +272,8 @@ static void initializeCocoaOverrides()
 
 void PluginProcess::platformInitializeProcess(const ChildProcessInitializationParameters&)
 {
+    RunLoop::setUseApplicationRunLoopOnMainRunLoop();
+
 #if defined(__i386__)
     // Initialize the shim.
     initializeShim();
@@ -323,11 +325,11 @@ static void initializeSandbox(const String& pluginPath, const String& sandboxPro
     RetainPtr<CFStringRef> sandboxFileName = CFStringCreateWithFormat(0, 0, CFSTR("%@.sb"), bundleIdentifier);
     RetainPtr<CFURLRef> sandboxURL = adoptCF(CFURLCreateWithFileSystemPathRelativeToBase(0, sandboxFileName.get(), kCFURLPOSIXPathStyle, FALSE, sandboxProfileDirectory.get()));
 
-    RetainPtr<NSString> profileString = [[NSString alloc] initWithContentsOfURL:(NSURL *)sandboxURL.get() encoding:NSUTF8StringEncoding error:NULL];
+    RetainPtr<NSString> profileString = adoptNS([[NSString alloc] initWithContentsOfURL:(NSURL *)sandboxURL.get() encoding:NSUTF8StringEncoding error:NULL]);
     if (!profileString)
         return;
 
-    enterSandbox([profileString.get() UTF8String], 0, 0);
+    enterSandbox([profileString.get() UTF8String]);
 }
 
 static void muteAudio(void)
@@ -340,8 +342,6 @@ static void muteAudio(void)
 
 void PluginProcess::platformInitializePluginProcess(const PluginProcessCreationParameters& parameters)
 {
-    RunLoop::setUseApplicationRunLoopOnMainRunLoop();
-
     m_compositingRenderServerPort = parameters.acceleratedCompositingPort.port();
 
     NSString *applicationName = [NSString stringWithFormat:WEB_UI_STRING("%@ (%@ Internet plug-in)",

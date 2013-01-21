@@ -34,8 +34,6 @@
 #include "DRTTestRunner.h"
 
 #include "DRTDevToolsAgent.h"
-#include "MockWebSpeechInputController.h"
-#include "MockWebSpeechRecognizer.h"
 #include "Task.h"
 #include "TestShell.h"
 #include "WebAnimationController.h"
@@ -45,11 +43,9 @@
 #include "WebElement.h"
 #include "WebFindOptions.h"
 #include "WebFrame.h"
-#include "WebGeolocationClientMock.h"
 #include "WebIDBFactory.h"
 #include "WebInputElement.h"
 #include "WebKit.h"
-#include "WebNotificationPresenter.h"
 #include "WebPrintParams.h"
 #include "WebScriptSource.h"
 #include "WebSecurityPolicy.h"
@@ -92,22 +88,7 @@ DRTTestRunner::DRTTestRunner(TestShell* shell)
     // they will use when called by JavaScript. The actual binding of those
     // names to their methods will be done by calling bindToJavaScript() (defined
     // by CppBoundClass, the parent to DRTTestRunner).
-#if ENABLE(INPUT_SPEECH)
-    bindMethod("addMockSpeechInputResult", &DRTTestRunner::addMockSpeechInputResult);
-    bindMethod("setMockSpeechInputDumpRect", &DRTTestRunner::setMockSpeechInputDumpRect);
-#endif
-#if ENABLE(SCRIPTED_SPEECH)
-    bindMethod("addMockSpeechRecognitionResult", &DRTTestRunner::addMockSpeechRecognitionResult);
-    bindMethod("setMockSpeechRecognitionError", &DRTTestRunner::setMockSpeechRecognitionError);
-    bindMethod("wasMockSpeechRecognitionAborted", &DRTTestRunner::wasMockSpeechRecognitionAborted);
-#endif
-    bindMethod("display", &DRTTestRunner::display);
-    bindMethod("displayInvalidatedRegion", &DRTTestRunner::displayInvalidatedRegion);
-#if ENABLE(NOTIFICATIONS)
-    bindMethod("grantWebNotificationPermission", &DRTTestRunner::grantWebNotificationPermission);
-#endif
     bindMethod("notifyDone", &DRTTestRunner::notifyDone);
-    bindMethod("numberOfPendingGeolocationPermissionRequests", &DRTTestRunner:: numberOfPendingGeolocationPermissionRequests);
     bindMethod("queueBackNavigation", &DRTTestRunner::queueBackNavigation);
     bindMethod("queueForwardNavigation", &DRTTestRunner::queueForwardNavigation);
     bindMethod("queueLoadingScript", &DRTTestRunner::queueLoadingScript);
@@ -117,15 +98,6 @@ DRTTestRunner::DRTTestRunner(TestShell* shell)
     bindMethod("queueReload", &DRTTestRunner::queueReload);
     bindMethod("setCloseRemainingWindowsWhenComplete", &DRTTestRunner::setCloseRemainingWindowsWhenComplete);
     bindMethod("setCustomPolicyDelegate", &DRTTestRunner::setCustomPolicyDelegate);
-    bindMethod("setGeolocationPermission", &DRTTestRunner::setGeolocationPermission);
-    bindMethod("setMockGeolocationPositionUnavailableError", &DRTTestRunner::setMockGeolocationPositionUnavailableError);
-    bindMethod("setMockGeolocationPosition", &DRTTestRunner::setMockGeolocationPosition);
-    bindMethod("setWillSendRequestClearHeader", &DRTTestRunner::setWillSendRequestClearHeader);
-    bindMethod("setWillSendRequestReturnsNull", &DRTTestRunner::setWillSendRequestReturnsNull);
-    bindMethod("setWillSendRequestReturnsNullOnRedirect", &DRTTestRunner::setWillSendRequestReturnsNullOnRedirect);
-#if ENABLE(NOTIFICATIONS)
-    bindMethod("simulateLegacyWebNotificationClick", &DRTTestRunner::simulateLegacyWebNotificationClick);
-#endif
     bindMethod("waitForPolicyDelegate", &DRTTestRunner::waitForPolicyDelegate);
     bindMethod("waitUntilDone", &DRTTestRunner::waitUntilDone);
     bindMethod("windowCount", &DRTTestRunner::windowCount);
@@ -430,169 +402,3 @@ void DRTTestRunner::waitForPolicyDelegate(const CppArgumentList&, CppVariant* re
     m_waitUntilDone = true;
     result->setNull();
 }
-
-void DRTTestRunner::setWillSendRequestClearHeader(const CppArgumentList& arguments, CppVariant* result)
-{
-    if (arguments.size() > 0 && arguments[0].isString()) {
-        string header = arguments[0].toString();
-        if (!header.empty())
-            m_shell->webViewHost()->addClearHeader(String::fromUTF8(header.c_str()));
-    }
-    result->setNull();
-}
-
-void DRTTestRunner::setWillSendRequestReturnsNullOnRedirect(const CppArgumentList& arguments, CppVariant* result)
-{
-    if (arguments.size() > 0 && arguments[0].isBool())
-        m_shell->webViewHost()->setBlockRedirects(arguments[0].value.boolValue);
-    result->setNull();
-}
-
-void DRTTestRunner::setWillSendRequestReturnsNull(const CppArgumentList& arguments, CppVariant* result)
-{
-    if (arguments.size() > 0 && arguments[0].isBool())
-        m_shell->webViewHost()->setRequestReturnNull(arguments[0].value.boolValue);
-    result->setNull();
-}
-
-
-#if ENABLE(NOTIFICATIONS)
-void DRTTestRunner::grantWebNotificationPermission(const CppArgumentList& arguments, CppVariant* result)
-{
-    if (arguments.size() != 1 || !arguments[0].isString()) {
-        result->set(false);
-        return;
-    }
-#if ENABLE(NOTIFICATIONS) || ENABLE(LEGACY_NOTIFICATIONS)
-    m_shell->notificationPresenter()->grantPermission(cppVariantToWebString(arguments[0]));
-#endif
-    result->set(true);
-}
-
-void DRTTestRunner::simulateLegacyWebNotificationClick(const CppArgumentList& arguments, CppVariant* result)
-{
-    if (arguments.size() != 1 || !arguments[0].isString()) {
-        result->set(false);
-        return;
-    }
-#if ENABLE(NOTIFICATIONS) || ENABLE(LEGACY_NOTIFICATIONS)
-    if (m_shell->notificationPresenter()->simulateClick(cppVariantToWebString(arguments[0])))
-        result->set(true);
-    else
-#endif
-        result->set(false);
-}
-#endif
-
-void DRTTestRunner::display(const CppArgumentList& arguments, CppVariant* result)
-{
-    WebViewHost* host = m_shell->webViewHost();
-    const WebKit::WebSize& size = m_shell->webView()->size();
-    WebRect rect(0, 0, size.width, size.height);
-    host->proxy()->setPaintRect(rect);
-    host->paintInvalidatedRegion();
-    host->displayRepaintMask();
-    result->setNull();
-}
-
-void DRTTestRunner::displayInvalidatedRegion(const CppArgumentList& arguments, CppVariant* result)
-{
-    WebViewHost* host = m_shell->webViewHost();
-    host->paintInvalidatedRegion();
-    host->displayRepaintMask();
-    result->setNull();
-}
-
-void DRTTestRunner::numberOfPendingGeolocationPermissionRequests(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    Vector<WebViewHost*> windowList = m_shell->windowList();
-    int numberOfRequests = 0;
-    for (size_t i = 0; i < windowList.size(); i++)
-        numberOfRequests += windowList[i]->geolocationClientMock()->numberOfPendingPermissionRequests();
-    result->set(numberOfRequests);
-}
-
-// FIXME: For greater test flexibility, we should be able to set each page's geolocation mock individually.
-// https://bugs.webkit.org/show_bug.cgi?id=52368
-void DRTTestRunner::setGeolocationPermission(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    if (arguments.size() < 1 || !arguments[0].isBool())
-        return;
-    Vector<WebViewHost*> windowList = m_shell->windowList();
-    for (size_t i = 0; i < windowList.size(); i++)
-        windowList[i]->geolocationClientMock()->setPermission(arguments[0].toBoolean());
-}
-
-void DRTTestRunner::setMockGeolocationPosition(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    if (arguments.size() < 3 || !arguments[0].isNumber() || !arguments[1].isNumber() || !arguments[2].isNumber())
-        return;
-    Vector<WebViewHost*> windowList = m_shell->windowList();
-    for (size_t i = 0; i < windowList.size(); i++)
-        windowList[i]->geolocationClientMock()->setPosition(arguments[0].toDouble(), arguments[1].toDouble(), arguments[2].toDouble());
-}
-
-void DRTTestRunner::setMockGeolocationPositionUnavailableError(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    if (arguments.size() != 1 || !arguments[0].isString())
-        return;
-    Vector<WebViewHost*> windowList = m_shell->windowList();
-    // FIXME: Benjamin
-    for (size_t i = 0; i < windowList.size(); i++)
-        windowList[i]->geolocationClientMock()->setPositionUnavailableError(cppVariantToWebString(arguments[0]));
-}
-
-#if ENABLE(INPUT_SPEECH)
-void DRTTestRunner::addMockSpeechInputResult(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    if (arguments.size() < 3 || !arguments[0].isString() || !arguments[1].isNumber() || !arguments[2].isString())
-        return;
-
-    if (MockWebSpeechInputController* controller = m_shell->webViewHost()->speechInputControllerMock())
-        controller->addMockRecognitionResult(cppVariantToWebString(arguments[0]), arguments[1].toDouble(), cppVariantToWebString(arguments[2]));
-}
-
-void DRTTestRunner::setMockSpeechInputDumpRect(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    if (arguments.size() < 1 || !arguments[0].isBool())
-        return;
-
-    if (MockWebSpeechInputController* controller = m_shell->webViewHost()->speechInputControllerMock())
-        controller->setDumpRect(arguments[0].value.boolValue);
-}
-#endif
-
-#if ENABLE(SCRIPTED_SPEECH)
-void DRTTestRunner::addMockSpeechRecognitionResult(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    if (arguments.size() < 2 || !arguments[0].isString() || !arguments[1].isNumber())
-        return;
-
-    if (MockWebSpeechRecognizer* recognizer = m_shell->webViewHost()->mockSpeechRecognizer())
-        recognizer->addMockResult(cppVariantToWebString(arguments[0]), arguments[1].toDouble());
-}
-
-void DRTTestRunner::setMockSpeechRecognitionError(const CppArgumentList& arguments, CppVariant* result)
-{
-    result->setNull();
-    if (arguments.size() != 2 || !arguments[0].isString() || !arguments[1].isString())
-        return;
-
-    if (MockWebSpeechRecognizer* recognizer = m_shell->webViewHost()->mockSpeechRecognizer())
-        recognizer->setError(cppVariantToWebString(arguments[0]), cppVariantToWebString(arguments[1]));
-}
-
-void DRTTestRunner::wasMockSpeechRecognitionAborted(const CppArgumentList&, CppVariant* result)
-{
-    result->set(false);
-    if (MockWebSpeechRecognizer* recognizer = m_shell->webViewHost()->mockSpeechRecognizer())
-        result->set(recognizer->wasAborted());
-}
-#endif

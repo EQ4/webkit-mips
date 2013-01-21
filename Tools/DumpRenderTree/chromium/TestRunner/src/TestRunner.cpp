@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2010 Google Inc. All rights reserved.
  * Copyright (C) 2010 Pawel Hajdan (phajdan.jr@chromium.org)
+ * Copyright (C) 2012 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -200,6 +201,9 @@ TestRunner::TestRunner()
     bindMethod("repaintSweepHorizontally", &TestRunner::repaintSweepHorizontally);
     bindMethod("setPrinting", &TestRunner::setPrinting);
     bindMethod("setShouldStayOnPageAfterHandlingBeforeUnload", &TestRunner::setShouldStayOnPageAfterHandlingBeforeUnload);
+    bindMethod("setWillSendRequestClearHeader", &TestRunner::setWillSendRequestClearHeader);
+    bindMethod("setWillSendRequestReturnsNull", &TestRunner::setWillSendRequestReturnsNull);
+    bindMethod("setWillSendRequestReturnsNullOnRedirect", &TestRunner::setWillSendRequestReturnsNullOnRedirect);
 
     // The following methods interact with the WebTestProxy.
     bindMethod("sendWebIntentResponse", &TestRunner::sendWebIntentResponse);
@@ -216,6 +220,25 @@ TestRunner::TestRunner()
     bindMethod("pathToLocalResource", &TestRunner::pathToLocalResource);
     bindMethod("setBackingScaleFactor", &TestRunner::setBackingScaleFactor);
     bindMethod("setPOSIXLocale", &TestRunner::setPOSIXLocale);
+    bindMethod("numberOfPendingGeolocationPermissionRequests", &TestRunner:: numberOfPendingGeolocationPermissionRequests);
+    bindMethod("setGeolocationPermission", &TestRunner::setGeolocationPermission);
+    bindMethod("setMockGeolocationPositionUnavailableError", &TestRunner::setMockGeolocationPositionUnavailableError);
+    bindMethod("setMockGeolocationPosition", &TestRunner::setMockGeolocationPosition);
+#if ENABLE(NOTIFICATIONS)
+    bindMethod("grantWebNotificationPermission", &TestRunner::grantWebNotificationPermission);
+    bindMethod("simulateLegacyWebNotificationClick", &TestRunner::simulateLegacyWebNotificationClick);
+#endif
+#if ENABLE(INPUT_SPEECH)
+    bindMethod("addMockSpeechInputResult", &TestRunner::addMockSpeechInputResult);
+    bindMethod("setMockSpeechInputDumpRect", &TestRunner::setMockSpeechInputDumpRect);
+#endif
+#if ENABLE(SCRIPTED_SPEECH)
+    bindMethod("addMockSpeechRecognitionResult", &TestRunner::addMockSpeechRecognitionResult);
+    bindMethod("setMockSpeechRecognitionError", &TestRunner::setMockSpeechRecognitionError);
+    bindMethod("wasMockSpeechRecognitionAborted", &TestRunner::wasMockSpeechRecognitionAborted);
+#endif
+    bindMethod("display", &TestRunner::display);
+    bindMethod("displayInvalidatedRegion", &TestRunner::displayInvalidatedRegion);
 
     // Properties.
     bindProperty("workerThreadCount", &TestRunner::workerThreadCount);
@@ -313,6 +336,10 @@ void TestRunner::reset()
     m_sweepHorizontally = false;
     m_isPrinting = false;
     m_shouldStayOnPageAfterHandlingBeforeUnload = false;
+    m_shouldBlockRedirects = false;
+    m_willSendRequestShouldReturnNull = false;
+
+    m_httpHeadersToClear.clear();
 
     m_globalFlag.set(false);
     m_titleTextDirection.set("ltr");
@@ -480,6 +507,21 @@ void TestRunner::setTitleTextDirection(WebKit::WebTextDirection dir)
     m_titleTextDirection.set(dir == WebKit::WebTextDirectionLeftToRight ? "ltr" : "rtl");
 }
 
+const std::set<std::string>* TestRunner::httpHeadersToClear() const
+{
+    return &m_httpHeadersToClear;
+}
+
+bool TestRunner::shouldBlockRedirects() const
+{
+    return m_shouldBlockRedirects;
+}
+
+bool TestRunner::willSendRequestShouldReturnNull() const
+{
+    return m_willSendRequestShouldReturnNull;
+}
+
 void TestRunner::dumpPermissionClientCallbacks(const CppArgumentList&, CppVariant* result)
 {
     m_webPermissions->setDumpCallbacks(true);
@@ -583,6 +625,30 @@ void TestRunner::setShouldStayOnPageAfterHandlingBeforeUnload(const CppArgumentL
     if (arguments.size() == 1 && arguments[0].isBool())
         m_shouldStayOnPageAfterHandlingBeforeUnload = arguments[0].toBoolean();
 
+    result->setNull();
+}
+
+void TestRunner::setWillSendRequestClearHeader(const CppArgumentList& arguments, CppVariant* result)
+{
+    if (arguments.size() > 0 && arguments[0].isString()) {
+        string header = arguments[0].toString();
+        if (!header.empty())
+            m_httpHeadersToClear.insert(header);
+    }
+    result->setNull();
+}
+
+void TestRunner::setWillSendRequestReturnsNullOnRedirect(const CppArgumentList& arguments, CppVariant* result)
+{
+    if (arguments.size() > 0 && arguments[0].isBool())
+        m_shouldBlockRedirects = arguments[0].toBoolean();
+    result->setNull();
+}
+
+void TestRunner::setWillSendRequestReturnsNull(const CppArgumentList& arguments, CppVariant* result)
+{
+    if (arguments.size() > 0 && arguments[0].isBool())
+        m_willSendRequestShouldReturnNull = arguments[0].toBoolean();
     result->setNull();
 }
 
@@ -1424,6 +1490,115 @@ void TestRunner::setPOSIXLocale(const CppArgumentList& arguments, CppVariant* re
     result->setNull();
     if (arguments.size() == 1 && arguments[0].isString())
         m_delegate->setLocale(arguments[0].toString());
+}
+
+void TestRunner::numberOfPendingGeolocationPermissionRequests(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->set(m_delegate->numberOfPendingGeolocationPermissionRequests());
+}
+
+// FIXME: For greater test flexibility, we should be able to set each page's geolocation mock individually.
+// https://bugs.webkit.org/show_bug.cgi?id=52368
+void TestRunner::setGeolocationPermission(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->setNull();
+    if (arguments.size() < 1 || !arguments[0].isBool())
+        return;
+    m_delegate->setGeolocationPermission(arguments[0].toBoolean());
+}
+
+void TestRunner::setMockGeolocationPosition(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->setNull();
+    if (arguments.size() < 3 || !arguments[0].isNumber() || !arguments[1].isNumber() || !arguments[2].isNumber())
+        return;
+    m_delegate->setMockGeolocationPosition(arguments[0].toDouble(), arguments[1].toDouble(), arguments[2].toDouble());
+}
+
+void TestRunner::setMockGeolocationPositionUnavailableError(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->setNull();
+    if (arguments.size() != 1 || !arguments[0].isString())
+        return;
+    m_delegate->setMockGeolocationPositionUnavailableError(arguments[0].toString());
+}
+
+#if ENABLE(NOTIFICATIONS)
+void TestRunner::grantWebNotificationPermission(const CppArgumentList& arguments, CppVariant* result)
+{
+    if (arguments.size() != 1 || !arguments[0].isString()) {
+        result->set(false);
+        return;
+    }
+    m_delegate->grantWebNotificationPermission(arguments[0].toString());
+    result->set(true);
+}
+
+void TestRunner::simulateLegacyWebNotificationClick(const CppArgumentList& arguments, CppVariant* result)
+{
+    if (arguments.size() != 1 || !arguments[0].isString()) {
+        result->set(false);
+        return;
+    }
+    result->set(m_delegate->simulateLegacyWebNotificationClick(arguments[0].toString()));
+}
+#endif
+
+#if ENABLE(INPUT_SPEECH)
+void TestRunner::addMockSpeechInputResult(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->setNull();
+    if (arguments.size() < 3 || !arguments[0].isString() || !arguments[1].isNumber() || !arguments[2].isString())
+        return;
+
+    m_delegate->addMockSpeechInputResult(arguments[0].toString(), arguments[1].toDouble(), arguments[2].toString());
+}
+
+void TestRunner::setMockSpeechInputDumpRect(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->setNull();
+    if (arguments.size() < 1 || !arguments[0].isBool())
+        return;
+
+    m_delegate->setMockSpeechInputDumpRect(arguments[0].toBoolean());
+}
+#endif
+
+#if ENABLE(SCRIPTED_SPEECH)
+void TestRunner::addMockSpeechRecognitionResult(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->setNull();
+    if (arguments.size() < 2 || !arguments[0].isString() || !arguments[1].isNumber())
+        return;
+
+    m_delegate->addMockSpeechRecognitionResult(arguments[0].toString(), arguments[1].toDouble());
+}
+
+void TestRunner::setMockSpeechRecognitionError(const CppArgumentList& arguments, CppVariant* result)
+{
+    result->setNull();
+    if (arguments.size() != 2 || !arguments[0].isString() || !arguments[1].isString())
+        return;
+
+    m_delegate->setMockSpeechRecognitionError(arguments[0].toString(), arguments[1].toString());
+}
+
+void TestRunner::wasMockSpeechRecognitionAborted(const CppArgumentList&, CppVariant* result)
+{
+    result->set(m_delegate->wasMockSpeechRecognitionAborted());
+}
+#endif
+
+void TestRunner::display(const CppArgumentList& arguments, CppVariant* result)
+{
+    m_delegate->display();
+    result->setNull();
+}
+
+void TestRunner::displayInvalidatedRegion(const CppArgumentList& arguments, CppVariant* result)
+{
+    m_delegate->displayInvalidatedRegion();
+    result->setNull();
 }
 
 void TestRunner::dumpEditingCallbacks(const CppArgumentList&, CppVariant* result)

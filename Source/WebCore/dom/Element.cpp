@@ -1171,7 +1171,7 @@ void Element::removedFrom(ContainerNode* insertionPoint)
 #endif
 
 #if ENABLE(DIALOG_ELEMENT)
-    setIsInTopLayer(false);
+    document()->removeFromTopLayer(this);
 #endif
 #if ENABLE(FULLSCREEN_API)
     if (containsFullScreenElement())
@@ -2345,18 +2345,6 @@ bool Element::childShouldCreateRenderer(const NodeRenderingContext& childContext
 }
 #endif
 
-#if ENABLE(VIDEO_TRACK)
-WebVTTNodeType Element::webVTTNodeType() const
-{
-    return hasRareData() ? elementRareData()->webVTTNodeType() : WebVTTNodeTypeNone;
-}
-
-void Element::setWebVTTNodeType(WebVTTNodeType type)
-{
-    ensureElementRareData()->setWebVTTNodeType(type);
-}
-#endif
-
 #if ENABLE(FULLSCREEN_API)
 void Element::webkitRequestFullscreen()
 {
@@ -2402,7 +2390,10 @@ bool Element::isInTopLayer() const
 void Element::setIsInTopLayer(bool inTopLayer)
 {
     ensureElementRareData()->setIsInTopLayer(inTopLayer);
-    setNeedsStyleRecalc(SyntheticStyleChange);
+
+    // We must ensure a reattach occurs so the renderer is inserted in the correct sibling order under RenderView according to its
+    // top layer position, or in its usual place if not in the top layer.
+    reattachIfAttached();
 }
 #endif
 

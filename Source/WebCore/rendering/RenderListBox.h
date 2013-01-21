@@ -40,7 +40,7 @@ class HTMLSelectElement;
 
 class RenderListBox : public RenderBlock, private ScrollableArea {
 public:
-    RenderListBox(Element*);
+    explicit RenderListBox(Element*);
     virtual ~RenderListBox();
 
     void selectionChanged();
@@ -85,7 +85,7 @@ private:
     virtual void addFocusRingRects(Vector<IntRect>&, const LayoutPoint&);
 
     virtual bool canBeProgramaticallyScrolled() const { return true; }
-    virtual void autoscroll();
+    virtual void autoscroll(const IntPoint&);
     virtual void stopAutoscroll();
 
     virtual bool shouldPanScroll() const { return true; }

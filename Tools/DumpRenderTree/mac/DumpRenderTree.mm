@@ -110,6 +110,10 @@ using namespace std;
 +(void)setAllowsAnyHTTPSCertificate:(BOOL)allow forHost:(NSString *)host;
 @end
 
+@interface NSSound (Details)
++ (void)_setAlertType:(NSUInteger)alertType;
+@end
+
 static void runTest(const string& testPathOrURL);
 
 // Deciding when it's OK to dump out the state is a bit tricky.  All these must be true:
@@ -544,6 +548,7 @@ WebView *createWebViewAndOffscreenWindow()
     DumpRenderTreeWindow *window = [[DumpRenderTreeWindow alloc] initWithContentRect:windowRect styleMask:NSBorderlessWindowMask backing:NSBackingStoreBuffered defer:YES];
 
     [window setColorSpace:[[NSScreen mainScreen] colorSpace]];
+    [window setCollectionBehavior:NSWindowCollectionBehaviorStationary];
     [[window contentView] addSubview:webView];
     [window orderBack:nil];
     [window setAutodisplay:NO];
@@ -872,6 +877,8 @@ void dumpRenderTree(int argc, const char *argv[])
 
     if (forceComplexText)
         [WebView _setAlwaysUsesComplexTextCodePath:YES];
+
+    [NSSound _setAlertType:0];
 
     WebView *webView = createWebViewAndOffscreenWindow();
     mainFrame = [webView mainFrame];

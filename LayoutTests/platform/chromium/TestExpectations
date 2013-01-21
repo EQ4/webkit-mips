@@ -1424,7 +1424,6 @@ crbug.com/10322 accessibility/radio-button-group-members.html [ Skip ]
 crbug.com/10322 accessibility/table-attributes.html [ Skip ]
 crbug.com/10322 accessibility/table-cell-spans.html [ Skip ]
 crbug.com/10322 accessibility/table-cells.html [ Skip ]
-crbug.com/10322 accessibility/table-detection.html [ Skip ]
 crbug.com/10322 accessibility/table-one-cell.html [ Skip ]
 crbug.com/10322 accessibility/table-sections.html [ Skip ]
 crbug.com/10322 accessibility/table-with-aria-role.html [ Skip ]
@@ -3911,6 +3910,11 @@ webkit.org/b/98275 media/event-queue-crash.html [ Skip ]
 # Requires rebaselining after https://bugs.webkit.org/show_bug.cgi?id=11645
 webkit.org/b/11645 [ Mac Android ] fast/table/025.html [ Failure ]
 
+# Rebaseline required after https://webkit.org/b/107208
+Bug(leviw) [ Mac Android Win ] fast/regions/overflow-moving-below-floats-in-variable-width-regions.html [ Pass Failure ImageOnlyFailure ]
+Bug(leviw) [ Mac Android Win ] fast/regions/overflow-size-change-in-variable-width-regions.html [ Pass Failure ImageOnlyFailure ]
+Bug(leviw) [ Mac Android Win ] fast/regions/overflow-size-change-with-stacking-context.html [ Pass Failure ImageOnlyFailure ]
+
 # Rebaseline required after https://bugs.webkit.org/show_bug.cgi?id=101177
 webkit.org/b/101177 svg/dynamic-updates/SVGUseElement-dom-requiredFeatures.html [ ImageOnlyFailure Pass ]
 webkit.org/b/101177 svg/repaint/inner-svg-change-viewBox.svg [ ImageOnlyFailure Pass ]
@@ -4307,12 +4311,24 @@ webkit.org/b/107033 [ Debug ] fast/events/form-iframe-target-before-load-crash.h
 webkit.org/b/107033 [ Debug ] fast/events/before-unload-with-subframes.html [ Crash ]
 webkit.org/b/107033 [ Debug ] fast/css/stylesheet-enable-first-alternate-link.html [ Crash ]
 
+# Needs rebaseline.
+webkit.org/b/105574 editing/input/caret-at-the-edge-of-contenteditable.html [ Failure ]
+webkit.org/b/105574 editing/input/reveal-caret-of-multiline-contenteditable.html [ Failure ]
+webkit.org/b/105574 editing/input/reveal-caret-of-multiline-input.html [ Failure ]
+webkit.org/b/105574 platform/chromium/fast/forms/suggestion-picker/date-suggestion-picker-appearance-with-scroll-bar.html [ ImageOnlyFailure ]
+webkit.org/b/105574 platform/chromium/fast/forms/suggestion-picker/month-suggestion-picker-appearance-with-scroll-bar.html [ ImageOnlyFailure ]
+webkit.org/b/105574 platform/chromium/fast/forms/suggestion-picker/week-suggestion-picker-appearance-with-scroll-bar.html [ ImageOnlyFailure ]
+
 # This is won't fix, as the debug and release versions differ.
 webkit.org/b/99138 [ Debug SnowLeopard ] svg/custom/foreign-object-skew.svg [ ImageOnlyFailure ]
 
 webkit.org/b/107204 fast/events/touch/multi-touch-inside-iframes.html [ Pass Failure ]
 
-webkit.org/b/107209 [ Debug ] fast/inline/fixed-pos-moves-with-abspos-parent-relative-ancestor.html [ Crash ]
+webkit.org/b/107316 [ Mac Debug ] fast/inline/fixed-pos-moves-with-abspos-inline-parent.html [ Failure ]
+webkit.org/b/107316 [ Win Debug ] fast/inline/fixed-pos-moves-with-abspos-inline-parent.html [ Pass Failure ]
 
 webkit.org/b/107237 [ Debug ] fast/forms/associated-element-crash.html [ Crash ]
 webkit.org/b/107327 [ Debug ] html5lib/run-template.html [ Crash ]
+
+webkit.org/b/107328 http/tests/cache/cancel-multiple-post-xhrs.html [ Missing ]
+webkit.org/b/107341 [ Debug ] inspector/profiler/memory-instrumentation-cached-images.html [ Failure ]

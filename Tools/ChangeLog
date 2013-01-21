@@ -1,3 +1,446 @@
+2013-01-21  Christophe Dumez  <christophe.dumez@intel.com>
+
+        [EFL][WKTR] platformRunUntil() should keep the main loop running
+        https://bugs.webkit.org/show_bug.cgi?id=107442
+
+        Reviewed by Noam Rosenthal.
+
+        EFL's implementation of platformRunUntil() should keep the main loop
+        running and avoid calling sleep() between calls to
+        ecore_main_loop_iterate(). This call to sleep seems to be a source
+        of deadlocks (see Bug 106884).
+
+        * WebKitTestRunner/efl/TestControllerEfl.cpp:
+        (WTR::TestController::platformRunUntil):
+
+2013-01-21  Vivek Galatage  <vivek.vg@samsung.com>
+
+        QtTestBrowser should provide way to clear selected elements
+        https://bugs.webkit.org/show_bug.cgi?id=107437
+
+        Reviewed by Simon Hausmann.
+
+        Provide a way to "Clear selection" in the "Develop" menu to clear the previous search highlight.
+        Invoke the clearSelection prior to highlighting new elements.
+
+        * QtTestBrowser/launcherwindow.cpp:
+        (ElementHighlight):
+        (LauncherWindow::createChrome):
+        (LauncherWindow::selectElements):
+        (LauncherWindow::clearSelection):
+        * QtTestBrowser/launcherwindow.h:
+        (LauncherWindow):
+
+2013-01-21  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move methods interacting with willSendRequest to TestRunner
+        https://bugs.webkit.org/show_bug.cgi?id=107270
+
+        Reviewed by Kent Tamura.
+
+        * DumpRenderTree/chromium/DRTTestRunner.cpp:
+        (DRTTestRunner::DRTTestRunner):
+        (DRTTestRunner::waitForPolicyDelegate):
+        * DumpRenderTree/chromium/DRTTestRunner.h:
+        (DRTTestRunner):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestRunner.h:
+        (WebTestRunner::WebTestRunner::shouldStayOnPageAfterHandlingBeforeUnload):
+        (WebTestRunner::WebTestRunner::httpHeadersToClear):
+        (WebTestRunner::WebTestRunner::shouldBlockRedirects):
+        (WebTestRunner::WebTestRunner::willSendRequestShouldReturnNull):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        (WebTestRunner::TestRunner::reset):
+        (WebTestRunner::TestRunner::httpHeadersToClear):
+        (WebTestRunner):
+        (WebTestRunner::TestRunner::shouldBlockRedirects):
+        (WebTestRunner::TestRunner::willSendRequestShouldReturnNull):
+        (WebTestRunner::TestRunner::setWillSendRequestClearHeader):
+        (WebTestRunner::TestRunner::setWillSendRequestReturnsNullOnRedirect):
+        (WebTestRunner::TestRunner::setWillSendRequestReturnsNull):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner::WebTestProxyBase::willSendRequest):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::willSendRequest):
+        (WebViewHost::reset):
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebViewHost):
+
+2013-01-21  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Stop building WebKit2 on GTK EWSs
+        https://bugs.webkit.org/show_bug.cgi?id=107435
+
+        Reviewed by Philippe Normand.
+
+        The WebKit2 build of the GTK is at the moment not efficiently maintainable,
+        so stop building it on GTK EWSs.
+
+        * Scripts/webkitpy/common/config/ports.py:
+        (GtkPort.build_webkit_command):
+        * Scripts/webkitpy/common/config/ports_unittest.py:
+        (DeprecatedPortTest.test_gtk_port):
+
+2013-01-21  Tommy Widenflycht  <tommyw@google.com>
+
+        MediaStream API: Update the RTCPeerConnection states to match the latest specification
+        https://bugs.webkit.org/show_bug.cgi?id=107120
+
+        Reviewed by Adam Barth.
+
+        Updating mock to use the new states.
+
+        * DumpRenderTree/chromium/MockWebRTCPeerConnectionHandler.cpp:
+        (RTCPeerConnectionStateTask::RTCPeerConnectionStateTask):
+        (MockWebRTCPeerConnectionHandler::initialize):
+        (MockWebRTCPeerConnectionHandler::updateICE):
+
+2013-01-20  Tim 'mithro' Ansell  <mithro@mithis.com>
+
+        Extend diff_parser to support the --full-index output.
+        https://bugs.webkit.org/show_bug.cgi?id=107408
+
+        Reviewed by Maciej Stachowiak.
+
+        * Scripts/webkitpy/common/checkout/diff_parser.py:
+        (git_diff_to_svn_diff):
+        * Scripts/webkitpy/common/checkout/diff_parser_unittest.py:
+        (DiffParserTest):
+        (DiffParserTest.test_git_diff_to_svn_diff):
+        (git_diff_to_svn_diff):
+
+2013-01-20  Yoshifumi Inoue  <yosin@chromium.org>
+
+        Dragging over an element with scrollbars should scroll the element when dragging near edges
+        https://bugs.webkit.org/show_bug.cgi?id=39725
+
+        Reviewed by Hajime Morita.
+
+        This patch introduces canceling drag-and-drop by escape key for testing
+        behavior after cancellation drag-and-drop.
+
+        * DumpRenderTree/chromium/TestRunner/src/EventSender.cpp:
+        (WebTestRunner):
+        (WebTestRunner::EventSender::doMouseUp):
+        (WebTestRunner::EventSender::finishDragAndDrop):
+        (WebTestRunner::EventSender::keyDown):
+        * DumpRenderTree/chromium/TestRunner/src/EventSender.h:
+        (EventSender):
+        * DumpRenderTree/chromium/TestRunner/src/KeyCodeMapping.h: Added VKEY_ESCAPE.
+
+2013-01-20  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move frame generation related methods to TestRunner
+        https://bugs.webkit.org/show_bug.cgi?id=107268
+
+        Reviewed by Adam Barth.
+
+        * DumpRenderTree/chromium/DRTTestRunner.cpp:
+        (DRTTestRunner::DRTTestRunner):
+        (DRTTestRunner::setWillSendRequestReturnsNull):
+        * DumpRenderTree/chromium/DRTTestRunner.h:
+        (DRTTestRunner):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestRunner::WebTestDelegate::display):
+        (WebTestRunner::WebTestDelegate::displayInvalidatedRegion):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        (WebTestRunner::TestRunner::display):
+        (WebTestRunner):
+        (WebTestRunner::TestRunner::displayInvalidatedRegion):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::display):
+        (WebViewHost::displayInvalidatedRegion):
+        * DumpRenderTree/chromium/WebViewHost.h:
+
+2013-01-20  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move speech related methods to TestRunner library
+        https://bugs.webkit.org/show_bug.cgi?id=107266
+
+        Reviewed by Adam Barth.
+
+        * DumpRenderTree/chromium/DRTTestRunner.cpp:
+        (DRTTestRunner::DRTTestRunner):
+        (DRTTestRunner::displayInvalidatedRegion):
+        * DumpRenderTree/chromium/DRTTestRunner.h:
+        (DRTTestRunner):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestDelegate):
+        (WebTestRunner::WebTestDelegate::addMockSpeechInputResult):
+        (WebTestRunner::WebTestDelegate::setMockSpeechInputDumpRect):
+        (WebTestRunner::WebTestDelegate::addMockSpeechRecognitionResult):
+        (WebTestRunner::WebTestDelegate::setMockSpeechRecognitionError):
+        (WebTestRunner::WebTestDelegate::wasMockSpeechRecognitionAborted):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        (WebTestRunner):
+        (WebTestRunner::TestRunner::addMockSpeechInputResult):
+        (WebTestRunner::TestRunner::setMockSpeechInputDumpRect):
+        (WebTestRunner::TestRunner::addMockSpeechRecognitionResult):
+        (WebTestRunner::TestRunner::setMockSpeechRecognitionError):
+        (WebTestRunner::TestRunner::wasMockSpeechRecognitionAborted):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::addMockSpeechInputResult):
+        (WebViewHost::setMockSpeechInputDumpRect):
+        (WebViewHost::addMockSpeechRecognitionResult):
+        (WebViewHost::setMockSpeechRecognitionError):
+        (WebViewHost::wasMockSpeechRecognitionAborted):
+        * DumpRenderTree/chromium/WebViewHost.h:
+
+2013-01-20  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move notification related methods to TestRunner
+        https://bugs.webkit.org/show_bug.cgi?id=107269
+
+        Reviewed by Adam Barth.
+
+        * DumpRenderTree/chromium/DRTTestRunner.cpp:
+        (DRTTestRunner::DRTTestRunner):
+        * DumpRenderTree/chromium/DRTTestRunner.h:
+        (DRTTestRunner):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestDelegate):
+        (WebTestRunner::WebTestDelegate::grantWebNotificationPermission):
+        (WebTestRunner::WebTestDelegate::simulateLegacyWebNotificationClick):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        (WebTestRunner):
+        (WebTestRunner::TestRunner::grantWebNotificationPermission):
+        (WebTestRunner::TestRunner::simulateLegacyWebNotificationClick):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::grantWebNotificationPermission):
+        (WebViewHost::simulateLegacyWebNotificationClick):
+        * DumpRenderTree/chromium/WebViewHost.h:
+
+2013-01-20  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move geolocation related methods to TestRunner
+        https://bugs.webkit.org/show_bug.cgi?id=107267
+
+        Reviewed by Adam Barth.
+
+        * DumpRenderTree/chromium/DRTTestRunner.cpp:
+        (DRTTestRunner::DRTTestRunner):
+        * DumpRenderTree/chromium/DRTTestRunner.h:
+        (DRTTestRunner):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestRunner::WebTestDelegate::numberOfPendingGeolocationPermissionRequests):
+        (WebTestRunner::WebTestDelegate::setGeolocationPermission):
+        (WebTestRunner::WebTestDelegate::setMockGeolocationPosition):
+        (WebTestRunner::WebTestDelegate::setMockGeolocationPositionUnavailableError):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        (WebTestRunner::TestRunner::numberOfPendingGeolocationPermissionRequests):
+        (WebTestRunner):
+        (WebTestRunner::TestRunner::setGeolocationPermission):
+        (WebTestRunner::TestRunner::setMockGeolocationPosition):
+        (WebTestRunner::TestRunner::setMockGeolocationPositionUnavailableError):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::numberOfPendingGeolocationPermissionRequests):
+        (WebViewHost::setGeolocationPermission):
+        (WebViewHost::setMockGeolocationPosition):
+        (WebViewHost::setMockGeolocationPositionUnavailableError):
+        * DumpRenderTree/chromium/WebViewHost.h:
+
+2013-01-19  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed build fix for Qt WK2 after r140258.
+        Use the size_t type instead of unsigned for the variable
+        which holds the position of the first null character in the
+        console message.
+
+        * WebKitTestRunner/InjectedBundle/InjectedBundlePage.cpp:
+        (WTR::InjectedBundlePage::willAddMessageToConsole):
+
+2013-01-19  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r140260.
+        http://trac.webkit.org/changeset/140260
+        https://bugs.webkit.org/show_bug.cgi?id=107387
+
+        breaks fast/text/hyphens.html, fast/text/hyphenate-* (but
+        nothing else) (Requested by thakis__ on #webkit).
+
+        * Scripts/update-webkit-chromium:
+
+2013-01-19  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
+
+        Delegated scrolling: Assertion on attempt to show a CSS sticky element
+        https://bugs.webkit.org/show_bug.cgi?id=106890
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Enabled fixed layout mode in WTR for 'fast/css/sticky' tests.
+
+        * WebKitTestRunner/TestInvocation.cpp:
+        (WTR::shouldUseFixedLayout):
+        (WTR):
+        (WTR::updateLayoutType):
+
+2013-01-19  Nico Weber  <thakis@chromium.org>
+
+        Make ninja the default build system for build-webkit --chromium on mac
+        https://bugs.webkit.org/show_bug.cgi?id=106737
+
+        Reviewed by Eric Seidel.
+
+        * Scripts/update-webkit-chromium:
+
+2013-01-19  Zan Dobersek  <zdobersek@igalia.com>
+
+        [WK2] svg/dom/fuzz-path-parser.html is failing
+        https://bugs.webkit.org/show_bug.cgi?id=107133
+
+        Reviewed by Alexey Proskuryakov.
+
+        Console messages can contain null characters before the end of string.
+        Appending such message to the StringBuilder as a WTFString appends the
+        complete string, including the null character. This later cuts off everything
+        after the null character when the string is being printed out to the test
+        output.
+
+        To avoid this, truncate the string up to the first null character. This
+        preserves the newline character appended immediately after this and
+        stops giving incorrect output.
+
+        * WebKitTestRunner/InjectedBundle/InjectedBundlePage.cpp:
+        (WTR::InjectedBundlePage::willAddMessageToConsole):
+
+2013-01-19  Eric Seidel  <eric@webkit.org>
+
+        Update error regexps so that Parser/html-parser-srcdoc.html can "pass"
+        https://bugs.webkit.org/show_bug.cgi?id=107367
+
+        Reviewed by Ryosuke Niwa.
+
+        Using srcdoc instead of document.write changes the error output
+        ever so slightly.  Clearly we were already trying to ignore these
+        messages, just not succeeding.  This change makes this new test "pass" correctly.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTest):
+
+2013-01-18  Dan Winship  <danw@gnome.org>
+
+        REGRESSION (r139071): run-webkit-httpd complains at launch
+        https://bugs.webkit.org/show_bug.cgi?id=107310
+
+        Reviewed by Alexey Proskuryakov.
+
+        * Scripts/webkitperl/httpd.pm:
+        (getApacheVersion): use preferred perl syntax
+
+2013-01-18  Julie Parent  <jparent@chromium.org>
+
+        Add back 'group' as a default cross dashboard parameter, but with null as its value.
+        https://bugs.webkit.org/show_bug.cgi?id=107336
+
+        We need to have 'group' listed as a parameter, else we never parse it,
+        as we only parse parameters with defaults.
+        
+        Reviewed by Ojan Vafai.
+
+        * TestResultServer/static-dashboards/dashboard_base.js:
+
+2013-01-18  Emil A Eklund  <eae@chromium.org>
+
+        Update LayoutUnit rounding unit test
+        https://bugs.webkit.org/show_bug.cgi?id=107322
+
+        Reviewed by Levi Weintraub.
+        
+        Update the LayoutUnitRounding test to use fromFloatRound for
+        values that cannot accurately be represented as a LayoutUnit
+        (the default behavior is to floor the value to the nearest
+        LayoutUnit).
+
+        * TestWebKitAPI/Tests/WebCore/LayoutUnit.cpp:
+        (TestWebKitAPI::TEST):
+
+2013-01-18  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        VCSUtils.pm: Stop calling git repo-config.
+        https://bugs.webkit.org/show_bug.cgi?id=107294
+
+        Reviewed by Dirk Pranke.
+
+        The `repo-config' git command has been deprecated since early
+        2008, and recent versions have started warning it is deprecated.
+
+        Basically revert r27870 and use the `config' command all the time.
+
+        * Scripts/VCSUtils.pm:
+        (gitConfig):
+
+2013-01-18  Levi Weintraub  <leviw@chromium.org>
+
+        LayoutUnit should round half consistently, not away from zero
+        https://bugs.webkit.org/show_bug.cgi?id=107208
+
+        Reviewed by Eric Seidel.
+
+        * TestWebKitAPI/Tests/WebCore/LayoutUnit.cpp: Updating to reflect and
+        cover this change in rounding behavior.
+
+2013-01-18  Tim Horton  <timothy_horton@apple.com>
+
+        [mac] DumpRenderTree/WebKitTestRunner should not participate in Exposé/Mission Control
+        https://bugs.webkit.org/show_bug.cgi?id=107234
+
+        Reviewed by Simon Fraser.
+
+        * DumpRenderTree/mac/DumpRenderTree.mm:
+        (createWebViewAndOffscreenWindow): Disable participation in Exposé via NSWindowCollectionBehaviorStationary.
+        * WebKitTestRunner/mac/PlatformWebViewMac.mm:
+        (WTR::PlatformWebView::PlatformWebView): Ditto.
+
+2013-01-18  Tim Horton  <timothy_horton@apple.com>
+
+        [mac] DumpRenderTree/WebKitTestRunner should disable NSBeep
+        https://bugs.webkit.org/show_bug.cgi?id=107251
+
+        Reviewed by Simon Fraser.
+
+        Disable NSBeep in DumpRenderTree and WebKitTestRunner using NSSound SPI.
+
+        * DumpRenderTree/mac/DumpRenderTree.mm:
+        (dumpRenderTree):
+        * WebKitTestRunner/InjectedBundle/mac/InjectedBundleMac.mm:
+        (WTR::InjectedBundle::platformInitialize):
+
+2013-01-18  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Enable indexed database for development builds
+        https://bugs.webkit.org/show_bug.cgi?id=107299
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * Scripts/webkitperl/FeatureList.pm: Enable indexed database by default
+        for GTK+ development builds.
+
+2013-01-18  Dominic Mazzoni  <dmazzoni@google.com>
+
+        AX: Improve table-guessing heuristics
+        https://bugs.webkit.org/show_bug.cgi?id=107042
+
+        Reviewed by Chris Fleizach.
+
+        Implement parentElementCallback on Chromium to make testing easier.
+
+        * DumpRenderTree/chromium/TestRunner/src/AccessibilityUIElementChromium.cpp:
+        (WebTestRunner::AccessibilityUIElement::parentElementCallback):
+
 2013-01-18  Martin Robinson  <mrobinson@igalia.com>
 
         [GTK] Add property for IndexedDB database path to WebKitGTK+

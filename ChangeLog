@@ -1,3 +1,39 @@
+2013-01-19  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Delete webkit-perf.appspot.com code from WebKit repository
+        https://bugs.webkit.org/show_bug.cgi?id=107390
+
+        Reviewed by Adam Barth.
+
+        Delete webkit-perf.appspot.com code from WebKit repository since I maintain
+        and push the code via https://github.com/rniwa/webkit-perf now.
+
+        * Websites/webkit-perf.appspot.com: Removed.
+
+2013-01-19  Philip Rogers  <pdr@google.com>
+
+        Merge SVGStylable into SVGStyledElement
+        https://bugs.webkit.org/show_bug.cgi?id=106877
+
+        Reviewed by Dirk Schulze.
+
+        SVG2 changes element inheritance so all SVGElements are stylable. As a first-step towards a
+        cleaner class hierarchy, this patch moves SVGStylable into SVGStyledElement.
+
+        * wscript:
+
+2013-01-18  Sudarsana Nagineni  <sudarsana.nagineni@intel.com>
+
+        [CMake] Fix CMake warnings
+        https://bugs.webkit.org/show_bug.cgi?id=107290
+
+        Reviewed by Laszlo Gombos.
+
+        Add missing WebKit options to CMake features list.
+
+        * Source/cmake/WebKitFeatures.cmake:
+        * Source/cmakeconfig.h.cmake:
+
 2013-01-18  Sheriff Bot  <webkit.review.bot@gmail.com>
 
         Unreviewed, rolling out r140005.

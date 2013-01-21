@@ -1,3 +1,379 @@
+2013-01-20  Geoffrey Garen  <ggaren@apple.com>
+
+        Weak GC maps should be easier to use
+        https://bugs.webkit.org/show_bug.cgi?id=107312
+
+        Reviewed by Sam Weinig.
+
+        Follow-up fix.
+
+        * runtime/PrototypeMap.cpp:
+        (JSC::PrototypeMap::emptyObjectStructureForPrototype): Restored this
+        ASSERT, which was disabled because of a bug in WeakGCMap.
+
+        * runtime/WeakGCMap.h:
+        (JSC::WeakGCMap::add): We can't pass our passed-in value to add() because
+        a PassWeak() clears itself when passed to another function. So, we pass
+        nullptr instead, and fix things up afterwards.
+
+2013-01-20  Geoffrey Garen  <ggaren@apple.com>
+
+        Unreviewed.
+
+        Temporarily disabling this ASSERT to get the bots green
+        while I investigate a fix.
+
+        * runtime/PrototypeMap.cpp:
+        (JSC::PrototypeMap::emptyObjectStructureForPrototype):
+
+2013-01-20  Filip Pizlo  <fpizlo@apple.com>
+
+        Inserting a node into the DFG graph should not require five lines of code
+        https://bugs.webkit.org/show_bug.cgi?id=107381
+
+        Reviewed by Sam Weinig.
+        
+        This adds fairly comprehensive support for inserting a node into a DFG graph in one
+        method call. A common example of this is:
+        
+        m_insertionSet.insertNode(indexInBlock, DontRefChildren, DontRefNode, SpecNone, ForceOSRExit, codeOrigin);
+        
+        The arguments to insert() specify what reference counting you need to have happen
+        (RefChildren => recursively refs all children, RefNode => non-recursively refs the node
+        that was created), the prediction to set (SpecNone is a common default), followed by
+        the arguments to the Node() constructor. InsertionSet::insertNode() and similar methods
+        (Graph::addNode() and BasicBlock::appendNode()) all use a common variadic template
+        function macro from DFGVariadicFunction.h. Also, all of these methods will automatically
+        non-recursively ref() the node being created if the flags say NodeMustGenerate.
+        
+        In all, this new mechanism retains the flexibility of the old approach (you get to
+        manage ref counts yourself, albeit in less code) while ensuring that most code that adds
+        nodes to the graph now needs less code to do it.
+        
+        In the future, we should revisit the reference counting methodology in the DFG: we could
+        do like most compilers and get rid of it entirely, or we could make it automatic. This
+        patch doesn't attempt to make any such major changes, and only seeks to simplify the
+        technique we were already using (manual ref counting).
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecode/Operands.h:
+        (JSC::dumpOperands):
+        * dfg/DFGAdjacencyList.h:
+        (AdjacencyList):
+        (JSC::DFG::AdjacencyList::kind):
+        * dfg/DFGArgumentsSimplificationPhase.cpp:
+        (JSC::DFG::ArgumentsSimplificationPhase::run):
+        * dfg/DFGBasicBlock.h:
+        (DFG):
+        (BasicBlock):
+        * dfg/DFGBasicBlockInlines.h: Added.
+        (DFG):
+        * dfg/DFGCFGSimplificationPhase.cpp:
+        (JSC::DFG::CFGSimplificationPhase::run):
+        (JSC::DFG::CFGSimplificationPhase::keepOperandAlive):
+        * dfg/DFGCommon.h:
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::ConstantFoldingPhase):
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+        (JSC::DFG::ConstantFoldingPhase::addStructureTransitionCheck):
+        (JSC::DFG::ConstantFoldingPhase::paintUnreachableCode):
+        (ConstantFoldingPhase):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::FixupPhase):
+        (JSC::DFG::FixupPhase::fixupBlock):
+        (JSC::DFG::FixupPhase::fixupNode):
+        (FixupPhase):
+        (JSC::DFG::FixupPhase::checkArray):
+        (JSC::DFG::FixupPhase::blessArrayOperation):
+        (JSC::DFG::FixupPhase::injectInt32ToDoubleNode):
+        * dfg/DFGGraph.h:
+        (JSC::DFG::Graph::ref):
+        (Graph):
+        * dfg/DFGInsertionSet.h:
+        (DFG):
+        (JSC::DFG::Insertion::Insertion):
+        (JSC::DFG::Insertion::element):
+        (Insertion):
+        (JSC::DFG::InsertionSet::InsertionSet):
+        (JSC::DFG::InsertionSet::insert):
+        (InsertionSet):
+        (JSC::DFG::InsertionSet::execute):
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::Node):
+        (Node):
+        * dfg/DFGStructureCheckHoistingPhase.cpp:
+        (JSC::DFG::StructureCheckHoistingPhase::run):
+        * dfg/DFGVariadicFunction.h: Added.
+
+2013-01-19  Geoffrey Garen  <ggaren@apple.com>
+
+        Track inheritance structures in a side table, instead of using a private
+        name in each prototype
+        https://bugs.webkit.org/show_bug.cgi?id=107378
+
+        Reviewed by Sam Weinig and Phil Pizlo.
+
+        This is a step toward object size inference.
+
+        Using a side table frees us to use a more complex key (a pair of
+        prototype and expected inline capacity).
+
+        It also avoids ruining inline caches for prototypes. (Adding a new private
+        name for a new inline capacity would change the prototype's structure,
+        possibly firing watchpoints, making inline caches go polymorphic, and
+        generally causing us to have a bad time.)
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCore.vcproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * Target.pri: Buildage.
+
+        * runtime/ArrayPrototype.cpp:
+        (JSC::ArrayPrototype::finishCreation): Updated to use new side table API.
+
+        * runtime/JSFunction.cpp:
+        (JSC::JSFunction::cacheInheritorID): Updated to use new side table API.
+
+        (JSC::JSFunction::visitChildren): Fixed a long-standing bug where JSFunction
+        forgot to visit one of its data members (m_cachedInheritorID). This
+        wasn't a user-visible problem before because JSFunction would always
+        visit its .prototype property, which visited its m_cachedInheritorID.
+        But now, function.prototype only weakly owns function.m_cachedInheritorID.
+
+        * runtime/JSGlobalData.h:
+        (JSGlobalData): Added the map, taking care to make sure that its
+        destructor would run after the heap destructor.
+
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::reset): Updated to use new side table API.
+
+        * runtime/JSObject.cpp:
+        (JSC::JSObject::notifyPresenceOfIndexedAccessors):
+        (JSC::JSObject::setPrototype):
+        * runtime/JSObject.h:
+        (JSObject): Updated to use new side table API, and removed lots of code
+        that used to manage the per-object private name.
+
+        * runtime/JSProxy.cpp:
+        (JSC::JSProxy::setTarget):
+        * runtime/ObjectConstructor.cpp:
+        (JSC::objectConstructorCreate):
+        * runtime/ObjectPrototype.cpp:
+        (JSC::ObjectPrototype::finishCreation): Updated to use new side table API.
+
+        * runtime/PrototypeMap.cpp: Added.
+        (JSC):
+        (JSC::PrototypeMap::addPrototype):
+        (JSC::PrototypeMap::emptyObjectStructureForPrototype):
+        * runtime/PrototypeMap.h: Added.
+        (PrototypeMap):
+        (JSC::PrototypeMap::isPrototype):
+        (JSC::PrototypeMap::clearEmptyObjectStructureForPrototype): New side table.
+        This is a simple weak map, mapping an object to the structure you should
+        use when inheriting from that object. (In future, inline capacity will
+        be a part of the mapping.)
+
+        I used two maps to preserve existing behavior that allowed us to speculate
+        about an object becoming a prototype, even if it wasn't one at the moment.
+        However, I suspect that behavior can be removed without harm.
+
+        * runtime/WeakGCMap.h:
+        (JSC::WeakGCMap::contains):
+        (WeakGCMap): I would rate myself a 6 / 10 in C++.
+
+2013-01-18  Dan Bernstein  <mitz@apple.com>
+
+        Removed duplicate references to two headers in the project files.
+
+        Rubber-stamped by Mark Rowe.
+
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+
+2013-01-18  Michael Saboff  <msaboff@apple.com>
+
+        Unreviewed build fix for building JSC with DFG_ENABLE_DEBUG_PROPAGATION_VERBOSE enabled in DFGCommon.h.
+        Fixes the case where the argument node in fixupNode is freed due to the Vector storage being reallocated.
+
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+
+2013-01-18  Michael Saboff  <msaboff@apple.com>
+
+        Unreviewed build fix for release builds when DFG_ENABLE_DEBUG_PROPAGATION_VERBOSE is set to 1 in DFGCommon.h.
+
+        * dfg/DFGCFAPhase.cpp: Added #include "Operations.h"
+
+2013-01-18  Michael Saboff  <msaboff@apple.com>
+
+        Change set r140201 broke editing/selection/move-by-word-visually-multi-line.html
+        https://bugs.webkit.org/show_bug.cgi?id=107340
+
+        Reviewed by Filip Pizlo.
+
+        Due to the change landed in r140201, more nodes might end up
+        generating Int32ToDouble nodes.  Therefore, changed the JSVALUE64
+        constant path of compileInt32ToDouble() to use the more
+        restrictive isInt32Constant() check on the input.  This check was
+        the same as the existing ASSERT() so the ASSERT was eliminated.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileInt32ToDouble):
+
+2013-01-18  Viatcheslav Ostapenko  <sl.ostapenko@samsung.com>
+
+        Weak GC maps should be easier to use
+        https://bugs.webkit.org/show_bug.cgi?id=107312
+
+        Reviewed by Ryosuke Niwa.
+
+        Build fix for linux platforms after r140194.
+
+        * runtime/WeakGCMap.h:
+        (WeakGCMap):
+
+2013-01-18  Michael Saboff  <msaboff@apple.com>
+
+        Harden ArithDiv of integers fix-up by inserting Int32ToDouble node directly
+        https://bugs.webkit.org/show_bug.cgi?id=107321
+
+        Reviewed by  Filip Pizlo.
+
+        Split out the Int32ToDouble node insertion from fixDoubleEdge() and used it directly when we're fixing up
+        an ArithDiv node with integer inputs and output for platforms that don't have integer division.
+        Since we are checking that our inputs should be ints, we can just insert the Int32ToDouble node
+        without any further checks.
+
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        (JSC::DFG::FixupPhase::fixDoubleEdge):
+        (FixupPhase):
+        (JSC::DFG::FixupPhase::injectInt32ToDoubleNode):
+
+2013-01-18  Michael Saboff  <msaboff@apple.com>
+
+        Fix up of ArithDiv nodes for non-x86 CPUs is broken
+        https://bugs.webkit.org/show_bug.cgi?id=107309
+
+        Reviewed by  Filip Pizlo.
+
+        Changed the logic so that we insert an Int32ToDouble node when the existing edge is not SpecDouble.
+
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixDoubleEdge):
+
+2013-01-18  Dan Bernstein  <mitz@apple.com>
+
+        Tried to fix the build after r140194.
+
+        * API/JSWrapperMap.mm:
+        (-[JSWrapperMap wrapperForObject:]):
+
+2013-01-18  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Update documentation for JSValue and JSContext
+        https://bugs.webkit.org/show_bug.cgi?id=107313
+
+        Reviewed by Geoffrey Garen.
+
+        After changing the semantics of object lifetime we need to update the API documentation to reflect the new semantics.
+
+        * API/APIJSValue.h:
+        * API/JSContext.h:
+
+2013-01-18  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        r134080 causes heap problem on linux systems where PAGESIZE != 4096
+        https://bugs.webkit.org/show_bug.cgi?id=102828
+
+        Reviewed by Mark Hahnenberg.
+
+        Make MarkStackSegment::blockSize as the capacity of segments of a MarkStackArray.
+
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCoreExports.def:
+        * heap/MarkStack.cpp:
+        (JSC):
+        (JSC::MarkStackArray::MarkStackArray):
+        (JSC::MarkStackArray::expand):
+        (JSC::MarkStackArray::donateSomeCellsTo):
+        (JSC::MarkStackArray::stealSomeCellsFrom):
+        * heap/MarkStack.h:
+        (JSC::MarkStackSegment::data):
+        (CapacityFromSize):
+        (MarkStackArray):
+        * heap/MarkStackInlines.h:
+        (JSC::MarkStackArray::setTopForFullSegment):
+        (JSC::MarkStackArray::append):
+        (JSC::MarkStackArray::isEmpty):
+        (JSC::MarkStackArray::size):
+        * runtime/Options.h:
+        (JSC):
+
+2013-01-18  Geoffrey Garen  <ggaren@apple.com>
+
+        Weak GC maps should be easier to use
+        https://bugs.webkit.org/show_bug.cgi?id=107312
+
+        Reviewed by Sam Weinig.
+
+        This patch changes WeakGCMap to not use a WeakImpl finalizer to remove
+        items from the map, and to instead have the map automatically remove
+        stale items itself upon insertion. This has a few advantages:
+
+        (1) WeakGCMap is now compatible with all the specializations you would
+        use for HashMap.
+
+        (2) There's no need for clients to write special finalization munging
+        functions.
+
+        (3) Clients can specify custom value finalizers if they like.
+
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCoreExports.def: Def!
+
+        * API/JSWeakObjectMapRefPrivate.cpp: Setter no longer requires a global
+        data, since we've reduced interdependency.
+
+        * heap/Handle.h: No more need to forward declare, since we've reduced
+        interdependency.
+
+        * heap/Weak.h:
+        (Weak): Use explicit so we can assign directly to a weak map iterator
+        without ambiguity between Weak<T> and PassWeak<T>.
+
+        * runtime/Structure.cpp:
+        (JSC::StructureTransitionTable::add): See above.
+
+        * runtime/Structure.h:
+        (JSC):
+        * runtime/StructureTransitionTable.h:
+        (StructureTransitionTable): Bad code goes away, programmer happy.
+
+        * runtime/WeakGCMap.h:
+        (JSC):
+        (WeakGCMap):
+        (JSC::WeakGCMap::WeakGCMap):
+        (JSC::WeakGCMap::set):
+        (JSC::WeakGCMap::add):
+        (JSC::WeakGCMap::find):
+        (JSC::WeakGCMap::contains):
+        (JSC::WeakGCMap::gcMap):
+        (JSC::WeakGCMap::gcMapIfNeeded): Inherit from HashMap and override any
+        function that might observe a Weak<T> that has died, just enough to
+        make such items appear as if they are not in the table.
+
+2013-01-18  Michael Saboff  <msaboff@apple.com>
+
+        Refactor isPowerOf2() and add getLSBSet()
+        https://bugs.webkit.org/show_bug.cgi?id=107306
+
+        Reviewed by Filip Pizlo.
+
+        Moved implementation of isPowerOf2() to new hasOneBitSet() in wtf/MathExtras.h.
+
+        * runtime/PropertyMapHashTable.h:
+        (JSC::isPowerOf2):
+
 2013-01-17  Mark Hahnenberg  <mhahnenberg@apple.com>
 
         Objective-C API: Clean up JSValue.mm

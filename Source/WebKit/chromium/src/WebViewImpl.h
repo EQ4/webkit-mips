@@ -92,7 +92,6 @@ class BatteryClientImpl;
 class ContextFeaturesClientImpl;
 class ContextMenuClientImpl;
 class DeviceOrientationClientProxy;
-class DragScrollTimer;
 class GeolocationClientProxy;
 class LinkHighlight;
 class NonCompositedContentHost;
@@ -821,7 +820,6 @@ private:
 
     typedef HashMap<WTF::String, WTF::String> SettingsMap;
     OwnPtr<SettingsMap> m_inspectorSettingsMap;
-    OwnPtr<DragScrollTimer> m_dragScrollTimer;
 
 #if ENABLE(NOTIFICATIONS) || ENABLE(LEGACY_NOTIFICATIONS)
     // The provider of desktop notifications;
@@ -879,9 +877,10 @@ private:
     OwnPtr<NavigatorContentUtilsClientImpl> m_navigatorContentUtilsClient;
 #endif
     OwnPtr<WebActiveGestureAnimation> m_gestureAnimation;
-    WebPoint m_lastWheelPosition;
-    WebPoint m_lastWheelGlobalPosition;
+    WebPoint m_positionOnFlingStart;
+    WebPoint m_globalPositionOnFlingStart;
     int m_flingModifier;
+    bool m_flingSourceDevice;
 #if ENABLE(GESTURE_EVENTS)
     OwnPtr<LinkHighlight> m_linkHighlight;
 #endif

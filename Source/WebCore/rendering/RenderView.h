@@ -44,7 +44,7 @@ class CustomFilterGlobalContext;
 
 class RenderView : public RenderBlock {
 public:
-    RenderView(Document*);
+    explicit RenderView(Document*);
     virtual ~RenderView();
 
     bool hitTest(const HitTestRequest&, HitTestResult&);
@@ -202,6 +202,9 @@ public:
 
     IntRect documentRect() const;
 
+    // Renderer that paints the root background has background-images which all have background-attachment: fixed.
+    bool rootBackgroundIsEntirelyFixed() const;
+    
     bool hasRenderNamedFlowThreads() const;
     FlowThreadController* flowThreadController();
 

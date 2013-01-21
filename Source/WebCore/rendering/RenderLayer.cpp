@@ -93,6 +93,7 @@
 #include "ScrollbarTheme.h"
 #include "ScrollingCoordinator.h"
 #include "Settings.h"
+#include "ShadowRoot.h"
 #include "SourceGraphic.h"
 #include "StylePropertySet.h"
 #include "StyleResolver.h"
@@ -1962,10 +1963,10 @@ void RenderLayer::panScrollFromPoint(const IntPoint& sourcePoint)
     scrollByRecursively(adjustedScrollDelta(delta), ScrollOffsetClamped);
 }
 
-void RenderLayer::scrollByRecursively(const IntSize& delta, ScrollOffsetClamping clamp)
+bool RenderLayer::scrollByRecursively(const IntSize& delta, ScrollOffsetClamping clamp)
 {
     if (delta.isZero())
-        return;
+        return false;
 
     bool restrictedByLineClamp = false;
     if (renderer()->parent())
@@ -1977,21 +1978,30 @@ void RenderLayer::scrollByRecursively(const IntSize& delta, ScrollOffsetClamping
 
         // If this layer can't do the scroll we ask the next layer up that can scroll to try
         IntSize remainingScrollOffset = newScrollOffset - scrollOffset();
+        bool didScroll = true;
         if (!remainingScrollOffset.isZero() && renderer()->parent()) {
             if (RenderLayer* scrollableLayer = enclosingScrollableLayer())
-                scrollableLayer->scrollByRecursively(remainingScrollOffset);
+                didScroll = scrollableLayer->scrollByRecursively(remainingScrollOffset, clamp);
 
             Frame* frame = renderer()->frame();
             if (frame)
                 frame->eventHandler()->updateAutoscrollRenderer();
         }
+        return didScroll;
     } else if (renderer()->view()->frameView()) {
         // If we are here, we were called on a renderer that can be programmatically scrolled, but doesn't
         // have an overflow clip. Which means that it is a document node that can be scrolled.
-        renderer()->view()->frameView()->scrollBy(delta);
+        FrameView* view = renderer()->view()->frameView();
+        IntPoint scrollPositionBefore = view->scrollPosition();
+        view->scrollBy(delta);
+        IntPoint scrollPositionAfter = view->scrollPosition();
+        return scrollPositionBefore != scrollPositionAfter;
+
         // FIXME: If we didn't scroll the whole way, do we want to try looking at the frames ownerElement? 
         // https://bugs.webkit.org/show_bug.cgi?id=28237
     }
+
+    return false;
 }
 
 IntSize RenderLayer::clampScrollOffset(const IntSize& scrollOffset) const
@@ -2133,21 +2143,17 @@ void RenderLayer::scrollRectToVisible(const LayoutRect& rect, const ScrollAlignm
         // This will prevent us from revealing text hidden by the slider in Safari RSS.
         RenderBox* box = renderBox();
         ASSERT(box);
-        FloatPoint absPos = box->localToAbsolute();
-        absPos.move(box->borderLeft(), box->borderTop());
+        LayoutRect localExposeRect(box->absoluteToLocalQuad(FloatQuad(FloatRect(rect)), UseTransforms).boundingBox());
+        LayoutRect layerBounds(0, 0, box->clientWidth(), box->clientHeight());
+        LayoutRect r = getRectToExpose(layerBounds, localExposeRect, alignX, alignY);
 
-        LayoutRect layerBounds = LayoutRect(absPos.x() + scrollXOffset(), absPos.y() + scrollYOffset(), box->clientWidth(), box->clientHeight());
-        LayoutRect exposeRect = LayoutRect(rect.x() + scrollXOffset(), rect.y() + scrollYOffset(), rect.width(), rect.height());
-        LayoutRect r = getRectToExpose(layerBounds, exposeRect, alignX, alignY);
-        
-        int roundedAdjustedX = roundToInt(r.x() - absPos.x());
-        int roundedAdjustedY = roundToInt(r.y() - absPos.y());
-        IntSize clampedScrollOffset = clampScrollOffset(IntSize(roundedAdjustedX, roundedAdjustedY));
+        IntSize clampedScrollOffset = clampScrollOffset(scrollOffset() + toIntSize(roundedIntRect(r).location()));
         if (clampedScrollOffset != scrollOffset()) {
             IntSize oldScrollOffset = scrollOffset();
             scrollToOffset(clampedScrollOffset);
             IntSize scrollOffsetDifference = scrollOffset() - oldScrollOffset;
-            newRect.move(-scrollOffsetDifference);
+            localExposeRect.move(-scrollOffsetDifference);
+            newRect = LayoutRect(box->localToAbsoluteQuad(FloatQuad(FloatRect(localExposeRect)), UseTransforms).boundingBox());
         }
     } else if (!parentLayer && renderer()->isBox() && renderBox()->canBeProgramaticallyScrolled()) {
         if (frameView) {
@@ -2174,6 +2180,8 @@ void RenderLayer::scrollRectToVisible(const LayoutRect& rect, const ScrollAlignm
                     frameView->setScrollPosition(IntPoint(xOffset, yOffset));
                     if (frameView->safeToPropagateScrollToParent()) {
                         parentLayer = ownerElement->renderer()->enclosingLayer();
+                        // FIXME: This doesn't correctly convert the rect to
+                        // absolute coordinates in the parent.
                         newRect.setX(rect.x() - frameView->scrollX() + frameView->x());
                         newRect.setY(rect.y() - frameView->scrollY() + frameView->y());
                     } else
@@ -2294,7 +2302,7 @@ LayoutRect RenderLayer::getRectToExpose(const LayoutRect &visibleRect, const Lay
     return LayoutRect(LayoutPoint(x, y), visibleRect.size());
 }
 
-void RenderLayer::autoscroll()
+void RenderLayer::autoscroll(const IntPoint& position)
 {
     Frame* frame = renderer()->frame();
     if (!frame)
@@ -2304,11 +2312,7 @@ void RenderLayer::autoscroll()
     if (!frameView)
         return;
 
-#if ENABLE(DRAG_SUPPORT)
-    frame->eventHandler()->updateSelectionForMouseDrag();
-#endif
-
-    IntPoint currentDocumentPosition = frameView->windowToContents(frame->eventHandler()->lastKnownMousePosition());
+    IntPoint currentDocumentPosition = frameView->windowToContents(position);
     scrollRectToVisible(LayoutRect(currentDocumentPosition, LayoutSize(1, 1)), ScrollAlignment::alignToEdgeIfNeeded, ScrollAlignment::alignToEdgeIfNeeded);
 }
 
@@ -2694,10 +2698,22 @@ void RenderLayer::invalidateScrollCornerRect(const IntRect& rect)
         m_resizer->repaintRectangle(rect);
 }
 
+static inline RenderObject* rendererForScrollbar(RenderObject* renderer)
+{
+    if (Node* node = renderer->node()) {
+        if (ShadowRoot* shadowRoot = node->containingShadowRoot()) {
+            if (shadowRoot->type() == ShadowRoot::UserAgentShadowRoot)
+                return shadowRoot->host()->renderer();
+        }
+    }
+
+    return renderer;
+}
+
 PassRefPtr<Scrollbar> RenderLayer::createScrollbar(ScrollbarOrientation orientation)
 {
     RefPtr<Scrollbar> widget;
-    RenderObject* actualRenderer = renderer()->node() ? renderer()->node()->shadowAncestorNode()->renderer() : renderer();
+    RenderObject* actualRenderer = rendererForScrollbar(renderer());
     bool hasCustomScrollbarStyle = actualRenderer->isBox() && actualRenderer->style()->hasPseudoStyle(SCROLLBAR);
     if (hasCustomScrollbarStyle)
         widget = RenderScrollbar::createCustomScrollbar(this, orientation, actualRenderer->node());
@@ -3655,8 +3671,6 @@ void RenderLayer::paintLayerContents(GraphicsContext* context, const LayerPainti
         ClipRectsContext clipRectsContext(localPaintingInfo.rootLayer, localPaintingInfo.region, (localPaintFlags & PaintLayerTemporaryClipRects) ? TemporaryClipRects : PaintingClipRects, IgnoreOverlayScrollbarSize, localPaintFlags & PaintLayerPaintingOverflowContents ? IgnoreOverflowClip : RespectOverflowClip);
         calculateRects(clipRectsContext, localPaintingInfo.paintDirtyRect, layerBounds, damageRect, clipRectToApply, outlineRect, &offsetFromRoot);
         paintOffset = toPoint(layerBounds.location() - renderBoxLocation() + localPaintingInfo.subPixelAccumulation);
-        if (this == localPaintingInfo.rootLayer)
-            paintOffset = roundedIntPoint(paintOffset);
     }
 
     bool forceBlackText = localPaintingInfo.paintBehavior & PaintBehaviorForceBlackText;
@@ -5562,11 +5576,11 @@ void RenderLayer::updateScrollableAreaSet(bool hasOverflow)
 
 void RenderLayer::updateScrollCornerStyle()
 {
-    RenderObject* actualRenderer = renderer()->node() ? renderer()->node()->shadowAncestorNode()->renderer() : renderer();
+    RenderObject* actualRenderer = rendererForScrollbar(renderer());
     RefPtr<RenderStyle> corner = renderer()->hasOverflowClip() ? actualRenderer->getUncachedPseudoStyle(SCROLLBAR_CORNER, actualRenderer->style()) : PassRefPtr<RenderStyle>(0);
     if (corner) {
         if (!m_scrollCorner) {
-            m_scrollCorner = new (renderer()->renderArena()) RenderScrollbarPart(renderer()->document());
+            m_scrollCorner = RenderScrollbarPart::createAnonymous(renderer()->document());
             m_scrollCorner->setParent(renderer());
         }
         m_scrollCorner->setStyle(corner.release());
@@ -5578,11 +5592,11 @@ void RenderLayer::updateScrollCornerStyle()
 
 void RenderLayer::updateResizerStyle()
 {
-    RenderObject* actualRenderer = renderer()->node() ? renderer()->node()->shadowAncestorNode()->renderer() : renderer();
+    RenderObject* actualRenderer = rendererForScrollbar(renderer());
     RefPtr<RenderStyle> resizer = renderer()->hasOverflowClip() ? actualRenderer->getUncachedPseudoStyle(RESIZER, actualRenderer->style()) : PassRefPtr<RenderStyle>(0);
     if (resizer) {
         if (!m_resizer) {
-            m_resizer = new (renderer()->renderArena()) RenderScrollbarPart(renderer()->document());
+            m_resizer = RenderScrollbarPart::createAnonymous(renderer()->document());
             m_resizer->setParent(renderer());
         }
         m_resizer->setStyle(resizer.release());
@@ -5600,7 +5614,7 @@ RenderLayer* RenderLayer::reflectionLayer() const
 void RenderLayer::createReflection()
 {
     ASSERT(!m_reflection);
-    m_reflection = new (renderer()->renderArena()) RenderReplica(renderer()->document());
+    m_reflection = RenderReplica::createAnonymous(renderer()->document());
     m_reflection->setParent(renderer()); // We create a 1-way connection.
 }
 
