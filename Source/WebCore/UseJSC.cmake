@@ -94,7 +94,6 @@ list(APPEND WebCore_SOURCES
     bindings/js/JSHTMLMediaElementCustom.cpp
     bindings/js/JSHTMLObjectElementCustom.cpp
     bindings/js/JSHTMLOptionsCollectionCustom.cpp
-    bindings/js/JSHTMLOutputElementCustom.cpp
     bindings/js/JSHTMLSelectElementCustom.cpp
     bindings/js/JSHTMLStyleElementCustom.cpp
     bindings/js/JSHTMLTemplateElementCustom.cpp
@@ -204,7 +203,6 @@ if (ENABLE_INDEXED_DATABASE)
         bindings/js/IDBBindingUtilities.cpp
         bindings/js/JSIDBAnyCustom.cpp
         bindings/js/JSIDBDatabaseCustom.cpp
-        bindings/js/JSIDBKeyCustom.cpp
         bindings/js/JSIDBObjectStoreCustom.cpp
     )
 endif ()

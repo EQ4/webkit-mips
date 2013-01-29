@@ -60,6 +60,11 @@ PassOwnPtr<InputType> DateTimeLocalInputType::create(HTMLInputElement* element)
     return adoptPtr(new DateTimeLocalInputType(element));
 }
 
+void DateTimeLocalInputType::attach()
+{
+    observeFeatureIfVisible(FeatureObserver::InputTypeDateTimeLocal);
+}
+
 const AtomicString& DateTimeLocalInputType::formControlType() const
 {
     return InputTypeNames::datetimelocal();

@@ -134,7 +134,6 @@ SOURCES += \
      bindings/js/JSHTMLMediaElementCustom.cpp \
      bindings/js/JSHTMLObjectElementCustom.cpp \
      bindings/js/JSHTMLOptionsCollectionCustom.cpp \
-     bindings/js/JSHTMLOutputElementCustom.cpp \
      bindings/js/JSHTMLSelectElementCustom.cpp \
      bindings/js/JSHTMLStyleElementCustom.cpp \
      bindings/js/JSHTMLTemplateElementCustom.cpp \
@@ -327,6 +326,7 @@ SOURCES += \
     css/StyleSheetList.cpp \
     css/ViewportStyleResolver.cpp \
     css/WebKitCSSArrayFunctionValue.cpp \
+    css/WebKitCSSFilterRule.cpp \
     css/WebKitCSSFilterValue.cpp \
     css/WebKitCSSKeyframeRule.cpp \
     css/WebKitCSSKeyframesRule.cpp \
@@ -467,6 +467,7 @@ SOURCES += \
     dom/Touch.cpp \
     dom/TouchEvent.cpp \
     dom/TouchList.cpp \
+    dom/TransitionEvent.cpp \
     dom/Traversal.cpp \
     dom/TreeScope.cpp \
     dom/TreeScopeAdopter.cpp \
@@ -679,6 +680,7 @@ SOURCES += \
     html/LabelsNodeList.cpp \
     html/LinkRelAttribute.cpp \
     html/MediaDocument.cpp \
+    html/MicroDataAttributeTokenList.cpp \
     html/MicroDataItemValue.cpp \
     html/MonthInputType.cpp \
     html/NumberInputType.cpp \
@@ -702,6 +704,7 @@ SOURCES += \
     html/ValidityState.cpp \
     html/WeekInputType.cpp \
     html/canvas/CanvasGradient.cpp \
+    html/canvas/CanvasPathMethods.cpp \
     html/canvas/CanvasPattern.cpp \
     html/canvas/CanvasProxy.cpp \
     html/canvas/CanvasRenderingContext.cpp \
@@ -1142,6 +1145,7 @@ SOURCES += \
     rendering/ExclusionPolygon.cpp \
     rendering/ExclusionRectangle.cpp \
     rendering/ExclusionShape.cpp \
+    rendering/ExclusionShapeInfo.cpp \
     rendering/ExclusionShapeInsideInfo.cpp \
     rendering/ExclusionShapeOutsideInfo.cpp \
     rendering/FilterEffectRenderer.cpp \
@@ -1276,6 +1280,7 @@ SOURCES += \
     storage/StorageNamespace.cpp \
     storage/StorageNamespaceImpl.cpp \
     storage/StorageSyncManager.cpp \
+    storage/StorageStrategy.cpp \
     storage/StorageTracker.cpp \
     testing/Internals.cpp \
     testing/InternalSettings.cpp \
@@ -1302,11 +1307,7 @@ SOURCES += \
     xml/XPathUtil.cpp \
     xml/XPathValue.cpp \
     xml/XPathVariableReference.cpp \
-    xml/parser/NewXMLDocumentParser.cpp \
-    xml/parser/XMLCharacterReferenceParser.cpp \
     xml/parser/XMLDocumentParser.cpp \
-    xml/parser/XMLTokenizer.cpp \
-    xml/parser/XMLTreeBuilder.cpp
 
 HEADERS += \
     accessibility/AccessibilityARIAGridCell.h \
@@ -1539,6 +1540,7 @@ HEADERS += \
     css/StyleSheetList.h \
     css/ViewportStyleResolver.h \
     css/WebKitCSSArrayFunctionValue.h \
+    css/WebKitCSSFilterRule.h \
     css/WebKitCSSFilterValue.h \
     css/WebKitCSSKeyframeRule.h \
     css/WebKitCSSKeyframesRule.h \
@@ -1670,6 +1672,7 @@ HEADERS += \
     dom/TouchEvent.h \
     dom/TouchList.h \
     dom/TransformSource.h \
+    dom/TransitionEvent.h \
     dom/Traversal.h \
     dom/TreeDepthLimit.h \
     dom/TreeScope.h \
@@ -1762,12 +1765,14 @@ HEADERS += \
     history/HistoryItem.h \
     history/PageCache.h \
     html/canvas/CanvasGradient.h \
+    html/canvas/CanvasPathMethods.h \
     html/canvas/CanvasPattern.h \
     html/canvas/CanvasProxy.h \
     html/canvas/CanvasRenderingContext.h \
     html/canvas/CanvasRenderingContext2D.h \
     html/canvas/CanvasStyle.h \
     html/canvas/DataView.h \
+    html/canvas/DOMPath.h \
     html/ClassList.h \
     html/DOMFormData.h \
     html/DOMSettableTokenList.h \
@@ -1874,6 +1879,7 @@ HEADERS += \
     html/MediaController.h \
     html/MediaDocument.h \
     html/MediaFragmentURIParser.h \
+    html/MicroDataAttributeTokenList.h \
     html/MicroDataItemValue.h \
     html/PluginDocument.h \
     html/PublicURLManager.h \
@@ -1915,6 +1921,7 @@ HEADERS += \
     html/track/LoadableTextTrack.h \
     html/track/TextTrack.h \
     html/track/TextTrackCue.h \
+    html/track/TextTrackCueGeneric.h \
     html/track/TextTrackCueList.h \
     html/track/TextTrackList.h \
     html/track/TrackBase.h \
@@ -2394,6 +2401,7 @@ HEADERS += \
     rendering/ExclusionPolygon.h \
     rendering/ExclusionRectangle.h \
     rendering/ExclusionShape.h \
+    rendering/ExclusionShapeInfo.h \
     rendering/ExclusionShapeInsideInfo.h \
     rendering/ExclusionShapeOutsideInfo.h \
     rendering/FilterEffectRenderer.h \
@@ -2812,12 +2820,7 @@ HEADERS += \
     xml/parser/MarkupTokenBase.h \
     xml/parser/MarkupTokenizerBase.h \
     xml/parser/MarkupTokenizerInlines.h \
-    xml/parser/NewXMLDocumentParser.h \
-    xml/parser/XMLCharacterReferenceParser.h \
     xml/parser/XMLDocumentParser.h \
-    xml/parser/XMLTokenizer.h \
-    xml/parser/XMLToken.h \
-    xml/parser/XMLTreeBuilder.h \
     xml/DOMParser.h \
     xml/NativeXPathNSResolver.h \
     xml/XMLHttpRequest.h \
@@ -3064,8 +3067,7 @@ enable?(INDEXED_DATABASE) {
 
     SOURCES += \
         bindings/js/IDBBindingUtilities.cpp \
-        bindings/js/JSIDBAnyCustom.cpp \
-        bindings/js/JSIDBKeyCustom.cpp
+        bindings/js/JSIDBAnyCustom.cpp
 
     SOURCES += \
         Modules/indexeddb/DOMWindowIndexedDatabase.cpp \
@@ -4043,7 +4045,7 @@ use?(3D_GRAPHICS) {
         platform/graphics/gpu/TilingData.h \
         platform/graphics/opengl/Extensions3DOpenGL.h \
         platform/graphics/texmap/TextureMapperGL.h \
-        platform/graphics/texmap/TextureMapperShaderManager.h
+        platform/graphics/texmap/TextureMapperShaderProgram.h
 
     SOURCES += \
         platform/graphics/ANGLEWebKitBridge.cpp \
@@ -4056,7 +4058,7 @@ use?(3D_GRAPHICS) {
         platform/graphics/opengl/Extensions3DOpenGLCommon.cpp \
         platform/graphics/qt/GraphicsContext3DQt.cpp \
         platform/graphics/texmap/TextureMapperGL.cpp \
-        platform/graphics/texmap/TextureMapperShaderManager.cpp
+        platform/graphics/texmap/TextureMapperShaderProgram.cpp
 
     INCLUDEPATH += $$PWD/platform/graphics/gpu
 

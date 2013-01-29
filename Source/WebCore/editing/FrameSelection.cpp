@@ -1607,13 +1607,13 @@ void FrameSelection::selectAll()
     if (isContentEditable()) {
         root = highestEditableRoot(m_selection.start());
         if (Node* shadowRoot = m_selection.nonBoundaryShadowTreeRootNode())
-            selectStartTarget = shadowRoot->shadowAncestorNode();
+            selectStartTarget = shadowRoot->shadowHost();
         else
             selectStartTarget = root.get();
     } else {
         root = m_selection.nonBoundaryShadowTreeRootNode();
         if (root)
-            selectStartTarget = root->shadowAncestorNode();
+            selectStartTarget = root->shadowHost();
         else {
             root = document->documentElement();
             selectStartTarget = document->body();
@@ -1829,9 +1829,6 @@ void FrameSelection::caretBlinkTimerFired(Timer<FrameSelection>*)
 void FrameSelection::notifyRendererOfSelectionChange(EUserTriggered userTriggered)
 {
     m_frame->document()->updateStyleIfNeeded();
-
-    if (!rootEditableElement())
-        return;
 
     if (HTMLTextFormControlElement* textControl = enclosingTextFormControl(start()))
         textControl->selectionChanged(userTriggered == UserTriggered);

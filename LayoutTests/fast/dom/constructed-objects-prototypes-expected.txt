@@ -11,6 +11,8 @@ PASS (new inner.Blob()).isInner is true
 PASS (new inner.Blob()).constructor.isInner is true
 PASS (new inner.CloseEvent()).isInner is true
 PASS (new inner.CloseEvent()).constructor.isInner is true
+PASS (new inner.CompositionEvent()).isInner is true
+PASS (new inner.CompositionEvent()).constructor.isInner is true
 PASS (new inner.CustomEvent()).isInner is true
 PASS (new inner.CustomEvent()).constructor.isInner is true
 PASS (new inner.DOMParser()).isInner is true
@@ -31,6 +33,8 @@ PASS (new inner.MessageChannel()).isInner is true
 PASS (new inner.MessageChannel()).constructor.isInner is true
 PASS (new inner.MessageEvent()).isInner is true
 PASS (new inner.MessageEvent()).constructor.isInner is true
+PASS (new inner.MouseEvent()).isInner is true
+PASS (new inner.MouseEvent()).constructor.isInner is true
 PASS (new inner.Option()).isInner is true
 PASS (new inner.Option()).constructor.isInner is true
 PASS (new inner.OverflowEvent()).isInner is true
@@ -45,6 +49,10 @@ PASS (new inner.StorageEvent()).isInner is true
 PASS (new inner.StorageEvent()).constructor.isInner is true
 PASS (new inner.TrackEvent()).isInner is true
 PASS (new inner.TrackEvent()).constructor.isInner is true
+PASS (new inner.TransitionEvent()).isInner is true
+PASS (new inner.TransitionEvent()).constructor.isInner is true
+PASS (new inner.UIEvent()).isInner is true
+PASS (new inner.UIEvent()).constructor.isInner is true
 PASS (new inner.URL()).isInner is true
 PASS (new inner.URL()).constructor.isInner is true
 PASS (new inner.WebGLContextEvent()).isInner is true

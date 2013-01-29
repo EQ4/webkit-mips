@@ -239,8 +239,10 @@
         'perl_exe': 'perl',
         'gperf_exe': 'gperf',
         'bison_exe': 'bison',
-        # Without one specified, the scripts default to 'gcc'.
-        'preprocessor': '',
+
+        # We specify a preprocess so it happens locally and won't get distributed to goma.
+        # FIXME: /usr/bin/gcc won't exist on OSX forever. We want to use /usr/bin/clang once we require Xcode 4.x.
+        'preprocessor': '--preprocessor "/usr/bin/gcc -E -P -x c++"'
       }],
       ['use_x11==1 or OS=="android"', {
         'webcore_include_dirs': [
@@ -924,6 +926,7 @@
               '../css/mediaControlsChromium.css',
               '../css/mediaControlsChromiumAndroid.css',
               '../css/fullscreen.css',
+              '../css/plugIns.css',
               # Skip fullscreenQuickTime.
             ],
           },
@@ -971,6 +974,8 @@
           'inputs': [
             '../Resources/pagepopups/calendarPicker.css',
             '../Resources/pagepopups/calendarPicker.js',
+            '../Resources/pagepopups/chromium/calendarPickerChromium.css',
+            '../Resources/pagepopups/chromium/pickerCommonChromium.css',
             '../Resources/pagepopups/suggestionPicker.css',
             '../Resources/pagepopups/suggestionPicker.js',
           ],
@@ -984,24 +989,6 @@
             '--condition=ENABLE(CALENDAR_PICKER)',
             '--out-h=<(SHARED_INTERMEDIATE_DIR)/webkit/CalendarPicker.h',
             '--out-cpp=<(SHARED_INTERMEDIATE_DIR)/webkit/CalendarPicker.cpp',
-            '<@(_inputs)',
-          ],
-        },
-        {
-          'action_name': 'CalendarPickerMac',
-          'inputs': [
-            '../Resources/pagepopups/calendarPickerMac.css',
-          ],
-          'outputs': [
-            '<(SHARED_INTERMEDIATE_DIR)/webkit/CalendarPickerMac.h',
-            '<(SHARED_INTERMEDIATE_DIR)/webkit/CalendarPickerMac.cpp',
-          ],
-          'action': [
-            'python',
-            '../make-file-arrays.py',
-            '--condition=ENABLE(CALENDAR_PICKER)',
-            '--out-h=<(SHARED_INTERMEDIATE_DIR)/webkit/CalendarPickerMac.h',
-            '--out-cpp=<(SHARED_INTERMEDIATE_DIR)/webkit/CalendarPickerMac.cpp',
             '<@(_inputs)',
           ],
         },
@@ -1348,9 +1335,6 @@
           'include_dirs': [
             '<(chromium_src_dir)/third_party/apple_webkit',
           ],
-          'sources': [
-            '<(SHARED_INTERMEDIATE_DIR)/webkit/CalendarPickerMac.cpp',
-          ],
         }],
         ['OS=="win"', {
           'defines': [
@@ -1364,7 +1348,8 @@
             'include_dirs+++': ['../dom'],
           },
           # In generated bindings code: 'switch contains default but no case'.
-          'msvs_disabled_warnings': [ 4065 ],
+          # Disable c4267 warnings until we fix size_t to int truncations.
+          'msvs_disabled_warnings': [ 4065, 4267 ],
         }],
         ['OS in ("linux", "android") and "WTF_USE_WEBAUDIO_IPP=1" in feature_defines', {
           'cflags': [
@@ -1626,6 +1611,8 @@
 
         ['exclude', 'AllInOne\\.cpp$'],
       ],
+      # Disable c4267 warnings until we fix size_t to int truncations.
+      'msvs_disabled_warnings': [ 4267, ],
     },
     {
       'target_name': 'webcore_html',
@@ -1666,6 +1653,8 @@
       'dependencies': [
         'webcore_prerequisites',
       ],
+      # Disable c4267 warnings until we fix size_t to int truncations.
+      'msvs_disabled_warnings': [ 4267, 4334 ],
       # This is needed for mac because of webkit_system_interface. It'd be nice
       # if this hard dependency could be split off the rest.
       'hard_dependency': 1,
@@ -1920,6 +1909,11 @@
             ['include', 'platform/graphics/opentype/OpenTypeSanitizer\\.cpp$'],
           ],
         }],
+        ['OS=="win" and chromium_win_pch==1', {
+          'sources/': [
+            ['include', '<(win_pch_dir)/WinPrecompile.cpp'],
+          ],
+        }],
         ['OS=="android"', {
           'sources/': [
             ['include', 'platform/chromium/ClipboardChromiumLinux\\.cpp$'],
@@ -2014,6 +2008,11 @@
         },{ # OS!="win"
           'sources/': [
             ['exclude', 'Win\\.cpp$'],
+          ],
+        }],
+        ['OS=="win" and chromium_win_pch==1', {
+          'sources/': [
+            ['include', '<(win_pch_dir)/WinPrecompile.cpp'],
           ],
         }],
         ['OS=="mac"', {
@@ -2165,7 +2164,20 @@
         ['OS!="mac"', {
           'sources/': [['exclude', 'Mac\\.(cpp|mm?)$']]
         }],
+        ['clang==1', {
+          # FIXME: Remove once this warning has been tweaked in Clang.
+          'cflags': [
+            '-Wno-return-type-c-linkage',
+          ],
+          'xcode_settings': {
+            'WARNING_CFLAGS': [
+              '-Wno-return-type-c-linkage',
+            ],
+          }
+        }],
       ],
+      # Disable c4267 warnings until we fix size_t to int truncations.
+      'msvs_disabled_warnings': [ 4267, 4334, ],
     },
     {
       'target_name': 'webcore',

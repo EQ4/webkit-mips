@@ -135,8 +135,12 @@ public:
 
     bool pageLogicalHeightChanged() const { return m_pageLogicalHeightChanged; }
 
+    bool hasAutoLogicalHeightRegions() const { ASSERT(isAutoLogicalHeightRegionsCountConsistent()); return m_autoLogicalHeightRegionsCount; }
+    void incrementAutoLogicalHeightRegions();
+    void decrementAutoLogicalHeightRegions();
+
 #ifndef NDEBUG
-    unsigned autoLogicalHeightRegionsCount() const;
+    bool isAutoLogicalHeightRegionsCountConsistent() const;
 #endif
 
 protected:
@@ -192,6 +196,8 @@ protected:
     RenderObjectToRegionMap m_breakBeforeToRegionMap;
     RenderObjectToRegionMap m_breakAfterToRegionMap;
 
+    unsigned m_autoLogicalHeightRegionsCount;
+
     bool m_regionsInvalidated : 1;
     bool m_regionsHaveUniformLogicalWidth : 1;
     bool m_regionsHaveUniformLogicalHeight : 1;
@@ -203,13 +209,13 @@ protected:
 
 inline RenderFlowThread* toRenderFlowThread(RenderObject* object)
 {
-    ASSERT(!object || object->isRenderFlowThread());
+    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isRenderFlowThread());
     return static_cast<RenderFlowThread*>(object);
 }
 
 inline const RenderFlowThread* toRenderFlowThread(const RenderObject* object)
 {
-    ASSERT(!object || object->isRenderFlowThread());
+    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isRenderFlowThread());
     return static_cast<const RenderFlowThread*>(object);
 }
 

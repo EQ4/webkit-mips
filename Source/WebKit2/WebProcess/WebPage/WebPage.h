@@ -56,9 +56,7 @@
 #include <WebCore/FrameLoaderTypes.h>
 #include <WebCore/IntRect.h>
 #include <WebCore/Page.h>
-#if ENABLE(PAGE_VISIBILITY_API)
 #include <WebCore/PageVisibilityState.h>
-#endif
 #include <WebCore/PlatformScreen.h>
 #include <WebCore/ScrollTypes.h>
 #include <WebCore/WebCoreKeyboardUIMode.h>
@@ -78,9 +76,13 @@
 #include <QNetworkRequest>
 #endif
 
+#if HAVE(ACCESSIBILITY) && (PLATFORM(GTK) || PLATFORM(EFL))
+#include "WebPageAccessibilityObject.h"
+#include <wtf/gobject/GRefPtr.h>
+#endif
+
 #if PLATFORM(GTK)
 #include "ArgumentCodersGtk.h"
-#include "WebPageAccessibilityObject.h"
 #include "WebPrintOperationGtk.h"
 #endif
 
@@ -176,6 +178,8 @@ public:
     uint64_t destinationID() const { return pageID(); }
 
     void close();
+
+    static WebPage* fromCorePage(WebCore::Page*);
 
     WebCore::Page* corePage() const { return m_page.get(); }
     uint64_t pageID() const { return m_pageID; }
@@ -353,8 +357,8 @@ public:
 
     bool windowIsFocused() const;
     bool windowAndWebPageAreFocused() const;
-    void installPageOverlay(PassRefPtr<PageOverlay>);
-    void uninstallPageOverlay(PageOverlay*, bool fadeOut);
+    void installPageOverlay(PassRefPtr<PageOverlay>, bool shouldFadeIn = false);
+    void uninstallPageOverlay(PageOverlay*, bool shouldFadeOut = false);
     bool hasPageOverlay() const { return m_pageOverlay; }
     WebCore::IntPoint screenToWindow(const WebCore::IntPoint&);
     WebCore::IntRect windowToScreen(const WebCore::IntRect&);
@@ -460,10 +464,13 @@ public:
     void setComposition(const WTF::String& compositionString, const WTF::Vector<WebCore::CompositionUnderline>& underlines, uint64_t cursorPosition);
     void cancelComposition();
 #elif PLATFORM(GTK)
-    void updateAccessibilityTree();
 #if USE(TEXTURE_MAPPER_GL)
     void setAcceleratedCompositingWindowId(int64_t nativeWindowHandle);
 #endif
+#endif
+
+#if HAVE(ACCESSIBILITY) && (PLATFORM(GTK) || PLATFORM(EFL))
+    void updateAccessibilityTree();
 #endif
 
     void setCompositionForTesting(const String& compositionString, uint64_t from, uint64_t length);
@@ -569,7 +576,7 @@ public:
     bool willGoToBackForwardItemCallbackEnabled() const { return m_willGoToBackForwardItemCallbackEnabled; }
 
 #if ENABLE(PAGE_VISIBILITY_API) || ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
-    void setVisibilityState(int visibilityState, bool isInitialState);
+    void setVisibilityState(uint32_t /* WebCore::PageVisibilityState */, bool isInitialState);
 #endif
 
 #if PLATFORM(GTK) && USE(TEXTURE_MAPPER_GL)
@@ -849,7 +856,7 @@ private:
 
     WebCore::KeyboardEvent* m_keyboardEventBeingInterpreted;
 
-#elif PLATFORM(GTK)
+#elif HAVE(ACCESSIBILITY) && (PLATFORM(GTK) || PLATFORM(EFL))
     GRefPtr<WebPageAccessibilityObject> m_accessibilityObject;
 
 #if USE(TEXTURE_MAPPER_GL)

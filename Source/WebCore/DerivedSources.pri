@@ -82,6 +82,7 @@ STYLESHEETS_EMBED = \
     $$PWD/css/mediaControls.css \
     $$PWD/css/mediaControlsQt.css \
     $$PWD/css/mediaControlsQtFullscreen.css \
+    $$PWD/css/plugIns.css \
     $$PWD/css/themeQtNoListboxes.css \
     $$PWD/css/mobileThemeQt.css
 
@@ -121,7 +122,6 @@ IDL_BINDINGS += \
     $$PWD/Modules/indexeddb/IDBDatabase.idl \
     $$PWD/Modules/indexeddb/IDBFactory.idl \
     $$PWD/Modules/indexeddb/IDBIndex.idl \
-    $$PWD/Modules/indexeddb/IDBKey.idl \
     $$PWD/Modules/indexeddb/IDBKeyRange.idl \
     $$PWD/Modules/indexeddb/IDBObjectStore.idl \
     $$PWD/Modules/indexeddb/IDBRequest.idl \
@@ -209,6 +209,7 @@ IDL_BINDINGS += \
     $$PWD/css/StyleMedia.idl \
     $$PWD/css/StyleSheet.idl \
     $$PWD/css/StyleSheetList.idl \
+    $$PWD/css/WebKitCSSFilterRule.idl \
     $$PWD/css/WebKitCSSFilterValue.idl \
     $$PWD/css/WebKitCSSKeyframeRule.idl \
     $$PWD/css/WebKitCSSKeyframesRule.idl \
@@ -279,6 +280,7 @@ IDL_BINDINGS += \
     $$PWD/dom/Touch.idl \
     $$PWD/dom/TouchEvent.idl \
     $$PWD/dom/TouchList.idl \
+    $$PWD/dom/TransitionEvent.idl \
     $$PWD/dom/TreeWalker.idl \
     $$PWD/dom/UIEvent.idl \
     $$PWD/dom/WebKitAnimationEvent.idl \
@@ -305,6 +307,7 @@ IDL_BINDINGS += \
     $$PWD/html/canvas/CanvasProxy.idl \
     $$PWD/html/canvas/CanvasRenderingContext.idl \
     $$PWD/html/canvas/CanvasRenderingContext2D.idl \
+    $$PWD/html/canvas/DOMPath.idl \
     $$PWD/html/canvas/EXTTextureFilterAnisotropic.idl \
     $$PWD/html/canvas/OESStandardDerivatives.idl \
     $$PWD/html/canvas/OESTextureFloat.idl \

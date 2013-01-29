@@ -1549,7 +1549,7 @@ bool EventHandler::handleMousePressEvent(const PlatformMouseEvent& mouseEvent)
             swallowEvent = handleMousePressEvent(mev);
     }
 
-    return !swallowEvent;
+    return swallowEvent;
 }
 
 // This method only exists for platforms that don't know how to deliver 
@@ -1763,6 +1763,30 @@ void EventHandler::invalidateClick()
     m_clickNode = 0;
 }
 
+inline static bool mouseIsReleasedOnPressedElement(Node* targetNode, Node* clickNode)
+{
+    if (targetNode == clickNode)
+        return true;
+
+    if (!targetNode)
+        return false;
+
+    ShadowRoot* containingShadowRoot = targetNode->containingShadowRoot();
+    if (!containingShadowRoot)
+        return false;
+
+    // FIXME: When an element in UA ShadowDOM (e.g. inner element in <input>) is clicked,
+    // we assume that the host element is clicked. This is necessary for implementing <input type="range"> etc.
+    // However, we should not check ShadowRoot type basically.
+    // https://bugs.webkit.org/show_bug.cgi?id=108047
+    if (containingShadowRoot->type() != ShadowRoot::UserAgentShadowRoot)
+        return false;
+
+    Node* adjustedTargetNode = targetNode->shadowHost();
+    Node* adjustedClickNode = clickNode ? clickNode->shadowHost() : 0;
+    return adjustedTargetNode == adjustedClickNode;
+}
+
 bool EventHandler::handleMouseReleaseEvent(const PlatformMouseEvent& mouseEvent)
 {
     RefPtr<FrameView> protector(m_frame->view());
@@ -1815,18 +1839,14 @@ bool EventHandler::handleMouseReleaseEvent(const PlatformMouseEvent& mouseEvent)
 
     bool swallowMouseUpEvent = !dispatchMouseEvent(eventNames().mouseupEvent, mev.targetNode(), true, m_clickCount, mouseEvent, false);
 
-    Node* clickTarget = mev.targetNode();
-    if (clickTarget)
-        clickTarget = clickTarget->shadowAncestorNode();
-    Node* adjustedClickNode = m_clickNode ? m_clickNode->shadowAncestorNode() : 0;
-
     bool contextMenuEvent = mouseEvent.button() == RightButton;
 #if PLATFORM(CHROMIUM) && OS(DARWIN)
     // FIXME: The Mac port achieves the same behavior by checking whether the context menu is currently open in WebPage::mouseEvent(). Consider merging the implementations.
     if (mouseEvent.button() == LeftButton && mouseEvent.modifiers() & PlatformEvent::CtrlKey)
         contextMenuEvent = true;
 #endif
-    bool swallowClickEvent = m_clickCount > 0 && !contextMenuEvent && clickTarget == adjustedClickNode && !dispatchMouseEvent(eventNames().clickEvent, mev.targetNode(), true, m_clickCount, mouseEvent, true);
+
+    bool swallowClickEvent = m_clickCount > 0 && !contextMenuEvent && mouseIsReleasedOnPressedElement(mev.targetNode(), m_clickNode.get()) && !dispatchMouseEvent(eventNames().clickEvent, mev.targetNode(), true, m_clickCount, mouseEvent, true);
 
     if (m_resizeLayer) {
         m_resizeLayer->setInResizeMode(false);
@@ -2723,7 +2743,7 @@ bool EventHandler::bestClickableNodeForTouchPoint(const IntPoint& touchCenter, c
     // handle targetNode being a shadow DOM node. 
     bool success = findBestClickableCandidate(targetNode, targetPoint, touchCenter, touchRect, *nodeList.get());
     if (success && targetNode)
-        targetNode = targetNode->shadowAncestorNode();
+        targetNode = targetNode->deprecatedShadowAncestorNode();
     return success;
 }
 
@@ -3837,7 +3857,7 @@ bool EventHandler::handleTouchEvent(const PlatformTouchEvent& event)
         if (pointState == PlatformTouchPoint::TouchPressed) {
             HitTestResult result;
             if (freshTouchEvents) {
-                result = hitTestResultAtPoint(pagePoint, /*allowShadowContent*/ false, false, DontHitTestScrollbars, hitType);
+                result = hitTestResultAtPoint(pagePoint, /*allowShadowContent*/ true, false, DontHitTestScrollbars, hitType);
                 m_originatingTouchPointTargetKey = touchPointTargetKey;
             } else if (m_originatingTouchPointDocument.get() && m_originatingTouchPointDocument->frame()) {
                 LayoutPoint pagePointInOriginatingDocument = documentPointForWindowPoint(m_originatingTouchPointDocument->frame(), point.pos());
@@ -3871,7 +3891,7 @@ bool EventHandler::handleTouchEvent(const PlatformTouchEvent& event)
         } else if (pointState == PlatformTouchPoint::TouchReleased || pointState == PlatformTouchPoint::TouchCancelled) {
             // We only perform a hittest on release or cancel to unset :active or :hover state.
             if (touchPointTargetKey == m_originatingTouchPointTargetKey) {
-                hitTestResultAtPoint(pagePoint, /*allowShadowContent*/ false, false, DontHitTestScrollbars, hitType);
+                hitTestResultAtPoint(pagePoint, /*allowShadowContent*/ true, false, DontHitTestScrollbars, hitType);
                 m_originatingTouchPointTargetKey = 0;
             } else if (m_originatingTouchPointDocument.get() && m_originatingTouchPointDocument->frame()) {
                 LayoutPoint pagePointInOriginatingDocument = documentPointForWindowPoint(m_originatingTouchPointDocument->frame(), point.pos());
@@ -3905,7 +3925,10 @@ bool EventHandler::handleTouchEvent(const PlatformTouchEvent& event)
         int adjustedPageX = lroundf(pagePoint.x() / scaleFactor);
         int adjustedPageY = lroundf(pagePoint.y() / scaleFactor);
 
-        RefPtr<Touch> touch = Touch::create(targetFrame, touchTarget.get(), point.id(),
+        // FIXME: Instead of taking shadow ancestor, event retargetting algorithm should run.
+        // https://bugs.webkit.org/show_bug.cgi?id=107800
+        EventTarget* adjustedTouchTarget = doc->ancestorInThisScope(touchTarget.get()->toNode());
+        RefPtr<Touch> touch = Touch::create(targetFrame, adjustedTouchTarget, point.id(),
                                             point.screenPos().x(), point.screenPos().y(),
                                             adjustedPageX, adjustedPageY,
                                             point.radiusX(), point.radiusY(), point.rotationAngle(), point.force());

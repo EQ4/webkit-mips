@@ -32,6 +32,7 @@
 #include "JSArray.h"
 #include "JSString.h"
 #include "Lexer.h"
+#include "ObjectConstructor.h"
 #include "Operations.h"
 #include "StrongInlines.h"
 #include <wtf/ASCIICType.h>
@@ -815,7 +816,7 @@ JSValue LiteralParser<CharType>::parse(ParserState initialState)
                 return JSValue();
             }
             default:
-                ASSERT_NOT_REACHED();
+                RELEASE_ASSERT_NOT_REACHED();
         }
         if (stateStack.isEmpty())
             return lastValue;

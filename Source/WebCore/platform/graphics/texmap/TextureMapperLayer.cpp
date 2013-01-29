@@ -129,6 +129,8 @@ void TextureMapperLayer::paintSelf(const TextureMapperPaintOptions& options)
 
     if (m_state.solidColor.isValid() && !m_state.contentsRect.isEmpty()) {
         options.textureMapper->drawSolidColor(m_state.contentsRect, transform, blendWithOpacity(m_state.solidColor, opacity));
+        if (m_state.showDebugBorders)
+            options.textureMapper->drawBorder(m_state.debugBorderColor, m_state.debugBorderWidth, layerRect(), transform);
         return;
     }
 
@@ -136,11 +138,18 @@ void TextureMapperLayer::paintSelf(const TextureMapperPaintOptions& options)
         ASSERT(m_state.drawsContent && m_state.contentsVisible && !m_state.size.isEmpty());
         ASSERT(!layerRect().isEmpty());
         m_backingStore->paintToTextureMapper(options.textureMapper, layerRect(), transform, opacity, mask.get());
+        if (m_state.showDebugBorders)
+            m_backingStore->drawBorder(options.textureMapper, m_state.debugBorderColor, m_state.debugBorderWidth, layerRect(), transform);
+        // Only draw repaint count for the main backing store.
+        if (m_state.showRepaintCounter)
+            m_backingStore->drawRepaintCounter(options.textureMapper, m_state.repaintCount, m_state.debugBorderColor, layerRect(), transform);
     }
 
     if (m_contentsLayer) {
         ASSERT(!layerRect().isEmpty());
         m_contentsLayer->paintToTextureMapper(options.textureMapper, m_state.contentsRect, transform, opacity, mask.get());
+        if (m_state.showDebugBorders)
+            m_contentsLayer->drawBorder(options.textureMapper, m_state.debugBorderColor, m_state.debugBorderWidth, m_state.contentsRect, transform);
     }
 }
 
@@ -287,7 +296,25 @@ void TextureMapperLayer::paintSelfAndChildrenWithReplica(const TextureMapperPain
     paintSelfAndChildren(options);
 }
 
+void TextureMapperLayer::setAnimatedTransform(const TransformationMatrix& matrix)
+{
+    m_shouldUpdateCurrentTransformFromGraphicsLayer = false;
+    m_currentTransform.setLocalTransform(matrix);
+}
+
+void TextureMapperLayer::setAnimatedOpacity(float opacity)
+{
+    m_shouldUpdateCurrentOpacityFromGraphicsLayer = false;
+    m_currentOpacity = opacity;
+}
+
 #if ENABLE(CSS_FILTERS)
+void TextureMapperLayer::setAnimatedFilters(const FilterOperations& filters)
+{
+    m_shouldUpdateCurrentFiltersFromGraphicsLayer = false;
+    m_currentFilters = filters;
+}
+
 static bool shouldKeepContentTexture(const FilterOperations& filters)
 {
     for (size_t i = 0; i < filters.size(); ++i) {
@@ -383,8 +410,6 @@ void TextureMapperLayer::flushCompositingStateForThisLayerOnly(GraphicsLayerText
     if (changeMask == NoChanges && graphicsLayer->m_animations.isEmpty())
         return;
 
-    graphicsLayer->updateDebugIndicators();
-
     if (changeMask & ChildrenChange)
         setChildren(graphicsLayer->children());
 
@@ -400,6 +425,20 @@ void TextureMapperLayer::flushCompositingStateForThisLayerOnly(GraphicsLayerText
 
     if (changeMask & AnimationChange)
         m_animations = graphicsLayer->m_animations;
+    
+    if (changeMask & TransformChange)
+        m_shouldUpdateCurrentTransformFromGraphicsLayer = true;
+
+    if (changeMask & OpacityChange)
+        m_shouldUpdateCurrentOpacityFromGraphicsLayer = true;
+
+#if ENABLE(CSS_FILTERS)
+    if (changeMask & FilterChange)
+        m_shouldUpdateCurrentFiltersFromGraphicsLayer = true;
+#endif
+
+    if (changeMask & RepaintCountChange)
+        m_state.repaintCount = graphicsLayer->repaintCount();
 
     m_state.maskLayer = toTextureMapperLayer(graphicsLayer->maskLayer());
     m_state.replicaLayer = toTextureMapperLayer(graphicsLayer->replicaLayer());
@@ -423,13 +462,17 @@ void TextureMapperLayer::flushCompositingStateForThisLayerOnly(GraphicsLayerText
 #endif
     m_fixedToViewport = graphicsLayer->fixedToViewport();
 
+    m_state.showDebugBorders = graphicsLayer->isShowingDebugBorder();
+    m_state.debugBorderColor = toGraphicsLayerTextureMapper(graphicsLayer)->debugBorderColor();
+    m_state.debugBorderWidth = toGraphicsLayerTextureMapper(graphicsLayer)->debugBorderWidth();
+    m_state.showRepaintCounter = graphicsLayer->isShowingRepaintCounter();
+
     m_contentsLayer = graphicsLayer->platformLayer();
 
     m_currentTransform.setPosition(adjustedPosition());
     m_currentTransform.setAnchorPoint(m_state.anchorPoint);
     m_currentTransform.setSize(m_state.size);
     m_currentTransform.setFlattening(!m_state.preserves3D);
-    m_currentTransform.setLocalTransform(m_state.transform);
     m_currentTransform.setChildrenTransform(m_state.childrenTransform);
 
     syncAnimations();
@@ -504,13 +547,14 @@ void TextureMapperLayer::applyAnimationsRecursively()
 void TextureMapperLayer::syncAnimations()
 {
     m_animations.apply(this);
-    if (!m_animations.hasActiveAnimationsOfType(AnimatedPropertyWebkitTransform))
-        setAnimatedTransform(m_state.transform);
-    if (!m_animations.hasActiveAnimationsOfType(AnimatedPropertyOpacity))
-        setAnimatedOpacity(m_state.opacity);
+    if (!m_animations.hasActiveAnimationsOfType(AnimatedPropertyWebkitTransform) && m_shouldUpdateCurrentTransformFromGraphicsLayer)
+        m_currentTransform.setLocalTransform(m_state.transform);
+    if (!m_animations.hasActiveAnimationsOfType(AnimatedPropertyOpacity) && m_shouldUpdateCurrentOpacityFromGraphicsLayer)
+        m_currentOpacity = m_state.opacity;
+
 #if ENABLE(CSS_FILTERS)
-    if (!m_animations.hasActiveAnimationsOfType(AnimatedPropertyWebkitFilter))
-        setAnimatedFilters(m_state.filters);
+    if (!m_animations.hasActiveAnimationsOfType(AnimatedPropertyWebkitFilter) && m_shouldUpdateCurrentFiltersFromGraphicsLayer)
+        m_currentFilters = m_state.filters;
 #endif
 }
 

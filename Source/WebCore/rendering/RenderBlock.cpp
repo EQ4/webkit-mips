@@ -291,7 +291,7 @@ void RenderBlock::willBeDestroyed()
         lineGridBox()->destroy(renderArena());
 
 #if ENABLE(CSS_EXCLUSIONS)
-    ExclusionShapeInsideInfo::removeExclusionShapeInsideInfoForRenderBlock(this);
+    ExclusionShapeInsideInfo::removeInfo(this);
 #endif
 
     if (UNLIKELY(gDelayedUpdateScrollInfoSet != 0))
@@ -1371,7 +1371,7 @@ void RenderBlock::layout()
 #if ENABLE(CSS_EXCLUSIONS)
 ExclusionShapeInsideInfo* RenderBlock::exclusionShapeInsideInfo() const
 {
-    return style()->shapeInside() && ExclusionShapeInsideInfo::isExclusionShapeInsideInfoEnabledForRenderBlock(this) ? ExclusionShapeInsideInfo::exclusionShapeInsideInfoForRenderBlock(this) : 0;
+    return style()->shapeInside() && ExclusionShapeInsideInfo::isEnabledFor(this) ? ExclusionShapeInsideInfo::info(this) : 0;
 }
 
 void RenderBlock::updateExclusionShapeInsideInfoAfterStyleChange(const ExclusionShapeValue* shapeInside, const ExclusionShapeValue* oldShapeInside)
@@ -1381,10 +1381,10 @@ void RenderBlock::updateExclusionShapeInsideInfoAfterStyleChange(const Exclusion
         return;
 
     if (shapeInside) {
-        ExclusionShapeInsideInfo* exclusionShapeInsideInfo = ExclusionShapeInsideInfo::ensureExclusionShapeInsideInfoForRenderBlock(this);
+        ExclusionShapeInsideInfo* exclusionShapeInsideInfo = ExclusionShapeInsideInfo::ensureInfo(this);
         exclusionShapeInsideInfo->dirtyShapeSize();
     } else
-        ExclusionShapeInsideInfo::removeExclusionShapeInsideInfoForRenderBlock(this);
+        ExclusionShapeInsideInfo::removeInfo(this);
 }
 #endif
 
@@ -1423,7 +1423,7 @@ void RenderBlock::computeExclusionShapeSize()
     ExclusionShapeInsideInfo* exclusionShapeInsideInfo = this->exclusionShapeInsideInfo();
     if (exclusionShapeInsideInfo) {
         bool percentageLogicalHeightResolvable = percentageLogicalHeightIsResolvableFromBlock(this, false);
-        exclusionShapeInsideInfo->computeShapeSize(logicalWidth(), percentageLogicalHeightResolvable ? logicalHeight() : LayoutUnit());
+        exclusionShapeInsideInfo->setShapeSize(logicalWidth(), percentageLogicalHeightResolvable ? logicalHeight() : LayoutUnit());
     }
 }
 #endif
@@ -1674,6 +1674,8 @@ void RenderBlock::computeOverflow(LayoutUnit oldClientAfterEdge, bool recomputeF
         else
             rectToApply = LayoutRect(clientRect.x(), clientRect.y(), max<LayoutUnit>(0, oldClientAfterEdge - clientRect.x()), 1);
         addLayoutOverflow(rectToApply);
+        if (hasRenderOverflow())
+            m_overflow->setLayoutClientAfterEdge(oldClientAfterEdge);
     }
         
     // Add visual overflow from box-shadow and border-image-outset.
@@ -1751,7 +1753,7 @@ void RenderBlock::adjustPositionedBlock(RenderBox* child, const MarginInfo& marg
     bool hasStaticBlockPosition = child->style()->hasStaticBlockPosition(isHorizontal);
     
     LayoutUnit logicalTop = logicalHeight();
-    setStaticInlinePositionForChild(child, logicalTop, startOffsetForContent(logicalTop));
+    updateStaticInlinePositionForChild(child, logicalTop);
 
     if (!marginInfo.canCollapseWithMarginBefore()) {
         // Positioned blocks don't collapse margins, so add the margin provided by
@@ -2057,12 +2059,15 @@ LayoutUnit RenderBlock::collapseMargins(RenderBox* child, MarginInfo& marginInfo
     // If we have collapsed into a previous sibling and so reduced the height of the parent, ensure any floats that now
     // overhang from the previous sibling are added to our parent. If the child's previous sibling itself is a float the child will avoid
     // or clear it anyway, so don't worry about any floating children it may contain.
+    LayoutUnit oldLogicalHeight = logicalHeight();
+    setLogicalHeight(logicalTop);
     RenderObject* prev = child->previousSibling();
     if (prev && prev->isBlockFlow() && !prev->isFloatingOrOutOfFlowPositioned()) {
         RenderBlock* block = toRenderBlock(prev);
         if (block->containsFloats() && !block->avoidsFloats() && (block->logicalTop() + block->lowestFloatLogicalBottom()) > logicalTop) 
             addOverhangingFloats(block, false);
     }
+    setLogicalHeight(oldLogicalHeight);
 
     return logicalTop;
 }
@@ -2098,7 +2103,8 @@ LayoutUnit RenderBlock::clearFloatsIfNeeded(RenderBox* child, MarginInfo& margin
         // Move the top of the child box to the bottom of the float ignoring the child's top margin.
         LayoutUnit collapsedMargin = collapsedMarginBeforeForChild(child);
         setLogicalHeight(child->logicalTop() - collapsedMargin);
-        heightIncrease -= collapsedMargin;
+        // A negative collapsed margin-top value cancels itself out as it has already been factored into |yPos| above.
+        heightIncrease -= max(LayoutUnit(), collapsedMargin);
     } else
         // Increase our height by the amount we had to clear.
         setLogicalHeight(logicalHeight() + heightIncrease);
@@ -2602,9 +2608,11 @@ bool RenderBlock::simplifiedLayout()
     // updating our overflow if we either used to have overflow or if the new temporary object has overflow.
     // For now just always recompute overflow.  This is no worse performance-wise than the old code that called rightmostPosition and
     // lowestPosition on every relayout so it's not a regression.
+    // computeOverflow expects the bottom edge before we clamp our height. Since this information isn't available during
+    // simplifiedLayout, we cache the value in m_overflow.
+    LayoutUnit oldClientAfterEdge = hasRenderOverflow() ? m_overflow->layoutClientAfterEdge() : clientLogicalBottom();
     m_overflow.clear();
-    LayoutUnit logicalScrollHeight = style()->isHorizontalWritingMode() ? scrollHeight() : scrollWidth();
-    computeOverflow(borderBefore() + logicalScrollHeight, true);
+    computeOverflow(oldClientAfterEdge, true);
 
     statePusher.pop();
     
@@ -3119,7 +3127,7 @@ void RenderBlock::paintObject(PaintInfo& paintInfo, const LayoutPoint& paintOffs
     }
 }
 
-LayoutPoint RenderBlock::flipFloatForWritingModeForChild(const FloatingObject* child, const LayoutPoint& point) const
+LayoutPoint RenderBlock::flipFloatForWritingModeForChild(const FloatingObject* child, const LayoutPoint& point, FloatRenderingState renderingState) const
 {
     if (!style()->isFlippedBlocksWritingMode())
         return point;
@@ -3128,8 +3136,8 @@ LayoutPoint RenderBlock::flipFloatForWritingModeForChild(const FloatingObject* c
     // it's going to get added back in. We hide this complication here so that the calling code looks normal for the unflipped
     // case.
     if (isHorizontalWritingMode())
-        return LayoutPoint(point.x(), point.y() + height() - child->renderer()->height() - 2 * yPositionForFloatIncludingMargin(child));
-    return LayoutPoint(point.x() + width() - child->renderer()->width() - 2 * xPositionForFloatIncludingMargin(child), point.y());
+        return LayoutPoint(point.x(), point.y() + height() - child->renderer()->height() - 2 * yPositionForFloatIncludingMargin(child, renderingState));
+    return LayoutPoint(point.x() + width() - child->renderer()->width() - 2 * xPositionForFloatIncludingMargin(child, renderingState), point.y());
 }
 
 void RenderBlock::paintFloats(PaintInfo& paintInfo, const LayoutPoint& paintOffset, bool preservePhase)
@@ -3145,7 +3153,7 @@ void RenderBlock::paintFloats(PaintInfo& paintInfo, const LayoutPoint& paintOffs
         if (r->shouldPaint() && !r->m_renderer->hasSelfPaintingLayer()) {
             PaintInfo currentPaintInfo(paintInfo);
             currentPaintInfo.phase = preservePhase ? paintInfo.phase : PaintPhaseBlockBackground;
-            LayoutPoint childPoint = flipFloatForWritingModeForChild(r, LayoutPoint(paintOffset.x() + xPositionForFloatIncludingMargin(r) - r->m_renderer->x(), paintOffset.y() + yPositionForFloatIncludingMargin(r) - r->m_renderer->y()));
+            LayoutPoint childPoint = flipFloatForWritingModeForChild(r, LayoutPoint(paintOffset.x() + xPositionForFloatIncludingMargin(r, FloatPaint) - r->m_renderer->x(), paintOffset.y() + yPositionForFloatIncludingMargin(r, FloatPaint) - r->m_renderer->y()), FloatPaint);
             r->m_renderer->paint(currentPaintInfo, childPoint);
             if (!preservePhase) {
                 currentPaintInfo.phase = PaintPhaseChildBlockBackgrounds;
@@ -3244,8 +3252,9 @@ bool RenderBlock::shouldPaintSelectionGaps() const
 
 bool RenderBlock::isSelectionRoot() const
 {
-    if (!nonPseudoNode())
+    if (isPseudoElement())
         return false;
+    ASSERT(node() || isAnonymous());
         
     // FIXME: Eventually tables should have to learn how to fill gaps between cells, at least in simple non-spanning cases.
     if (isTable())
@@ -4004,13 +4013,18 @@ bool RenderBlock::positionNewFloats()
 
         setLogicalLeftForFloat(floatingObject, floatLogicalLocation.x());
 
-        bool hasShapeOutside = false;
 #if ENABLE(CSS_EXCLUSIONS)
-        hasShapeOutside = floatingObject->renderer()->exclusionShapeOutsideInfo();
+        if (childBox->exclusionShapeOutsideInfo()) {
+            // The CSS Exclusions specification says that the margins are ignored when a float has a shape outside.
+            setLogicalLeftForChild(childBox, floatLogicalLocation.x() - childBox->exclusionShapeOutsideInfo()->shapeLogicalLeft());
+            setLogicalTopForChild(childBox, floatLogicalLocation.y() - childBox->exclusionShapeOutsideInfo()->shapeLogicalTop());
+        } else {
 #endif
-        // The CSS Exclusions specification says that the margins are ignored when a float has a shape outside.
-        setLogicalLeftForChild(childBox, floatLogicalLocation.x() + (hasShapeOutside ? LayoutUnit() : childLogicalLeftMargin));
-        setLogicalTopForChild(childBox, floatLogicalLocation.y() + (hasShapeOutside ? LayoutUnit() : marginBeforeForChild(childBox)));
+            setLogicalLeftForChild(childBox, floatLogicalLocation.x() + childLogicalLeftMargin);
+            setLogicalTopForChild(childBox, floatLogicalLocation.y() + marginBeforeForChild(childBox));
+#if ENABLE(CSS_EXCLUSIONS)
+        }
+#endif
 
         LayoutState* layoutState = view()->layoutState();
         bool isPaginated = layoutState->isPaginated();
@@ -4039,9 +4053,19 @@ bool RenderBlock::positionNewFloats()
                 floatLogicalLocation = computeLogicalLocationForFloat(floatingObject, newLogicalTop);
                 setLogicalLeftForFloat(floatingObject, floatLogicalLocation.x());
 
-                // The CSS Exclusions specification says that the margins are ignored when a float has a shape outside.
-                setLogicalLeftForChild(childBox, floatLogicalLocation.x() + (hasShapeOutside ? LayoutUnit() : childLogicalLeftMargin));
-                setLogicalTopForChild(childBox, floatLogicalLocation.y() + (hasShapeOutside ? LayoutUnit() : marginBeforeForChild(childBox)));
+#if ENABLE(CSS_EXCLUSIONS)
+                if (childBox->exclusionShapeOutsideInfo()) {
+                    // The CSS Exclusions specification says that the margins are ignored when a float has a shape outside.
+                    setLogicalLeftForChild(childBox, floatLogicalLocation.x() - childBox->exclusionShapeOutsideInfo()->shapeLogicalLeft());
+                    setLogicalTopForChild(childBox, floatLogicalLocation.y() - childBox->exclusionShapeOutsideInfo()->shapeLogicalTop());
+                } else {
+#endif
+                    setLogicalLeftForChild(childBox, floatLogicalLocation.x() + childLogicalLeftMargin);
+                    setLogicalTopForChild(childBox, floatLogicalLocation.y() + marginBeforeForChild(childBox));
+#if ENABLE(CSS_EXCLUSIONS)
+                }
+#endif
+
         
                 if (childBlock)
                     childBlock->setChildNeedsLayout(true, MarkOnlyThis);
@@ -4051,8 +4075,8 @@ bool RenderBlock::positionNewFloats()
 
         setLogicalTopForFloat(floatingObject, floatLogicalLocation.y());
 #if ENABLE(CSS_EXCLUSIONS)
-        if (hasShapeOutside)
-            setLogicalHeightForFloat(floatingObject, floatingObject->renderer()->exclusionShapeOutsideInfo()->shapeLogicalHeight());
+        if (childBox->exclusionShapeOutsideInfo())
+            setLogicalHeightForFloat(floatingObject, childBox->exclusionShapeOutsideInfo()->shapeLogicalHeight());
         else
 #endif
             setLogicalHeightForFloat(floatingObject, logicalHeightForChild(childBox) + marginBeforeForChild(childBox) + marginAfterForChild(childBox));
@@ -4534,6 +4558,7 @@ LayoutUnit RenderBlock::addOverhangingFloats(RenderBlock* child, bool makeChildP
         LayoutUnit logicalBottom = childLogicalTop + logicalBottomForFloat;
         lowestFloatLogicalBottom = max(lowestFloatLogicalBottom, logicalBottom);
 
+        // FIXME: Bug 106927 Handle situations where float and shape-outside overflow differently.
         if (logicalBottom > logicalHeight()) {
             // If the object is not in the list, we add it now.
             if (!containsFloat(r->m_renderer)) {
@@ -7387,6 +7412,14 @@ RenderRegion* RenderBlock::regionAtBlockOffset(LayoutUnit blockOffset) const
         return 0;
 
     return flowThread->regionAtBlockOffset(offsetFromLogicalTopOfFirstPage() + blockOffset, true);
+}
+
+void RenderBlock::updateStaticInlinePositionForChild(RenderBox* child, LayoutUnit logicalTop)
+{
+    if (child->style()->isOriginalDisplayInlineType())
+        setStaticInlinePositionForChild(child, logicalTop, startAlignedOffsetForLine(logicalTop, false));
+    else
+        setStaticInlinePositionForChild(child, logicalTop, startOffsetForContent(logicalTop));
 }
 
 void RenderBlock::setStaticInlinePositionForChild(RenderBox* child, LayoutUnit blockOffset, LayoutUnit inlinePosition)

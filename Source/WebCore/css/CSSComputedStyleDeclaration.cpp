@@ -594,7 +594,23 @@ static PassRefPtr<CSSValue> valueForReflection(const StyleReflection* reflection
     else
         offset = zoomAdjustedPixelValue(reflection->offset().value(), style);
 
-    return CSSReflectValue::create(reflection->direction(), offset.release(), valueForNinePieceImage(reflection->mask()));
+    RefPtr<CSSPrimitiveValue> direction;
+    switch (reflection->direction()) {
+    case ReflectionBelow:
+        direction = cssValuePool().createIdentifierValue(CSSValueBelow);
+        break;
+    case ReflectionAbove:
+        direction = cssValuePool().createIdentifierValue(CSSValueAbove);
+        break;
+    case ReflectionLeft:
+        direction = cssValuePool().createIdentifierValue(CSSValueLeft);
+        break;
+    case ReflectionRight:
+        direction = cssValuePool().createIdentifierValue(CSSValueRight);
+        break;
+    }
+
+    return CSSReflectValue::create(direction.release(), offset.release(), valueForNinePieceImage(reflection->mask()));
 }
 
 static PassRefPtr<CSSValueList> createPositionListForLayer(CSSPropertyID propertyID, const FillLayer* layer, const RenderStyle* style)
@@ -1844,6 +1860,8 @@ PassRefPtr<CSSValue> CSSComputedStyleDeclaration::getPropertyCSSValue(CSSPropert
         case CSSPropertyWebkitOrder:
             return cssValuePool().createValue(style->order(), CSSPrimitiveValue::CSS_NUMBER);
         case CSSPropertyFloat:
+            if (style->display() != NONE && style->hasOutOfFlowPosition())
+                return cssValuePool().createIdentifierValue(CSSValueNone);
             return cssValuePool().createValue(style->floating());
         case CSSPropertyFont: {
             RefPtr<FontValue> computedFont = FontValue::create();

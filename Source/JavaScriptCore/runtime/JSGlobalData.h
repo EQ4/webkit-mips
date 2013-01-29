@@ -36,8 +36,8 @@
 #include "Intrinsic.h"
 #include "JITThunks.h"
 #include "JITThunks.h"
+#include "JSCJSValue.h"
 #include "JSLock.h"
-#include "JSValue.h"
 #include "LLIntData.h"
 #include "NumericStrings.h"
 #include "ProfilerDatabase.h"
@@ -90,6 +90,12 @@ namespace JSC {
     class UnlinkedEvalCodeBlock;
     class UnlinkedFunctionExecutable;
     class UnlinkedProgramCodeBlock;
+
+#if ENABLE(DFG_JIT)
+    namespace DFG {
+    class LongLivedState;
+    }
+#endif // ENABLE(DFG_JIT)
 
     struct HashTable;
     struct Instruction;
@@ -193,6 +199,10 @@ namespace JSC {
         // The heap should be just after executableAllocator and before other members to ensure that it's
         // destructed after all the objects that reference it.
         Heap heap;
+        
+#if ENABLE(DFG_JIT)
+        OwnPtr<DFG::LongLivedState> m_dfgState;
+#endif // ENABLE(DFG_JIT)
 
         GlobalDataType globalDataType;
         ClientData* clientData;

@@ -603,7 +603,7 @@ void WebViewImpl::handleMouseDown(Frame& mainFrame, const WebMouseEvent& event)
         || (event.button == WebMouseEvent::ButtonLeft
             && event.modifiers & WebMouseEvent::ControlKey))
         mouseContextMenu(event);
-#elif OS(UNIX) || OS(ANDROID)
+#elif OS(UNIX)
     if (event.button == WebMouseEvent::ButtonRight)
         mouseContextMenu(event);
 #endif
@@ -695,7 +695,8 @@ void WebViewImpl::scrollBy(const WebPoint& delta)
 #if ENABLE(GESTURE_EVENTS)
 bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
 {
-    WebWidgetClient::EventStatus eventStatus = WebWidgetClient::EventStatusUnprocessed;
+    bool eventSwallowed = false;
+    bool eventCancelled = false; // for disambiguation
 
     // Handle link highlighting outside the main switch to avoid getting lost in the
     // complicated set of cases handled below.
@@ -729,7 +730,7 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
         OwnPtr<WebGestureCurve> flingCurve = adoptPtr(Platform::current()->createFlingAnimationCurve(event.sourceDevice, WebFloatPoint(event.data.flingStart.velocityX, event.data.flingStart.velocityY), WebSize()));
         m_gestureAnimation = WebActiveGestureAnimation::createAtAnimationStart(flingCurve.release(), this);
         scheduleAnimation();
-        eventStatus = WebWidgetClient::EventStatusProcessed;
+        eventSwallowed = true;
         break;
     }
     case WebInputEvent::GestureFlingCancel:
@@ -737,13 +738,13 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
             m_gestureAnimation.clear();
             if (m_layerTreeView)
                 m_layerTreeView->didStopFlinging();
-            eventStatus = WebWidgetClient::EventStatusProcessed;
+            eventSwallowed = true;
         }
         break;
     case WebInputEvent::GestureTap: {
         m_client->cancelScheduledContentIntents();
         if (detectContentOnTouch(WebPoint(event.x, event.y))) {
-            eventStatus = WebWidgetClient::EventStatusProcessed;
+            eventSwallowed = true;
             break;
         }
 
@@ -752,20 +753,23 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
         hideSelectPopup();
         ASSERT(!m_selectPopup);
 
-        if (event.data.tap.width > 0) {
+        // Don't trigger a disambiguation popup on sites designed for mobile devices.
+        // Instead, assume that the page has been designed with big enough buttons and links.
+        if (event.data.tap.width > 0 && !shouldDisableDesktopWorkarounds()) {
             IntRect boundingBox(event.x - event.data.tap.width / 2, event.y - event.data.tap.height / 2, event.data.tap.width, event.data.tap.height);
             Vector<IntRect> goodTargets;
-            findGoodTouchTargets(boundingBox, mainFrameImpl()->frame(), pageScaleFactor(), goodTargets);
+            findGoodTouchTargets(boundingBox, mainFrameImpl()->frame(), goodTargets);
             // FIXME: replace touch adjustment code when numberOfGoodTargets == 1?
             // Single candidate case is currently handled by: https://bugs.webkit.org/show_bug.cgi?id=85101
             if (goodTargets.size() >= 2 && m_client && m_client->didTapMultipleTargets(event, goodTargets)) {
-                eventStatus = WebWidgetClient::EventStatusCancelled;
+                eventSwallowed = true;
+                eventCancelled = true;
                 break;
             }
         }
 
         PlatformGestureEventBuilder platformEvent(mainFrameImpl()->frameView(), event);
-        eventStatus = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent) ? WebWidgetClient::EventStatusProcessed : WebWidgetClient::EventStatusUnprocessed;
+        eventSwallowed = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent);
 
         if (m_selectPopup && m_selectPopup == selectPopup) {
             // That tap triggered a select popup which is the same as the one that
@@ -787,7 +791,7 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
         m_page->contextMenuController()->clearContextMenu();
         m_contextMenuAllowed = true;
         PlatformGestureEventBuilder platformEvent(mainFrameImpl()->frameView(), event);
-        eventStatus = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent) ? WebWidgetClient::EventStatusProcessed : WebWidgetClient::EventStatusUnprocessed;
+        eventSwallowed = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent);
         m_contextMenuAllowed = false;
 
         break;
@@ -795,14 +799,14 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
     case WebInputEvent::GestureTapDown: {
         m_client->cancelScheduledContentIntents();
         PlatformGestureEventBuilder platformEvent(mainFrameImpl()->frameView(), event);
-        eventStatus = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent) ? WebWidgetClient::EventStatusProcessed : WebWidgetClient::EventStatusUnprocessed;
+        eventSwallowed = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent);
         break;
     }
     case WebInputEvent::GestureDoubleTap:
         if (m_webSettings->doubleTapToZoomEnabled() && m_minimumPageScaleFactor != m_maximumPageScaleFactor) {
             m_client->cancelScheduledContentIntents();
             animateZoomAroundPoint(WebPoint(event.x, event.y), DoubleTap);
-            eventStatus = WebWidgetClient::EventStatusProcessed;
+            eventSwallowed = true;
             break;
         }
     case WebInputEvent::GestureScrollBegin:
@@ -814,14 +818,14 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
     case WebInputEvent::GesturePinchEnd:
     case WebInputEvent::GesturePinchUpdate: {
         PlatformGestureEventBuilder platformEvent(mainFrameImpl()->frameView(), event);
-        eventStatus = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent) ? WebWidgetClient::EventStatusProcessed : WebWidgetClient::EventStatusUnprocessed;
+        eventSwallowed = mainFrameImpl()->frame()->eventHandler()->handleGestureEvent(platformEvent);
         break;
     }
     default:
         ASSERT_NOT_REACHED();
     }
-    m_client->didHandleGestureEvent(event, eventStatus);
-    return eventStatus != WebWidgetClient::EventStatusUnprocessed;
+    m_client->didHandleGestureEvent(event, eventCancelled);
+    return eventSwallowed;
 }
 
 void WebViewImpl::transferActiveWheelFlingAnimation(const WebActiveWheelFlingParameters& parameters)
@@ -879,6 +883,15 @@ void WebViewImpl::setShowPaintRects(bool show)
         m_layerTreeView->setShowPaintRects(show);
     }
     m_showPaintRects = show;
+}
+
+void WebViewImpl::setContinuousPaintingEnabled(bool enabled)
+{
+    if (isAcceleratedCompositingActive()) {
+        TRACE_EVENT0("webkit", "WebViewImpl::setContinuousPaintingEnabled");
+        m_layerTreeView->setContinuousPaintingEnabled(enabled);
+    }
+    m_continuousPaintingEnabled = enabled;
 }
 
 bool WebViewImpl::handleKeyEvent(const WebKeyboardEvent& event)
@@ -1151,7 +1164,7 @@ void WebViewImpl::computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZo
         // (after double tap, find in page, etc), though the user should still
         // be allowed to manually pinch zoom in further if they desire.
         const float defaultScaleWhenAlreadyLegible = m_minimumPageScaleFactor * doubleTapZoomAlreadyLegibleRatio;
-        float legibleScale = deviceScaleFactor();
+        float legibleScale = settingsImpl()->applyDeviceScaleFactorInCompositor() ? 1 : deviceScaleFactor();
 #if ENABLE(TEXT_AUTOSIZING)
         if (page() && page()->settings())
             legibleScale *= page()->settings()->textAutosizingFontScaleFactor();
@@ -1159,8 +1172,12 @@ void WebViewImpl::computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZo
         if (legibleScale < defaultScaleWhenAlreadyLegible)
             legibleScale = (scale == m_minimumPageScaleFactor) ? defaultScaleWhenAlreadyLegible : m_minimumPageScaleFactor;
 
-        const float defaultMargin = doubleTapZoomContentDefaultMargin * deviceScaleFactor();
-        const float minimumMargin = doubleTapZoomContentMinimumMargin * deviceScaleFactor();
+        float defaultMargin = doubleTapZoomContentDefaultMargin;
+        float minimumMargin = doubleTapZoomContentMinimumMargin;
+        if (!settingsImpl()->applyDeviceScaleFactorInCompositor()) {
+            defaultMargin *= deviceScaleFactor();
+            minimumMargin *= deviceScaleFactor();
+        }
         // We want the margins to have the same physical size, which means we
         // need to express them in post-scale size. To do that we'd need to know
         // the scale we're scaling to, but that depends on the margins. Instead
@@ -1171,7 +1188,10 @@ void WebViewImpl::computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZo
                 static_cast<int>(defaultMargin * rect.width / m_size.width),
                 static_cast<int>(minimumMargin * rect.width / m_size.width));
         // Fit block to screen, respecting limits.
-        scale *= static_cast<float>(m_size.width) / rect.width;
+        if (settingsImpl()->applyPageScaleFactorInCompositor())
+            scale = static_cast<float>(m_size.width) / rect.width;
+        else
+            scale *= static_cast<float>(m_size.width) / rect.width;
         scale = min(scale, legibleScale);
         scale = clampPageScaleFactorToLimits(scale);
 
@@ -1196,8 +1216,12 @@ void WebViewImpl::computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZo
         // double-tap zoom strategy (fitting the containing block to the screen)
         // though.
 
-        float screenHeight = m_size.height / scale * pageScaleFactor();
-        float screenWidth = m_size.width / scale * pageScaleFactor();
+        float screenHeight = m_size.height / scale;
+        float screenWidth = m_size.width / scale;
+        if (!settingsImpl()->applyPageScaleFactorInCompositor()) {
+            screenHeight *= pageScaleFactor();
+            screenWidth *= pageScaleFactor();
+        }
 
         // Scroll to vertically align the block.
         if (rect.height < screenHeight) {
@@ -1221,8 +1245,10 @@ void WebViewImpl::computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZo
 
     scale = clampPageScaleFactorToLimits(scale);
     scroll = mainFrameImpl()->frameView()->windowToContents(scroll);
-    float scaleDelta = scale / pageScaleFactor();
-    scroll = WebPoint(scroll.x * scaleDelta, scroll.y * scaleDelta);
+    if (!settingsImpl()->applyPageScaleFactorInCompositor()) {
+        float scaleDelta = scale / pageScaleFactor();
+        scroll = WebPoint(scroll.x * scaleDelta, scroll.y * scaleDelta);
+    }
     if (!isAnchor)
         scroll = clampOffsetAtScale(scroll, scale);
 }
@@ -1600,11 +1626,15 @@ void WebViewImpl::willStartLiveResize()
         pluginContainer->willStartLiveResize();
 }
 
+IntSize WebViewImpl::scaledSize(float pageScaleFactor) const
+{
+    FloatSize scaledSize = dipSize();
+    scaledSize.scale(1 / pageScaleFactor);
+    return expandedIntSize(scaledSize);
+}
+
 WebSize WebViewImpl::size()
 {
-    if (isFixedLayoutModeEnabled() && settingsImpl()->applyPageScaleFactorInCompositor())
-        return layoutSize();
-
     return m_size;
 }
 
@@ -1635,7 +1665,7 @@ void WebViewImpl::resize(const WebSize& newSize)
     if (!agentPrivate || !agentPrivate->metricsOverridden()) {
         WebFrameImpl* webFrame = mainFrameImpl();
         if (webFrame->frameView())
-            webFrame->frameView()->resize(size());
+            webFrame->frameView()->resize(m_size);
     }
 
 #if ENABLE(VIEWPORT)
@@ -2071,30 +2101,26 @@ bool WebViewImpl::handleInputEvent(const WebInputEvent& inputEvent)
         return true;
     }
 
-    if (!m_layerTreeView)
-        return PageWidgetDelegate::handleInputEvent(m_page.get(), *this, inputEvent);
-
     const WebInputEvent* inputEventTransformed = &inputEvent;
-    WebMouseEvent mouseEvent;
-    WebGestureEvent gestureEvent;
-    if (WebInputEvent::isMouseEventType(inputEvent.type)) {
-        mouseEvent = *static_cast<const WebMouseEvent*>(&inputEvent);
-
-        IntPoint transformedLocation = roundedIntPoint(m_layerTreeView->adjustEventPointForPinchZoom(WebFloatPoint(mouseEvent.x, mouseEvent.y)));
-        mouseEvent.x = transformedLocation.x();
-        mouseEvent.y = transformedLocation.y();
-        inputEventTransformed = static_cast<const WebInputEvent*>(&mouseEvent);
-    } else if (WebInputEvent::isGestureEventType(inputEvent.type)) {
-        gestureEvent = *static_cast<const WebGestureEvent*>(&inputEvent);
-
-        IntPoint transformedLocation = roundedIntPoint(m_layerTreeView->adjustEventPointForPinchZoom(WebFloatPoint(gestureEvent.x, gestureEvent.y)));
-        gestureEvent.x = transformedLocation.x();
-        gestureEvent.y = transformedLocation.y();
-        inputEventTransformed = static_cast<const WebInputEvent*>(&gestureEvent);
+    if (m_page->settings()->applyPageScaleFactorInCompositor()) {
+        WebMouseEvent mouseEvent;
+        WebGestureEvent gestureEvent;
+        if (WebInputEvent::isMouseEventType(inputEvent.type)) {
+            mouseEvent = *static_cast<const WebMouseEvent*>(&inputEvent);
+            mouseEvent.x = mouseEvent.x / pageScaleFactor();
+            mouseEvent.y = mouseEvent.y / pageScaleFactor();
+            inputEventTransformed = static_cast<const WebInputEvent*>(&mouseEvent);
+        } else if (WebInputEvent::isGestureEventType(inputEvent.type)) {
+            gestureEvent = *static_cast<const WebGestureEvent*>(&inputEvent);
+            gestureEvent.x = gestureEvent.x / pageScaleFactor();
+            gestureEvent.y = gestureEvent.y / pageScaleFactor();
+            gestureEvent.data.tap.width /= pageScaleFactor();
+            gestureEvent.data.tap.height /= pageScaleFactor();
+            inputEventTransformed = static_cast<const WebInputEvent*>(&gestureEvent);
+        }
     }
 
-    bool handled = PageWidgetDelegate::handleInputEvent(m_page.get(), *this, *inputEventTransformed);
-    return handled;
+    return PageWidgetDelegate::handleInputEvent(m_page.get(), *this, *inputEventTransformed);
 }
 
 void WebViewImpl::mouseCaptureLost()
@@ -2909,34 +2935,40 @@ float WebViewImpl::clampPageScaleFactorToLimits(float scaleFactor)
     return min(max(scaleFactor, m_minimumPageScaleFactor), m_maximumPageScaleFactor);
 }
 
-WebPoint WebViewImpl::clampOffsetAtScale(const WebPoint& offset, float scale)
+IntPoint WebViewImpl::clampOffsetAtScale(const IntPoint& offset, float scale) const
 {
-    // This is the scaled content size. We need to convert it to the new scale factor.
-    WebSize contentSize = mainFrame()->contentsSize();
-    float deltaScale = scale / pageScaleFactor();
-    int docWidthAtNewScale = contentSize.width * deltaScale;
-    int docHeightAtNewScale = contentSize.height * deltaScale;
-    int viewWidth = m_size.width;
-    int viewHeight = m_size.height;
-
-    // Enforce the maximum and minimum scroll positions at the new scale.
     IntPoint clampedOffset = offset;
-    clampedOffset = clampedOffset.shrunkTo(IntPoint(docWidthAtNewScale - viewWidth, docHeightAtNewScale - viewHeight));
-    clampedOffset.clampNegativeToZero();
+    if (!m_page->settings()->applyPageScaleFactorInCompositor()) {
+        // This is the scaled content size. We need to convert it to the new scale factor.
+        WebSize contentSize = contentsSize();
+        int docWidthAtNewScale = contentSize.width * scale;
+        int docHeightAtNewScale = contentSize.height * scale;
+        int viewWidth = m_size.width;
+        int viewHeight = m_size.height;
+
+        // Enforce the maximum and minimum scroll positions at the new scale.
+        clampedOffset = clampedOffset.shrunkTo(IntPoint(docWidthAtNewScale - viewWidth, docHeightAtNewScale - viewHeight));
+        clampedOffset.clampNegativeToZero();
+    } else {
+        clampedOffset = clampedOffset.shrunkTo(IntPoint(contentsSize() - scaledSize(scale)));
+        clampedOffset.clampNegativeToZero();
+    }
+
     return clampedOffset;
 }
 
 void WebViewImpl::setPageScaleFactorPreservingScrollOffset(float scaleFactor)
 {
-    // Pick a scale factor that is within the expected limits
     scaleFactor = clampPageScaleFactorToLimits(scaleFactor);
 
-    IntPoint scrollOffsetAtNewScale(mainFrame()->scrollOffset().width, mainFrame()->scrollOffset().height);
-    float deltaScale = scaleFactor / pageScaleFactor();
-    scrollOffsetAtNewScale.scale(deltaScale, deltaScale);
+    IntPoint scrollOffset(mainFrame()->scrollOffset().width, mainFrame()->scrollOffset().height);
+    if (!m_page->settings()->applyPageScaleFactorInCompositor()) {
+        float deltaScale = scaleFactor / pageScaleFactor();
+        scrollOffset.scale(deltaScale, deltaScale);
+    }
+    scrollOffset = clampOffsetAtScale(scrollOffset, scaleFactor);
 
-    WebPoint clampedOffsetAtNewScale = clampOffsetAtScale(scrollOffsetAtNewScale, scaleFactor);
-    setPageScaleFactor(scaleFactor, clampedOffsetAtNewScale);
+    setPageScaleFactor(scaleFactor, scrollOffset);
 }
 
 void WebViewImpl::setPageScaleFactor(float scaleFactor, const WebPoint& origin)
@@ -2947,22 +2979,17 @@ void WebViewImpl::setPageScaleFactor(float scaleFactor, const WebPoint& origin)
     if (!scaleFactor)
         scaleFactor = 1;
 
+    IntPoint scrollOffset = origin;
     scaleFactor = clampPageScaleFactorToLimits(scaleFactor);
-    WebPoint scrollOffset;
-    if (!m_page->settings()->applyPageScaleFactorInCompositor()) {
-        // If page scale is not applied in the compositor, then the scroll offsets should
-        // be modified by the scale factor.
-        scrollOffset = clampOffsetAtScale(origin, scaleFactor);
-    } else {
-        IntPoint offset = origin;
-        WebSize contentSize = mainFrame()->contentsSize();
-        offset.shrunkTo(IntPoint(contentSize.width - m_size.width, contentSize.height - m_size.height));
-        offset.clampNegativeToZero();
-        scrollOffset = offset;
-    }
+    scrollOffset = clampOffsetAtScale(scrollOffset, scaleFactor);
 
-    page()->setPageScaleFactor(scaleFactor, scrollOffset);
+    page()->setPageScaleFactor(scaleFactor, IntPoint(scrollOffset));
+
     m_pageScaleFactorIsSet = true;
+
+#if USE(ACCELERATED_COMPOSITING)
+    updateLayerTreeViewport();
+#endif
 }
 
 float WebViewImpl::deviceScaleFactor() const
@@ -3046,12 +3073,14 @@ void WebViewImpl::setIgnoreViewportTagMaximumScale(bool flag)
     m_page->chrome()->client()->dispatchViewportPropertiesDidChange(page()->mainFrame()->document()->viewportArguments());
 }
 
-static IntSize unscaledContentsSize(Frame* frame)
+IntSize WebViewImpl::contentsSize() const
 {
+    Frame* frame = page()->mainFrame();
     RenderView* root = frame->contentRenderer();
     if (!root)
         return IntSize();
-    return root->unscaledDocumentRect().size();
+
+    return root->documentRect().size();
 }
 
 IntSize WebViewImpl::layoutSize() const
@@ -3059,7 +3088,8 @@ IntSize WebViewImpl::layoutSize() const
     if (!isFixedLayoutModeEnabled())
         return m_size;
 
-    IntSize contentSize = unscaledContentsSize(page()->mainFrame());
+    IntSize contentSize = contentsSize();
+
     if (fixedLayoutSize().width >= contentSize.width())
         return fixedLayoutSize();
 
@@ -3087,7 +3117,7 @@ bool WebViewImpl::computePageScaleFactorLimits()
     int viewWidthNotIncludingScrollbars = m_size.width;
     if (viewWidthNotIncludingScrollbars && view->verticalScrollbar() && !view->verticalScrollbar()->isOverlayScrollbar())
         viewWidthNotIncludingScrollbars -= view->verticalScrollbar()->width();
-    int unscaledContentsWidth = unscaledContentsSize(page()->mainFrame()).width();
+    int unscaledContentsWidth = contentsSize().width();
     if (viewWidthNotIncludingScrollbars && unscaledContentsWidth) {
         // Limit page scaling down to the document width.
         m_minimumPageScaleFactor = max(m_minimumPageScaleFactor, static_cast<float>(viewWidthNotIncludingScrollbars) / unscaledContentsWidth);
@@ -3739,15 +3769,10 @@ void WebViewImpl::didChangeContentsSize()
     } else
         mayNeedLayout = computePageScaleFactorLimits();
 
-    FrameView* view = mainFrameImpl()->frameView();
-    if (settingsImpl()->applyPageScaleFactorInCompositor() && view && view->visibleContentRect(true).width() != layoutSize().width()) {
-        view->resize(layoutSize());
-        mayNeedLayout = true;
-    }
-
     // didChangeContentsSize() may be called from FrameView::layout; we need to
     // relayout to avoid triggering the assertion that needsLayout() isn't set
     // at the end of a layout.
+    FrameView* view = mainFrameImpl()->frameView();
     if (mayNeedLayout && view && view->needsLayout())
         view->layout();
 #endif
@@ -3955,7 +3980,8 @@ void WebViewImpl::invalidateRect(const IntRect& rect)
     if (m_layerTreeViewCommitsDeferred) {
         // If we receive an invalidation from WebKit while in deferred commit mode,
         // that means it's time to start producing frames again so un-defer.
-        m_layerTreeView->setDeferCommits(false);
+        if (m_layerTreeView)
+            m_layerTreeView->setDeferCommits(false);
         m_layerTreeViewCommitsDeferred = false;
     }
     if (m_isAcceleratedCompositingActive) {
@@ -4101,6 +4127,7 @@ void WebViewImpl::setIsAcceleratedCompositingActive(bool active)
                 m_pageOverlays->update();
             m_layerTreeView->setShowFPSCounter(m_showFPSCounter);
             m_layerTreeView->setShowPaintRects(m_showPaintRects);
+            m_layerTreeView->setContinuousPaintingEnabled(m_continuousPaintingEnabled);
         } else {
             m_nonCompositedContentHost.clear();
             m_isAcceleratedCompositingActive = false;
@@ -4162,8 +4189,10 @@ void WebViewImpl::willCommit()
 
 void WebViewImpl::didCommit()
 {
-    if (m_client)
+    if (m_client) {
+        m_client->didCommitCompositorFrame();
         m_client->didBecomeReadyForAdditionalInput();
+    }
 }
 
 void WebViewImpl::didCommitAndDrawFrame()
@@ -4219,15 +4248,13 @@ void WebViewImpl::updateLayerTreeViewport()
         return;
 
     FrameView* view = page()->mainFrame()->view();
-    IntRect visibleRect = view->visibleContentRect(true /* include scrollbars */);
-    IntPoint scroll(view->scrollX(), view->scrollY());
 
-    m_nonCompositedContentHost->setViewport(visibleRect.size(), view->contentsSize(), scroll, view->scrollOrigin());
-
-    IntSize layoutViewportSize = visibleRect.size();
+    IntSize layoutViewportSize = layoutSize();
     IntSize deviceViewportSize = m_size;
     if (m_webSettings->applyDeviceScaleFactorInCompositor())
         deviceViewportSize.scale(deviceScaleFactor());
+
+    m_nonCompositedContentHost->setViewport(deviceViewportSize, view->contentsSize(), view->scrollPosition(), view->scrollOrigin());
 
     m_layerTreeView->setViewportSize(layoutViewportSize, deviceViewportSize);
     m_layerTreeView->setPageScaleFactorAndLimits(pageScaleFactor(), m_minimumPageScaleFactor, m_maximumPageScaleFactor);
@@ -4336,5 +4363,12 @@ void WebViewImpl::pointerLockMouseEvent(const WebInputEvent& event)
             eventType);
 }
 #endif
+
+bool WebViewImpl::shouldDisableDesktopWorkarounds()
+{
+    ViewportArguments arguments = mainFrameImpl()->frame()->document()->viewportArguments();
+    return arguments.width == ViewportArguments::ValueDeviceWidth || !arguments.userZoom
+        || (arguments.minZoom == arguments.maxZoom && arguments.minZoom != ViewportArguments::ValueAuto);
+}
 
 } // namespace WebKit

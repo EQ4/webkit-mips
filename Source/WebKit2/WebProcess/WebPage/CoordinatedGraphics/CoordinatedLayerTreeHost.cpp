@@ -318,8 +318,7 @@ void CoordinatedLayerTreeHost::createCompositingLayers()
         }
     }
 
-    for (size_t i = 0; i < m_layersToCreate.size(); ++i)
-        m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::CreateCompositingLayer(m_layersToCreate[i]));
+    m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::CreateCompositingLayers(m_layersToCreate));
     m_layersToCreate.clear();
     m_shouldSyncFrame = true;
 }
@@ -334,8 +333,7 @@ void CoordinatedLayerTreeHost::deleteCompositingLayers()
         return;
     }
 
-    for (size_t i = 0; i < m_layersToDelete.size(); ++i)
-        m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::DeleteCompositingLayer(m_layersToDelete[i]));
+    m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::DeleteCompositingLayers(m_layersToDelete));
     m_layersToDelete.clear();
     m_shouldSyncFrame = true;
 }
@@ -392,6 +390,11 @@ void CoordinatedLayerTreeHost::destroyCanvas(CoordinatedLayerID id)
     m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::DestroyCanvas(id));
 }
 #endif
+
+void CoordinatedLayerTreeHost::setLayerRepaintCount(CoordinatedLayerID id, int value)
+{
+    m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::SetLayerRepaintCount(id, value));
+}
 
 #if ENABLE(CSS_FILTERS)
 void CoordinatedLayerTreeHost::syncLayerFilters(CoordinatedLayerID id, const FilterOperations& filters)
@@ -480,7 +483,7 @@ static void updateOffsetFromViewportForSelf(RenderLayer* renderLayer)
     if (!renderLayer->renderer()->container()->isRenderView())
         return;
 
-    if (!renderLayer->isStackingContext())
+    if (!renderLayer->isStackingContainer())
         return;
 
     CoordinatedGraphicsLayer* graphicsLayer = toCoordinatedGraphicsLayer(backing->graphicsLayer());

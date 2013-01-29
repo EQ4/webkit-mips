@@ -29,6 +29,8 @@
 #include "CoordinatedGraphicsArgumentCoders.h"
 
 #if USE(COORDINATED_GRAPHICS)
+#include "CoordinatedLayerInfo.h"
+#include "SurfaceUpdateInfo.h"
 #include "WebCoreArgumentCoders.h"
 #include <WebCore/Animation.h>
 #include <WebCore/Color.h>
@@ -71,9 +73,7 @@
 #endif
 
 using namespace WebCore;
-#if ENABLE(CSS_SHADERS)
 using namespace WebKit;
-#endif
 
 namespace CoreIPC {
 
@@ -812,6 +812,26 @@ bool ArgumentCoder<WebCore::GraphicsSurfaceToken>::decode(ArgumentDecoder* decod
     return true;
 }
 #endif
+
+void ArgumentCoder<CoordinatedLayerInfo>::encode(ArgumentEncoder& encoder, const CoordinatedLayerInfo& coordinatedLayerInfo)
+{
+    SimpleArgumentCoder<CoordinatedLayerInfo>::encode(encoder, coordinatedLayerInfo);
+}
+
+bool ArgumentCoder<CoordinatedLayerInfo>::decode(ArgumentDecoder* decoder, CoordinatedLayerInfo& coordinatedLayerInfo)
+{
+    return SimpleArgumentCoder<CoordinatedLayerInfo>::decode(decoder, coordinatedLayerInfo);
+}
+
+void ArgumentCoder<SurfaceUpdateInfo>::encode(ArgumentEncoder& encoder, const SurfaceUpdateInfo& surfaceUpdateInfo)
+{
+    SimpleArgumentCoder<SurfaceUpdateInfo>::encode(encoder, surfaceUpdateInfo);
+}
+
+bool ArgumentCoder<SurfaceUpdateInfo>::decode(ArgumentDecoder* decoder, SurfaceUpdateInfo& surfaceUpdateInfo)
+{
+    return SimpleArgumentCoder<SurfaceUpdateInfo>::decode(decoder, surfaceUpdateInfo);
+}
 
 } // namespace CoreIPC
 

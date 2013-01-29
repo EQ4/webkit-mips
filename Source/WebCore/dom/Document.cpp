@@ -114,7 +114,6 @@
 #include "NameNodeList.h"
 #include "NamedFlowCollection.h"
 #include "NestingLevelIncrementer.h"
-#include "NewXMLDocumentParser.h"
 #include "NodeFilter.h"
 #include "NodeIterator.h"
 #include "NodeRareData.h"
@@ -657,7 +656,7 @@ void Document::removedLastRef()
     if (m_guardRefCount) {
         // If removing a child removes the last self-only ref, we don't
         // want the scope to be destructed until after
-        // removeAllChildren returns, so we guard ourselves with an
+        // removeDetachedChildren returns, so we guard ourselves with an
         // extra self-only ref.
         guardRef();
 
@@ -678,10 +677,10 @@ void Document::removedLastRef()
 
         detachParser();
 
-        // removeAllChildren() doesn't always unregister IDs,
+        // removeDetachedChildren() doesn't always unregister IDs,
         // so tear down scope information upfront to avoid having stale references in the map.
         destroyTreeScopeData();
-        removeAllChildren();
+        removeDetachedChildren();
 
         m_markers->detach();
 
@@ -1396,7 +1395,7 @@ PassRefPtr<NodeList> Document::handleZeroPadding(const HitTestRequest& request, 
     if (!node)
         return 0;
 
-    node = node->shadowAncestorNode();
+    node = node->deprecatedShadowAncestorNode();
     ListHashSet<RefPtr<Node> > list;
     list.add(node);
     return StaticHashSetNodeList::adopt(list);
@@ -2160,7 +2159,7 @@ AXObjectCache* Document::axObjectCache() const
     Document* topDocument = this->topDocument();
     ASSERT(topDocument == this || !m_axObjectCache);
     if (!topDocument->m_axObjectCache)
-        topDocument->m_axObjectCache = adoptPtr(new AXObjectCache(this));
+        topDocument->m_axObjectCache = adoptPtr(new AXObjectCache(topDocument));
     return topDocument->m_axObjectCache.get();
 }
 
@@ -2174,11 +2173,7 @@ void Document::setVisuallyOrdered()
 PassRefPtr<DocumentParser> Document::createParser()
 {
     // FIXME: this should probably pass the frame instead
-#if ENABLE(NEW_XML)
-    return NewXMLDocumentParser::create(this);
-#else
     return XMLDocumentParser::create(this, view());
-#endif
 }
 
 ScriptableDocumentParser* Document::scriptableDocumentParser() const

@@ -95,6 +95,7 @@
 #include "JSDOMMimeTypeArray.cpp"
 #include "JSDOMNamedFlowCollection.cpp"
 #include "JSDOMParser.cpp"
+#include "JSDOMPath.cpp"
 #include "JSDOMPlugin.cpp"
 #include "JSDOMPluginArray.cpp"
 #include "JSDOMSecurityPolicy.cpp"
@@ -226,7 +227,6 @@
 #include "JSIDBDatabase.cpp"
 #include "JSIDBFactory.cpp"
 #include "JSIDBIndex.cpp"
-#include "JSIDBKey.cpp"
 #include "JSIDBKeyRange.cpp"
 #include "JSIDBObjectStore.cpp"
 #include "JSIDBRequest.cpp"
@@ -475,6 +475,9 @@
 #include "JSTouch.cpp"
 #include "JSTouchEvent.cpp"
 #include "JSTouchList.cpp"
+#if ENABLE(CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED)
+#include "JSTransitionEvent.cpp"
+#endif
 #include "JSTreeWalker.cpp"
 #include "JSUint16Array.cpp"
 #include "JSUint32Array.cpp"
@@ -484,6 +487,9 @@
 #include "JSValidityState.cpp"
 #include "JSVoidCallback.cpp"
 #include "JSWebKitAnimationEvent.cpp"
+#if ENABLE(CSS_SHADERS)
+#include "JSWebKitCSSFilterRule.cpp"
+#endif
 #if ENABLE(CSS_FILTERS)
 #include "JSWebKitCSSFilterValue.cpp"
 #endif

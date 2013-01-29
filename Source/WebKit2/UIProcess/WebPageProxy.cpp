@@ -231,6 +231,7 @@ WebPageProxy::WebPageProxy(PageClient* pageClient, PassRefPtr<WebProcessProxy> p
     , m_mainFrameIsPinnedToRightSide(false)
     , m_mainFrameIsPinnedToTopSide(false)
     , m_mainFrameIsPinnedToBottomSide(false)
+    , m_mainFrameInViewSourceMode(false)
     , m_pageCount(0)
     , m_renderTreeSize(0)
     , m_shouldSendEventsSynchronously(false)
@@ -1599,6 +1600,19 @@ void WebPageProxy::listenForLayoutMilestones(WebCore::LayoutMilestones milestone
         return;
 
     m_process->send(Messages::WebPage::ListenForLayoutMilestones(milestones), m_pageID);
+}
+
+void WebPageProxy::setVisibilityState(WebCore::PageVisibilityState visibilityState, bool isInitialState)
+{
+    if (!isValid())
+        return;
+
+#if ENABLE(PAGE_VISIBILITY_API)
+    if (visibilityState != m_visibilityState || isInitialState) {
+        m_visibilityState = visibilityState;
+        m_process->send(Messages::WebPage::SetVisibilityState(visibilityState, isInitialState), m_pageID);
+    }
+#endif
 }
 
 void WebPageProxy::setSuppressScrollbarAnimations(bool suppressAnimations)
@@ -3847,11 +3861,17 @@ void WebPageProxy::canAuthenticateAgainstProtectionSpaceInFrame(uint64_t frameID
 
 void WebPageProxy::didReceiveAuthenticationChallenge(uint64_t frameID, const AuthenticationChallenge& coreChallenge, uint64_t challengeID)
 {
+    didReceiveAuthenticationChallengeProxy(frameID, AuthenticationChallengeProxy::create(coreChallenge, challengeID, m_process->connection()));
+}
+
+void WebPageProxy::didReceiveAuthenticationChallengeProxy(uint64_t frameID, PassRefPtr<AuthenticationChallengeProxy> prpAuthenticationChallenge)
+{
+    ASSERT(prpAuthenticationChallenge);
+
     WebFrameProxy* frame = m_process->webFrame(frameID);
     MESSAGE_CHECK(frame);
 
-    RefPtr<AuthenticationChallengeProxy> authenticationChallenge = AuthenticationChallengeProxy::create(coreChallenge, challengeID, m_process->connection());
-    
+    RefPtr<AuthenticationChallengeProxy> authenticationChallenge = prpAuthenticationChallenge;
     m_loaderClient.didReceiveAuthenticationChallengeInFrame(this, frame, authenticationChallenge.get());
 }
 
@@ -4255,9 +4275,15 @@ void WebPageProxy::cancelComposition()
 }
 #endif // PLATFORM(QT) || PLATFORM(GTK)
 
-void WebPageProxy::setMainFrameInViewSourceMode(bool inViewSourceMode)
+void WebPageProxy::setMainFrameInViewSourceMode(bool mainFrameInViewSourceMode)
 {
-    m_process->send(Messages::WebPage::SetMainFrameInViewSourceMode(inViewSourceMode), m_pageID);
+    if (m_mainFrameInViewSourceMode == mainFrameInViewSourceMode)
+        return;
+
+    m_mainFrameInViewSourceMode = mainFrameInViewSourceMode;
+
+    if (isValid())
+        m_process->send(Messages::WebPage::SetMainFrameInViewSourceMode(mainFrameInViewSourceMode), m_pageID);
 }
 
 } // namespace WebKit

@@ -35,11 +35,12 @@
 #include <WebCore/PlatformStrategies.h>
 #include <WebCore/PluginStrategy.h>
 #include <WebCore/SharedWorkerStrategy.h>
+#include <WebCore/StorageStrategy.h>
 #include <WebCore/VisitedLinkStrategy.h>
 
 namespace WebKit {
 
-class WebPlatformStrategies : public WebCore::PlatformStrategies, private WebCore::CookiesStrategy, private WebCore::DatabaseStrategy, private WebCore::LoaderStrategy, private WebCore::PasteboardStrategy, private WebCore::PluginStrategy, private WebCore::SharedWorkerStrategy, private WebCore::VisitedLinkStrategy {
+class WebPlatformStrategies : public WebCore::PlatformStrategies, private WebCore::CookiesStrategy, private WebCore::DatabaseStrategy, private WebCore::LoaderStrategy, private WebCore::PasteboardStrategy, private WebCore::PluginStrategy, private WebCore::SharedWorkerStrategy, private WebCore::StorageStrategy, private WebCore::VisitedLinkStrategy {
 public:
     static void initialize();
     
@@ -53,6 +54,7 @@ private:
     virtual WebCore::PasteboardStrategy* createPasteboardStrategy() OVERRIDE;
     virtual WebCore::PluginStrategy* createPluginStrategy() OVERRIDE;
     virtual WebCore::SharedWorkerStrategy* createSharedWorkerStrategy() OVERRIDE;
+    virtual WebCore::StorageStrategy* createStorageStrategy() OVERRIDE;
     virtual WebCore::VisitedLinkStrategy* createVisitedLinkStrategy() OVERRIDE;
 
     // WebCore::CookiesStrategy
@@ -77,6 +79,10 @@ private:
     // WebCore::PluginStrategy
     virtual void refreshPlugins() OVERRIDE;
     virtual void getPluginInfo(const WebCore::Page*, Vector<WebCore::PluginInfo>&) OVERRIDE;
+
+    // WebCore::StorageStrategy.
+    virtual PassRefPtr<WebCore::StorageNamespace> localStorageNamespace(const String& path, unsigned quota) OVERRIDE;
+    virtual PassRefPtr<WebCore::StorageNamespace> sessionStorageNamespace(WebCore::Page*, unsigned quota) OVERRIDE;
 
     // WebCore::VisitedLinkStrategy
     virtual bool isLinkVisited(WebCore::Page*, WebCore::LinkHash, const WebCore::KURL& baseURL, const WTF::AtomicString& attributeURL) OVERRIDE;

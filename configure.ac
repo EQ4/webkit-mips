@@ -126,6 +126,10 @@ AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_SYS_LARGEFILE
 
+if test -z "$AR_FLAGS"; then
+   AR_FLAGS="cruT"
+fi
+
 # Check whether a C++ was found (AC_PROG_CXX sets $CXX to "g++" even when it
 # doesn't exist)
 AC_LANG_PUSH([C++])
@@ -1150,6 +1154,14 @@ AM_CONDITIONAL([USE_GLX], [test "$enable_glx" = "yes"])
 
 # Farstream feature conditional
 AM_CONDITIONAL([USE_FARSTREAM], [test "$have_farstream" = "yes"])
+
+#######################################################################################
+#                                     ATTENTION                                       #
+# Please refer to the following guidelines if you're about to add an Automake         #
+# conditional that reflects any configuration option you've probably also added.      #
+# Chances are neither of these changes are required.                                  #
+# http://trac.webkit.org/wiki/AddingFeatures#ActivatingafeatureforAutotoolsbasedports #
+#######################################################################################
 
 # WebKit feature conditionals
 AM_CONDITIONAL([ENABLE_DEBUG],[test "$enable_debug_features" = "yes"])

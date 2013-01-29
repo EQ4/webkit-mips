@@ -86,6 +86,7 @@ InspectorController::InspectorController(Page* page, InspectorClient* inspectorC
     , m_overlay(InspectorOverlay::create(page, inspectorClient))
     , m_page(page)
     , m_inspectorClient(inspectorClient)
+    , m_isUnderTest(false)
 {
     OwnPtr<InspectorAgent> inspectorAgentPtr(InspectorAgent::create(page, m_injectedScriptManager.get(), m_instrumentingAgents.get(), m_state.get()));
     m_inspectorAgent = inspectorAgentPtr.get();
@@ -118,7 +119,11 @@ InspectorController::InspectorController(Page* page, InspectorClient* inspectorC
     OwnPtr<InspectorDOMStorageAgent> domStorageAgentPtr(InspectorDOMStorageAgent::create(m_instrumentingAgents.get(), m_state.get()));
     InspectorDOMStorageAgent* domStorageAgent = domStorageAgentPtr.get();
     m_agents.append(domStorageAgentPtr.release());
-    m_agents.append(InspectorMemoryAgent::create(m_instrumentingAgents.get(), inspectorClient, m_state.get(), m_page));
+
+    OwnPtr<InspectorMemoryAgent> memoryAgentPtr(InspectorMemoryAgent::create(m_instrumentingAgents.get(), inspectorClient, m_state.get(), m_page));
+    m_memoryAgent = memoryAgentPtr.get();
+    m_agents.append(memoryAgentPtr.release());
+
     m_agents.append(InspectorTimelineAgent::create(m_instrumentingAgents.get(), pageAgent, m_state.get(), InspectorTimelineAgent::PageInspector,
        inspectorClient));
     m_agents.append(InspectorApplicationCacheAgent::create(m_instrumentingAgents.get(), m_state.get(), pageAgent));
@@ -299,8 +304,14 @@ void InspectorController::webViewResized(const IntSize& size)
     m_pageAgent->webViewResized(size);
 }
 
+bool InspectorController::isUnderTest()
+{
+    return m_isUnderTest;
+}
+
 void InspectorController::evaluateForTestInFrontend(long callId, const String& script)
 {
+    m_isUnderTest = true;
     m_inspectorAgent->evaluateForTestInFrontend(callId, script);
 }
 
@@ -429,6 +440,14 @@ void InspectorController::didProcessTask()
     m_profilerAgent->didProcessTask();
     m_domDebuggerAgent->didProcessTask();
 #endif
+}
+
+HashMap<String, size_t> InspectorController::processMemoryDistribution() const
+{
+    HashMap<String, size_t> memoryInfo;
+    RefPtr<InspectorObject> graph;
+    m_memoryAgent->getProcessMemoryDistributionAsMap(false, graph, &memoryInfo);
+    return memoryInfo;
 }
 
 } // namespace WebCore

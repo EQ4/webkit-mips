@@ -87,6 +87,7 @@ PluginProcess::~PluginProcess()
 
 void PluginProcess::initializeProcess(const ChildProcessInitializationParameters& parameters)
 {
+    m_pluginPath = parameters.extraInitializationData.get("plugin-path");
     platformInitializeProcess(parameters);
 }
 
@@ -149,7 +150,6 @@ void PluginProcess::initializePluginProcess(const PluginProcessCreationParameter
 {
     ASSERT(!m_pluginModule);
 
-    m_pluginPath = parameters.pluginPath;
     m_supportsAsynchronousPluginInitialization = parameters.supportsAsynchronousPluginInitialization;
     setMinimumLifetime(parameters.minimumLifetime);
     setTerminationTimeout(parameters.terminationTimeout);
@@ -257,6 +257,16 @@ void PluginProcess::minimumLifetimeTimerFired()
 {
     enableTermination();
 }
+
+#if !PLATFORM(MAC)
+void PluginProcess::initializeProcessName(const ChildProcessInitializationParameters&)
+{
+}
+
+void PluginProcess::initializeSandbox(const ChildProcessInitializationParameters&, SandboxInitializationParameters&)
+{
+}
+#endif
 
 } // namespace WebKit
 

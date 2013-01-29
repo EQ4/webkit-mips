@@ -176,6 +176,13 @@ static bool equalIgnoringCase(const CSSParserString& a, const char (&b)[N])
     return a.is8Bit() ? WTF::equalIgnoringCase(b, a.characters8(), length) : WTF::equalIgnoringCase(b, a.characters16(), length);
 }
 
+template <unsigned N>
+static bool equalIgnoringCase(CSSParserValue* value, const char (&b)[N])
+{
+    ASSERT(value->unit == CSSPrimitiveValue::CSS_IDENT || value->unit == CSSPrimitiveValue::CSS_STRING);
+    return equalIgnoringCase(value->string, b);
+}
+
 static bool hasPrefix(const char* string, unsigned length, const char* prefix)
 {
     for (unsigned i = 0; i < length; ++i) {
@@ -4293,7 +4300,7 @@ PassRefPtr<CSSValue> CSSParser::parseAnimationName()
 {
     CSSParserValue* value = m_valueList->current();
     if (value->unit == CSSPrimitiveValue::CSS_STRING || value->unit == CSSPrimitiveValue::CSS_IDENT) {
-        if (value->id == CSSValueNone || (value->unit == CSSPrimitiveValue::CSS_STRING && equalIgnoringCase(value->string, "none"))) {
+        if (value->id == CSSValueNone || (value->unit == CSSPrimitiveValue::CSS_STRING && equalIgnoringCase(value, "none"))) {
             return cssValuePool().createIdentifierValue(CSSValueNone);
         } else {
             return createPrimitiveStringValue(value);
@@ -4310,7 +4317,7 @@ PassRefPtr<CSSValue> CSSParser::parseAnimationPlayState()
     return 0;
 }
 
-PassRefPtr<CSSValue> CSSParser::parseAnimationProperty()
+PassRefPtr<CSSValue> CSSParser::parseAnimationProperty(bool& allowAnimationProperty)
 {
     CSSParserValue* value = m_valueList->current();
     if (value->unit != CSSPrimitiveValue::CSS_IDENT)
@@ -4318,10 +4325,12 @@ PassRefPtr<CSSValue> CSSParser::parseAnimationProperty()
     int result = cssPropertyID(value->string);
     if (result)
         return cssValuePool().createIdentifierValue(result);
-    if (equalIgnoringCase(value->string, "all"))
+    if (equalIgnoringCase(value, "all"))
         return cssValuePool().createIdentifierValue(CSSValueAll);
-    if (equalIgnoringCase(value->string, "none"))
+    if (equalIgnoringCase(value, "none")) {
+        allowAnimationProperty = false;
         return cssValuePool().createIdentifierValue(CSSValueNone);
+    }
     return 0;
 }
 
@@ -4434,6 +4443,7 @@ bool CSSParser::parseAnimationProperty(CSSPropertyID propId, RefPtr<CSSValue>& r
     CSSParserValue* val;
     RefPtr<CSSValue> value;
     bool allowComma = false;
+    bool allowAnimationProperty = true;
 
     result = 0;
 
@@ -4485,7 +4495,10 @@ bool CSSParser::parseAnimationProperty(CSSPropertyID propId, RefPtr<CSSValue>& r
                         m_valueList->next();
                     break;
                 case CSSPropertyWebkitTransitionProperty:
-                    currValue = parseAnimationProperty();
+                    if (allowAnimationProperty)
+                        currValue = parseAnimationProperty(allowAnimationProperty);
+                    if (value && !allowAnimationProperty)
+                        return false;
                     if (currValue)
                         m_valueList->next();
                     break;
@@ -4687,9 +4700,9 @@ bool CSSParser::parseDashboardRegions(CSSPropertyID propId, bool important)
             break;
         }
 
-        if (equalIgnoringCase(arg->string, "circle"))
+        if (equalIgnoringCase(arg, "circle"))
             region->m_isCircle = true;
-        else if (equalIgnoringCase(arg->string, "rectangle"))
+        else if (equalIgnoringCase(arg, "rectangle"))
             region->m_isRectangle = true;
         else {
             valid = false;
@@ -6208,19 +6221,18 @@ bool CSSParser::parseReflect(CSSPropertyID propId, bool important)
 
     // Direction comes first.
     CSSParserValue* val = m_valueList->current();
-    CSSReflectionDirection direction;
+    RefPtr<CSSPrimitiveValue> direction;
+#if ENABLE(CSS_VARIABLES)
+    if (val->unit == CSSPrimitiveValue::CSS_VARIABLE_NAME)
+        direction = createPrimitiveVariableNameValue(val);
+    else
+#endif
     switch (val->id) {
         case CSSValueAbove:
-            direction = ReflectionAbove;
-            break;
         case CSSValueBelow:
-            direction = ReflectionBelow;
-            break;
         case CSSValueLeft:
-            direction = ReflectionLeft;
-            break;
         case CSSValueRight:
-            direction = ReflectionRight;
+            direction = cssValuePool().createIdentifierValue(val->id);
             break;
         default:
             return false;
@@ -6245,7 +6257,7 @@ bool CSSParser::parseReflect(CSSPropertyID propId, bool important)
             return false;
     }
 
-    RefPtr<CSSReflectValue> reflectValue = CSSReflectValue::create(direction, offset.release(), mask.release());
+    RefPtr<CSSReflectValue> reflectValue = CSSReflectValue::create(direction.release(), offset.release(), mask.release());
     addProperty(propId, reflectValue.release(), important);
     m_valueList->next();
     return true;
@@ -6902,13 +6914,13 @@ static PassRefPtr<CSSPrimitiveValue> parseDeprecatedGradientPoint(CSSParserValue
 {
     RefPtr<CSSPrimitiveValue> result;
     if (a->unit == CSSPrimitiveValue::CSS_IDENT) {
-        if ((equalIgnoringCase(a->string, "left") && horizontal)
-            || (equalIgnoringCase(a->string, "top") && !horizontal))
+        if ((equalIgnoringCase(a, "left") && horizontal)
+            || (equalIgnoringCase(a, "top") && !horizontal))
             result = cssValuePool().createValue(0., CSSPrimitiveValue::CSS_PERCENTAGE);
-        else if ((equalIgnoringCase(a->string, "right") && horizontal)
-                 || (equalIgnoringCase(a->string, "bottom") && !horizontal))
+        else if ((equalIgnoringCase(a, "right") && horizontal)
+                 || (equalIgnoringCase(a, "bottom") && !horizontal))
             result = cssValuePool().createValue(100., CSSPrimitiveValue::CSS_PERCENTAGE);
-        else if (equalIgnoringCase(a->string, "center"))
+        else if (equalIgnoringCase(a, "center"))
             result = cssValuePool().createValue(50., CSSPrimitiveValue::CSS_PERCENTAGE);
     } else if (a->unit == CSSPrimitiveValue::CSS_NUMBER || a->unit == CSSPrimitiveValue::CSS_PERCENTAGE)
         result = cssValuePool().createValue(a->fValue, static_cast<CSSPrimitiveValue::UnitTypes>(a->unit));
@@ -6991,9 +7003,9 @@ bool CSSParser::parseDeprecatedGradient(CSSParserValueList* valueList, RefPtr<CS
     CSSParserValue* a = args->current();
     if (!a || a->unit != CSSPrimitiveValue::CSS_IDENT)
         return false;
-    if (equalIgnoringCase(a->string, "linear"))
+    if (equalIgnoringCase(a, "linear"))
         gradientType = CSSDeprecatedLinearGradient;
-    else if (equalIgnoringCase(a->string, "radial"))
+    else if (equalIgnoringCase(a, "radial"))
         gradientType = CSSDeprecatedRadialGradient;
     else
         return false;
@@ -7347,7 +7359,7 @@ bool CSSParser::parseLinearGradient(CSSParserValueList* valueList, RefPtr<CSSVal
 
         args->next();
         expectComma = true;
-    } else if (a->unit == CSSPrimitiveValue::CSS_IDENT && equalIgnoringCase(a->string, "to")) {
+    } else if (a->unit == CSSPrimitiveValue::CSS_IDENT && equalIgnoringCase(a, "to")) {
         // to [ [left | right] || [top | bottom] ]
         a = args->next();
         if (!a)
@@ -7494,7 +7506,7 @@ bool CSSParser::parseRadialGradient(CSSParserValueList* valueList, RefPtr<CSSVal
     // at <position>
     RefPtr<CSSValue> centerX;
     RefPtr<CSSValue> centerY;
-    if (equalIgnoringCase(a->string, "at")) {
+    if (a->unit == CSSPrimitiveValue::CSS_IDENT && equalIgnoringCase(a, "at")) {
         a = args->next();
         if (!a)
             return false;
@@ -8445,6 +8457,17 @@ PassRefPtr<CSSValueList> CSSParser::parseCustomFilterTransform(CSSParserValueLis
     }
 
     return list.release();
+}
+
+StyleRuleBase* CSSParser::createFilterRule(const CSSParserString& filterName)
+{
+    RefPtr<StyleRuleFilter> rule = StyleRuleFilter::create(filterName);
+    rule->setProperties(createStylePropertySet());
+    clearProperties();
+    StyleRuleFilter* result = rule.get();
+    m_parsedRules.append(rule.release());
+    processAndAddNewRuleToSourceTreeIfNeeded();
+    return result;
 }
 #endif
 
@@ -10079,9 +10102,20 @@ inline void CSSParser::detectAtToken(int length, bool hasEscape)
             return;
 
         case 15:
+            if (hasEscape)
+                return;
+
 #if ENABLE(CSS_REGIONS)
-            if (!hasEscape && isEqualToCSSIdentifier(name + 2, "webkit-region"))
+            if (isASCIIAlphaCaselessEqual(name[14], 'n') && isEqualToCSSIdentifier(name + 2, "webkit-regio")) {
                 m_token = WEBKIT_REGION_RULE_SYM;
+                return;
+            }
+#endif
+#if ENABLE(CSS_SHADERS)
+            if (isASCIIAlphaCaselessEqual(name[14], 'r') && isEqualToCSSIdentifier(name + 2, "webkit-filte")) {
+                m_token = WEBKIT_FILTER_RULE_SYM;
+                return;
+            }
 #endif
             return;
 
@@ -10548,6 +10582,13 @@ restartAfterComment:
     return token();
 }
 
+CSSParserSelector* CSSParser::createFloatingSelectorWithTagName(const QualifiedName& tagQName)
+{
+    CSSParserSelector* selector = new CSSParserSelector(tagQName);
+    m_floatingSelectors.add(selector);
+    return selector;
+}
+
 CSSParserSelector* CSSParser::createFloatingSelector()
 {
     CSSParserSelector* selector = new CSSParserSelector;
@@ -10903,15 +10944,24 @@ QualifiedName CSSParser::determineNameInNamespace(const AtomicString& prefix, co
     return QualifiedName(prefix, localName, m_styleSheet->determineNamespace(prefix));
 }
 
-void CSSParser::updateSpecifiersWithElementName(const AtomicString& namespacePrefix, const AtomicString& elementName, CSSParserSelector* specifiers)
+void CSSParser::updateSpecifiersWithNamespaceIfNeeded(CSSParserSelector* specifiers)
+{
+    if (m_defaultNamespace != starAtom || specifiers->isCustomPseudoElement())
+        updateSpecifiersWithElementName(nullAtom, starAtom, specifiers, /*tagIsForNamespaceRule*/true);
+}
+
+void CSSParser::updateSpecifiersWithElementName(const AtomicString& namespacePrefix, const AtomicString& elementName, CSSParserSelector* specifiers, bool tagIsForNamespaceRule)
 {
     AtomicString determinedNamespace = namespacePrefix != nullAtom && m_styleSheet ? m_styleSheet->determineNamespace(namespacePrefix) : m_defaultNamespace;
-    QualifiedName tag = QualifiedName(namespacePrefix, elementName, determinedNamespace);
+    QualifiedName tag(namespacePrefix, elementName, determinedNamespace);
+
     if (!specifiers->isCustomPseudoElement()) {
+        if (tag == anyQName())
+            return;
 #if ENABLE(VIDEO_TRACK)
         if (!(specifiers->pseudoType() == CSSSelector::PseudoCue))
 #endif
-            specifiers->setTag(tag);
+            specifiers->prependTagSelector(tag, tagIsForNamespaceRule);
         return;
     }
 
@@ -10924,14 +10974,14 @@ void CSSParser::updateSpecifiersWithElementName(const AtomicString& namespacePre
     }
 
     if (lastShadowDescendant->tagHistory()) {
-        lastShadowDescendant->tagHistory()->setTag(tag);
+        if (tag != anyQName())
+            lastShadowDescendant->tagHistory()->prependTagSelector(tag, tagIsForNamespaceRule);
         return;
     }
 
     // For shadow-ID pseudo-elements to be correctly matched, the ShadowDescendant combinator has to be used.
     // We therefore create a new Selector with that combinator here in any case, even if matching any (host) element in any namespace (i.e. '*').
-    OwnPtr<CSSParserSelector> elementNameSelector = adoptPtr(new CSSParserSelector);
-    elementNameSelector->setTag(tag);
+    OwnPtr<CSSParserSelector> elementNameSelector = adoptPtr(new CSSParserSelector(tag));
     lastShadowDescendant->setTagHistory(elementNameSelector.release());
     lastShadowDescendant->setRelation(CSSSelector::ShadowDescendant);
 }

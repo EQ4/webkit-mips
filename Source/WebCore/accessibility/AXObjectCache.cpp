@@ -305,11 +305,15 @@ AccessibilityObject* AXObjectCache::getOrCreate(Widget* widget)
         newObj = AccessibilityScrollView::create(static_cast<ScrollView*>(widget));
     else if (widget->isScrollbar())
         newObj = AccessibilityScrollbar::create(static_cast<Scrollbar*>(widget));
+
+    // Will crash later if we have two objects for the same widget.
+    ASSERT(!get(widget));
         
     getAXID(newObj.get());
     
     m_widgetObjectMapping.set(widget, newObj->axObjectID());
     m_objects.set(newObj->axObjectID(), newObj);    
+    newObj->init();
     attachWrapper(newObj.get());
     return newObj.get();
 }
@@ -337,12 +341,15 @@ AccessibilityObject* AXObjectCache::getOrCreate(Node* node)
 
     RefPtr<AccessibilityObject> newObj = createFromNode(node);
 
+    // Will crash later if we have two objects for the same node.
+    ASSERT(!get(node));
+
     getAXID(newObj.get());
 
     m_nodeObjectMapping.set(node, newObj->axObjectID());
     m_objects.set(newObj->axObjectID(), newObj);
+    newObj->init();
     attachWrapper(newObj.get());
-
     newObj->setCachedIsIgnoredValue(newObj->accessibilityIsIgnored());
 
     return newObj.get();
@@ -358,12 +365,15 @@ AccessibilityObject* AXObjectCache::getOrCreate(RenderObject* renderer)
 
     RefPtr<AccessibilityObject> newObj = createFromRenderer(renderer);
 
+    // Will crash later if we have two objects for the same renderer.
+    ASSERT(!get(renderer));
+
     getAXID(newObj.get());
 
     m_renderObjectMapping.set(renderer, newObj->axObjectID());
     m_objects.set(newObj->axObjectID(), newObj);
+    newObj->init();
     attachWrapper(newObj.get());
-
     newObj->setCachedIsIgnoredValue(newObj->accessibilityIsIgnored());
 
     return newObj.get();
@@ -430,6 +440,7 @@ AccessibilityObject* AXObjectCache::getOrCreate(AccessibilityRole role)
         return 0;
 
     m_objects.set(obj->axObjectID(), obj);    
+    obj->init();
     attachWrapper(obj.get());
     return obj.get();
 }

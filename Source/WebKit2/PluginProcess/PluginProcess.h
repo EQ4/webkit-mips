@@ -32,10 +32,6 @@
 #include <wtf/Forward.h>
 #include <wtf/text/WTFString.h>
 
-namespace WebCore {
-class RunLoop;
-}
-
 namespace WebKit {
 
 class NetscapePluginModule;
@@ -74,8 +70,9 @@ private:
 
     // ChildProcess
     virtual void initializeProcess(const ChildProcessInitializationParameters&) OVERRIDE;
+    virtual void initializeProcessName(const ChildProcessInitializationParameters&) OVERRIDE;
+    virtual void initializeSandbox(const ChildProcessInitializationParameters&, SandboxInitializationParameters&) OVERRIDE;
     virtual bool shouldTerminate() OVERRIDE;
-
     void platformInitializeProcess(const ChildProcessInitializationParameters&);
 
     // CoreIPC::Connection::Client
@@ -94,7 +91,6 @@ private:
     
     void setMinimumLifetime(double);
     void minimumLifetimeTimerFired();
-
     // Our web process connections.
     Vector<RefPtr<WebProcessConnection> > m_webProcessConnections;
 
@@ -107,12 +103,11 @@ private:
     bool m_supportsAsynchronousPluginInitialization;
 
     WebCore::RunLoop::Timer<PluginProcess> m_minimumLifetimeTimer;
-    
+
 #if USE(ACCELERATED_COMPOSITING) && PLATFORM(MAC)
     // The Mach port used for accelerated compositing.
     mach_port_t m_compositingRenderServerPort;
 #endif
-
 };
 
 } // namespace WebKit

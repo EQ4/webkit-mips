@@ -142,7 +142,7 @@ WebContext::WebContext(ProcessModel processModel, const String& injectedBundlePa
     , m_usesNetworkProcess(false)
 #endif
 #if PLATFORM(MAC)
-    , m_processSuppressionEnabled(false)
+    , m_processSuppressionEnabled(true)
 #endif
 #if USE(SOUP)
     , m_ignoreTLSErrors(true)
@@ -375,7 +375,7 @@ void WebContext::ensureNetworkProcess()
     m_networkProcess->send(Messages::NetworkProcess::InitializeNetworkProcess(parameters), 0);
 }
 
-void WebContext::removeNetworkProcessProxy(NetworkProcessProxy* networkProcessProxy)
+void WebContext::networkProcessCrashed(NetworkProcessProxy* networkProcessProxy)
 {
     ASSERT(m_networkProcess);
     ASSERT(networkProcessProxy == m_networkProcess.get());
@@ -386,6 +386,8 @@ void WebContext::removeNetworkProcessProxy(NetworkProcessProxy* networkProcessPr
         it->value->processDidClose(networkProcessProxy);
 
     m_networkProcess = nullptr;
+
+    m_client.networkProcessDidCrash(this);
 }
 
 void WebContext::getNetworkProcessConnection(PassRefPtr<Messages::WebProcessProxy::GetNetworkProcessConnection::DelayedReply> reply)
@@ -474,7 +476,7 @@ WebProcessProxy* WebContext::createNewWebProcess()
 
     parameters.cookieStorageDirectory = cookieStorageDirectory();
     if (!parameters.cookieStorageDirectory.isEmpty())
-        SandboxExtension::createHandle(parameters.cookieStorageDirectory, SandboxExtension::ReadWrite, parameters.cookieStorageDirectoryExtensionHandle);
+        SandboxExtension::createHandleForReadWriteDirectory(parameters.cookieStorageDirectory, parameters.cookieStorageDirectoryExtensionHandle);
 
     parameters.shouldTrackVisitedLinks = m_historyClient.shouldTrackVisitedLinks();
     parameters.cacheModel = m_cacheModel;
@@ -597,7 +599,7 @@ void WebContext::processDidFinishLaunching(WebProcessProxy* process)
         SandboxExtension::Handle sampleLogSandboxHandle;        
         double now = WTF::currentTime();
         String sampleLogFilePath = String::format("WebProcess%llupid%d", static_cast<unsigned long long>(now), process->processIdentifier());
-        sampleLogFilePath = SandboxExtension::createHandleForTemporaryFile(sampleLogFilePath, SandboxExtension::WriteOnly, sampleLogSandboxHandle);
+        sampleLogFilePath = SandboxExtension::createHandleForTemporaryFile(sampleLogFilePath, SandboxExtension::ReadWrite, sampleLogSandboxHandle);
         
         process->send(Messages::WebProcess::StartMemorySampler(sampleLogSandboxHandle, sampleLogFilePath, m_memorySamplerInterval), 0);
     }
@@ -965,7 +967,7 @@ void WebContext::startMemorySampler(const double interval)
     SandboxExtension::Handle sampleLogSandboxHandle;    
     double now = WTF::currentTime();
     String sampleLogFilePath = String::format("WebProcess%llu", static_cast<unsigned long long>(now));
-    sampleLogFilePath = SandboxExtension::createHandleForTemporaryFile(sampleLogFilePath, SandboxExtension::WriteOnly, sampleLogSandboxHandle);
+    sampleLogFilePath = SandboxExtension::createHandleForTemporaryFile(sampleLogFilePath, SandboxExtension::ReadWrite, sampleLogSandboxHandle);
     
     sendToAllProcesses(Messages::WebProcess::StartMemorySampler(sampleLogSandboxHandle, sampleLogFilePath, interval));
 }

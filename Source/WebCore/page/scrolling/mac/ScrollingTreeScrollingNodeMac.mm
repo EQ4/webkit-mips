@@ -44,6 +44,8 @@
 namespace WebCore {
 
 static void logThreadedScrollingMode(unsigned mainThreadScrollingReasons);
+static void logWheelEventHandlerCountChanged(unsigned);
+
 
 PassOwnPtr<ScrollingTreeScrollingNode> ScrollingTreeScrollingNode::create(ScrollingTree* scrollingTree)
 {
@@ -53,6 +55,7 @@ PassOwnPtr<ScrollingTreeScrollingNode> ScrollingTreeScrollingNode::create(Scroll
 ScrollingTreeScrollingNodeMac::ScrollingTreeScrollingNodeMac(ScrollingTree* scrollingTree)
     : ScrollingTreeScrollingNode(scrollingTree)
     , m_scrollElasticityController(this)
+    , m_lastScrollHadUnfilledPixels(false)
 {
 }
 
@@ -95,6 +98,11 @@ void ScrollingTreeScrollingNodeMac::update(ScrollingStateNode* stateNode)
 
         if (scrollingTree()->scrollingPerformanceLoggingEnabled())
             logThreadedScrollingMode(mainThreadScrollingReasons);
+    }
+
+    if ((state->changedProperties() & ScrollingStateScrollingNode::WheelEventHandlerCount)) {
+        if (scrollingTree()->scrollingPerformanceLoggingEnabled())
+            logWheelEventHandlerCountChanged(state->wheelEventHandlerCount());
     }
 }
 
@@ -150,6 +158,13 @@ IntSize ScrollingTreeScrollingNodeMac::stretchAmount()
         stretch.setWidth(scrollPosition().x() - minimumScrollPosition().x());
     else if (scrollPosition().x() > maximumScrollPosition().x())
         stretch.setWidth(scrollPosition().x() - maximumScrollPosition().x());
+
+    if (scrollingTree()->rootNode() == this) {
+        if (stretch.isZero())
+            scrollingTree()->setMainFrameIsRubberBanding(false);
+        else
+            scrollingTree()->setMainFrameIsRubberBanding(true);
+    }
 
     return stretch;
 }
@@ -234,6 +249,8 @@ void ScrollingTreeScrollingNodeMac::stopSnapRubberbandTimer()
 {
     if (!m_snapRubberbandTimer)
         return;
+
+    scrollingTree()->setMainFrameIsRubberBanding(false);
 
     CFRunLoopTimerInvalidate(m_snapRubberbandTimer.get());
     m_snapRubberbandTimer = nullptr;
@@ -356,8 +373,10 @@ void ScrollingTreeScrollingNodeMac::logExposedUnfilledArea()
     IntPoint scrollPosition = this->scrollPosition();
     unsigned unfilledArea = TileCache::blankPixelCountForTiles(tiles, viewportRect(), IntPoint(-scrollPosition.x(), -scrollPosition.y()));
 
-    if (unfilledArea)
+    if (unfilledArea || m_lastScrollHadUnfilledPixels)
         WTFLogAlways("SCROLLING: Exposed tileless area. Time: %f Unfilled Pixels: %u\n", WTF::monotonicallyIncreasingTime(), unfilledArea);
+
+    m_lastScrollHadUnfilledPixels = unfilledArea;
 }
 
 static void logThreadedScrollingMode(unsigned mainThreadScrollingReasons)
@@ -382,6 +401,11 @@ static void logThreadedScrollingMode(unsigned mainThreadScrollingReasons)
         WTFLogAlways("SCROLLING: Switching to main-thread scrolling mode. Time: %f Reason(s): %s\n", WTF::monotonicallyIncreasingTime(), reasonsDescriptionTrimmed.ascii().data());
     } else
         WTFLogAlways("SCROLLING: Switching to threaded scrolling mode. Time: %f\n", WTF::monotonicallyIncreasingTime());
+}
+
+void logWheelEventHandlerCountChanged(unsigned count)
+{
+    WTFLogAlways("SCROLLING: Wheel event handler count changed. Time: %f Count: %u\n", WTF::monotonicallyIncreasingTime(), count);
 }
 
 } // namespace WebCore

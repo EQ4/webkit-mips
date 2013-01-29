@@ -37,6 +37,7 @@
 #include <wtf/Functional.h>
 #include <wtf/HashSet.h>
 #include <wtf/ThreadingPrimitives.h>
+#include <wtf/Vector.h>
 
 namespace WebCore {
 class CustomFilterProgram;
@@ -77,6 +78,7 @@ public:
     void syncCanvas(CoordinatedLayerID, uint32_t frontBuffer);
     void destroyCanvas(CoordinatedLayerID);
 #endif
+    void setLayerRepaintCount(CoordinatedLayerID, int value);
 
     void detach();
     void appendUpdate(const Function<void()>&);
@@ -86,8 +88,8 @@ public:
     void purgeGLResources();
     void setActive(bool);
 
-    void createLayer(CoordinatedLayerID);
-    void deleteLayer(CoordinatedLayerID);
+    void createLayers(const Vector<CoordinatedLayerID>&);
+    void deleteLayers(const Vector<CoordinatedLayerID>&);
     void setRootLayerID(CoordinatedLayerID);
     void setLayerChildren(CoordinatedLayerID, const Vector<CoordinatedLayerID>&);
     void setLayerState(CoordinatedLayerID, const CoordinatedLayerInfo&);
@@ -142,6 +144,9 @@ private:
 #endif
     void renderNextFrame();
     void purgeBackingStores();
+
+    void createLayer(CoordinatedLayerID);
+    void deleteLayer(CoordinatedLayerID);
 
     void assignImageBackingToLayer(WebCore::GraphicsLayer*, CoordinatedImageBackingID);
     void removeReleasedImageBackingsIfNeeded();

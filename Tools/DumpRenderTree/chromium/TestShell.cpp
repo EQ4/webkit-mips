@@ -33,8 +33,8 @@
 
 #include "DRTDevToolsAgent.h"
 #include "DRTDevToolsClient.h"
-#include "DRTTestRunner.h"
 #include "MockWebPrerenderingSupport.h"
+#include "WebArrayBufferView.h"
 #include "WebCache.h"
 #include "WebDataSource.h"
 #include "WebDocument.h"
@@ -49,7 +49,6 @@
 #include "WebTestProxy.h"
 #include "WebView.h"
 #include "WebViewHost.h"
-#include "platform/WebArrayBufferView.h"
 #include "skia/ext/platform_canvas.h"
 #include "webkit/support/webkit_support.h"
 #include "webkit/support/webkit_support_gfx.h"
@@ -162,7 +161,7 @@ void TestShell::initialize()
 {
     m_testInterfaces = adoptPtr(new WebTestInterfaces());
     m_devToolsTestInterfaces = adoptPtr(new WebTestInterfaces());
-    m_testRunner = adoptPtr(new DRTTestRunner(this));
+    m_testRunner = adoptPtr(new TestRunner());
     m_testInterfaces->setTestRunner(m_testRunner.get());
     m_devToolsTestInterfaces->setTestRunner(m_testRunner.get());
 #if ENABLE(NOTIFICATIONS) || ENABLE(LEGACY_NOTIFICATIONS)
@@ -202,6 +201,8 @@ TestShell::~TestShell()
     m_testRunner->setDelegate(0);
     m_testRunner->setWebView(0);
     m_drtDevToolsAgent->setWebView(0);
+    if (m_webViewHost)
+        m_webViewHost->shutdown();
 }
 
 void TestShell::createDRTDevToolsClient(DRTDevToolsAgent* agent)
@@ -219,7 +220,7 @@ void TestShell::showDevTools()
         }
         m_devTools = createNewWindow(url, 0, m_devToolsTestInterfaces.get());
         m_devTools->webView()->settings()->setMemoryInfoEnabled(true);
-        m_devTools->setLogConsoleOutput(false);
+        m_devTools->proxy()->setLogConsoleOutput(false);
         m_devToolsTestInterfaces->setDelegate(m_devTools);
         m_devToolsTestInterfaces->setWebView(m_devTools->webView());
         ASSERT(m_devTools);
@@ -290,9 +291,6 @@ void TestShell::runFileTest(const TestParams& params, bool shouldDumpPixels)
         || testUrl.find("\\inspector\\") != string::npos)
         showDevTools();
 
-    if (m_params.debugLayerTree)
-        m_testRunner->setShowDebugLayerTree(true);
-
     if (m_dumpWhenFinished)
         m_printer.handleTestHeader(testUrl.c_str());
     loadURL(m_params.testUrl);
@@ -348,7 +346,7 @@ void TestShell::resetTestController()
 
 void TestShell::loadURL(const WebURL& url)
 {
-    m_webViewHost->loadURLForFrame(url, WebString());
+    m_webViewHost->loadURLForFrame(url, string());
 }
 
 void TestShell::reload()
@@ -779,7 +777,7 @@ WebViewHost* TestShell::createNewWindow(const WebKit::WebURL& url, DRTDevToolsAg
     m_prefs.applyTo(view);
     view->initializeMainFrame(host);
     m_windowList.append(host);
-    host->loadURLForFrame(url, WebString());
+    host->loadURLForFrame(url, string());
     return host;
 }
 
@@ -795,6 +793,7 @@ void TestShell::closeWindow(WebViewHost* window)
     if (window->webWidget() == m_focusedWidget)
         focusedWidget = 0;
 
+    window->shutdown();
     delete window;
     // We set the focused widget after deleting the web view host because it
     // can change the focus.

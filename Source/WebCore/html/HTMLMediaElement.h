@@ -72,7 +72,8 @@ class DisplaySleepDisabler;
 class InbandTextTrackPrivate;
 
 typedef PODIntervalTree<double, TextTrackCue*> CueIntervalTree;
-typedef Vector<CueIntervalTree::IntervalType> CueList;
+typedef CueIntervalTree::IntervalType CueInterval;
+typedef Vector<CueInterval> CueList;
 #endif
 
 // FIXME: The inheritance from MediaPlayerClient here should be private inheritance.
@@ -87,7 +88,6 @@ class HTMLMediaElement : public HTMLElement, public MediaPlayerClient, public Me
 public:
     MediaPlayer* player() const { return m_player.get(); }
 
-    void createShadowSubtree();
     virtual void willAddAuthorShadowRoot() OVERRIDE;
     virtual bool areAuthorShadowsAllowed() const OVERRIDE { return false; }
 
@@ -257,7 +257,7 @@ public:
     bool userIsInterestedInThisTrackKind(String) const;
     bool textTracksAreReady() const;
     void configureTextTrackDisplay();
-    void updateClosedCaptionsControls();
+    void updateTextTrackDisplay();
 
     // TextTrackClient
     virtual void textTrackReadyStateChanged(TextTrack*);

@@ -1,3 +1,64 @@
+2013-01-27  Zoltan Arvai  <zarvai@inf.u-szeged.hu>
+
+        Fixing atomicIncrement implementation for Windows by dropping support before XP SP2.
+        https://bugs.webkit.org/show_bug.cgi?id=106740
+
+        Reviewed by Benjamin Poulain.
+
+        * WebKitPrefix.h:
+
+2013-01-26  Alexey Proskuryakov  <ap@apple.com>
+
+        Remove code for handling NetworkProcess authentication challenges in WebProcess
+        https://bugs.webkit.org/show_bug.cgi?id=108003
+
+        Reviewed by Sam Weinig.
+
+        * WebURLAuthenticationChallenge.cpp:
+        (WebURLAuthenticationChallenge::initWithProtectionSpace):
+        Adapted for new AuthenticationChallenge constructor signature.
+
+2013-01-24  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Rename JSValue.h/APIJSValue.h to JSCJSValue.h/JSValue.h
+        https://bugs.webkit.org/show_bug.cgi?id=107327
+
+        Reviewed by Filip Pizlo.
+
+        We're renaming these two files, so we have to replace the names everywhere.
+
+        * WebFrame.cpp:
+        * WebView.cpp:
+
+2013-01-23  Tony Chang  <tony@chromium.org>
+
+        Unreviewed, set svn:eol-style to CRLF on Windows .sln files.
+
+        * WebKit.vcproj/WebKit.sln: Modified property svn:eol-style.
+        * WebKit.vcproj/WebKit.submit.sln: Modified property svn:eol-style.
+
+2013-01-23  Pavel Feldman  <pfeldman@chromium.org>
+
+        Follow up to 140539, adding exports for Win build.
+
+        Not reviewed.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-01-22  Anders Carlsson  <andersca@apple.com>
+
+        Use a platforom strategy for local storage
+        https://bugs.webkit.org/show_bug.cgi?id=107600
+
+        Reviewed by Andreas Kling.
+
+        Update for new storage strategy.
+
+        * WebCoreSupport/WebPlatformStrategies.cpp:
+        (WebPlatformStrategies::createStorageStrategy):
+        * WebCoreSupport/WebPlatformStrategies.h:
+        (WebPlatformStrategies):
+
 2013-01-18  Jer Noble  <jer.noble@apple.com>
 
         Unreviewed build fix. Remove deleted symbol from windows export list.

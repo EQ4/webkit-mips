@@ -31,10 +31,12 @@
 #include "config.h"
 #include "WebTestProxy.h"
 
+#include "SpellCheckClient.h"
 #include "WebAccessibilityController.h"
 #include "WebAccessibilityNotification.h"
 #include "WebAccessibilityObject.h"
 #include "WebCachedURLRequest.h"
+#include "WebConsoleMessage.h"
 #include "WebElement.h"
 #include "WebEventSender.h"
 #include "WebFrame.h"
@@ -47,9 +49,10 @@
 #include "WebTestInterfaces.h"
 #include "WebTestRunner.h"
 #include "WebView.h"
-#include "platform/WebCString.h"
-#include "platform/WebURLRequest.h"
-#include "platform/WebURLResponse.h"
+#include <public/WebCString.h>
+#include <public/WebURLError.h>
+#include <public/WebURLRequest.h>
+#include <public/WebURLResponse.h>
 #include <wtf/StringExtras.h>
 
 using namespace WebKit;
@@ -185,16 +188,42 @@ void blockRequest(WebURLRequest& request)
     request.setURL(WebURL());
 }
 
+// Used to write a platform neutral file:/// URL by only taking the filename
+// (e.g., converts "file:///tmp/foo.txt" to just "foo.txt").
+string urlSuitableForTestResult(const string& url)
+{
+    if (url.empty() || string::npos == url.find("file://"))
+        return url;
+
+    size_t pos = url.rfind('/');
+    if (pos == string::npos) {
+#if OS(WINDOWS)
+        pos = url.rfind('\\');
+        if (pos == string::npos)
+            pos = 0;
+#else
+        pos = 0;
+#endif
+    }
+    string filename = url.substr(pos + 1);
+    if (filename.empty())
+        return "file:"; // A WebKit test has this in its expected output.
+    return filename;
+}
+
 }
 
 WebTestProxyBase::WebTestProxyBase()
     : m_testInterfaces(0)
     , m_delegate(0)
+    , m_spellcheck(new SpellCheckClient)
 {
+    reset();
 }
 
 WebTestProxyBase::~WebTestProxyBase()
 {
+    delete m_spellcheck;
 }
 
 void WebTestProxyBase::setInterfaces(WebTestInterfaces* interfaces)
@@ -205,12 +234,19 @@ void WebTestProxyBase::setInterfaces(WebTestInterfaces* interfaces)
 void WebTestProxyBase::setDelegate(WebTestDelegate* delegate)
 {
     m_delegate = delegate;
+    m_spellcheck->setDelegate(delegate);
 }
 
 void WebTestProxyBase::reset()
 {
     m_paintRect = WebRect();
     m_resourceIdentifierMap.clear();
+    m_logConsoleOutput = true;
+}
+
+WebSpellCheckClient* WebTestProxyBase::spellCheckClient() const
+{
+    return m_spellcheck;
 }
 
 void WebTestProxyBase::setPaintRect(const WebRect& rect)
@@ -221,6 +257,11 @@ void WebTestProxyBase::setPaintRect(const WebRect& rect)
 WebRect WebTestProxyBase::paintRect() const
 {
     return m_paintRect;
+}
+
+void WebTestProxyBase::setLogConsoleOutput(bool enabled)
+{
+    m_logConsoleOutput = enabled;
 }
 
 void WebTestProxyBase::didInvalidateRect(const WebRect& rect)
@@ -546,6 +587,9 @@ void WebTestProxyBase::didCancelClientRedirect(WebFrame* frame)
 
 void WebTestProxyBase::didStartProvisionalLoad(WebFrame* frame)
 {
+    if (m_testInterfaces->testRunner() && !m_testInterfaces->testRunner()->topLoadingFrame())
+        m_testInterfaces->testRunner()->setTopLoadingFrame(frame, false);
+
     if (m_testInterfaces->testRunner() && m_testInterfaces->testRunner()->shouldDumpFrameLoadCallbacks()) {
         printFrameDescription(m_delegate, frame);
         m_delegate->printMessage(" - didStartProvisionalLoadForFrame\n");
@@ -575,6 +619,7 @@ void WebTestProxyBase::didFailProvisionalLoad(WebFrame* frame, const WebURLError
         printFrameDescription(m_delegate, frame);
         m_delegate->printMessage(" - didFailProvisionalLoadWithError\n");
     }
+    locationChangeDone(frame);
 }
 
 void WebTestProxyBase::didCommitProvisionalLoad(WebFrame* frame, bool)
@@ -631,6 +676,7 @@ void WebTestProxyBase::didFailLoad(WebFrame* frame, const WebURLError&)
         printFrameDescription(m_delegate, frame);
         m_delegate->printMessage(" - didFailLoadWithError\n");
     }
+    locationChangeDone(frame);
 }
 
 void WebTestProxyBase::didFinishLoad(WebFrame* frame)
@@ -639,6 +685,7 @@ void WebTestProxyBase::didFinishLoad(WebFrame* frame)
         printFrameDescription(m_delegate, frame);
         m_delegate->printMessage(" - didFinishLoadForFrame\n");
     }
+    locationChangeDone(frame);
 }
 
 void WebTestProxyBase::didChangeLocationWithinPage(WebFrame* frame)
@@ -780,6 +827,71 @@ void WebTestProxyBase::didFailResourceLoad(WebFrame*, unsigned identifier, const
         m_delegate->printMessage("\n");
     }
     m_resourceIdentifierMap.erase(identifier);
+}
+
+void WebTestProxyBase::unableToImplementPolicyWithError(WebKit::WebFrame* frame, const WebKit::WebURLError& error)
+{
+    char errorBuffer[40];
+    snprintf(errorBuffer, sizeof(errorBuffer), "%d", error.reason);
+    m_delegate->printMessage(string("Policy delegate: unable to implement policy with error domain '") + error.domain.utf8().data() +
+        "', error code " +  errorBuffer +
+        ", in frame '" + frame->uniqueName().utf8().data() + "'\n");
+}
+
+void WebTestProxyBase::didAddMessageToConsole(const WebConsoleMessage& message, const WebString& sourceName, unsigned sourceLine)
+{
+    // This matches win DumpRenderTree's UIDelegate.cpp.
+    if (!m_logConsoleOutput)
+        return;
+    m_delegate->printMessage(string("CONSOLE MESSAGE: "));
+    if (sourceLine) {
+        char buffer[40];
+        snprintf(buffer, sizeof(buffer), "line %d: ", sourceLine);
+        m_delegate->printMessage(buffer);
+    }
+    if (!message.text.isEmpty()) {
+        string newMessage;
+        newMessage = message.text.utf8();
+        size_t fileProtocol = newMessage.find("file://");
+        if (fileProtocol != string::npos) {
+            newMessage = newMessage.substr(0, fileProtocol)
+                + urlSuitableForTestResult(newMessage.substr(fileProtocol));
+        }
+        m_delegate->printMessage(newMessage);
+    }
+    m_delegate->printMessage(string("\n"));
+}
+
+void WebTestProxyBase::runModalAlertDialog(WebFrame*, const WebString& message)
+{
+    m_delegate->printMessage(string("ALERT: ") + message.utf8().data() + "\n");
+}
+
+bool WebTestProxyBase::runModalConfirmDialog(WebFrame*, const WebString& message)
+{
+    m_delegate->printMessage(string("CONFIRM: ") + message.utf8().data() + "\n");
+    return true;
+}
+
+bool WebTestProxyBase::runModalPromptDialog(WebFrame* frame, const WebString& message, const WebString& defaultValue, WebString*)
+{
+    m_delegate->printMessage(string("PROMPT: ") + message.utf8().data() + ", default text: " + defaultValue.utf8().data() + "\n");
+    return true;
+}
+
+bool WebTestProxyBase::runModalBeforeUnloadDialog(WebFrame*, const WebString& message)
+{
+    m_delegate->printMessage(string("CONFIRM NAVIGATION: ") + message.utf8().data() + "\n");
+    return true;
+}
+
+void WebTestProxyBase::locationChangeDone(WebFrame* frame)
+{
+    if (!m_testInterfaces->testRunner())
+        return;
+    if (frame != m_testInterfaces->testRunner()->topLoadingFrame())
+        return;
+    m_testInterfaces->testRunner()->setTopLoadingFrame(frame, true);
 }
 
 }

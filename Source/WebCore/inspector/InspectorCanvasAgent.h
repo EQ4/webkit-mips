@@ -83,7 +83,7 @@ public:
     virtual void captureFrame(ErrorString*, String*);
     virtual void startCapturing(ErrorString*, String*);
     virtual void stopCapturing(ErrorString*, const String&);
-    virtual void getTraceLog(ErrorString*, const String&, const int*, RefPtr<TypeBuilder::Canvas::TraceLog>&);
+    virtual void getTraceLog(ErrorString*, const String&, const int*, const int*, RefPtr<TypeBuilder::Canvas::TraceLog>&);
     virtual void replayTraceLog(ErrorString*, const String&, int, RefPtr<TypeBuilder::Canvas::ResourceState>&);
     virtual void getResourceInfo(ErrorString*, const String&, RefPtr<TypeBuilder::Canvas::ResourceInfo>&);
     virtual void getResourceState(ErrorString*, const String&, const String&, RefPtr<TypeBuilder::Canvas::ResourceState>&);
@@ -91,7 +91,10 @@ public:
 private:
     InspectorCanvasAgent(InstrumentingAgents*, InspectorCompositeState*, Page*, InjectedScriptManager*);
 
-    InjectedScriptCanvasModule injectedScriptCanvasModuleForTraceLogId(ErrorString*, const String&);
+    InjectedScriptCanvasModule injectedScriptCanvasModule(ErrorString*, ScriptState*);
+    InjectedScriptCanvasModule injectedScriptCanvasModule(ErrorString*, const ScriptObject&);
+    InjectedScriptCanvasModule injectedScriptCanvasModule(ErrorString*, const String&);
+
     void findFramesWithUninstrumentedCanvases();
     bool checkIsEnabled(ErrorString*) const;
 
@@ -99,8 +102,7 @@ private:
     InjectedScriptManager* m_injectedScriptManager;
     InspectorFrontend::Canvas* m_frontend;
     bool m_enabled;
-    typedef HashSet<Frame*> FramesWithUninstrumentedCanvases;
-    FramesWithUninstrumentedCanvases m_framesWithUninstrumentedCanvases;
+    HashSet<Frame*> m_framesWithUninstrumentedCanvases;
 };
 
 } // namespace WebCore

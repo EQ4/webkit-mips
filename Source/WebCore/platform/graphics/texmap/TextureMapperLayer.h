@@ -71,7 +71,10 @@ public:
 
         ReplicaLayerChange =        (1L << 21),
         AnimationChange =           (1L << 22),
-        FilterChange =              (1L << 23)
+        FilterChange =              (1L << 23),
+
+        DebugVisualsChange =        (1L << 24),
+        RepaintCountChange =        (1L << 25)
     };
 
     TextureMapperLayer()
@@ -80,6 +83,11 @@ public:
         , m_contentsLayer(0)
         , m_currentOpacity(1)
         , m_centerZ(0)
+        , m_shouldUpdateCurrentTransformFromGraphicsLayer(true)
+        , m_shouldUpdateCurrentOpacityFromGraphicsLayer(true)
+#if ENABLE(CSS_FILTERS)
+        , m_shouldUpdateCurrentFiltersFromGraphicsLayer(true)
+#endif
         , m_textureMapper(0)
     { }
 
@@ -124,10 +132,10 @@ private:
     void paintSelfAndChildrenWithReplica(const TextureMapperPaintOptions&);
 
     // GraphicsLayerAnimation::Client
-    virtual void setAnimatedTransform(const TransformationMatrix& matrix) OVERRIDE { m_currentTransform.setLocalTransform(matrix); }
-    virtual void setAnimatedOpacity(float opacity) OVERRIDE { m_currentOpacity = opacity; }
+    virtual void setAnimatedTransform(const TransformationMatrix&) OVERRIDE;
+    virtual void setAnimatedOpacity(float) OVERRIDE;
 #if ENABLE(CSS_FILTERS)
-    virtual void setAnimatedFilters(const FilterOperations& filters) OVERRIDE { m_currentFilters = filters; }
+    virtual void setAnimatedFilters(const FilterOperations&) OVERRIDE;
 #endif
 
     void syncAnimations();
@@ -157,6 +165,12 @@ private:
     FilterOperations m_currentFilters;
 #endif
     float m_centerZ;
+    
+    bool m_shouldUpdateCurrentTransformFromGraphicsLayer;
+    bool m_shouldUpdateCurrentOpacityFromGraphicsLayer;
+#if ENABLE(CSS_FILTERS)
+    bool m_shouldUpdateCurrentFiltersFromGraphicsLayer;
+#endif
 
     struct State {
         FloatPoint pos;
@@ -172,6 +186,9 @@ private:
 #if ENABLE(CSS_FILTERS)
         FilterOperations filters;
 #endif
+        Color debugBorderColor;
+        float debugBorderWidth;
+        int repaintCount;
 
         bool preserves3D : 1;
         bool masksToBounds : 1;
@@ -180,11 +197,15 @@ private:
         bool contentsOpaque : 1;
         bool backfaceVisibility : 1;
         bool visible : 1;
+        bool showDebugBorders : 1;
+        bool showRepaintCounter : 1;
 
         State()
             : opacity(1)
             , maskLayer(0)
             , replicaLayer(0)
+            , debugBorderWidth(0)
+            , repaintCount(0)
             , preserves3D(false)
             , masksToBounds(false)
             , drawsContent(false)
@@ -192,6 +213,8 @@ private:
             , contentsOpaque(false)
             , backfaceVisibility(false)
             , visible(true)
+            , showDebugBorders(false)
+            , showRepaintCounter(false)
         {
         }
     };

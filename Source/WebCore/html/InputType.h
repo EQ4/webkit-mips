@@ -33,6 +33,7 @@
 #ifndef InputType_h
 #define InputType_h
 
+#include "FeatureObserver.h"
 #include "HTMLTextFormControlElement.h"
 #include "StepRange.h"
 #include <wtf/Forward.h>
@@ -82,7 +83,7 @@ class InputType {
     WTF_MAKE_FAST_ALLOCATED;
 
 public:
-    static PassOwnPtr<InputType> create(HTMLInputElement*, const String&);
+    static PassOwnPtr<InputType> create(HTMLInputElement*, const AtomicString&);
     static PassOwnPtr<InputType> createText(HTMLInputElement*);
     virtual ~InputType();
 
@@ -313,6 +314,7 @@ protected:
     HTMLInputElement* element() const { return m_element; }
     Chrome* chrome() const;
     Decimal parseToNumberOrNaN(const String&) const;
+    void observeFeatureIfVisible(FeatureObserver::Feature) const;
 
 private:
     // Helper for stepUp()/stepDown(). Adds step value * count to the current value.

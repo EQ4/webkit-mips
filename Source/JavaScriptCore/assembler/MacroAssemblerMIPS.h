@@ -614,7 +614,7 @@ public:
     
     void absDouble(FPRegisterID, FPRegisterID)
     {
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
     }
 
     ConvertibleLoadLabel convertibleLoadPtr(Address address, RegisterID dest)

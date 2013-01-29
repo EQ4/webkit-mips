@@ -140,7 +140,7 @@ public:
     PassRefPtr<CSSValue> parseAnimationIterationCount();
     PassRefPtr<CSSValue> parseAnimationName();
     PassRefPtr<CSSValue> parseAnimationPlayState();
-    PassRefPtr<CSSValue> parseAnimationProperty();
+    PassRefPtr<CSSValue> parseAnimationProperty(bool& allowAnimationProperty);
     PassRefPtr<CSSValue> parseAnimationTimingFunction();
 
     bool parseTransformOriginShorthand(RefPtr<CSSValue>&, RefPtr<CSSValue>&, RefPtr<CSSValue>&);
@@ -266,6 +266,7 @@ public:
     bool parseFontVariantLigatures(bool important);
 
     CSSParserSelector* createFloatingSelector();
+    CSSParserSelector* createFloatingSelectorWithTagName(const QualifiedName&);
     PassOwnPtr<CSSParserSelector> sinkFloatingSelector(CSSParserSelector*);
 
     Vector<OwnPtr<CSSParserSelector> >* createFloatingSelectorVector();
@@ -300,6 +301,10 @@ public:
 #if ENABLE(SHADOW_DOM)
     StyleRuleBase* createHostRule(RuleList* rules);
 #endif
+#if ENABLE(CSS_SHADERS)
+    StyleRuleBase* createFilterRule(const CSSParserString&);
+#endif
+
     void startDeclarationsForMarginBox();
     void endDeclarationsForMarginBox();
 
@@ -316,7 +321,8 @@ public:
 
     void addNamespace(const AtomicString& prefix, const AtomicString& uri);
     QualifiedName determineNameInNamespace(const AtomicString& prefix, const AtomicString& localName);
-    void updateSpecifiersWithElementName(const AtomicString& namespacePrefix, const AtomicString& elementName, CSSParserSelector*);
+    void updateSpecifiersWithElementName(const AtomicString& namespacePrefix, const AtomicString& elementName, CSSParserSelector*, bool isNamespacePlaceholder = false);
+    void updateSpecifiersWithNamespaceIfNeeded(CSSParserSelector*);
     CSSParserSelector* updateSpecifiers(CSSParserSelector*, CSSParserSelector*);
 
     void invalidBlockHit();

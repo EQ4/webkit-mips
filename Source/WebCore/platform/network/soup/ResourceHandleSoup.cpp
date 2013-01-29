@@ -117,7 +117,12 @@ public:
     ~WebCoreSynchronousLoader()
     {
         adjustMaxConnections(-1);
-        g_main_context_pop_thread_default(g_main_context_get_thread_default());
+
+        GMainContext* context = g_main_context_get_thread_default();
+        while (g_main_context_pending(context))
+            g_main_context_iteration(context, FALSE);
+
+        g_main_context_pop_thread_default(context);
         loadingSynchronousRequest = false;
     }
 
@@ -299,6 +304,14 @@ SoupSession* ResourceHandleInternal::soupSession()
     return session;
 }
 
+bool ResourceHandle::cancelledOrClientless()
+{
+    if (!client())
+        return true;
+
+    return getInternal()->m_cancelled;
+}
+
 static bool isAuthenticationFailureStatusCode(int httpStatusCode)
 {
     return httpStatusCode == SOUP_STATUS_PROXY_AUTHENTICATION_REQUIRED || httpStatusCode == SOUP_STATUS_UNAUTHORIZED;
@@ -307,11 +320,10 @@ static bool isAuthenticationFailureStatusCode(int httpStatusCode)
 static void gotHeadersCallback(SoupMessage* message, gpointer data)
 {
     ResourceHandle* handle = static_cast<ResourceHandle*>(data);
-    if (!handle)
+    if (!handle || handle->cancelledOrClientless())
         return;
+
     ResourceHandleInternal* d = handle->getInternal();
-    if (d->m_cancelled)
-        return;
 
 #if ENABLE(WEB_TIMING)
     if (d->m_response.resourceLoadTiming())
@@ -378,11 +390,10 @@ static void applyAuthenticationToRequest(ResourceHandle* handle, ResourceRequest
 static void restartedCallback(SoupMessage*, gpointer data)
 {
     ResourceHandle* handle = static_cast<ResourceHandle*>(data);
-    if (!handle)
+    if (!handle || handle->cancelledOrClientless())
         return;
+
     ResourceHandleInternal* d = handle->getInternal();
-    if (d->m_cancelled)
-        return;
 
 #if ENABLE(WEB_TIMING)
     ResourceResponse& redirectResponse = d->m_response;
@@ -489,13 +500,13 @@ static void doRedirect(ResourceHandle* handle)
 static void redirectCloseCallback(GObject*, GAsyncResult* result, gpointer data)
 {
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(data);
-    ResourceHandleInternal* d = handle->getInternal();
 
-    if (d->m_cancelled || !handle->client()) {
+    if (handle->cancelledOrClientless()) {
         cleanupSoupRequestOperation(handle.get());
         return;
     }
 
+    ResourceHandleInternal* d = handle->getInternal();
     g_input_stream_close_finish(d->m_inputStream.get(), result, 0);
     doRedirect(handle.get());
 }
@@ -504,24 +515,23 @@ static void redirectSkipCallback(GObject*, GAsyncResult* asyncResult, gpointer d
 {
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(data);
 
-    ResourceHandleInternal* d = handle->getInternal();
-    ResourceHandleClient* client = handle->client();
-
-    if (d->m_cancelled || !client) {
+    if (handle->cancelledOrClientless()) {
         cleanupSoupRequestOperation(handle.get());
         return;
     }
 
     GOwnPtr<GError> error;
-    gssize bytesSkipped = g_input_stream_skip_finish(d->m_inputStream.get(), asyncResult, &error.outPtr());
+    ResourceHandleInternal* d = handle->getInternal();
+    gssize bytesSkipped = g_input_stream_read_finish(d->m_inputStream.get(), asyncResult, &error.outPtr());
     if (error) {
+        ResourceHandleClient* client = handle->client();
         client->didFail(handle.get(), ResourceError::genericIOError(error.get(), d->m_soupRequest.get()));
         cleanupSoupRequestOperation(handle.get());
         return;
     }
 
     if (bytesSkipped > 0) {
-        g_input_stream_skip_async(d->m_inputStream.get(), G_MAXSSIZE, G_PRIORITY_DEFAULT,
+        g_input_stream_read_async(d->m_inputStream.get(), d->m_buffer, READ_BUFFER_SIZE, G_PRIORITY_DEFAULT,
             d->m_cancellable.get(), redirectSkipCallback, handle.get());
         return;
     }
@@ -536,16 +546,14 @@ static void wroteBodyDataCallback(SoupMessage*, SoupBuffer* buffer, gpointer dat
         return;
 
     ASSERT(buffer);
-    ResourceHandleInternal* internal = handle->getInternal();
-    internal->m_bodyDataSent += buffer->length;
+    ResourceHandleInternal* d = handle->getInternal();
+    d->m_bodyDataSent += buffer->length;
 
-    if (internal->m_cancelled)
+    if (handle->cancelledOrClientless())
         return;
+
     ResourceHandleClient* client = handle->client();
-    if (!client)
-        return;
-
-    client->didSendData(handle.get(), internal->m_bodyDataSent, internal->m_bodySize);
+    client->didSendData(handle.get(), d->m_bodyDataSent, d->m_bodySize);
 }
 
 static void cleanupSoupRequestOperation(ResourceHandle* handle, bool isDestroying)
@@ -603,18 +611,18 @@ static void nextMultipartResponsePartCallback(GObject* /*source*/, GAsyncResult*
 {
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(data);
 
-    ResourceHandleInternal* d = handle->getInternal();
-    ResourceHandleClient* client = handle->client();
-
-    if (d->m_cancelled || !client) {
+    if (handle->cancelledOrClientless()) {
         cleanupSoupRequestOperation(handle.get());
         return;
     }
 
+    ResourceHandleInternal* d = handle->getInternal();
     ASSERT(!d->m_inputStream);
 
     GOwnPtr<GError> error;
     d->m_inputStream = adoptGRef(soup_multipart_input_stream_next_part_finish(d->m_multipartInputStream.get(), result, &error.outPtr()));
+
+    ResourceHandleClient* client = handle->client();
     if (error) {
         client->didFail(handle.get(), ResourceError::httpError(d->m_soupMessage.get(), error.get(), d->m_soupRequest.get()));
         cleanupSoupRequestOperation(handle.get());
@@ -633,7 +641,7 @@ static void nextMultipartResponsePartCallback(GObject* /*source*/, GAsyncResult*
 
     client->didReceiveResponse(handle.get(), d->m_response);
 
-    if (d->m_cancelled || !client) {
+    if (handle->cancelledOrClientless()) {
         cleanupSoupRequestOperation(handle.get());
         return;
     }
@@ -646,14 +654,15 @@ static void sendRequestCallback(GObject*, GAsyncResult* result, gpointer data)
 {
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(data);
 
+    if (handle->cancelledOrClientless()) {
+        cleanupSoupRequestOperation(handle.get());
+        return;
+    }
+
     ResourceHandleInternal* d = handle->getInternal();
     ResourceHandleClient* client = handle->client();
     SoupMessage* soupMessage = d->m_soupMessage.get();
 
-    if (d->m_cancelled || !client) {
-        cleanupSoupRequestOperation(handle.get());
-        return;
-    }
 
     if (d->m_defersLoading) {
         d->m_deferredResult = result;
@@ -668,10 +677,15 @@ static void sendRequestCallback(GObject*, GAsyncResult* result, gpointer data)
         return;
     }
 
+    d->m_buffer = static_cast<char*>(g_slice_alloc(READ_BUFFER_SIZE));
+
     if (soupMessage) {
         if (SOUP_STATUS_IS_REDIRECTION(soupMessage->status_code) && shouldRedirect(handle.get())) {
             d->m_inputStream = inputStream;
-            g_input_stream_skip_async(d->m_inputStream.get(), G_MAXSSIZE, G_PRIORITY_DEFAULT,
+            // We use read_async() rather than skip_async() to work around
+            // https://bugzilla.gnome.org/show_bug.cgi?id=691489 until we can
+            // depend on glib > 2.35.4
+            g_input_stream_read_async(d->m_inputStream.get(), d->m_buffer, READ_BUFFER_SIZE, G_PRIORITY_DEFAULT,
                 d->m_cancellable.get(), redirectSkipCallback, handle.get());
             return;
         }
@@ -697,12 +711,10 @@ static void sendRequestCallback(GObject*, GAsyncResult* result, gpointer data)
 
     client->didReceiveResponse(handle.get(), d->m_response);
 
-    if (d->m_cancelled) {
+    if (handle->cancelledOrClientless()) {
         cleanupSoupRequestOperation(handle.get());
         return;
     }
-
-    d->m_buffer = static_cast<char*>(g_slice_alloc(READ_BUFFER_SIZE));
 
     if (soupMessage && d->m_response.isMultipart()) {
         d->m_multipartInputStream = adoptGRef(soup_multipart_input_stream_new(soupMessage, inputStream.get()));
@@ -861,10 +873,11 @@ static void networkEventCallback(SoupMessage*, GSocketClientEvent event, GIOStre
     ResourceHandle* handle = static_cast<ResourceHandle*>(data);
     if (!handle)
         return;
-    ResourceHandleInternal* d = handle->getInternal();
-    if (d->m_cancelled)
+
+    if (handle->cancelledOrClientless())
         return;
 
+    ResourceHandleInternal* d = handle->getInternal();
     int deltaTime = milisecondsSinceRequest(d->m_response.resourceLoadTiming()->requestTime);
     switch (event) {
     case G_SOCKET_CLIENT_RESOLVING:
@@ -1241,7 +1254,7 @@ static bool waitingToSendRequest(ResourceHandle* handle)
 
 void ResourceHandle::platformSetDefersLoading(bool defersLoading)
 {
-    if (d->m_cancelled)
+    if (cancelledOrClientless())
         return;
 
     // Except when canceling a possible timeout timer, we only need to take action here to UN-defer loading.
@@ -1316,14 +1329,12 @@ static void readCallback(GObject*, GAsyncResult* asyncResult, gpointer data)
 {
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(data);
 
-    ResourceHandleInternal* d = handle->getInternal();
-    ResourceHandleClient* client = handle->client();
-
-    if (d->m_cancelled || !client) {
+    if (handle->cancelledOrClientless()) {
         cleanupSoupRequestOperation(handle.get());
         return;
     }
 
+    ResourceHandleInternal* d = handle->getInternal();
     if (d->m_defersLoading) {
         d->m_deferredResult = asyncResult;
         return;
@@ -1331,6 +1342,8 @@ static void readCallback(GObject*, GAsyncResult* asyncResult, gpointer data)
 
     GOwnPtr<GError> error;
     gssize bytesRead = g_input_stream_read_finish(d->m_inputStream.get(), asyncResult, &error.outPtr());
+
+    ResourceHandleClient* client = handle->client();
     if (error) {
         client->didFail(handle.get(), ResourceError::genericIOError(error.get(), d->m_soupRequest.get()));
         cleanupSoupRequestOperation(handle.get());
@@ -1365,7 +1378,7 @@ static void readCallback(GObject*, GAsyncResult* asyncResult, gpointer data)
     client->didReceiveData(handle.get(), d->m_buffer, bytesRead, bytesRead);
 
     // didReceiveData may cancel the load, which may release the last reference.
-    if (d->m_cancelled || !client) {
+    if (handle->cancelledOrClientless()) {
         cleanupSoupRequestOperation(handle.get());
         return;
     }

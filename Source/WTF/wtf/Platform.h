@@ -759,7 +759,7 @@
 #elif OS(ANDROID)
 
 #define HAVE_ERRNO_H 1
-#define HAVE_NMAP 1
+#define HAVE_MMAP 1
 #define HAVE_STRINGS_H 1
 #define HAVE_SYS_PARAM_H 1
 #define HAVE_SYS_TIME_H 1
@@ -1198,10 +1198,6 @@
 #define WTF_USE_JSC 1
 #endif
 
-#if ENABLE(NOTIFICATIONS) && PLATFORM(MAC)
-#define ENABLE_TEXT_NOTIFICATIONS_ONLY 1
-#endif
-
 #if !defined(WTF_USE_ZLIB) && !PLATFORM(QT)
 #define WTF_USE_ZLIB 1
 #endif
@@ -1211,6 +1207,10 @@
 #if defined(QT_OPENGL_ES_2) && !defined(WTF_USE_OPENGL_ES_2)
 #define WTF_USE_OPENGL_ES_2 1
 #endif
+#endif
+
+#if !PLATFORM(IOS) && PLATFORM(MAC) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1080
+#define WTF_USE_CONTENT_FILTERING 1
 #endif
 
 #endif /* WTF_Platform_h */

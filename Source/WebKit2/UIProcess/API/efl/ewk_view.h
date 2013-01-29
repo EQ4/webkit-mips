@@ -202,7 +202,7 @@ struct Ewk_View_Smart_Class {
  */
 #define EWK_VIEW_SMART_CLASS_INIT_NAME_VERSION(name) EWK_VIEW_SMART_CLASS_INIT(EVAS_SMART_CLASS_INIT_NAME_VERSION(name))
 
-typedef struct EwkViewImpl EwkViewImpl;
+typedef struct EwkView EwkView;
 /**
  * @brief Contains an internal View data.
  *
@@ -214,7 +214,7 @@ struct Ewk_View_Smart_Data {
     const Ewk_View_Smart_Class* api; /**< reference to casted class instance */
     Evas_Object* self; /**< reference to owner object */
     Evas_Object* image; /**< reference to evas_object_image for drawing web contents */
-    EwkViewImpl* priv; /**< should never be accessed, c++ stuff */
+    EwkView* priv; /**< should never be accessed, c++ stuff */
     struct {
         Evas_Coord x, y, w, h; /**< last used viewport */
     } view;
@@ -827,6 +827,30 @@ EAPI void ewk_view_draws_page_background_set(Evas_Object *o, Eina_Bool enabled);
  * @return @c EINA_TRUE on success or @c EINA_FALSE otherwise
  */
 EAPI Eina_Bool ewk_view_page_contents_get(const Evas_Object *o, Ewk_Page_Contents_Type type, Ewk_Page_Contents_Cb callback);
+
+/**
+ * Sets the source mode as EINA_TRUE to display the web source code
+ * or EINA_FALSE otherwise. The default value is EINA_FALSE.
+ *
+ * This method should be called before loading new contents on web view
+ * so that the new view mode will be applied to the new contents.
+ *
+ * @param o view object to set the view source mode
+ * @param enabled a state to set view source mode
+ *
+ * @return @c EINA_TRUE on success, or @c EINA_FALSE on failure
+ */
+EAPI Eina_Bool ewk_view_source_mode_set(Evas_Object *o, Eina_Bool enabled);
+
+/**
+ * Gets the view source mode of the current web page.
+ *
+ * @param o view object to get the view source mode
+ *
+ * @return @c EINA_TRUE if the view mode is set to load source code, or
+ *         @c EINA_FALSE otherwise
+ */
+EAPI Eina_Bool ewk_view_source_mode_get(const Evas_Object *o);
 
 #ifdef __cplusplus
 }

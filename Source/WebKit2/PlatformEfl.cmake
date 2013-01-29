@@ -13,6 +13,9 @@ list(APPEND WebKit2_SOURCES
 
     Shared/API/c/cairo/WKImageCairo.cpp
 
+    Shared/Downloads/efl/DownloadSoupErrorsEfl.cpp
+    Shared/Downloads/soup/DownloadSoup.cpp
+
     Shared/cairo/ShareableBitmapCairo.cpp
 
     Shared/efl/LayerTreeContextEfl.cpp
@@ -32,14 +35,17 @@ list(APPEND WebKit2_SOURCES
 
     Shared/Plugins/Netscape/x11/NetscapePluginModuleX11.cpp
 
+    UIProcess/API/C/cairo/WKIconDatabaseCairo.cpp
+
     UIProcess/API/C/efl/WKView.cpp
 
     UIProcess/API/cpp/efl/WKEinaSharedString.cpp
 
     UIProcess/API/C/soup/WKContextSoup.cpp
+    UIProcess/API/C/soup/WKCookieManagerSoup.cpp
     UIProcess/API/C/soup/WKSoupRequestManager.cpp
 
-    UIProcess/API/efl/EwkViewImpl.cpp
+    UIProcess/API/efl/EwkView.cpp
     UIProcess/API/efl/EvasGLContext.cpp
     UIProcess/API/efl/EvasGLSurface.cpp
     UIProcess/API/efl/SnapshotImageGL.cpp
@@ -116,11 +122,10 @@ list(APPEND WebKit2_SOURCES
     UIProcess/Plugins/unix/PluginInfoStoreUnix.cpp
     UIProcess/Plugins/unix/PluginProcessProxyUnix.cpp
 
+    UIProcess/Storage/StorageManager.cpp
+
     WebProcess/Cookies/soup/WebCookieManagerSoup.cpp
     WebProcess/Cookies/soup/WebKitSoupCookieJarSqlite.cpp
-
-    WebProcess/Downloads/efl/DownloadSoupErrorsEfl.cpp
-    WebProcess/Downloads/soup/DownloadSoup.cpp
 
     WebProcess/InjectedBundle/efl/InjectedBundleEfl.cpp
 
@@ -135,6 +140,7 @@ list(APPEND WebKit2_SOURCES
 
     WebProcess/WebCoreSupport/soup/WebFrameNetworkingContext.cpp
 
+    WebProcess/WebPage/atk/WebPageAccessibilityObjectAtk.cpp
     WebProcess/WebPage/efl/WebInspectorEfl.cpp
     WebProcess/WebPage/efl/WebPageEfl.cpp
 
@@ -158,15 +164,16 @@ list(APPEND WebKit2_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/network/soup"
     "${WEBCORE_DIR}/platform/text/enchant"
     "${WEBCORE_DIR}/svg/graphics"
+    "${WEBKIT2_DIR}/Shared/Downloads/soup"
     "${WEBKIT2_DIR}/Shared/efl"
     "${WEBKIT2_DIR}/Shared/soup"
+    "${WEBKIT2_DIR}/UIProcess/API/C/cairo"
     "${WEBKIT2_DIR}/UIProcess/API/C/efl"
     "${WEBKIT2_DIR}/UIProcess/API/C/soup"
     "${WEBKIT2_DIR}/UIProcess/API/cpp/efl"
     "${WEBKIT2_DIR}/UIProcess/API/efl"
     "${WEBKIT2_DIR}/UIProcess/efl"
     "${WEBKIT2_DIR}/UIProcess/soup"
-    "${WEBKIT2_DIR}/WebProcess/Downloads/soup"
     "${WEBKIT2_DIR}/WebProcess/efl"
     "${WEBKIT2_DIR}/WebProcess/soup"
     "${WEBKIT2_DIR}/WebProcess/WebCoreSupport/efl"
@@ -408,5 +415,15 @@ if (ENABLE_SPELLCHECK)
     )
     list(APPEND WebKit2_LIBRARIES
         ${ENCHANT_LIBRARIES}
+    )
+endif ()
+
+if (ENABLE_ACCESSIBILITY)
+    list(APPEND WebKit2_INCLUDE_DIRECTORIES
+        "${WEBKIT2_DIR}/WebProcess/WebPage/atk"
+        ${ATK_INCLUDE_DIRS}
+    )
+    list(APPEND WebKit2_LIBRARIES
+        ${ATK_LIBRARIES}
     )
 endif ()

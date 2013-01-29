@@ -2,7 +2,7 @@
  * Copyright (C) 1999 Lars Knoll (knoll@kde.org)
  *           (C) 2004-2005 Allan Sandfeld Jensen (kde@carewolf.com)
  * Copyright (C) 2006, 2007 Nicholas Shanks (webkit@nickshanks.com)
- * Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012 Apple Inc. All rights reserved.
+ * Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013 Apple Inc. All rights reserved.
  * Copyright (C) 2007 Alexey Proskuryakov <ap@webkit.org>
  * Copyright (C) 2007, 2008 Eric Seidel <eric@webkit.org>
  * Copyright (C) 2008, 2009 Torch Mobile Inc. All rights reserved. (http://www.torchmobile.com/)
@@ -57,6 +57,8 @@
 #endif
 #include "CachedImage.h"
 #include "CalculationValue.h"
+#include "Chrome.h"
+#include "ChromeClient.h"
 #include "ContentData.h"
 #include "ContextFeatures.h"
 #include "Counter.h"
@@ -220,6 +222,7 @@ static StyleSheetContents* svgStyleSheet;
 static StyleSheetContents* mathMLStyleSheet;
 static StyleSheetContents* mediaControlsStyleSheet;
 static StyleSheetContents* fullscreenStyleSheet;
+static StyleSheetContents* plugInsStyleSheet;
 
 RenderStyle* StyleResolver::s_styleNotYetAvailable;
 
@@ -593,6 +596,12 @@ static void ensureDefaultStyleSheetsForElement(Element* element)
     }
 #endif
 
+    if (!plugInsStyleSheet && (element->hasTagName(objectTag) || element->hasTagName(embedTag))) {
+        String plugInsRules = String(plugInsUserAgentStyleSheet, sizeof(plugInsUserAgentStyleSheet)) + RenderTheme::themeForPage(element->document()->page())->extraPlugInsStyleSheet() + element->document()->page()->chrome()->client()->plugInExtraStyleSheet();
+        plugInsStyleSheet = parseUASheet(plugInsRules);
+        defaultStyle->addRulesFromSheet(plugInsStyleSheet, screenEval());
+    }
+
     ASSERT(defaultStyle->features().idsInRules.isEmpty());
     ASSERT(mathMLStyleSheet || defaultStyle->features().siblingRules.isEmpty());
 }
@@ -648,7 +657,7 @@ inline bool MatchingUARulesScope::isMatchingUARules()
 
 bool MatchingUARulesScope::m_matchingUARules = false;
 
-void StyleResolver::collectMatchingRules(const MatchRequest& matchRequest, int& firstRuleIndex, int& lastRuleIndex)
+void StyleResolver::collectMatchingRules(const MatchRequest& matchRequest, RuleRange& ruleRange)
 {
     ASSERT(matchRequest.ruleSet);
     ASSERT(m_element);
@@ -656,12 +665,12 @@ void StyleResolver::collectMatchingRules(const MatchRequest& matchRequest, int& 
     const AtomicString& pseudoId = m_element->shadowPseudoId();
     if (!pseudoId.isEmpty()) {
         ASSERT(m_styledElement);
-        collectMatchingRulesForList(matchRequest.ruleSet->shadowPseudoElementRules(pseudoId.impl()), matchRequest, firstRuleIndex, lastRuleIndex);
+        collectMatchingRulesForList(matchRequest.ruleSet->shadowPseudoElementRules(pseudoId.impl()), matchRequest, ruleRange);
     }
 
 #if ENABLE(VIDEO_TRACK)
     if (m_element->isWebVTTElement() && toWebVTTElement(m_element)->webVTTNodeType())
-        collectMatchingRulesForList(matchRequest.ruleSet->cuePseudoRules(), matchRequest, firstRuleIndex, lastRuleIndex);
+        collectMatchingRulesForList(matchRequest.ruleSet->cuePseudoRules(), matchRequest, ruleRange);
 #endif
     // Check whether other types of rules are applicable in the current tree scope. Criteria for this:
     // a) it's a UA rule
@@ -676,32 +685,32 @@ void StyleResolver::collectMatchingRules(const MatchRequest& matchRequest, int& 
     // We need to collect the rules for id, class, tag, and everything else into a buffer and
     // then sort the buffer.
     if (m_element->hasID())
-        collectMatchingRulesForList(matchRequest.ruleSet->idRules(m_element->idForStyleResolution().impl()), matchRequest, firstRuleIndex, lastRuleIndex);
+        collectMatchingRulesForList(matchRequest.ruleSet->idRules(m_element->idForStyleResolution().impl()), matchRequest, ruleRange);
     if (m_styledElement && m_styledElement->hasClass()) {
         for (size_t i = 0; i < m_styledElement->classNames().size(); ++i)
-            collectMatchingRulesForList(matchRequest.ruleSet->classRules(m_styledElement->classNames()[i].impl()), matchRequest, firstRuleIndex, lastRuleIndex);
+            collectMatchingRulesForList(matchRequest.ruleSet->classRules(m_styledElement->classNames()[i].impl()), matchRequest, ruleRange);
     }
 
     if (m_element->isLink())
-        collectMatchingRulesForList(matchRequest.ruleSet->linkPseudoClassRules(), matchRequest, firstRuleIndex, lastRuleIndex);
+        collectMatchingRulesForList(matchRequest.ruleSet->linkPseudoClassRules(), matchRequest, ruleRange);
     if (m_selectorChecker.matchesFocusPseudoClass(m_element))
-        collectMatchingRulesForList(matchRequest.ruleSet->focusPseudoClassRules(), matchRequest, firstRuleIndex, lastRuleIndex);
-    collectMatchingRulesForList(matchRequest.ruleSet->tagRules(m_element->localName().impl()), matchRequest, firstRuleIndex, lastRuleIndex);
-    collectMatchingRulesForList(matchRequest.ruleSet->universalRules(), matchRequest, firstRuleIndex, lastRuleIndex);
+        collectMatchingRulesForList(matchRequest.ruleSet->focusPseudoClassRules(), matchRequest, ruleRange);
+    collectMatchingRulesForList(matchRequest.ruleSet->tagRules(m_element->localName().impl()), matchRequest, ruleRange);
+    collectMatchingRulesForList(matchRequest.ruleSet->universalRules(), matchRequest, ruleRange);
 }
 
-void StyleResolver::collectMatchingRulesForRegion(const MatchRequest& matchRequest, int& firstRuleIndex, int& lastRuleIndex)
+void StyleResolver::collectMatchingRulesForRegion(const MatchRequest& matchRequest, RuleRange& ruleRange)
 {
     if (!m_regionForStyling)
         return;
 
     unsigned size = matchRequest.ruleSet->m_regionSelectorsAndRuleSets.size();
     for (unsigned i = 0; i < size; ++i) {
-        CSSSelector* regionSelector = matchRequest.ruleSet->m_regionSelectorsAndRuleSets.at(i).selector;
+        const CSSSelector* regionSelector = matchRequest.ruleSet->m_regionSelectorsAndRuleSets.at(i).selector;
         if (checkRegionSelector(regionSelector, static_cast<Element*>(m_regionForStyling->node()))) {
             RuleSet* regionRules = matchRequest.ruleSet->m_regionSelectorsAndRuleSets.at(i).ruleSet.get();
             ASSERT(regionRules);
-            collectMatchingRules(MatchRequest(regionRules, matchRequest.includeEmptyRules, matchRequest.scope), firstRuleIndex, lastRuleIndex);
+            collectMatchingRules(MatchRequest(regionRules, matchRequest.includeEmptyRules, matchRequest.scope), ruleRange);
         }
     }
 }
@@ -722,15 +731,10 @@ void StyleResolver::sortAndTransferMatchedRules(MatchResult& result)
     }
 
     // Now transfer the set of matched rules over to our list of declarations.
-    // FIXME: This sucks, the inspector should get the style from the visited style itself.
-    bool swapVisitedUnvisited = InspectorInstrumentation::forcePseudoState(m_element, CSSSelector::PseudoVisited);
     for (unsigned i = 0; i < m_matchedRules.size(); i++) {
         if (m_style && m_matchedRules[i]->containsUncommonAttributeSelector())
             m_style->setUnique();
-        unsigned linkMatchType = m_matchedRules[i]->linkMatchType();
-        if (swapVisitedUnvisited && linkMatchType && linkMatchType != SelectorChecker::MatchAll)
-            linkMatchType = (linkMatchType == SelectorChecker::MatchVisited) ? SelectorChecker::MatchLink : SelectorChecker::MatchVisited;
-        addMatchedProperties(result, m_matchedRules[i]->rule()->properties(), m_matchedRules[i]->rule(), linkMatchType, m_matchedRules[i]->propertyWhitelistType());
+        addMatchedProperties(result, m_matchedRules[i]->rule()->properties(), m_matchedRules[i]->rule(), m_matchedRules[i]->linkMatchType(), m_matchedRules[i]->propertyWhitelistType());
     }
 }
 
@@ -760,8 +764,9 @@ void StyleResolver::matchScopedAuthorRules(MatchResult& result, bool includeEmpt
             }
 
             MatchRequest matchRequest(frame.m_ruleSet, includeEmptyRules, frame.m_scope);
-            collectMatchingRules(matchRequest, result.ranges.firstAuthorRule, result.ranges.lastAuthorRule);
-            collectMatchingRulesForRegion(matchRequest, result.ranges.firstAuthorRule, result.ranges.lastAuthorRule);
+            RuleRange ruleRange = result.ranges.authorRuleRange();
+            collectMatchingRules(matchRequest, ruleRange);
+            collectMatchingRulesForRegion(matchRequest, ruleRange);
             sortAndTransferMatchedRules(result);
         }
     }
@@ -795,8 +800,10 @@ void StyleResolver::matchHostRules(MatchResult& result, bool includeEmptyRules)
     if (matchedRules.isEmpty())
         return;
 
-    for (unsigned i = matchedRules.size(); i > 0; --i)
-        collectMatchingRules(MatchRequest(matchedRules.at(i-1), includeEmptyRules, m_element), result.ranges.firstAuthorRule, result.ranges.lastAuthorRule);
+    for (unsigned i = matchedRules.size(); i > 0; --i) {
+        RuleRange ruleRange = result.ranges.authorRuleRange();
+        collectMatchingRules(MatchRequest(matchedRules.at(i-1), includeEmptyRules, m_element), ruleRange);
+    }
     sortAndTransferMatchedRules(result);
 #else
     UNUSED_PARAM(result);
@@ -814,8 +821,9 @@ void StyleResolver::matchAuthorRules(MatchResult& result, bool includeEmptyRules
 
     // Match global author rules.
     MatchRequest matchRequest(m_authorStyle.get(), includeEmptyRules);
-    collectMatchingRules(matchRequest, result.ranges.firstAuthorRule, result.ranges.lastAuthorRule);
-    collectMatchingRulesForRegion(matchRequest, result.ranges.firstAuthorRule, result.ranges.lastAuthorRule);
+    RuleRange ruleRange = result.ranges.authorRuleRange();
+    collectMatchingRules(matchRequest, ruleRange);
+    collectMatchingRulesForRegion(matchRequest, ruleRange);
     sortAndTransferMatchedRules(result);
 
     matchScopedAuthorRules(result, includeEmptyRules);
@@ -830,8 +838,9 @@ void StyleResolver::matchUserRules(MatchResult& result, bool includeEmptyRules)
 
     result.ranges.lastUserRule = result.matchedProperties.size() - 1;
     MatchRequest matchRequest(m_userStyle.get(), includeEmptyRules);
-    collectMatchingRules(matchRequest, result.ranges.firstUserRule, result.ranges.lastUserRule);
-    collectMatchingRulesForRegion(matchRequest, result.ranges.firstUserRule, result.ranges.lastUserRule);
+    RuleRange ruleRange = result.ranges.userRuleRange();
+    collectMatchingRules(matchRequest, ruleRange);
+    collectMatchingRulesForRegion(matchRequest, ruleRange);
 
     sortAndTransferMatchedRules(result);
 }
@@ -841,12 +850,13 @@ void StyleResolver::matchUARules(MatchResult& result, RuleSet* rules)
     m_matchedRules.clear();
     
     result.ranges.lastUARule = result.matchedProperties.size() - 1;
-    collectMatchingRules(MatchRequest(rules), result.ranges.firstUARule, result.ranges.lastUARule);
+    RuleRange ruleRange = result.ranges.UARuleRange();
+    collectMatchingRules(MatchRequest(rules), ruleRange);
 
     sortAndTransferMatchedRules(result);
 }
 
-void StyleResolver::collectMatchingRulesForList(const Vector<RuleData>* rules, const MatchRequest& matchRequest, int& firstRuleIndex, int& lastRuleIndex)
+void StyleResolver::collectMatchingRulesForList(const Vector<RuleData>* rules, const MatchRequest& matchRequest, RuleRange& ruleRange)
 {
     if (!rules)
         return;
@@ -886,9 +896,9 @@ void StyleResolver::collectMatchingRulesForList(const Vector<RuleData>* rules, c
                     m_style->setHasPseudoStyle(m_dynamicPseudo);
             } else {
                 // Update our first/last rule indices in the matched rules array.
-                ++lastRuleIndex;
-                if (firstRuleIndex == -1)
-                    firstRuleIndex = lastRuleIndex;
+                ++ruleRange.lastRuleIndex;
+                if (ruleRange.firstRuleIndex == -1)
+                    ruleRange.firstRuleIndex = ruleRange.lastRuleIndex;
 
                 // Add this rule to our list of matched rules.
                 addMatchedRule(&ruleData);
@@ -1065,9 +1075,10 @@ bool StyleResolver::styleSharingCandidateMatchesRuleSet(RuleSet* ruleSet)
         return false;
     m_matchedRules.clear();
 
-    int firstRuleIndex = -1, lastRuleIndex = -1;
     m_selectorChecker.setMode(SelectorChecker::SharingRules);
-    collectMatchingRules(MatchRequest(ruleSet), firstRuleIndex, lastRuleIndex);
+    int firstRuleIndex = -1, lastRuleIndex = -1;
+    RuleRange ruleRange(firstRuleIndex, lastRuleIndex);
+    collectMatchingRules(MatchRequest(ruleSet), ruleRange);
     m_selectorChecker.setMode(SelectorChecker::ResolvingStyle);
     if (m_matchedRules.isEmpty())
         return false;
@@ -1588,7 +1599,14 @@ PassRefPtr<RenderStyle> StyleResolver::styleForElement(Element* element, RenderS
 
     if (element->isLink()) {
         m_style->setIsLink(true);
-        m_style->setInsideLink(m_elementLinkState);
+        EInsideLink linkState = m_elementLinkState;
+        if (m_elementLinkState != NotInsideLink) {
+            bool forceVisited = InspectorInstrumentation::forcePseudoState(element, CSSSelector::PseudoVisited);
+            if (forceVisited)
+                linkState = InsideVisitedLink;
+        }
+
+        m_style->setInsideLink(linkState);
     }
 
     ensureDefaultStyleSheetsForElement(element);
@@ -2270,7 +2288,8 @@ inline bool StyleResolver::ruleMatches(const RuleData& ruleData, const Container
         if (ruleData.hasRightmostSelectorMatchingHTMLBasedOnRuleHash() && m_element->isHTMLElement()) {
             if (!ruleData.hasMultipartSelector())
                 return true;
-        } else if (!SelectorChecker::tagMatches(m_element, ruleData.selector()))
+        }
+        if (ruleData.selector()->m_match == CSSSelector::Tag && !SelectorChecker::tagMatches(m_element, ruleData.selector()->tagQName()))
             return false;
         if (!SelectorChecker::fastCheckRightmostAttributeSelector(m_element, ruleData.selector()))
             return false;
@@ -2280,10 +2299,9 @@ inline bool StyleResolver::ruleMatches(const RuleData& ruleData, const Container
     // Slow path.
     SelectorChecker::SelectorCheckingContext context(ruleData.selector(), m_element, SelectorChecker::VisitedMatchEnabled);
     context.elementStyle = style();
-    context.elementParentStyle = m_parentNode ? m_parentNode->renderStyle() : 0;
     context.scope = scope;
     context.pseudoStyle = m_pseudoStyle;
-    SelectorChecker::Match match = m_selectorChecker.match(context, m_dynamicPseudo);
+    SelectorChecker::Match match = m_selectorChecker.match(context, m_dynamicPseudo, DOMSiblingTraversalStrategy());
     if (match != SelectorChecker::SelectorMatches)
         return false;
     if (m_pseudoStyle != NOPSEUDO && m_pseudoStyle != m_dynamicPseudo)
@@ -2291,14 +2309,14 @@ inline bool StyleResolver::ruleMatches(const RuleData& ruleData, const Container
     return true;
 }
 
-bool StyleResolver::checkRegionSelector(CSSSelector* regionSelector, Element* regionElement)
+bool StyleResolver::checkRegionSelector(const CSSSelector* regionSelector, Element* regionElement)
 {
     if (!regionSelector || !regionElement)
         return false;
 
     m_pseudoStyle = NOPSEUDO;
 
-    for (CSSSelector* s = regionSelector; s; s = CSSSelectorList::next(s))
+    for (const CSSSelector* s = regionSelector; s; s = CSSSelectorList::next(s))
         if (m_selectorChecker.matches(s, regionElement))
             return true;
 
@@ -2599,18 +2617,32 @@ void StyleResolver::matchPageRules(MatchResult& result, RuleSet* rules, bool isL
         addMatchedProperties(result, matchedPageRules[i]->properties());
 }
 
-void StyleResolver::matchPageRulesForList(Vector<StyleRulePage*>& matchedRules, const Vector<StyleRulePage*>& rules, bool isLeftPage, bool isFirstPage, const String& pageName)
+static bool checkPageSelectorComponents(const CSSSelector* selector, bool isLeftPage, bool isFirstPage, const String& pageName)
 {
-    unsigned size = rules.size();
-    for (unsigned i = 0; i < size; ++i) {
-        StyleRulePage* rule = rules[i];
-        const AtomicString& selectorLocalName = rule->selector()->tag().localName();
-        if (selectorLocalName != starAtom && selectorLocalName != pageName)
-            continue;
-        CSSSelector::PseudoType pseudoType = rule->selector()->pseudoType();
+    for (const CSSSelector* component = selector; component; component = component->tagHistory()) {
+        if (component->m_match == CSSSelector::Tag) {
+            const AtomicString& localName = component->tagQName().localName();
+            if (localName != starAtom && localName != pageName)
+                return false;
+        }
+
+        CSSSelector::PseudoType pseudoType = component->pseudoType();
         if ((pseudoType == CSSSelector::PseudoLeftPage && !isLeftPage)
             || (pseudoType == CSSSelector::PseudoRightPage && isLeftPage)
             || (pseudoType == CSSSelector::PseudoFirstPage && !isFirstPage))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void StyleResolver::matchPageRulesForList(Vector<StyleRulePage*>& matchedRules, const Vector<StyleRulePage*>& rules, bool isLeftPage, bool isFirstPage, const String& pageName)
+{
+    for (unsigned i = 0; i < rules.size(); ++i) {
+        StyleRulePage* rule = rules[i];
+
+        if (!checkPageSelectorComponents(rule->selector(), isLeftPage, isFirstPage, pageName))
             continue;
 
         // If the rule has no properties to apply, then ignore it.
@@ -2940,6 +2972,14 @@ static bool hasVariableReference(CSSValue* value)
 
     if (value->isCalculationValue())
         return static_cast<CSSCalcValue*>(value)->hasVariableReference();
+
+    if (value->isReflectValue()) {
+        CSSReflectValue* reflectValue = static_cast<CSSReflectValue*>(value);
+        CSSPrimitiveValue* direction = reflectValue->direction();
+        CSSPrimitiveValue* offset = reflectValue->offset();
+        CSSValue* mask = reflectValue->mask();
+        return (direction && hasVariableReference(direction)) || (offset && hasVariableReference(offset)) || (mask && hasVariableReference(mask));
+    }
 
     for (CSSValueListIterator i = value; i.hasMore(); i.advance()) {
         if (hasVariableReference(i.value()))
@@ -3378,7 +3418,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
 
         CSSReflectValue* reflectValue = static_cast<CSSReflectValue*>(value);
         RefPtr<StyleReflection> reflection = StyleReflection::create();
-        reflection->setDirection(reflectValue->direction());
+        reflection->setDirection(*reflectValue->direction());
         if (reflectValue->offset())
             reflection->setOffset(reflectValue->offset()->convertToLength<FixedIntegerConversion | PercentConversion | CalculatedConversion>(style(), m_rootElementStyle, zoomFactor));
         NinePieceImage mask;
@@ -4075,12 +4115,12 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
 #endif
         ASSERT_NOT_REACHED();
         return;
-#if ENABLE(SVG)
     default:
+#if ENABLE(SVG)
         // Try the SVG properties
         applySVGProperty(id, value);
-        return;
 #endif
+        return;
     }
 }
 

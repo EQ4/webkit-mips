@@ -70,6 +70,11 @@ NetworkProcess::~NetworkProcess()
 {
 }
 
+AuthenticationManager& NetworkProcess::authenticationManager()
+{
+    return *supplement<AuthenticationManager>();
+}
+
 DownloadManager& NetworkProcess::downloadManager()
 {
     DEFINE_STATIC_LOCAL(DownloadManager, downloadManager, (this));
@@ -131,7 +136,7 @@ CoreIPC::Connection* NetworkProcess::downloadProxyConnection()
 
 AuthenticationManager& NetworkProcess::downloadsAuthenticationManager()
 {
-    return *supplement<AuthenticationManager>();
+    return authenticationManager();
 }
 
 void NetworkProcess::initializeNetworkProcess(const NetworkProcessCreationParameters& parameters)
@@ -216,7 +221,7 @@ void NetworkProcess::initializeProcessName(const ChildProcessInitializationParam
 {
 }
 
-void NetworkProcess::initializeSandbox(const ChildProcessInitializationParameters&)
+void NetworkProcess::initializeSandbox(const ChildProcessInitializationParameters&, SandboxInitializationParameters&)
 {
 }
 #endif

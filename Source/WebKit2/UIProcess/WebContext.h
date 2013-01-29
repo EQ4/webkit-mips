@@ -35,6 +35,7 @@
 #include "PlugInAutoStartProvider.h"
 #include "PluginInfoStore.h"
 #include "ProcessModel.h"
+#include "StorageManager.h"
 #include "VisitedLinkProvider.h"
 #include "WebContextClient.h"
 #include "WebContextConnectionClient.h"
@@ -263,7 +264,7 @@ public:
 #if ENABLE(NETWORK_PROCESS)
     void ensureNetworkProcess();
     NetworkProcessProxy* networkProcess() { return m_networkProcess.get(); }
-    void removeNetworkProcessProxy(NetworkProcessProxy*);
+    void networkProcessCrashed(NetworkProcessProxy*);
 
     void getNetworkProcessConnection(PassRefPtr<Messages::WebProcessProxy::GetNetworkProcessConnection::DelayedReply>);
 #endif
@@ -419,6 +420,8 @@ private:
 #if ENABLE(NETSCAPE_PLUGIN_API)
     RefPtr<WebPluginSiteDataManager> m_pluginSiteDataManager;
 #endif
+
+    StorageManager m_storageManager;
 
     typedef HashMap<AtomicString, RefPtr<WebContextSupplement> > WebContextSupplementMap;
     WebContextSupplementMap m_supplements;

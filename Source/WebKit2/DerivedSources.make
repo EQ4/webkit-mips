@@ -28,20 +28,20 @@ VPATH = \
     $(WebKit2)/Shared/Plugins \
     $(WebKit2)/Shared \
     $(WebKit2)/Shared/mac \
+    $(WebKit2)/Shared/Authentication \
     $(WebKit2)/Shared/Network/CustomProtocols \
     $(WebKit2)/SharedWorkerProcess \
     $(WebKit2)/WebProcess/ApplicationCache \
-    $(WebKit2)/WebProcess/Authentication \
     $(WebKit2)/WebProcess/Cookies \
     $(WebKit2)/WebProcess/FullScreen \
     $(WebKit2)/WebProcess/Geolocation \
     $(WebKit2)/WebProcess/IconDatabase \
-    $(WebKit2)/WebProcess/KeyValueStorage \
     $(WebKit2)/WebProcess/MediaCache \
     $(WebKit2)/WebProcess/Network \
     $(WebKit2)/WebProcess/Notifications \
     $(WebKit2)/WebProcess/Plugins \
     $(WebKit2)/WebProcess/ResourceCache \
+    $(WebKit2)/WebProcess/Storage \
     $(WebKit2)/WebProcess/WebCoreSupport \
     $(WebKit2)/WebProcess/WebPage \
     $(WebKit2)/WebProcess \
@@ -80,7 +80,6 @@ MESSAGE_RECEIVERS = \
     WebCookieManagerProxy \
     WebConnection \
     NetworkConnectionToWebProcess \
-    NetworkResourceLoader \
     RemoteLayerTreeHost \
     SecItemShim \
     SecItemShimProxy \

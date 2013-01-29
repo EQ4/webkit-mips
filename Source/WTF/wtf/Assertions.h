@@ -266,6 +266,28 @@ inline void assertUnused(T& x) { (void)x; }
 
 #endif
 
+/* ASSERT_WITH_SECURITY_IMPLICATION
+   
+   Failure of this assertion indicates a possible security vulnerability.
+   Class of vulnerabilities that it tests include bad casts, out of bounds
+   accesses, use-after-frees, etc. Please file a bug using the security
+   template - https://bugs.webkit.org/enter_bug.cgi?product=Security.
+
+*/
+#ifdef ADDRESS_SANITIZER
+
+#define ASSERT_WITH_SECURITY_IMPLICATION(assertion) \
+    (!(assertion) ? \
+        (WTFReportAssertionFailure(__FILE__, __LINE__, WTF_PRETTY_FUNCTION, #assertion), \
+         CRASH()) : \
+        (void)0)
+
+#else
+
+#define ASSERT_WITH_SECURITY_IMPLICATION(assertion) ASSERT(assertion)
+
+#endif
+
 /* ASSERT_WITH_MESSAGE */
 
 #if COMPILER(MSVC7_OR_LOWER)
@@ -388,6 +410,16 @@ static inline void UNREACHABLE_FOR_PLATFORM()
 #pragma clang diagnostic pop
 #else
 #define UNREACHABLE_FOR_PLATFORM() ASSERT_NOT_REACHED()
+#endif
+
+#if ASSERT_DISABLED
+#define RELEASE_ASSERT(assertion) (!(assertion) ? (CRASH()) : (void)0)
+#define RELEASE_ASSERT_WITH_MESSAGE(assertion, ...) RELEASE_ASSERT(assertion)
+#define RELEASE_ASSERT_NOT_REACHED() CRASH()
+#else
+#define RELEASE_ASSERT(assertion) ASSERT(assertion)
+#define RELEASE_ASSERT_WITH_MESSAGE(assertion, ...) ASSERT_WITH_MESSAGE(assertion, __VA_ARGS__)
+#define RELEASE_ASSERT_NOT_REACHED() ASSERT_NOT_REACHED()
 #endif
 
 #endif /* WTF_Assertions_h */

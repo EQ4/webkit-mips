@@ -18,9 +18,6 @@
 
 namespace WebCore {
 class Range;
-class SpellChecker;
-class VisibleSelection;
-class VisiblePosition;
 }
 
 namespace BlackBerry {
@@ -47,6 +44,7 @@ private:
     WebCore::Timer<SpellingHandler> m_timer;
     WebCore::VisiblePosition m_startOfCurrentLine;
     WebCore::VisiblePosition m_endOfCurrentLine;
+    WebCore::VisibleSelection m_endOfRange;
     WebCore::TextCheckingProcessType m_textCheckingProcessType;
     bool m_isSpellCheckActive;
 };

@@ -192,13 +192,9 @@ static bool shouldUseFixedLayout(const char* pathOrURL)
 
 static void updateLayoutType(const char* pathOrURL)
 {
-    bool useFixedLayout = shouldUseFixedLayout(pathOrURL);
-    if (!useFixedLayout)
-        return;
-
     WKRetainPtr<WKMutableDictionaryRef> viewOptions = adoptWK(WKMutableDictionaryCreate());
     WKRetainPtr<WKStringRef> useFixedLayoutKey = adoptWK(WKStringCreateWithUTF8CString("UseFixedLayout"));
-    WKRetainPtr<WKBooleanRef> useFixedLayoutValue = adoptWK(WKBooleanCreate(useFixedLayout));
+    WKRetainPtr<WKBooleanRef> useFixedLayoutValue = adoptWK(WKBooleanCreate(shouldUseFixedLayout(pathOrURL)));
     WKDictionaryAddItem(viewOptions.get(), useFixedLayoutKey.get(), useFixedLayoutValue.get());
 
     TestController::shared().ensureViewSupportsOptions(viewOptions.get());
@@ -541,6 +537,22 @@ void TestInvocation::didReceiveMessageFromInjectedBundle(WKStringRef messageName
         bool permissive = WKBooleanGetValue(permissiveWK);
 
         TestController::shared().setCustomPolicyDelegate(enabled, permissive);
+        return;
+    }
+
+    if (WKStringIsEqualToUTF8CString(messageName, "SetVisibilityState")) {
+        ASSERT(WKGetTypeID(messageBody) == WKDictionaryGetTypeID());
+        WKDictionaryRef messageBodyDictionary = static_cast<WKDictionaryRef>(messageBody);
+
+        WKRetainPtr<WKStringRef> visibilityStateKeyWK(AdoptWK, WKStringCreateWithUTF8CString("visibilityState"));
+        WKUInt64Ref visibilityStateWK = static_cast<WKUInt64Ref>(WKDictionaryGetItemForKey(messageBodyDictionary, visibilityStateKeyWK.get()));
+        WKPageVisibilityState visibilityState = static_cast<WKPageVisibilityState>(WKUInt64GetValue(visibilityStateWK));
+
+        WKRetainPtr<WKStringRef> isInitialKeyWK(AdoptWK, WKStringCreateWithUTF8CString("isInitialState"));
+        WKBooleanRef isInitialWK = static_cast<WKBooleanRef>(WKDictionaryGetItemForKey(messageBodyDictionary, isInitialKeyWK.get()));
+        bool isInitialState = WKBooleanGetValue(isInitialWK);
+
+        TestController::shared().setVisibilityState(visibilityState, isInitialState);
         return;
     }
 

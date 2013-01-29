@@ -733,7 +733,7 @@ void RenderLayerCompositor::layerWillBeRemoved(RenderLayer* parent, RenderLayer*
 RenderLayer* RenderLayerCompositor::enclosingNonStackingClippingLayer(const RenderLayer* layer) const
 {
     for (RenderLayer* curr = layer->parent(); curr != 0; curr = curr->parent()) {
-        if (curr->isStackingContext())
+        if (curr->isStackingContainer())
             return 0;
 
         if (curr->renderer()->hasClipOrOverflowClip())
@@ -780,7 +780,7 @@ void RenderLayerCompositor::addToOverlapMapRecursive(OverlapMap& overlapMap, Ren
     LayerListMutationDetector mutationChecker(layer);
 #endif
 
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* negZOrderList = layer->negZOrderList()) {
             size_t listSize = negZOrderList->size();
             for (size_t i = 0; i < listSize; ++i) {
@@ -798,7 +798,7 @@ void RenderLayerCompositor::addToOverlapMapRecursive(OverlapMap& overlapMap, Ren
         }
     }
 
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* posZOrderList = layer->posZOrderList()) {
             size_t listSize = posZOrderList->size();
             for (size_t i = 0; i < listSize; ++i) {
@@ -883,7 +883,7 @@ void RenderLayerCompositor::computeCompositingRequirements(RenderLayer* ancestor
 
     bool anyDescendantHas3DTransform = false;
 
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* negZOrderList = layer->negZOrderList()) {
             size_t listSize = negZOrderList->size();
             for (size_t i = 0; i < listSize; ++i) {
@@ -915,7 +915,7 @@ void RenderLayerCompositor::computeCompositingRequirements(RenderLayer* ancestor
         }
     }
 
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* posZOrderList = layer->posZOrderList()) {
             size_t listSize = posZOrderList->size();
             for (size_t i = 0; i < listSize; ++i) {
@@ -1096,7 +1096,7 @@ void RenderLayerCompositor::rebuildCompositingLayerTree(RenderLayer* layer, Vect
     LayerListMutationDetector mutationChecker(layer);
 #endif
 
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* negZOrderList = layer->negZOrderList()) {
             size_t listSize = negZOrderList->size();
             for (size_t i = 0; i < listSize; ++i) {
@@ -1118,7 +1118,7 @@ void RenderLayerCompositor::rebuildCompositingLayerTree(RenderLayer* layer, Vect
         }
     }
     
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* posZOrderList = layer->posZOrderList()) {
             size_t listSize = posZOrderList->size();
             for (size_t i = 0; i < listSize; ++i) {
@@ -1169,7 +1169,7 @@ void RenderLayerCompositor::frameViewDidChangeSize()
 {
     if (m_clipLayer) {
         FrameView* frameView = m_renderView->frameView();
-        m_clipLayer->setSize(frameView->visibleContentRect(false /* exclude scrollbars */).size());
+        m_clipLayer->setSize(frameView->unscaledVisibleContentSize(false /* exclude scrollbars */));
 
         frameViewDidScroll();
         updateOverflowControlsLayers();
@@ -1334,7 +1334,7 @@ void RenderLayerCompositor::updateLayerTreeGeometry(RenderLayer* layer, int dept
     LayerListMutationDetector mutationChecker(layer);
 #endif
 
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* negZOrderList = layer->negZOrderList()) {
             size_t listSize = negZOrderList->size();
             for (size_t i = 0; i < listSize; ++i)
@@ -1348,7 +1348,7 @@ void RenderLayerCompositor::updateLayerTreeGeometry(RenderLayer* layer, int dept
             updateLayerTreeGeometry(normalFlowList->at(i), depth + 1);
     }
     
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* posZOrderList = layer->posZOrderList()) {
             size_t listSize = posZOrderList->size();
             for (size_t i = 0; i < listSize; ++i)
@@ -1385,7 +1385,7 @@ void RenderLayerCompositor::updateCompositingDescendantGeometry(RenderLayer* com
     LayerListMutationDetector mutationChecker(layer);
 #endif
     
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* negZOrderList = layer->negZOrderList()) {
             size_t listSize = negZOrderList->size();
             for (size_t i = 0; i < listSize; ++i)
@@ -1399,7 +1399,7 @@ void RenderLayerCompositor::updateCompositingDescendantGeometry(RenderLayer* com
             updateCompositingDescendantGeometry(compositingAncestor, normalFlowList->at(i), compositedChildrenOnly);
     }
     
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* posZOrderList = layer->posZOrderList()) {
             size_t listSize = posZOrderList->size();
             for (size_t i = 0; i < listSize; ++i)
@@ -1543,7 +1543,7 @@ void RenderLayerCompositor::updateRootLayerPosition()
     }
     if (m_clipLayer) {
         FrameView* frameView = m_renderView->frameView();
-        m_clipLayer->setSize(frameView->visibleContentRect(false /* exclude scrollbars */).size());
+        m_clipLayer->setSize(frameView->unscaledVisibleContentSize(false /* exclude scrollbars */));
     }
 
 #if ENABLE(RUBBER_BANDING)
@@ -2033,7 +2033,7 @@ bool RenderLayerCompositor::requiresCompositingForPosition(RenderObject* rendere
     
     EPosition position = renderer->style()->position();
     bool isFixed = renderer->isOutOfFlowPositioned() && position == FixedPosition;
-    if (isFixed && !layer->isStackingContext())
+    if (isFixed && !layer->isStackingContainer())
         return false;
     
     bool isSticky = renderer->isInFlowPositioned() && position == StickyPosition;
@@ -2065,15 +2065,24 @@ bool RenderLayerCompositor::requiresCompositingForPosition(RenderObject* rendere
 
     // Fixed position elements that are invisible in the current view don't get their own layer.
     if (FrameView* frameView = m_renderView->frameView()) {
-        IntRect viewBounds = frameView->visibleContentRect();
+        LayoutRect viewBounds = frameView->viewportConstrainedVisibleContentRect();
         LayoutRect layerBounds = layer->calculateLayerBounds(rootRenderLayer(), 0, RenderLayer::DefaultCalculateLayerBoundsFlags
             | RenderLayer::ExcludeHiddenDescendants | RenderLayer::DontConstrainForMask | RenderLayer::IncludeCompositedDescendants);
         layerBounds.scale(frameView->frame()->frameScaleFactor());
         if (!viewBounds.intersects(enclosingIntRect(layerBounds))) {
             if (viewportConstrainedNotCompositedReason)
                 *viewportConstrainedNotCompositedReason = RenderLayer::NotCompositedForBoundsOutOfView;
+            // Reevaluate compositing after layout because the layer bounds may change and become composited.
+            m_reevaluateCompositingAfterLayout = true;
             return false;
         }
+    }
+    
+    bool paintsContent = layer->isVisuallyNonEmpty() || layer->hasVisibleDescendant();
+    if (!paintsContent) {
+        // isVisuallyNonEmpty() depends on layout.
+        m_reevaluateCompositingAfterLayout = true;
+        return false;
     }
 
     return true;
@@ -2642,7 +2651,7 @@ bool RenderLayerCompositor::layerHas3DContent(const RenderLayer* layer) const
     LayerListMutationDetector mutationChecker(const_cast<RenderLayer*>(layer));
 #endif
 
-    if (layer->isStackingContext()) {
+    if (layer->isStackingContainer()) {
         if (Vector<RenderLayer*>* negZOrderList = layer->negZOrderList()) {
             size_t listSize = negZOrderList->size();
             for (size_t i = 0; i < listSize; ++i) {
@@ -2692,8 +2701,8 @@ static bool isRootmostFixedOrStickyLayer(RenderLayer* layer)
     if (layer->renderer()->style()->position() != FixedPosition)
         return false;
 
-    for (RenderLayer* stackingContext = layer->stackingContext(); stackingContext; stackingContext = stackingContext->stackingContext()) {
-        if (stackingContext->isComposited() && stackingContext->renderer()->style()->position() == FixedPosition)
+    for (RenderLayer* stackingContainer = layer->stackingContainer(); stackingContainer; stackingContainer = stackingContainer->stackingContainer()) {
+        if (stackingContainer->isComposited() && stackingContainer->renderer()->style()->position() == FixedPosition)
             return false;
     }
 

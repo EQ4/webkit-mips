@@ -197,6 +197,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSDOMMimeType.h \
 	DerivedSources/WebCore/JSDOMNamedFlowCollection.cpp \
 	DerivedSources/WebCore/JSDOMNamedFlowCollection.h \
+	DerivedSources/WebCore/JSDOMPath.cpp \
+	DerivedSources/WebCore/JSDOMPath.h \
 	DerivedSources/WebCore/JSDOMParser.cpp \
 	DerivedSources/WebCore/JSDOMParser.h \
 	DerivedSources/WebCore/JSDOMPluginArray.cpp \
@@ -463,8 +465,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSIDBFactory.h \
 	DerivedSources/WebCore/JSIDBIndex.cpp \
 	DerivedSources/WebCore/JSIDBIndex.h \
-	DerivedSources/WebCore/JSIDBKey.cpp \
-	DerivedSources/WebCore/JSIDBKey.h \
 	DerivedSources/WebCore/JSIDBKeyRange.cpp \
 	DerivedSources/WebCore/JSIDBKeyRange.h \
 	DerivedSources/WebCore/JSIDBObjectStore.cpp \
@@ -477,10 +477,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSIDBTransaction.h \
 	DerivedSources/WebCore/JSIDBVersionChangeEvent.cpp \
 	DerivedSources/WebCore/JSIDBVersionChangeEvent.h \
-	DerivedSources/WebCore/JSIDBUpgradeNeededEvent.cpp \
-	DerivedSources/WebCore/JSIDBUpgradeNeededEvent.h \
-	DerivedSources/WebCore/JSIDBVersionChangeRequest.cpp \
-	DerivedSources/WebCore/JSIDBVersionChangeRequest.h \
 	DerivedSources/WebCore/JSImageData.cpp \
 	DerivedSources/WebCore/JSImageData.h \
 	DerivedSources/WebCore/JSInjectedScriptHost.cpp \
@@ -751,6 +747,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSTouchList.h \
 	DerivedSources/WebCore/JSTrackEvent.cpp \
 	DerivedSources/WebCore/JSTrackEvent.h \
+	DerivedSources/WebCore/JSTransitionEvent.cpp \
+	DerivedSources/WebCore/JSTransitionEvent.h \
 	DerivedSources/WebCore/JSTreeWalker.cpp \
 	DerivedSources/WebCore/JSTreeWalker.h \
 	DerivedSources/WebCore/JSUIEvent.cpp \
@@ -805,6 +803,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSWebGLVertexArrayObjectOES.h \
 	DerivedSources/WebCore/JSWebKitAnimationEvent.cpp \
 	DerivedSources/WebCore/JSWebKitAnimationEvent.h \
+	DerivedSources/WebCore/JSWebKitCSSFilterRule.cpp \
+	DerivedSources/WebCore/JSWebKitCSSFilterRule.h \
 	DerivedSources/WebCore/JSWebKitCSSFilterValue.cpp \
 	DerivedSources/WebCore/JSWebKitCSSFilterValue.h \
 	DerivedSources/WebCore/JSWebKitCSSKeyframeRule.cpp \
@@ -1227,16 +1227,12 @@ dom_binding_idls += \
 	$(WebCore)/Modules/indexeddb/IDBDatabase.idl \
 	$(WebCore)/Modules/indexeddb/IDBFactory.idl \
 	$(WebCore)/Modules/indexeddb/IDBIndex.idl \
-	$(WebCore)/Modules/indexeddb/IDBKey.idl \
 	$(WebCore)/Modules/indexeddb/IDBKeyRange.idl \
 	$(WebCore)/Modules/indexeddb/IDBObjectStore.idl \
 	$(WebCore)/Modules/indexeddb/IDBOpenDBRequest.idl \
 	$(WebCore)/Modules/indexeddb/IDBRequest.idl \
 	$(WebCore)/Modules/indexeddb/IDBTransaction.idl \
-	$(WebCore)/Modules/indexeddb/IDBUpgradeNeededEvent.idl \
 	$(WebCore)/Modules/indexeddb/IDBVersionChangeEvent.idl \
-	$(WebCore)/Modules/indexeddb/IDBUpgradeNeededEvent.idl \
-	$(WebCore)/Modules/indexeddb/IDBVersionChangeRequest.idl \
 	$(WebCore)/Modules/indexeddb/WorkerContextIndexedDatabase.idl \
 	$(WebCore)/Modules/mediasource/MediaSource.idl \
 	$(WebCore)/Modules/mediasource/SourceBuffer.idl \
@@ -1265,9 +1261,11 @@ dom_binding_idls += \
 	$(WebCore)/Modules/mediastream/RTCStatsReport.idl \
 	$(WebCore)/Modules/mediastream/RTCStatsResponse.idl \
 	$(WebCore)/Modules/navigatorcontentutils/NavigatorContentUtils.idl \
+	$(WebCore)/Modules/notifications/DOMWindowNotifications.idl \
 	$(WebCore)/Modules/notifications/Notification.idl \
 	$(WebCore)/Modules/notifications/NotificationCenter.idl \
 	$(WebCore)/Modules/notifications/NotificationPermissionCallback.idl \
+	$(WebCore)/Modules/notifications/WorkerContextNotifications.idl \
 	$(WebCore)/Modules/proximity/DeviceProximityEvent.idl \
 	$(WebCore)/Modules/quota/DOMWindowQuota.idl \
 	$(WebCore)/Modules/quota/StorageInfo.idl \
@@ -1346,6 +1344,7 @@ dom_binding_idls += \
 	$(WebCore)/css/StyleMedia.idl \
 	$(WebCore)/css/StyleSheet.idl \
 	$(WebCore)/css/StyleSheetList.idl \
+	$(WebCore)/css/WebKitCSSFilterRule.idl \
 	$(WebCore)/css/WebKitCSSFilterValue.idl \
 	$(WebCore)/css/WebKitCSSKeyframeRule.idl \
 	$(WebCore)/css/WebKitCSSKeyframesRule.idl \
@@ -1416,6 +1415,7 @@ dom_binding_idls += \
 	$(WebCore)/dom/Touch.idl \
 	$(WebCore)/dom/TouchEvent.idl \
 	$(WebCore)/dom/TouchList.idl \
+	$(WebCore)/dom/TransitionEvent.idl \
 	$(WebCore)/dom/TreeWalker.idl \
 	$(WebCore)/dom/UIEvent.idl \
 	$(WebCore)/dom/WebKitAnimationEvent.idl \
@@ -1527,6 +1527,7 @@ dom_binding_idls += \
 	$(WebCore)/html/canvas/CanvasRenderingContext.idl \
 	$(WebCore)/html/canvas/CanvasRenderingContext2D.idl \
 	$(WebCore)/html/canvas/DataView.idl \
+	$(WebCore)/html/canvas/DOMPath.idl \
 	$(WebCore)/html/canvas/EXTTextureFilterAnisotropic.idl \
 	$(WebCore)/html/canvas/Float32Array.idl \
 	$(WebCore)/html/canvas/Float64Array.idl \
@@ -1910,12 +1911,8 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/indexeddb/IDBTransactionCoordinator.h \
 	Source/WebCore/Modules/indexeddb/IDBTransaction.cpp \
 	Source/WebCore/Modules/indexeddb/IDBTransaction.h \
-	Source/WebCore/Modules/indexeddb/IDBUpgradeNeededEvent.cpp \
-	Source/WebCore/Modules/indexeddb/IDBUpgradeNeededEvent.h \
 	Source/WebCore/Modules/indexeddb/IDBVersionChangeEvent.cpp \
 	Source/WebCore/Modules/indexeddb/IDBVersionChangeEvent.h \
-	Source/WebCore/Modules/indexeddb/IDBVersionChangeRequest.cpp \
-	Source/WebCore/Modules/indexeddb/IDBVersionChangeRequest.h \
 	Source/WebCore/Modules/indexeddb/PageGroupIndexedDatabase.cpp \
 	Source/WebCore/Modules/indexeddb/PageGroupIndexedDatabase.h \
 	Source/WebCore/Modules/indexeddb/WorkerContextIndexedDatabase.cpp \
@@ -2354,15 +2351,14 @@ webcore_sources += \
 	Source/WebCore/bindings/js/JSHTMLObjectElementCustom.cpp \
 	Source/WebCore/bindings/js/JSHTMLObjectElementCustom.h \
 	Source/WebCore/bindings/js/JSHTMLOptionsCollectionCustom.cpp \
-	Source/WebCore/bindings/js/JSHTMLOutputElementCustom.cpp \
 	Source/WebCore/bindings/js/JSHTMLSelectElementCustom.cpp \
 	Source/WebCore/bindings/js/JSHTMLSelectElementCustom.h \
 	Source/WebCore/bindings/js/JSHTMLStyleElementCustom.cpp \
+	Source/WebCore/bindings/js/JSHTMLTemplateElementCustom.cpp \
 	Source/WebCore/bindings/js/JSHistoryCustom.cpp \
 	Source/WebCore/bindings/js/JSHistoryCustom.h \
 	Source/WebCore/bindings/js/JSIDBAnyCustom.cpp \
 	Source/WebCore/bindings/js/JSIDBDatabaseCustom.cpp \
-	Source/WebCore/bindings/js/JSIDBKeyCustom.cpp \
 	Source/WebCore/bindings/js/JSIDBObjectStoreCustom.cpp \
 	Source/WebCore/bindings/js/JSImageConstructor.cpp \
 	Source/WebCore/bindings/js/JSImageConstructor.h \
@@ -2395,6 +2391,8 @@ webcore_sources += \
 	Source/WebCore/bindings/js/JSNodeFilterCustom.cpp \
 	Source/WebCore/bindings/js/JSNodeIteratorCustom.cpp \
 	Source/WebCore/bindings/js/JSNodeListCustom.cpp \
+	Source/WebCore/bindings/js/JSNotificationCustom.h \
+	Source/WebCore/bindings/js/JSNotificationCustom.cpp \
 	Source/WebCore/bindings/js/JSOscillatorNodeCustom.cpp \
 	Source/WebCore/bindings/js/JSPannerNodeCustom.cpp \
 	Source/WebCore/bindings/js/JSPerformanceEntryCustom.cpp \
@@ -2686,6 +2684,8 @@ webcore_sources += \
 	Source/WebCore/css/ViewportStyleResolver.h \
 	Source/WebCore/css/WebKitCSSArrayFunctionValue.cpp \
 	Source/WebCore/css/WebKitCSSArrayFunctionValue.h \
+	Source/WebCore/css/WebKitCSSFilterRule.cpp \
+	Source/WebCore/css/WebKitCSSFilterRule.h \
 	Source/WebCore/css/WebKitCSSFilterValue.cpp \
 	Source/WebCore/css/WebKitCSSFilterValue.h \
 	Source/WebCore/css/WebKitCSSKeyframeRule.cpp \
@@ -2994,6 +2994,8 @@ webcore_sources += \
 	Source/WebCore/dom/TouchList.h \
 	Source/WebCore/dom/TransformSource.h \
 	Source/WebCore/dom/TransformSourceLibxslt.cpp \
+	Source/WebCore/dom/TransitionEvent.cpp \
+	Source/WebCore/dom/TransitionEvent.h \
 	Source/WebCore/dom/Traversal.cpp \
 	Source/WebCore/dom/Traversal.h \
 	Source/WebCore/dom/TreeDepthLimit.h \
@@ -3218,6 +3220,8 @@ webcore_sources += \
 	Source/WebCore/html/canvas/CanvasContextAttributes.h \
 	Source/WebCore/html/canvas/CanvasGradient.cpp \
 	Source/WebCore/html/canvas/CanvasGradient.h \
+	Source/WebCore/html/canvas/CanvasPathMethods.cpp \
+	Source/WebCore/html/canvas/CanvasPathMethods.h \
 	Source/WebCore/html/canvas/CanvasPattern.cpp \
 	Source/WebCore/html/canvas/CanvasPattern.h \
 	Source/WebCore/html/canvas/CanvasProxy.cpp \
@@ -3231,6 +3235,7 @@ webcore_sources += \
 	Source/WebCore/html/canvas/CheckedInt.h \
 	Source/WebCore/html/canvas/DataView.cpp \
 	Source/WebCore/html/canvas/DataView.h \
+	Source/WebCore/html/canvas/DOMPath.h \
 	Source/WebCore/html/canvas/EXTTextureFilterAnisotropic.cpp \
 	Source/WebCore/html/canvas/EXTTextureFilterAnisotropic.h \
 	Source/WebCore/html/canvas/OESStandardDerivatives.cpp \
@@ -3531,6 +3536,8 @@ webcore_sources += \
 	Source/WebCore/html/MediaKeyEvent.h \
 	Source/WebCore/html/MediaFragmentURIParser.cpp \
 	Source/WebCore/html/MediaFragmentURIParser.h \
+	Source/WebCore/html/MicroDataAttributeTokenList.cpp \
+	Source/WebCore/html/MicroDataAttributeTokenList.h \
 	Source/WebCore/html/MicroDataItemValue.cpp \
 	Source/WebCore/html/MicroDataItemValue.h \
 	Source/WebCore/html/MonthInputType.cpp \
@@ -3672,6 +3679,8 @@ webcore_sources += \
 	Source/WebCore/html/track/TextTrack.h \
 	Source/WebCore/html/track/TextTrackCue.cpp \
 	Source/WebCore/html/track/TextTrackCue.h \
+	Source/WebCore/html/track/TextTrackCueGeneric.cpp \
+	Source/WebCore/html/track/TextTrackCueGeneric.h \
 	Source/WebCore/html/track/TextTrackCueList.cpp \
 	Source/WebCore/html/track/TextTrackCueList.h \
 	Source/WebCore/html/track/TextTrackList.cpp \
@@ -4284,6 +4293,8 @@ webcore_sources += \
 	Source/WebCore/rendering/ExclusionRectangle.h \
 	Source/WebCore/rendering/ExclusionShape.cpp \
 	Source/WebCore/rendering/ExclusionShape.h \
+	Source/WebCore/rendering/ExclusionShapeInfo.cpp \
+	Source/WebCore/rendering/ExclusionShapeInfo.h \
 	Source/WebCore/rendering/ExclusionShapeInsideInfo.cpp \
 	Source/WebCore/rendering/ExclusionShapeInsideInfo.h \
 	Source/WebCore/rendering/ExclusionShapeOutsideInfo.cpp \
@@ -4617,6 +4628,8 @@ webcore_sources += \
 	Source/WebCore/storage/StorageNamespace.h \
 	Source/WebCore/storage/StorageNamespaceImpl.cpp \
 	Source/WebCore/storage/StorageNamespaceImpl.h \
+	Source/WebCore/storage/StorageStrategy.cpp \
+	Source/WebCore/storage/StorageStrategy.h \
 	Source/WebCore/storage/StorageSyncManager.cpp \
 	Source/WebCore/storage/StorageSyncManager.h \
 	Source/WebCore/storage/StorageTracker.cpp \
@@ -4664,20 +4677,11 @@ webcore_sources += \
 	Source/WebCore/xml/parser/MarkupTokenBase.h \
 	Source/WebCore/xml/parser/MarkupTokenizerBase.h \
 	Source/WebCore/xml/parser/MarkupTokenizerInlines.h \
-	Source/WebCore/xml/parser/NewXMLDocumentParser.cpp \
-	Source/WebCore/xml/parser/NewXMLDocumentParser.h \
-	Source/WebCore/xml/parser/XMLCharacterReferenceParser.cpp \
-	Source/WebCore/xml/parser/XMLCharacterReferenceParser.h \
 	Source/WebCore/xml/parser/XMLDocumentParser.cpp \
 	Source/WebCore/xml/parser/XMLDocumentParser.h \
 	Source/WebCore/xml/parser/XMLDocumentParserLibxml2.cpp \
 	Source/WebCore/xml/parser/XMLDocumentParserScope.cpp \
 	Source/WebCore/xml/parser/XMLDocumentParserScope.h \
-	Source/WebCore/xml/parser/XMLTokenizer.cpp \
-	Source/WebCore/xml/parser/XMLTokenizer.h \
-	Source/WebCore/xml/parser/XMLToken.h \
-	Source/WebCore/xml/parser/XMLTreeBuilder.cpp \
-	Source/WebCore/xml/parser/XMLTreeBuilder.h \
 	Source/WebCore/xml/DOMParser.cpp \
 	Source/WebCore/xml/DOMParser.h \
 	Source/WebCore/xml/NativeXPathNSResolver.cpp \
@@ -6422,8 +6426,8 @@ if USE_TEXTURE_MAPPER_CAIRO
 webcore_sources += \
 	Source/WebCore//platform/graphics/filters/texmap/CustomFilterValidatedProgramTextureMapper.cpp \
 	Source/WebCore//platform/graphics/filters/texmap/TextureMapperPlatformCompiledProgram.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperShaderManager.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperShaderManager.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperShaderProgram.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperShaderProgram.h \
 	Source/WebCore/platform/graphics/texmap/GraphicsLayerTextureMapper.cpp \
 	Source/WebCore/platform/graphics/texmap/GraphicsLayerTextureMapper.h \
 	Source/WebCore/platform/graphics/GraphicsLayerTransform.cpp \
@@ -6447,8 +6451,8 @@ webcore_sources += \
 	Source/WebCore//platform/graphics/filters/texmap/TextureMapperPlatformCompiledProgram.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperGL.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapperGL.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperShaderManager.cpp \
-	Source/WebCore/platform/graphics/texmap/TextureMapperShaderManager.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperShaderProgram.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperShaderProgram.h \
 	Source/WebCore/platform/graphics/texmap/GraphicsLayerTextureMapper.cpp \
 	Source/WebCore/platform/graphics/texmap/GraphicsLayerTextureMapper.h \
 	Source/WebCore/platform/graphics/GraphicsLayerTransform.cpp \

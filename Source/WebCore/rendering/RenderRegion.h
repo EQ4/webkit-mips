@@ -168,6 +168,9 @@ private:
     void checkRegionStyle();
     void updateRegionHasAutoLogicalHeightFlag();
 
+    void incrementAutoLogicalHeightCount();
+    void decrementAutoLogicalHeightCount();
+
 protected:
     RenderFlowThread* m_flowThread;
 
@@ -206,13 +209,13 @@ private:
 
 inline RenderRegion* toRenderRegion(RenderObject* object)
 {
-    ASSERT(!object || object->isRenderRegion());
+    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isRenderRegion());
     return static_cast<RenderRegion*>(object);
 }
 
 inline const RenderRegion* toRenderRegion(const RenderObject* object)
 {
-    ASSERT(!object || object->isRenderRegion());
+    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isRenderRegion());
     return static_cast<const RenderRegion*>(object);
 }
 

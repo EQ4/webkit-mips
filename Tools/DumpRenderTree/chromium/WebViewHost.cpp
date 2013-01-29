@@ -32,8 +32,6 @@
 #include "WebViewHost.h"
 
 #include "DRTDevToolsAgent.h"
-#include "DRTTestRunner.h"
-#include "MockGrammarCheck.h"
 #include "MockWebSpeechInputController.h"
 #include "MockWebSpeechRecognizer.h"
 #include "Task.h"
@@ -59,14 +57,12 @@
 #include "WebPrintParams.h"
 #include "WebRange.h"
 #include "WebScreenInfo.h"
+#include "WebSerializedScriptValue.h"
 #include "WebStorageNamespace.h"
 #include "WebTestPlugin.h"
-#include "WebTextCheckingCompletion.h"
-#include "WebTextCheckingResult.h"
 #include "WebUserMediaClientMock.h"
 #include "WebView.h"
 #include "WebWindowFeatures.h"
-#include "platform/WebSerializedScriptValue.h"
 #include "skia/ext/platform_canvas.h"
 #include "webkit/support/test_media_stream_client.h"
 #include "webkit/support/webkit_support.h"
@@ -106,29 +102,6 @@ static const char* otherString = "other";
 static const char* illegalString = "illegal value";
 
 static int nextPageID = 1;
-
-// Used to write a platform neutral file:/// URL by only taking the filename
-// (e.g., converts "file:///tmp/foo.txt" to just "foo.txt").
-static string urlSuitableForTestResult(const string& url)
-{
-    if (url.empty() || string::npos == url.find("file://"))
-        return url;
-
-    size_t pos = url.rfind('/');
-    if (pos == string::npos) {
-#if OS(WINDOWS)
-        pos = url.rfind('\\');
-        if (pos == string::npos)
-            pos = 0;
-#else
-        pos = 0;
-#endif
-    }
-    string filename = url.substr(pos + 1);
-    if (filename.empty())
-        return "file:"; // A WebKit test has this in its expected output.
-    return filename;
-}
 
 // Get a debugging string from a WebNavigationType.
 static const char* webNavigationTypeToString(WebNavigationType type)
@@ -226,22 +199,6 @@ WebCompositorOutputSurface* WebViewHost::createOutputSurface()
 
 void WebViewHost::didAddMessageToConsole(const WebConsoleMessage& message, const WebString& sourceName, unsigned sourceLine)
 {
-    // This matches win DumpRenderTree's UIDelegate.cpp.
-    if (!m_logConsoleOutput)
-        return;
-    string newMessage;
-    if (!message.text.isEmpty()) {
-        newMessage = message.text.utf8();
-        size_t fileProtocol = newMessage.find("file://");
-        if (fileProtocol != string::npos) {
-            newMessage = newMessage.substr(0, fileProtocol)
-                + urlSuitableForTestResult(newMessage.substr(fileProtocol));
-        }
-    }
-    printf("CONSOLE MESSAGE: ");
-    if (sourceLine)
-        printf("line %d: ", sourceLine);
-    printf("%s\n", newMessage.data());
 }
 
 void WebViewHost::didStartLoading()
@@ -318,108 +275,23 @@ void WebViewHost::willAddPrerender(WebKit::WebPrerender*)
 }
 
 
-// WebKit::WebSpellCheckClient
-
-void WebViewHost::spellCheck(const WebString& text, int& misspelledOffset, int& misspelledLength, WebVector<WebString>* optionalSuggestions)
-{
-    // Check the spelling of the given text.
-    m_spellcheck.spellCheckWord(text, &misspelledOffset, &misspelledLength);
-}
-
-void WebViewHost::checkTextOfParagraph(const WebString& text, WebTextCheckingTypeMask mask, WebVector<WebTextCheckingResult>* webResults)
-{
-    Vector<WebTextCheckingResult> results;
-    if (mask & WebTextCheckingTypeSpelling) {
-        size_t offset = 0;
-        size_t length = text.length();
-        const WebUChar* data = text.data();
-        while (offset < length) {
-            int misspelledPosition = 0;
-            int misspelledLength = 0;
-            m_spellcheck.spellCheckWord(WebString(&data[offset], length - offset), &misspelledPosition, &misspelledLength);
-            if (!misspelledLength)
-                break;
-            WebTextCheckingResult result;
-            result.type = WebTextCheckingTypeSpelling;
-            result.location = offset + misspelledPosition;
-            result.length = misspelledLength;
-            results.append(result);
-            offset += misspelledPosition + misspelledLength;
-        }
-    }
-    if (mask & WebTextCheckingTypeGrammar)
-        MockGrammarCheck::checkGrammarOfString(text, &results);
-    webResults->assign(results);
-}
-
-void WebViewHost::requestCheckingOfText(const WebString& text, WebTextCheckingCompletion* completion)
-{
-    if (text.isEmpty()) {
-        if (completion)
-            completion->didCancelCheckingText();
-        return;
-    }
-
-    m_lastRequestedTextCheckingCompletion = completion;
-    m_lastRequestedTextCheckString = text;
-    postDelayedTask(new HostMethodTask(this, &WebViewHost::finishLastTextCheck), 0);
-}
-
-void WebViewHost::finishLastTextCheck()
-{
-    Vector<WebTextCheckingResult> results;
-    int offset = 0;
-    String text(m_lastRequestedTextCheckString.data(), m_lastRequestedTextCheckString.length());
-    while (text.length()) {
-        int misspelledPosition = 0;
-        int misspelledLength = 0;
-        m_spellcheck.spellCheckWord(WebString(text.characters(), text.length()), &misspelledPosition, &misspelledLength);
-        if (!misspelledLength)
-            break;
-        WebVector<WebString> suggestions;
-        m_spellcheck.fillSuggestionList(WebString(text.characters() + misspelledPosition, misspelledLength), &suggestions);
-        results.append(WebTextCheckingResult(WebTextCheckingTypeSpelling, offset + misspelledPosition, misspelledLength,
-                                             suggestions.isEmpty() ? WebString() : suggestions[0]));
-        text = text.substring(misspelledPosition + misspelledLength);
-        offset += misspelledPosition + misspelledLength;
-    }
-    MockGrammarCheck::checkGrammarOfString(m_lastRequestedTextCheckString, &results);
-    m_lastRequestedTextCheckingCompletion->didFinishCheckingText(results);
-    m_lastRequestedTextCheckingCompletion = 0;
-}
-
-
-WebString WebViewHost::autoCorrectWord(const WebString&)
-{
-    // Returns an empty string as Mac WebKit ('WebKitSupport/WebEditorClient.mm')
-    // does. (If this function returns a non-empty string, WebKit replaces the
-    // given misspelled string with the result one. This process executes some
-    // editor commands and causes layout-test failures.)
-    return WebString();
-}
-
 void WebViewHost::runModalAlertDialog(WebFrame*, const WebString& message)
 {
-    printf("ALERT: %s\n", message.utf8().data());
-    fflush(stdout);
 }
 
 bool WebViewHost::runModalConfirmDialog(WebFrame*, const WebString& message)
 {
-    printf("CONFIRM: %s\n", message.utf8().data());
     return true;
 }
 
 bool WebViewHost::runModalPromptDialog(WebFrame* frame, const WebString& message,
                                        const WebString& defaultValue, WebString*)
 {
-    printf("PROMPT: %s, default text: %s\n", message.utf8().data(), defaultValue.utf8().data());
     return true;
 }
 
 bool WebViewHost::runModalBeforeUnloadDialog(WebFrame*, const WebString& message)
 {
-    printf("CONFIRM NAVIGATION: %s\n", message.utf8().data());
     return !testRunner()->shouldStayOnPageAfterHandlingBeforeUnload();
 }
 
@@ -503,11 +375,6 @@ WebDeviceOrientationClientMock* WebViewHost::deviceOrientationClientMock()
     if (!m_deviceOrientationClientMock.get())
         m_deviceOrientationClientMock = adoptPtr(WebDeviceOrientationClientMock::create());
     return m_deviceOrientationClientMock.get();
-}
-
-MockSpellCheck* WebViewHost::mockSpellCheck()
-{
-    return &m_spellcheck;
 }
 
 WebDeviceOrientationClient* WebViewHost::deviceOrientationClient()
@@ -811,9 +678,6 @@ WebURLError WebViewHost::cancelledError(WebFrame*, const WebURLRequest& request)
 
 void WebViewHost::unableToImplementPolicyWithError(WebFrame* frame, const WebURLError& error)
 {
-    printf("Policy delegate: unable to implement policy with error domain '%s', "
-           "error code %d, in frame '%s'\n",
-            error.domain.utf8().data(), error.reason, frame->uniqueName().utf8().data());
 }
 
 void WebViewHost::didCreateDataSource(WebFrame*, WebDataSource* ds)
@@ -821,27 +685,6 @@ void WebViewHost::didCreateDataSource(WebFrame*, WebDataSource* ds)
     ds->setExtraData(m_pendingExtraData.leakPtr());
     if (!testRunner()->deferMainResourceDataLoad())
         ds->setDeferMainResourceDataLoad(false);
-}
-
-void WebViewHost::didStartProvisionalLoad(WebFrame* frame)
-{
-    if (!m_topLoadingFrame)
-        m_topLoadingFrame = frame;
-
-    updateAddressBar(frame->view());
-}
-
-void WebViewHost::didReceiveServerRedirectForProvisionalLoad(WebFrame* frame)
-{
-    updateAddressBar(frame->view());
-}
-
-void WebViewHost::didFailProvisionalLoad(WebFrame* frame, const WebURLError& error)
-{
-    locationChangeDone(frame);
-
-    // Don't display an error page if we're running layout tests, because
-    // DumpRenderTree doesn't.
 }
 
 void WebViewHost::didCommitProvisionalLoad(WebFrame* frame, bool isNewNavigation)
@@ -857,17 +700,6 @@ void WebViewHost::didClearWindowObject(WebFrame* frame)
 void WebViewHost::didReceiveTitle(WebFrame* frame, const WebString& title, WebTextDirection direction)
 {
     setPageTitle(title);
-}
-
-void WebViewHost::didFailLoad(WebFrame* frame, const WebURLError& error)
-{
-    locationChangeDone(frame);
-}
-
-void WebViewHost::didFinishLoad(WebFrame* frame)
-{
-    updateAddressBar(frame->view());
-    locationChangeDone(frame);
 }
 
 void WebViewHost::didNavigateWithinPage(WebFrame* frame, bool isNewNavigation)
@@ -962,11 +794,6 @@ void WebViewHost::clearEditCommand()
 {
     m_editCommandName.clear();
     m_editCommandValue.clear();
-}
-
-void WebViewHost::fillSpellingSuggestionList(const WebKit::WebString& word, WebKit::WebVector<WebKit::WebString>* suggestions)
-{
-    mockSpellCheck()->fillSuggestionList(word, suggestions);
 }
 
 void WebViewHost::setGamepadData(const WebGamepads& pads)
@@ -1215,25 +1042,99 @@ void WebViewHost::displayInvalidatedRegion()
     displayRepaintMask();
 }
 
+void WebViewHost::testFinished()
+{
+    m_shell->testFinished();
+}
+
+void WebViewHost::testTimedOut()
+{
+    m_shell->testTimedOut();
+}
+
+bool WebViewHost::isBeingDebugged()
+{
+    return webkit_support::BeingDebugged();
+}
+
+int WebViewHost::layoutTestTimeout()
+{
+    return m_shell->layoutTestTimeout();
+}
+
+void WebViewHost::closeRemainingWindows()
+{
+    m_shell->closeRemainingWindows();
+}
+
+int WebViewHost::navigationEntryCount()
+{
+    return m_shell->navigationEntryCount();
+}
+
+int WebViewHost::windowCount()
+{
+    return m_shell->windowCount();
+}
+
+void WebViewHost::setCustomPolicyDelegate(bool isCustom, bool isPermissive)
+{
+    m_policyDelegateEnabled = isCustom;
+    m_policyDelegateIsPermissive = isPermissive;
+}
+
+void WebViewHost::waitForPolicyDelegate()
+{
+    m_policyDelegateEnabled = true;
+    m_policyDelegateShouldNotifyDone = true;
+}
+
+void WebViewHost::goToOffset(int offset)
+{
+    m_shell->goToOffset(offset);
+}
+
+void WebViewHost::reload()
+{
+    m_shell->reload();
+}
+
+void WebViewHost::loadURLForFrame(const WebURL& url, const string& frameName)
+{
+    if (!url.isValid())
+        return;
+    TestShell::resizeWindowForTest(this, url);
+    navigationController()->loadEntry(TestNavigationEntry::create(-1, url, WebString(), WebString::fromUTF8(frameName)).get());
+}
+
 // Public functions -----------------------------------------------------------
 
 WebViewHost::WebViewHost(TestShell* shell)
     : m_shell(shell)
     , m_proxy(0)
     , m_webWidget(0)
-    , m_lastRequestedTextCheckingCompletion(0)
+    , m_shutdownWasInvoked(false)
 {
     reset();
 }
 
 WebViewHost::~WebViewHost()
 {
+    ASSERT(m_shutdownWasInvoked);
+    if (m_inModalLoop)
+        webkit_support::QuitMessageLoop();
+}
+
+void WebViewHost::shutdown()
+{
+    ASSERT(!m_shutdownWasInvoked);
+
     // DevTools frontend page is supposed to be navigated only once and
     // loading another URL in that Page is an error.
     if (m_shell->devToolsWebView() != this) {
         // Navigate to an empty page to fire all the destruction logic for the
         // current page.
-        loadURLForFrame(GURL("about:blank"), WebString());
+        loadURLForFrame(GURL("about:blank"), string());
     }
 
     for (Vector<WebKit::WebWidget*>::iterator it = m_popupmenus.begin();
@@ -1242,14 +1143,14 @@ WebViewHost::~WebViewHost()
 
     m_layerTreeView.clear();
     webWidget()->close();
-    if (m_inModalLoop)
-        webkit_support::QuitMessageLoop();
+    m_webWidget = 0;
+    m_shutdownWasInvoked = true;
 }
 
 void WebViewHost::setWebWidget(WebKit::WebWidget* widget)
 {
     m_webWidget = widget;
-    webView()->setSpellCheckClient(this);
+    webView()->setSpellCheckClient(proxy()->spellCheckClient());
     webView()->setPrerendererClient(this);
     webView()->setCompositorSurfaceReady();
 }
@@ -1285,13 +1186,11 @@ void WebViewHost::reset()
     m_policyDelegateEnabled = false;
     m_policyDelegateIsPermissive = false;
     m_policyDelegateShouldNotifyDone = false;
-    m_topLoadingFrame = 0;
     m_pageId = -1;
     m_lastPageIdUpdated = -1;
     m_hasWindow = false;
     m_inModalLoop = false;
     m_smartInsertDeleteEnabled = true;
-    m_logConsoleOutput = true;
 #if OS(WINDOWS)
     m_selectTrailingWhitespaceEnabled = true;
 #else
@@ -1351,31 +1250,6 @@ void WebViewHost::setClientWindowRect(const WebKit::WebRect& rect)
     setWindowRect(rect);
 }
 
-void WebViewHost::setLogConsoleOutput(bool enabled)
-{
-    m_logConsoleOutput = enabled;
-}
-
-void WebViewHost::setCustomPolicyDelegate(bool isCustom, bool isPermissive)
-{
-    m_policyDelegateEnabled = isCustom;
-    m_policyDelegateIsPermissive = isPermissive;
-}
-
-void WebViewHost::waitForPolicyDelegate()
-{
-    m_policyDelegateEnabled = true;
-    m_policyDelegateShouldNotifyDone = true;
-}
-
-void WebViewHost::loadURLForFrame(const WebURL& url, const WebString& frameName)
-{
-    if (!url.isValid())
-        return;
-    TestShell::resizeWindowForTest(this, url);
-    navigationController()->loadEntry(TestNavigationEntry::create(-1, url, WebString(), frameName).get());
-}
-
 bool WebViewHost::navigate(const TestNavigationEntry& entry, bool reload)
 {
     // Get the right target frame for the entry.
@@ -1420,29 +1294,9 @@ bool WebViewHost::navigate(const TestNavigationEntry& entry, bool reload)
 
 // Private functions ----------------------------------------------------------
 
-DRTTestRunner* WebViewHost::testRunner() const
+::WebTestRunner::WebTestRunner* WebViewHost::testRunner() const
 {
     return m_shell->testRunner();
-}
-
-void WebViewHost::updateAddressBar(WebView* webView)
-{
-    WebFrame* mainFrame = webView->mainFrame();
-    WebDataSource* dataSource = mainFrame->dataSource();
-    if (!dataSource)
-        dataSource = mainFrame->provisionalDataSource();
-    if (!dataSource)
-        return;
-
-    setAddressBarURL(dataSource->request().url());
-}
-
-void WebViewHost::locationChangeDone(WebFrame* frame)
-{
-    if (frame != m_topLoadingFrame)
-        return;
-    m_topLoadingFrame = 0;
-    testRunner()->locationChangeDone();
 }
 
 void WebViewHost::updateForCommittedLoad(WebFrame* frame, bool isNewNavigation)
@@ -1489,7 +1343,6 @@ void WebViewHost::updateURL(WebFrame* frame)
         entry->setContentState(historyItem);
 
     navigationController()->didNavigateToEntry(entry.get());
-    updateAddressBar(frame->view());
     m_lastPageIdUpdated = max(m_lastPageIdUpdated, m_pageId);
 }
 
@@ -1536,11 +1389,6 @@ void WebViewHost::setPendingExtraData(PassOwnPtr<TestShellExtraData> extraData)
 }
 
 void WebViewHost::setPageTitle(const WebString&)
-{
-    // Nothing to do in layout test.
-}
-
-void WebViewHost::setAddressBarURL(const WebURL&)
 {
     // Nothing to do in layout test.
 }

@@ -63,7 +63,7 @@ struct SameSizeAsShadowRoot : public DocumentFragment, public TreeScope, public 
 
 COMPILE_ASSERT(sizeof(ShadowRoot) == sizeof(SameSizeAsShadowRoot), shadowroot_should_stay_small);
 
-ShadowRoot::ShadowRoot(Document* document)
+ShadowRoot::ShadowRoot(Document* document, ShadowRootType type)
     : DocumentFragment(document, CreateShadowRoot)
     , TreeScope(this, document)
     , m_prev(0)
@@ -71,7 +71,7 @@ ShadowRoot::ShadowRoot(Document* document)
     , m_numberOfStyles(0)
     , m_applyAuthorStyles(false)
     , m_resetStyleInheritance(false)
-    , m_isAuthorShadowRoot(false)
+    , m_type(type)
     , m_registeredWithParentShadowRoot(false)
 {
     ASSERT(document);
@@ -86,7 +86,7 @@ ShadowRoot::~ShadowRoot()
     // We must remove all of our children first before the TreeScope destructor
     // runs so we don't go through TreeScopeAdopter for each child with a
     // destructed tree scope in each descendant.
-    removeAllChildren();
+    removeDetachedChildren();
 
     // We must call clearRareData() here since a ShadowRoot class inherits TreeScope
     // as well as Node. See a comment on TreeScope.h for the reason.
@@ -142,8 +142,7 @@ PassRefPtr<ShadowRoot> ShadowRoot::create(Element* element, ShadowRootType type,
         return 0;
     }
 
-    RefPtr<ShadowRoot> shadowRoot = adoptRef(new ShadowRoot(element->document()));
-    shadowRoot->setType(type);
+    RefPtr<ShadowRoot> shadowRoot = adoptRef(new ShadowRoot(element->document(), type));
 
     ec = 0;
     element->ensureShadow()->addShadowRoot(element, shadowRoot, type, ec);

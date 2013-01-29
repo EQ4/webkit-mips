@@ -58,6 +58,11 @@ PassOwnPtr<InputType> WeekInputType::create(HTMLInputElement* element)
     return adoptPtr(new WeekInputType(element));
 }
 
+void WeekInputType::attach()
+{
+    observeFeatureIfVisible(FeatureObserver::InputTypeWeek);
+}
+
 const AtomicString& WeekInputType::formControlType() const
 {
     return InputTypeNames::week();

@@ -269,6 +269,7 @@ G_DEFINE_TYPE_WITH_CODE(WebKitWebView, webkit_web_view, GTK_TYPE_CONTAINER,
 
 static void webkit_web_view_settings_notify(WebKitWebSettings* webSettings, GParamSpec* pspec, WebKitWebView* webView);
 static void webkit_web_view_set_window_features(WebKitWebView* webView, WebKitWebWindowFeatures* webWindowFeatures);
+static void webkitWebViewDirectionChanged(WebKitWebView*, GtkTextDirection previousDirection, gpointer);
 
 #if ENABLE(CONTEXT_MENUS)
 static void PopupMenuPositionFunc(GtkMenu* menu, gint *x, gint *y, gboolean *pushIn, gpointer userData)
@@ -3435,6 +3436,10 @@ static void webkit_web_view_update_settings(WebKitWebView* webView)
 
 #if USE(ACCELERATED_COMPOSITING)
     coreSettings->setAcceleratedCompositingEnabled(settingsPrivate->enableAcceleratedCompositing);
+    char* debugVisualsEnvironment = getenv("WEBKIT_SHOW_COMPOSITING_DEBUG_VISUALS");
+    bool showDebugVisuals = debugVisualsEnvironment && !strcmp(debugVisualsEnvironment, "1");
+    coreSettings->setShowDebugBorders(showDebugVisuals);
+    coreSettings->setShowRepaintCounter(showDebugVisuals);
 #endif
 
 #if ENABLE(WEB_AUDIO)
@@ -3696,6 +3701,8 @@ static void webkit_web_view_init(WebKitWebView* webView)
 #if USE(ACCELERATED_COMPOSITING)
     priv->acceleratedCompositingContext = AcceleratedCompositingContext::create(webView);
 #endif
+
+    g_signal_connect(webView, "direction-changed", G_CALLBACK(webkitWebViewDirectionChanged), 0);
 }
 
 GtkWidget* webkit_web_view_new(void)
@@ -5360,6 +5367,36 @@ void webkitWebViewRegisterForIconNotification(WebKitWebView* webView, bool shoul
             g_signal_handler_disconnect(database, webView->priv->iconLoadedHandler);
 }
 #endif
+
+void webkitWebViewDirectionChanged(WebKitWebView* webView, GtkTextDirection previousDirection, gpointer)
+{
+    g_return_if_fail(WEBKIT_IS_WEB_VIEW(webView));
+
+    GtkTextDirection direction = gtk_widget_get_direction(GTK_WIDGET(webView));
+
+    Frame* focusedFrame = core(webView)->focusController()->focusedFrame();
+    if (!focusedFrame)
+        return;
+
+    Editor* editor = focusedFrame->editor();
+    if (!editor || !editor->canEdit())
+        return;
+
+    switch (direction) {
+    case GTK_TEXT_DIR_NONE:
+        editor->setBaseWritingDirection(NaturalWritingDirection);
+        break;
+    case GTK_TEXT_DIR_LTR:
+        editor->setBaseWritingDirection(LeftToRightWritingDirection);
+        break;
+    case GTK_TEXT_DIR_RTL:
+        editor->setBaseWritingDirection(RightToLeftWritingDirection);
+        break;
+    default:
+        g_assert_not_reached();
+        return;
+    }
+}
 
 namespace WebKit {
 

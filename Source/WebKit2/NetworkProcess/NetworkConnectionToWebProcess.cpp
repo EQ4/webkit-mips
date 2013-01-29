@@ -66,12 +66,6 @@ void NetworkConnectionToWebProcess::didReceiveMessage(CoreIPC::Connection* conne
         return;
     }
     
-    if (messageID.is<CoreIPC::MessageClassNetworkResourceLoader>()) {
-        NetworkResourceLoader* loader = m_networkResourceLoaders.get(decoder.destinationID()).get();
-        if (loader)
-            loader->didReceiveNetworkResourceLoaderMessage(connection, messageID, decoder);
-        return;
-    }
     ASSERT_NOT_REACHED();
 }
 
@@ -123,6 +117,10 @@ void NetworkConnectionToWebProcess::removeLoadIdentifier(ResourceLoadIdentifier 
     RefPtr<SchedulableLoader> loader = m_networkResourceLoaders.take(identifier);
     if (!loader)
         loader = m_syncNetworkResourceLoaders.take(identifier);
+
+    // It's possible we have no loader for this identifier if the NetworkProcess crashed and this was a respawned NetworkProcess.
+    if (!loader)
+        return;
 
     NetworkProcess::shared().networkResourceLoadScheduler().removeLoader(loader.get());
 }

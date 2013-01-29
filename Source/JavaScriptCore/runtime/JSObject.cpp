@@ -135,7 +135,7 @@ ALWAYS_INLINE void JSObject::copyButterfly(CopyVisitor& visitor, Butterfly* butt
             case ALL_DOUBLE_INDEXING_TYPES: {
                 currentTarget = newButterfly->contiguous();
                 currentSource = butterfly->contiguous();
-                ASSERT(newButterfly->publicLength() <= newButterfly->vectorLength());
+                RELEASE_ASSERT(newButterfly->publicLength() <= newButterfly->vectorLength());
                 count = newButterfly->vectorLength();
                 break;
             }
@@ -328,7 +328,7 @@ bool JSObject::getOwnPropertySlotByIndex(JSCell* cell, ExecState* exec, unsigned
     }
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
         break;
     }
     
@@ -530,7 +530,7 @@ void JSObject::putByIndex(JSCell* cell, ExecState* exec, unsigned propertyName, 
     }
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
     }
     
     thisObject->putByIndexBeyondVectorLength(exec, propertyName, value, shouldThrow);
@@ -558,8 +558,7 @@ ArrayStorage* JSObject::enterDictionaryIndexingModeWhenArrayStorageAlreadyExists
     }
 
     Butterfly* newButterfly = storage->butterfly()->resizeArray(globalData, structure(), 0, ArrayStorage::sizeFor(0));
-    if (!newButterfly)
-        CRASH();
+    RELEASE_ASSERT(newButterfly);
     
     m_butterfly = newButterfly;
     newButterfly->arrayStorage()->m_indexBias = 0;
@@ -659,8 +658,8 @@ ArrayStorage* JSObject::createArrayStorage(JSGlobalData& globalData, unsigned le
     Butterfly* newButterfly = Butterfly::createOrGrowArrayRight(m_butterfly, 
         globalData, structure(), structure()->outOfLineCapacity(), false, 0,
         ArrayStorage::sizeFor(vectorLength));
-    if (!newButterfly)
-        CRASH();
+    RELEASE_ASSERT(newButterfly);
+
     ArrayStorage* result = newButterfly->arrayStorage();
     result->setLength(length);
     result->setVectorLength(vectorLength);
@@ -1070,7 +1069,7 @@ ArrayStorage* JSObject::ensureArrayStorageSlow(JSGlobalData& globalData)
         return convertContiguousToArrayStorage(globalData);
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
         return 0;
     }
 }
@@ -1319,7 +1318,7 @@ bool JSObject::deletePropertyByIndex(JSCell* cell, ExecState* exec, unsigned i)
     }
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
         return false;
     }
 }
@@ -1522,7 +1521,7 @@ void JSObject::getOwnPropertyNames(JSObject* object, ExecState* exec, PropertyNa
     }
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
     }
     
     object->methodTable()->getOwnNonIndexPropertyNames(object, exec, propertyNames, mode);
@@ -1701,7 +1700,7 @@ bool JSObject::defineOwnIndexedProperty(ExecState* exec, unsigned index, Propert
         notifyPresenceOfIndexedAccessors(exec->globalData());
 
     SparseArrayValueMap* map = m_butterfly->arrayStorage()->m_sparseMap.get();
-    ASSERT(map);
+    RELEASE_ASSERT(map);
 
     // 1. Let current be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
     SparseArrayValueMap::AddResult result = map->add(this, index);
@@ -1874,7 +1873,7 @@ void JSObject::putByIndexBeyondVectorLengthWithoutAttributes(ExecState* exec, un
 
     ensureLength(globalData, i + 1);
 
-    ASSERT(i < m_butterfly->vectorLength());
+    RELEASE_ASSERT(i < m_butterfly->vectorLength());
     switch (indexingShape) {
     case Int32Shape:
         ASSERT(value.isInt32());
@@ -2036,7 +2035,7 @@ void JSObject::putByIndexBeyondVectorLength(ExecState* exec, unsigned i, JSValue
         break;
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
     }
 }
 
@@ -2198,7 +2197,7 @@ bool JSObject::putDirectIndexBeyondVectorLength(ExecState* exec, unsigned i, JSV
         return putDirectIndexBeyondVectorLengthWithArrayStorage(exec, i, value, attributes, mode, arrayStorage());
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
         return false;
     }
 }
@@ -2427,7 +2426,7 @@ bool JSObject::getOwnPropertyDescriptor(JSObject* object, ExecState* exec, Prope
     }
         
     default:
-        ASSERT_NOT_REACHED();
+        RELEASE_ASSERT_NOT_REACHED();
         return false;
     }
 }

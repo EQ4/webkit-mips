@@ -366,6 +366,22 @@
                 "hidden": true
             },
             {
+                "name": "canContinuouslyPaint",
+                "description": "Tells if backend supports continuous painting",
+                "returns": [
+                    { "name": "value", "type": "boolean", "description": "True if continuous painting is available" }
+                ],
+                "hidden": true
+            },
+            {
+                "name": "setContinuousPaintingEnabled",
+                "description": "Requests that backend enables continuous painting",
+                "parameters": [
+                    { "name": "enabled", "type": "boolean", "description": "True for enabling cointinuous painting" }
+                ],
+                "hidden": true
+            },
+            {
                 "name": "getScriptExecutionStatus",
                 "description": "Determines if scripts can be executed in the page.",
                 "returns": [
@@ -492,6 +508,39 @@
                 "description": "Fired when frame has been detached from its parent.",
                 "parameters": [
                     { "name": "frameId", "$ref": "Network.FrameId", "description": "Id of the frame that has been detached." }
+                ],
+                "hidden": true
+            },
+            {
+                "name": "frameStartedLoading",
+                "description": "Fired when frame has started loading.",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "description": "Id of the frame that has started loading." }
+                ],
+                "hidden": true
+            },
+            {
+                "name": "frameStoppedLoading",
+                "description": "Fired when frame has stopped loading.",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "description": "Id of the frame that has stopped loading." }
+                ],
+                "hidden": true
+            },
+            {
+                "name": "frameScheduledNavigation",
+                "description": "Fired when frame schedules a potential navigation.",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "description": "Id of the frame that has scheduled a navigation." },
+                    { "name": "delay", "type": "number", "description": "Delay (in seconds) until the navigation is scheduled to begin. The navigation is not guaranteed to start." }
+                ],
+                "hidden": true
+            },
+            {
+                "name": "frameClearedScheduledNavigation",
+                "description": "Fired when frame no longer has a scheduled navigation.",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "description": "Id of the frame that has cleared its scheduled navigation." }
                 ],
                 "hidden": true
             }
@@ -3230,6 +3279,7 @@
                     { "name": "functionName", "type": "string", "optional": true },
                     { "name": "arguments", "type": "array", "items": { "$ref": "CallArgument" }, "optional": true },
                     { "name": "result", "$ref": "CallArgument", "optional": true },
+                    { "name": "isDrawingCall", "type": "boolean", "optional": true },
                     { "name": "property", "type": "string", "optional": true },
                     { "name": "value", "$ref": "CallArgument", "optional": true },
                     { "name": "sourceURL", "type": "string", "optional": true },
@@ -3248,8 +3298,9 @@
                 "properties": [
                     { "name": "id", "$ref": "TraceLogId" },
                     { "name": "calls", "type": "array", "items": { "$ref": "Call" } },
-                    { "name": "startOffset", "type": "integer", "optional": true },
-                    { "name": "alive", "type": "boolean", "optional": true }
+                    { "name": "startOffset", "type": "integer" },
+                    { "name": "alive", "type": "boolean" },
+                    { "name": "totalAvailableCalls", "type": "number" }
                 ]
             }
         ],
@@ -3297,7 +3348,8 @@
                 "name": "getTraceLog",
                 "parameters": [
                     { "name": "traceLogId", "$ref": "TraceLogId" },
-                    { "name": "startOffset", "type": "integer", "optional": true }
+                    { "name": "startOffset", "type": "integer", "optional": true },
+                    { "name": "maxLength", "type": "integer", "optional": true }
                 ],
                 "returns": [
                     { "name": "traceLog", "$ref": "TraceLog" }

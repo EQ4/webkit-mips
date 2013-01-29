@@ -206,6 +206,7 @@ public:
     bool rootBackgroundIsEntirelyFixed() const;
     
     bool hasRenderNamedFlowThreads() const;
+    bool checkTwoPassLayoutForAutoHeightRegions() const;
     FlowThreadController* flowThreadController();
 
     enum RenderViewLayoutPhase { RenderViewNormalLayout, ConstrainedFlowThreadsLayoutInAutoLogicalHeightRegions };
@@ -275,6 +276,7 @@ private:
     void enableLayoutState() { ASSERT(m_layoutStateDisableCount > 0); m_layoutStateDisableCount--; }
 
     void layoutContent(const LayoutState&);
+    void layoutContentInAutoLogicalHeightRegions(const LayoutState&);
 #ifndef NDEBUG
     void checkLayoutState(const LayoutState&);
 #endif
@@ -341,13 +343,13 @@ private:
 
 inline RenderView* toRenderView(RenderObject* object)
 {
-    ASSERT(!object || object->isRenderView());
+    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isRenderView());
     return static_cast<RenderView*>(object);
 }
 
 inline const RenderView* toRenderView(const RenderObject* object)
 {
-    ASSERT(!object || object->isRenderView());
+    ASSERT_WITH_SECURITY_IMPLICATION(!object || object->isRenderView());
     return static_cast<const RenderView*>(object);
 }
 

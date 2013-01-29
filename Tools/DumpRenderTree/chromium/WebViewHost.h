@@ -31,14 +31,12 @@
 #ifndef WebViewHost_h
 #define WebViewHost_h
 
-#include "MockSpellCheck.h"
 #include "TestNavigationController.h"
 #include "WebAccessibilityNotification.h"
 #include "WebCursorInfo.h"
 #include "WebFrameClient.h"
 #include "WebIntentRequest.h"
 #include "WebPrerendererClient.h"
-#include "WebSpellCheckClient.h"
 #include "WebTask.h"
 #include "WebTestDelegate.h"
 #include "WebTestProxy.h"
@@ -48,7 +46,6 @@
 #include <wtf/Vector.h>
 #include <wtf/text/WTFString.h>
 
-class DRTTestRunner;
 class MockWebSpeechInputController;
 class MockWebSpeechRecognizer;
 class SkCanvas;
@@ -77,22 +74,21 @@ class MediaStreamUtil;
 class TestMediaStreamClient;
 }
 
-class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient, public NavigationHost,
-                    public WebKit::WebPrerendererClient, public WebKit::WebSpellCheckClient,
-                    public WebTestRunner::WebTestDelegate {
+namespace WebTestRunner {
+class WebTestRunner;
+}
+
+class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient, public NavigationHost, public WebKit::WebPrerendererClient, public WebTestRunner::WebTestDelegate {
  public:
     WebViewHost(TestShell*);
     virtual ~WebViewHost();
+    void shutdown();
     void setWebWidget(WebKit::WebWidget*);
     WebKit::WebView* webView() const;
     WebKit::WebWidget* webWidget() const;
     WebTestRunner::WebTestProxyBase* proxy() const;
     void setProxy(WebTestRunner::WebTestProxyBase*);
     void reset();
-    void setLogConsoleOutput(bool);
-    void waitForPolicyDelegate();
-    void setCustomPolicyDelegate(bool, bool);
-    WebKit::WebFrame* topLoadingFrame() { return m_topLoadingFrame; }
     void setPendingExtraData(PassOwnPtr<TestShellExtraData>);
 
     void paintRect(const WebKit::WebRect&);
@@ -101,7 +97,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     SkCanvas* canvas();
     void displayRepaintMask();
 
-    void loadURLForFrame(const WebKit::WebURL&, const WebKit::WebString& frameName);
     TestNavigationController* navigationController() { return m_navigationController.get(); }
 
     void closeWidget();
@@ -119,7 +114,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     virtual void clearContextMenuData() OVERRIDE;
     virtual void setEditCommand(const std::string& name, const std::string& value) OVERRIDE;
     virtual void clearEditCommand() OVERRIDE;
-    virtual void fillSpellingSuggestionList(const WebKit::WebString& word, WebKit::WebVector<WebKit::WebString>* suggestions) OVERRIDE;
     virtual void setGamepadData(const WebKit::WebGamepads&) OVERRIDE;
     virtual void printMessage(const std::string& message) OVERRIDE;
     virtual void postTask(WebTestRunner::WebTask*) OVERRIDE;
@@ -175,18 +169,24 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
 #endif
     virtual void display() OVERRIDE;
     virtual void displayInvalidatedRegion() OVERRIDE;
+    virtual void testFinished() OVERRIDE;
+    virtual void testTimedOut() OVERRIDE;
+    virtual bool isBeingDebugged() OVERRIDE;
+    virtual int layoutTestTimeout() OVERRIDE;
+    virtual void closeRemainingWindows() OVERRIDE;
+    virtual int navigationEntryCount() OVERRIDE;
+    virtual int windowCount() OVERRIDE;
+    virtual void setCustomPolicyDelegate(bool, bool) OVERRIDE;
+    virtual void waitForPolicyDelegate() OVERRIDE;
+    virtual void goToOffset(int) OVERRIDE;
+    virtual void reload() OVERRIDE;
+    void loadURLForFrame(const WebKit::WebURL&, const std::string& frameName) OVERRIDE;
 
     // NavigationHost
     virtual bool navigate(const TestNavigationEntry&, bool reload);
 
     // WebKit::WebPrerendererClient
     virtual void willAddPrerender(WebKit::WebPrerender*) OVERRIDE;
-
-    // WebKit::WebSpellCheckClient
-    virtual void spellCheck(const WebKit::WebString&, int& offset, int& length, WebKit::WebVector<WebKit::WebString>* optionalSuggestions);
-    virtual void checkTextOfParagraph(const WebKit::WebString&, WebKit::WebTextCheckingTypeMask, WebKit::WebVector<WebKit::WebTextCheckingResult>*);
-    virtual void requestCheckingOfText(const WebKit::WebString&, WebKit::WebTextCheckingCompletion*);
-    virtual WebKit::WebString autoCorrectWord(const WebKit::WebString&);
 
     // WebKit::WebViewClient
     virtual WebKit::WebView* createView(WebKit::WebFrame*, const WebKit::WebURLRequest&, const WebKit::WebWindowFeatures&, const WebKit::WebString&, WebKit::WebNavigationPolicy);
@@ -271,14 +271,9 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     virtual WebKit::WebURLError cancelledError(WebKit::WebFrame*, const WebKit::WebURLRequest&);
     virtual void unableToImplementPolicyWithError(WebKit::WebFrame*, const WebKit::WebURLError&);
     virtual void didCreateDataSource(WebKit::WebFrame*, WebKit::WebDataSource*);
-    virtual void didStartProvisionalLoad(WebKit::WebFrame*);
-    virtual void didReceiveServerRedirectForProvisionalLoad(WebKit::WebFrame*);
-    virtual void didFailProvisionalLoad(WebKit::WebFrame*, const WebKit::WebURLError&);
     virtual void didCommitProvisionalLoad(WebKit::WebFrame*, bool isNewNavigation);
     virtual void didClearWindowObject(WebKit::WebFrame*);
     virtual void didReceiveTitle(WebKit::WebFrame*, const WebKit::WebString&, WebKit::WebTextDirection);
-    virtual void didFailLoad(WebKit::WebFrame*, const WebKit::WebURLError&);
-    virtual void didFinishLoad(WebKit::WebFrame*);
     virtual void didNavigateWithinPage(WebKit::WebFrame*, bool isNewNavigation);
     virtual void willSendRequest(WebKit::WebFrame*, unsigned identifier, WebKit::WebURLRequest&, const WebKit::WebURLResponse&);
     virtual void openFileSystem(WebKit::WebFrame*, WebKit::WebFileSystem::Type, long long size, bool create, WebKit::WebFileSystemCallbacks*);
@@ -288,10 +283,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
         WebKit::WebSecurityOrigin target, WebKit::WebDOMMessageEvent);
 
     WebKit::WebDeviceOrientationClientMock* deviceOrientationClientMock();
-    
-    // Spellcheck related helper APIs
-    MockSpellCheck* mockSpellCheck();
-    void finishLastTextCheck();
 
     // Geolocation client mocks for DRTTestRunner
     WebKit::WebGeolocationClientMock* geolocationClientMock();
@@ -315,27 +306,14 @@ private:
         CallbackMethodType m_callback;
     };
 
-    DRTTestRunner* testRunner() const;
+    WebTestRunner::WebTestRunner* testRunner() const;
 
     // Called the title of the page changes.
     // Can be used to update the title of the window.
     void setPageTitle(const WebKit::WebString&);
 
-    // Called when the URL of the page changes.
-    // Extracts the URL and forwards on to SetAddressBarURL().
-    void updateAddressBar(WebKit::WebView*);
-
-    // Called when the URL of the page changes.
-    // Should be used to update the text of the URL bar.
-    void setAddressBarURL(const WebKit::WebURL&);
-
     void enterFullScreenNow();
     void exitFullScreenNow();
-
-    // In the Mac code, this is called to trigger the end of a test after the
-    // page has finished loading. From here, we can generate the dump for the
-    // test.
-    void locationChangeDone(WebKit::WebFrame*);
 
     void updateForCommittedLoad(WebKit::WebFrame*, bool isNewNavigation);
     void updateURL(WebKit::WebFrame*);
@@ -374,9 +352,6 @@ private:
     // This delegate works for the following widget.
     WebKit::WebWidget* m_webWidget;
 
-    // This is non-0 IFF a load is in progress.
-    WebKit::WebFrame* m_topLoadingFrame;
-
     // For tracking session history. See RenderView.
     int m_pageId;
     int m_lastPageIdUpdated;
@@ -387,6 +362,9 @@ private:
 
     bool m_hasWindow;
     bool m_inModalLoop;
+
+    bool m_shutdownWasInvoked;
+
     WebKit::WebRect m_windowRect;
 
     // true if we want to enable smart insert/delete.
@@ -395,15 +373,9 @@ private:
     // true if we want to enable selection of trailing whitespaces
     bool m_selectTrailingWhitespaceEnabled;
 
-    // true if whatever is sent to the console should be logged to stdout.
-    bool m_logConsoleOutput;
-
     // Edit command associated to the current keyboard event.
     std::string m_editCommandName;
     std::string m_editCommandValue;
-
-    // The mock spellchecker used in spellCheck().
-    MockSpellCheck m_spellcheck;
 
     // Painting.
     OwnPtr<SkCanvas> m_canvas;
@@ -430,9 +402,6 @@ private:
 #endif
 
     OwnPtr<TestNavigationController> m_navigationController;
-
-    WebKit::WebString m_lastRequestedTextCheckString;
-    WebKit::WebTextCheckingCompletion* m_lastRequestedTextCheckingCompletion;
 
     WebTestRunner::WebTaskList m_taskList;
     Vector<WebKit::WebWidget*> m_popupmenus;

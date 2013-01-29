@@ -209,7 +209,7 @@ public:
         case ALL_ARRAY_STORAGE_INDEXING_TYPES:
             return i < m_butterfly->arrayStorage()->vectorLength() && m_butterfly->arrayStorage()->m_vector[i];
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
             return false;
         }
     }
@@ -225,7 +225,7 @@ public:
         case ALL_ARRAY_STORAGE_INDEXING_TYPES:
             return m_butterfly->arrayStorage()->m_vector[i].get();
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
             return JSValue();
         }
     }
@@ -254,7 +254,7 @@ public:
                 return m_butterfly->arrayStorage()->m_vector[i].get();
             break;
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
             break;
         }
         return JSValue();
@@ -294,7 +294,7 @@ public:
             return i < m_butterfly->arrayStorage()->vectorLength()
                 && !!m_butterfly->arrayStorage()->m_vector[i];
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
             return false;
         }
     }
@@ -311,7 +311,7 @@ public:
         case ALL_ARRAY_STORAGE_INDEXING_TYPES:
             return i < m_butterfly->vectorLength();
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
             return false;
         }
     }
@@ -363,7 +363,7 @@ public:
             break;
         }
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
         }
     }
         
@@ -412,7 +412,7 @@ public:
             break;
         }
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
         }
     }
         
@@ -428,7 +428,7 @@ public:
         case ALL_ARRAY_STORAGE_INDEXING_TYPES:
             return m_butterfly->arrayStorage()->m_sparseMap;
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
             return false;
         }
     }
@@ -445,7 +445,7 @@ public:
         case ALL_ARRAY_STORAGE_INDEXING_TYPES:
             return m_butterfly->arrayStorage()->inSparseMode();
         default:
-            ASSERT_NOT_REACHED();
+            RELEASE_ASSERT_NOT_REACHED();
             return false;
         }
     }
@@ -845,6 +845,7 @@ protected:
         
     JSValue getHolyIndexQuickly(unsigned i)
     {
+        ASSERT(i < m_butterfly->vectorLength());
         switch (structure()->indexingType()) {
         case ALL_INT32_INDEXING_TYPES:
         case ALL_CONTIGUOUS_INDEXING_TYPES:
@@ -959,7 +960,6 @@ protected:
     Butterfly* m_butterfly;
 };
 
-
 // JSNonFinalObject is a type of JSObject that has some internal storage,
 // but also preserves some space in the collector cell for additional
 // data members in derived types.
@@ -998,10 +998,22 @@ class JSFinalObject : public JSObject {
 public:
     typedef JSObject Base;
 
-    static JSFinalObject* create(ExecState*, Structure*);
-    static Structure* createStructure(JSGlobalData& globalData, JSGlobalObject* globalObject, JSValue prototype)
+    static const unsigned defaultSize = 64;
+    static inline unsigned defaultInlineCapacity()
     {
-        return Structure::create(globalData, globalObject, prototype, TypeInfo(FinalObjectType, StructureFlags), &s_info, NonArray, INLINE_STORAGE_CAPACITY);
+        return (defaultSize - allocationSize(0)) / sizeof(WriteBarrier<Unknown>);
+    }
+
+    static const unsigned maxSize = 512;
+    static inline unsigned maxInlineCapacity()
+    {
+        return (maxSize - allocationSize(0)) / sizeof(WriteBarrier<Unknown>);
+    }
+
+    static JSFinalObject* create(ExecState*, Structure*);
+    static Structure* createStructure(JSGlobalData& globalData, JSGlobalObject* globalObject, JSValue prototype, unsigned inlineCapacity)
+    {
+        return Structure::create(globalData, globalObject, prototype, TypeInfo(FinalObjectType, StructureFlags), &s_info, NonArray, inlineCapacity);
     }
 
     JS_EXPORT_PRIVATE static void visitChildren(JSCell*, SlotVisitor&);
@@ -1093,11 +1105,6 @@ inline void JSObject::setButterfly(JSGlobalData& globalData, Butterfly* butterfl
 inline void JSObject::setButterflyWithoutChangingStructure(Butterfly* butterfly)
 {
     m_butterfly = butterfly;
-}
-
-inline JSObject* constructEmptyObject(ExecState* exec, Structure* structure)
-{
-    return JSFinalObject::create(exec, structure);
 }
 
 inline CallType getCallData(JSValue value, CallData& callData)
@@ -1403,7 +1410,7 @@ inline size_t offsetInButterfly(PropertyOffset offset)
     return offsetInOutOfLineStorage(offset) + Butterfly::indexOfPropertyStorage();
 }
 
-// This is a helper for patching code where you want to emit a load or store and
+// Helpers for patching code where you want to emit a load or store and
 // the base is:
 // For inline offsets: a pointer to the out-of-line storage pointer.
 // For out-of-line offsets: the base of the out-of-line storage.
@@ -1412,6 +1419,17 @@ inline size_t offsetRelativeToPatchedStorage(PropertyOffset offset)
     if (isOutOfLineOffset(offset))
         return sizeof(EncodedJSValue) * offsetInButterfly(offset);
     return JSObject::offsetOfInlineStorage() - JSObject::butterflyOffset() + sizeof(EncodedJSValue) * offsetInInlineStorage(offset);
+}
+
+// Returns the maximum offset a load instruction will encode.
+inline size_t maxOffsetRelativeToPatchedStorage(PropertyOffset offset)
+{
+#if USE(JSVALUE32_64)
+    return offsetRelativeToPatchedStorage(offset)
+        + OBJECT_OFFSETOF(EncodedValueDescriptor, asBits.tag);
+#else
+    return offsetRelativeToPatchedStorage(offset);
+#endif
 }
 
 inline int indexRelativeToBase(PropertyOffset offset)

@@ -37,7 +37,10 @@
 #include "SegmentedString.h"
 #include "Timer.h"
 #include "XSSAuditor.h"
+#include <wtf/Deque.h>
 #include <wtf/OwnPtr.h>
+#include <wtf/WeakPtr.h>
+#include <wtf/text/TextPosition.h>
 
 namespace WebCore {
 
@@ -79,7 +82,7 @@ public:
     virtual void resumeScheduledTasks();
 
 #if ENABLE(THREADED_HTML_PARSER)
-    void didReceiveTokensFromBackgroundParser(const Vector<CompactHTMLToken>&, bool threadIsWaitingForScripts);
+    void didReceiveTokensFromBackgroundParser(PassOwnPtr<CompactHTMLTokenStream>);
 #endif
 
 protected:
@@ -121,6 +124,7 @@ private:
 #if ENABLE(THREADED_HTML_PARSER)
     void startBackgroundParser();
     void stopBackgroundParser();
+    void processTokensFromBackgroundParser(PassOwnPtr<CompactHTMLTokenStream>);
 #endif
 
     enum SynchronousMode {
@@ -150,12 +154,12 @@ private:
     bool inPumpSession() const { return m_pumpSessionNestingLevel > 0; }
     bool shouldDelayEnd() const { return inPumpSession() || isWaitingForScripts() || isScheduledForResume() || isExecutingScript(); }
 
+    HTMLToken& token() { return *m_token.get(); }
+
     HTMLParserOptions m_options;
     HTMLInputStream m_input;
 
-    // We hold m_token here because it might be partially complete.
-    HTMLToken m_token;
-
+    OwnPtr<HTMLToken> m_token;
     OwnPtr<HTMLTokenizer> m_tokenizer;
     OwnPtr<HTMLScriptRunner> m_scriptRunner;
     OwnPtr<HTMLTreeBuilder> m_treeBuilder;
@@ -163,7 +167,13 @@ private:
     OwnPtr<HTMLPreloadScanner> m_insertionPreloadScanner;
     OwnPtr<HTMLParserScheduler> m_parserScheduler;
     HTMLSourceTracker m_sourceTracker;
+    TextPosition m_textPosition;
     XSSAuditor m_xssAuditor;
+
+#if ENABLE(THREADED_HTML_PARSER)
+    Deque<OwnPtr<CompactHTMLTokenStream> > m_pendingTokens;
+    WeakPtrFactory<HTMLDocumentParser> m_weakFactory;
+#endif
 
     bool m_endWasDelayed;
     bool m_haveBackgroundParser;

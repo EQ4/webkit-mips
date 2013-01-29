@@ -62,6 +62,11 @@ PassOwnPtr<InputType> MonthInputType::create(HTMLInputElement* element)
     return adoptPtr(new MonthInputType(element));
 }
 
+void MonthInputType::attach()
+{
+    observeFeatureIfVisible(FeatureObserver::InputTypeMonth);
+}
+
 const AtomicString& MonthInputType::formControlType() const
 {
     return InputTypeNames::month();

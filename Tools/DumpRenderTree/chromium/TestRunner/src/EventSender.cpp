@@ -44,16 +44,17 @@
 #include "EventSender.h"
 
 #include "KeyCodeMapping.h"
+#include "MockSpellCheck.h"
 #include "TestDelegate.h"
 #include "WebContextMenuData.h"
 #include "WebDragOperation.h"
 #include "WebEventSender.h"
 #include "WebTouchPoint.h"
 #include "WebView.h"
-#include "platform/WebDragData.h"
-#include "platform/WebPoint.h"
-#include "platform/WebString.h"
-#include "platform/WebVector.h"
+#include <public/WebDragData.h>
+#include <public/WebPoint.h>
+#include <public/WebString.h>
+#include <public/WebVector.h>
 #include <wtf/Deque.h>
 #include <wtf/StringExtras.h>
 
@@ -827,7 +828,7 @@ static Vector<WebString> makeMenuItemStringsFor(WebContextMenuData* contextMenu,
         for (const char** item = editableMenuStrings; *item; ++item) 
             strings.append(WebString::fromUTF8(*item));
         WebVector<WebString> suggestions;
-        delegate->fillSpellingSuggestionList(contextMenu->misspelledWord, &suggestions);
+        MockSpellCheck::fillSuggestionList(contextMenu->misspelledWord, &suggestions);
         for (size_t i = 0; i < suggestions.size(); ++i) 
             strings.append(suggestions[i]);
     } else {

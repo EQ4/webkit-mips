@@ -185,6 +185,23 @@ void RenderRegion::checkRegionStyle()
     m_flowThread->checkRegionsWithStyling();
 }
 
+void RenderRegion::incrementAutoLogicalHeightCount()
+{
+    ASSERT(m_flowThread);
+    ASSERT(isValid());
+    ASSERT(m_hasAutoLogicalHeight);
+
+    m_flowThread->incrementAutoLogicalHeightRegions();
+}
+
+void RenderRegion::decrementAutoLogicalHeightCount()
+{
+    ASSERT(m_flowThread);
+    ASSERT(isValid());
+
+    m_flowThread->decrementAutoLogicalHeightRegions();
+}
+
 void RenderRegion::updateRegionHasAutoLogicalHeightFlag()
 {
     ASSERT(m_flowThread);
@@ -196,10 +213,10 @@ void RenderRegion::updateRegionHasAutoLogicalHeightFlag()
     m_hasAutoLogicalHeight = shouldHaveAutoLogicalHeight();
     if (m_hasAutoLogicalHeight != didHaveAutoLogicalHeight) {
         if (m_hasAutoLogicalHeight)
-            view()->flowThreadController()->incrementAutoLogicalHeightRegions();
+            incrementAutoLogicalHeightCount();
         else {
             clearOverrideLogicalContentHeight();
-            view()->flowThreadController()->decrementAutoLogicalHeightRegions();
+            decrementAutoLogicalHeightCount();
         }
     }
 }
@@ -228,8 +245,15 @@ void RenderRegion::layout()
         LayoutRect oldRegionRect(flowThreadPortionRect());
         if (!isHorizontalWritingMode())
             oldRegionRect = oldRegionRect.transposedRect();
-        if (oldRegionRect.width() != pageLogicalWidth() || oldRegionRect.height() != pageLogicalHeight())
+
+        if (view()->checkTwoPassLayoutForAutoHeightRegions() && hasAutoLogicalHeight())
+            view()->flowThreadController()->setNeedsTwoPassLayoutForAutoHeightRegions(true);
+
+        if (oldRegionRect.width() != pageLogicalWidth() || oldRegionRect.height() != pageLogicalHeight()) {
             m_flowThread->invalidateRegions();
+            if (view()->checkTwoPassLayoutForAutoHeightRegions())
+                view()->flowThreadController()->setNeedsTwoPassLayoutForAutoHeightRegions(true);
+        }
     }
 
     // FIXME: We need to find a way to set up overflow properly. Our flow thread hasn't gotten a layout
@@ -322,17 +346,15 @@ void RenderRegion::attachRegion()
 
     m_hasAutoLogicalHeight = shouldHaveAutoLogicalHeight();
     if (hasAutoLogicalHeight())
-        view()->flowThreadController()->incrementAutoLogicalHeightRegions();
+        incrementAutoLogicalHeightCount();
 }
 
 void RenderRegion::detachRegion()
 {
     if (m_flowThread) {
         m_flowThread->removeRegionFromThread(this);
-        if (hasAutoLogicalHeight()) {
-            ASSERT(isValid());
-            view()->flowThreadController()->decrementAutoLogicalHeightRegions();
-        }
+        if (hasAutoLogicalHeight())
+            decrementAutoLogicalHeightCount();
     }
     m_flowThread = 0;
 }

@@ -516,10 +516,15 @@ Frame* incrementFrame(Frame* curr, bool forward, bool wrapFlag)
         : curr->tree()->traversePreviousWithWrap(wrapFlag);
 }
 
+PassRefPtr<Range> trimWhitespaceFromRange(PassRefPtr<Range> range)
+{
+    return trimWhitespaceFromRange(VisiblePosition(range->startPosition()), VisiblePosition(range->endPosition()));
+}
+
 PassRefPtr<Range> trimWhitespaceFromRange(VisiblePosition startPosition, VisiblePosition endPosition)
 {
     if (isEmptyRangeOrAllSpaces(startPosition, endPosition))
-        return VisibleSelection(endPosition, endPosition).toNormalizedRange();
+        return 0;
 
     while (isWhitespace(startPosition.characterAfter()))
         startPosition = startPosition.next();
@@ -527,7 +532,7 @@ PassRefPtr<Range> trimWhitespaceFromRange(VisiblePosition startPosition, Visible
     while (isWhitespace(endPosition.characterBefore()))
         endPosition = endPosition.previous();
 
-    return VisibleSelection(startPosition, endPosition).toNormalizedRange();
+    return makeRange(startPosition, endPosition);
 }
 
 bool isEmptyRangeOrAllSpaces(VisiblePosition startPosition, VisiblePosition endPosition)

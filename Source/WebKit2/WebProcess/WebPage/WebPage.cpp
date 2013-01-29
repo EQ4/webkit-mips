@@ -127,8 +127,8 @@
 #include <WebCore/TextIterator.h>
 #include <WebCore/VisiblePosition.h>
 #include <WebCore/markup.h>
+#include <runtime/JSCJSValue.h>
 #include <runtime/JSLock.h>
-#include <runtime/JSValue.h>
 #include <runtime/Operations.h>
 
 #if ENABLE(MHTML)
@@ -976,6 +976,11 @@ void WebPage::layoutIfNeeded()
     }
 }
 
+WebPage* WebPage::fromCorePage(Page* page)
+{
+    return static_cast<WebChromeClient*>(page->chrome()->client())->page();
+}
+
 void WebPage::setSize(const WebCore::IntSize& viewSize)
 {
     FrameView* view = m_page->mainFrame()->view();
@@ -1347,10 +1352,8 @@ void WebPage::postInjectedBundleMessage(const String& messageName, CoreIPC::Mess
     injectedBundle->didReceiveMessageToPage(this, messageName, messageBody.get());
 }
 
-void WebPage::installPageOverlay(PassRefPtr<PageOverlay> pageOverlay)
+void WebPage::installPageOverlay(PassRefPtr<PageOverlay> pageOverlay, bool shouldFadeIn)
 {
-    bool shouldFadeIn = true;
-    
     if (m_pageOverlay) {
         m_pageOverlay->setPage(0);
 
@@ -1371,12 +1374,12 @@ void WebPage::installPageOverlay(PassRefPtr<PageOverlay> pageOverlay)
     m_pageOverlay->setNeedsDisplay();
 }
 
-void WebPage::uninstallPageOverlay(PageOverlay* pageOverlay, bool fadeOut)
+void WebPage::uninstallPageOverlay(PageOverlay* pageOverlay, bool shouldFadeOut)
 {
     if (pageOverlay != m_pageOverlay)
         return;
 
-    if (fadeOut) {
+    if (shouldFadeOut) {
         m_pageOverlay->startFadeOutAnimation();
         return;
     }
@@ -2160,9 +2163,19 @@ void WebPage::getMainResourceDataOfFrame(uint64_t frameID, uint64_t callbackID)
 
     RefPtr<ResourceBuffer> buffer;
     if (WebFrame* frame = WebProcess::shared().webFrame(frameID)) {
-        if (DocumentLoader* loader = frame->coreFrame()->loader()->documentLoader()) {
-            if ((buffer = loader->mainResourceData()))
-                dataReference = CoreIPC::DataReference(reinterpret_cast<const uint8_t*>(buffer->data()), buffer->size());
+        if (PluginView* pluginView = pluginViewForFrame(frame->coreFrame())) {
+            const unsigned char* bytes;
+            unsigned length;
+
+            if (pluginView->getResourceData(bytes, length))
+                dataReference = CoreIPC::DataReference(bytes, length);
+        }
+
+        if (dataReference.isEmpty()) {
+            if (DocumentLoader* loader = frame->coreFrame()->loader()->documentLoader()) {
+                if ((buffer = loader->mainResourceData()))
+                    dataReference = CoreIPC::DataReference(reinterpret_cast<const uint8_t*>(buffer->data()), buffer->size());
+            }
         }
     }
 
@@ -3622,7 +3635,7 @@ FrameView* WebPage::mainFrameView() const
 }
 
 #if ENABLE(PAGE_VISIBILITY_API) || ENABLE(HIDDEN_PAGE_DOM_TIMER_THROTTLING)
-void WebPage::setVisibilityState(int visibilityState, bool isInitialState)
+void WebPage::setVisibilityState(uint32_t visibilityState, bool isInitialState)
 {
     if (!m_page)
         return;

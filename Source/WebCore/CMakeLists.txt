@@ -192,15 +192,12 @@ set(WebCore_IDL_FILES
     Modules/indexeddb/IDBDatabase.idl
     Modules/indexeddb/IDBFactory.idl
     Modules/indexeddb/IDBIndex.idl
-    Modules/indexeddb/IDBKey.idl
     Modules/indexeddb/IDBKeyRange.idl
     Modules/indexeddb/IDBObjectStore.idl
     Modules/indexeddb/IDBOpenDBRequest.idl
     Modules/indexeddb/IDBRequest.idl
     Modules/indexeddb/IDBTransaction.idl
-    Modules/indexeddb/IDBUpgradeNeededEvent.idl
     Modules/indexeddb/IDBVersionChangeEvent.idl
-    Modules/indexeddb/IDBVersionChangeRequest.idl
     Modules/indexeddb/WorkerContextIndexedDatabase.idl
 
     Modules/intents/DeliveredIntent.idl
@@ -332,6 +329,7 @@ set(WebCore_IDL_FILES
     css/StyleMedia.idl
     css/StyleSheet.idl
     css/StyleSheetList.idl
+    css/WebKitCSSFilterRule.idl
     css/WebKitCSSFilterValue.idl
     css/WebKitCSSKeyframeRule.idl
     css/WebKitCSSKeyframesRule.idl
@@ -402,6 +400,7 @@ set(WebCore_IDL_FILES
     dom/TouchEvent.idl
     dom/Touch.idl
     dom/TouchList.idl
+    dom/TransitionEvent.idl
     dom/TreeWalker.idl
     dom/UIEvent.idl
     dom/WebKitAnimationEvent.idl
@@ -517,6 +516,7 @@ set(WebCore_IDL_FILES
     html/canvas/CanvasRenderingContext2D.idl
     html/canvas/CanvasRenderingContext.idl
     html/canvas/DataView.idl
+    html/canvas/DOMPath.idl
     html/canvas/EXTTextureFilterAnisotropic.idl
     html/canvas/Float32Array.idl
     html/canvas/Float64Array.idl
@@ -841,9 +841,7 @@ set(WebCore_SOURCES
     Modules/indexeddb/IDBTransaction.cpp
     Modules/indexeddb/IDBTransactionBackendImpl.cpp
     Modules/indexeddb/IDBTransactionCoordinator.cpp
-    Modules/indexeddb/IDBUpgradeNeededEvent.cpp
     Modules/indexeddb/IDBVersionChangeEvent.cpp
-    Modules/indexeddb/IDBVersionChangeRequest.cpp
     Modules/indexeddb/PageGroupIndexedDatabase.cpp
     Modules/indexeddb/WorkerContextIndexedDatabase.cpp
 
@@ -1104,6 +1102,7 @@ set(WebCore_SOURCES
     css/SVGCSSParser.cpp
     css/SVGCSSStyleSelector.cpp
     css/ViewportStyleResolver.cpp
+    css/WebKitCSSFilterRule.cpp
     css/WebKitCSSFilterValue.cpp
     css/WebKitCSSKeyframeRule.cpp
     css/WebKitCSSKeyframesRule.cpp
@@ -1245,6 +1244,7 @@ set(WebCore_SOURCES
     dom/TouchEvent.cpp
     dom/TouchList.cpp
     dom/TransformSourceLibxslt.cpp
+    dom/TransitionEvent.cpp
     dom/Traversal.cpp
     dom/TreeScope.cpp
     dom/TreeScopeAdopter.cpp
@@ -1470,6 +1470,7 @@ set(WebCore_SOURCES
     html/MediaController.cpp
     html/MediaDocument.cpp
     html/MediaFragmentURIParser.cpp
+    html/MicroDataAttributeTokenList.cpp
     html/MicroDataItemValue.cpp
     html/MonthInputType.cpp
     html/NumberInputType.cpp
@@ -1496,6 +1497,7 @@ set(WebCore_SOURCES
 
     html/canvas/CanvasContextAttributes.cpp
     html/canvas/CanvasGradient.cpp
+    html/canvas/CanvasPathMethods.cpp
     html/canvas/CanvasPattern.cpp
     html/canvas/CanvasProxy.cpp
     html/canvas/CanvasRenderingContext.cpp
@@ -1581,6 +1583,7 @@ set(WebCore_SOURCES
     html/track/LoadableTextTrack.cpp
     html/track/TextTrack.cpp
     html/track/TextTrackCue.cpp
+    html/track/TextTrackCueGeneric.cpp
     html/track/TextTrackCueList.cpp
     html/track/TextTrackList.cpp
     html/track/TrackBase.cpp
@@ -2102,6 +2105,7 @@ set(WebCore_SOURCES
     rendering/ExclusionPolygon.cpp
     rendering/ExclusionRectangle.cpp
     rendering/ExclusionShape.cpp
+    rendering/ExclusionShapeInfo.cpp
     rendering/ExclusionShapeInsideInfo.cpp
     rendering/ExclusionShapeOutsideInfo.cpp
     rendering/FilterEffectRenderer.cpp
@@ -2310,6 +2314,7 @@ set(WebCore_SOURCES
     storage/StorageMap.cpp
     storage/StorageNamespace.cpp
     storage/StorageNamespaceImpl.cpp
+    storage/StorageStrategy.cpp
     storage/StorageSyncManager.cpp
     storage/StorageTracker.cpp
 
@@ -2547,6 +2552,7 @@ set(WebCore_USER_AGENT_STYLE_SHEETS
     ${WEBCORE_DIR}/css/fullscreen.css
     ${WEBCORE_DIR}/css/mathml.css
     ${WEBCORE_DIR}/css/mediaControls.css
+    ${WEBCORE_DIR}/css/plugIns.css
     ${WEBCORE_DIR}/css/quirks.css
     ${WEBCORE_DIR}/css/svg.css
     ${WEBCORE_DIR}/css/view-source.css
@@ -2661,6 +2667,53 @@ if (ENABLE_VIDEO_TRACK)
     )
 endif ()
 
+if (WTF_USE_LEVELDB)
+    list(APPEND WebCore_INCLUDE_DIRECTORIES
+        "${THIRDPARTY_DIR}/leveldb/include"
+        "${THIRDPARTY_DIR}/leveldb"
+    )
+    list(APPEND LEVELDB_SOURCES
+        ${THIRDPARTY_DIR}/leveldb/db/builder.cc
+        ${THIRDPARTY_DIR}/leveldb/db/c.cc
+        ${THIRDPARTY_DIR}/leveldb/db/dbformat.cc
+        ${THIRDPARTY_DIR}/leveldb/db/db_impl.cc
+        ${THIRDPARTY_DIR}/leveldb/db/db_iter.cc
+        ${THIRDPARTY_DIR}/leveldb/db/filename.cc
+        ${THIRDPARTY_DIR}/leveldb/db/log_reader.cc
+        ${THIRDPARTY_DIR}/leveldb/db/log_writer.cc
+        ${THIRDPARTY_DIR}/leveldb/db/memtable.cc
+        ${THIRDPARTY_DIR}/leveldb/db/repair.cc
+        ${THIRDPARTY_DIR}/leveldb/db/table_cache.cc
+        ${THIRDPARTY_DIR}/leveldb/db/version_edit.cc
+        ${THIRDPARTY_DIR}/leveldb/db/version_set.cc
+        ${THIRDPARTY_DIR}/leveldb/db/write_batch.cc
+        ${THIRDPARTY_DIR}/leveldb/helpers/memenv/memenv.cc
+        ${THIRDPARTY_DIR}/leveldb/port/port_posix.cc
+        ${THIRDPARTY_DIR}/leveldb/table/block_builder.cc
+        ${THIRDPARTY_DIR}/leveldb/table/block.cc
+        ${THIRDPARTY_DIR}/leveldb/table/filter_block.cc
+        ${THIRDPARTY_DIR}/leveldb/table/format.cc
+        ${THIRDPARTY_DIR}/leveldb/table/iterator.cc
+        ${THIRDPARTY_DIR}/leveldb/table/merger.cc
+        ${THIRDPARTY_DIR}/leveldb/table/table_builder.cc
+        ${THIRDPARTY_DIR}/leveldb/table/table.cc
+        ${THIRDPARTY_DIR}/leveldb/table/two_level_iterator.cc
+        ${THIRDPARTY_DIR}/leveldb/util/arena.cc
+        ${THIRDPARTY_DIR}/leveldb/util/bloom.cc
+        ${THIRDPARTY_DIR}/leveldb/util/cache.cc
+        ${THIRDPARTY_DIR}/leveldb/util/coding.cc
+        ${THIRDPARTY_DIR}/leveldb/util/comparator.cc
+        ${THIRDPARTY_DIR}/leveldb/util/crc32c.cc
+        ${THIRDPARTY_DIR}/leveldb/util/env.cc
+        ${THIRDPARTY_DIR}/leveldb/util/env_posix.cc
+        ${THIRDPARTY_DIR}/leveldb/util/filter_policy.cc
+        ${THIRDPARTY_DIR}/leveldb/util/hash.cc
+        ${THIRDPARTY_DIR}/leveldb/util/histogram.cc
+        ${THIRDPARTY_DIR}/leveldb/util/logging.cc
+        ${THIRDPARTY_DIR}/leveldb/util/options.cc
+        ${THIRDPARTY_DIR}/leveldb/util/status.cc
+    )
+endif ()
 
 if (WTF_USE_3D_GRAPHICS)
     list(APPEND WebCore_INCLUDE_DIRECTORIES
@@ -3015,6 +3068,15 @@ set_target_properties(${WebCoreTestSupport_LIBRARY_NAME} PROPERTIES FOLDER "WebC
 
 add_dependencies(${WebCore_LIBRARY_NAME} ${JavaScriptCore_LIBRARY_NAME})
 add_dependencies(${WebCoreTestSupport_LIBRARY_NAME} ${WebCore_LIBRARY_NAME})
+
+if (WTF_USE_LEVELDB)
+    set(LEVELDB_LIBRARY_NAME leveldb)
+    add_library(${LEVELDB_LIBRARY_NAME} STATIC ${LEVELDB_SOURCES})
+    target_link_libraries(${LEVELDB_LIBRARY_NAME} ${CMAKE_THREAD_LIBS_INIT})
+    set_target_properties(${LEVELDB_LIBRARY_NAME} PROPERTIES COMPILE_DEFINITIONS "LEVELDB_PLATFORM_POSIX=1 OS_LINUX=1")
+    list(APPEND WebCore_LIBRARIES ${LEVELDB_LIBRARY_NAME})
+    WEBKIT_SET_EXTRA_COMPILER_FLAGS(${LEVELDB_LIBRARY_NAME} IGNORECXX_WARNINGS)
+endif ()
 
 if (WTF_USE_3D_GRAPHICS)
     set(ANGLESupport_LIBRARY_NAME ANGLESupport)
