@@ -48,7 +48,6 @@
 #include "ewk_context.h"
 #include "ewk_context_private.h"
 #include "ewk_favicon_database_private.h"
-#include "ewk_intent_private.h"
 #include "ewk_private.h"
 #include "ewk_settings_private.h"
 #include "ewk_view_private.h"
@@ -534,7 +533,7 @@ static inline Evas_Object* createEwkView(Evas* canvas, Evas_Smart* smart, PassRe
  */
 Evas_Object* ewk_view_base_add(Evas* canvas, WKContextRef contextRef, WKPageGroupRef pageGroupRef, EwkView::ViewBehavior behavior)
 {
-    return createEwkView(canvas, createEwkViewSmartClass(), contextRef ? EwkContext::create(toImpl(contextRef)) : EwkContext::defaultContext(), pageGroupRef, behavior);
+    return createEwkView(canvas, createEwkViewSmartClass(), contextRef ? EwkContext::create(contextRef) : EwkContext::defaultContext(), pageGroupRef, behavior);
 }
 
 Evas_Object* ewk_view_smart_add(Evas* canvas, Evas_Smart* smart, Ewk_Context* context)
@@ -704,24 +703,6 @@ Eina_Bool ewk_view_forward(Evas_Object* ewkView)
     }
 
     return false;
-}
-
-Eina_Bool ewk_view_intent_deliver(Evas_Object* ewkView, Ewk_Intent* intent)
-{
-#if ENABLE(WEB_INTENTS)
-    EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, false);
-    EwkIntent* intentImpl = ewk_object_cast<EwkIntent*>(intent);
-    EINA_SAFETY_ON_NULL_RETURN_VAL(intentImpl, false);
-
-    WebPageProxy* page = impl->page();
-    page->deliverIntentToFrame(page->mainFrame(), intentImpl->webIntentData());
-
-    return true;
-#else
-    UNUSED_PARAM(ewkView);
-    UNUSED_PARAM(intent);
-    return false;
-#endif
 }
 
 Eina_Bool ewk_view_back_possible(Evas_Object* ewkView)

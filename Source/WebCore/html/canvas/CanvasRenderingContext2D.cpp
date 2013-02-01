@@ -6,6 +6,7 @@
  * Copyright (C) 2008 Dirk Schulze <krit@webkit.org>
  * Copyright (C) 2010 Torch Mobile (Beijing) Co. Ltd. All rights reserved.
  * Copyright (C) 2012 Intel Corporation. All rights reserved.
+ * Copyright (C) 2013 Adobe Systems Incorporated. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,6 +42,7 @@
 #include "CanvasPattern.h"
 #include "CanvasStyle.h"
 #include "Console.h"
+#include "DOMPath.h"
 #include "ExceptionCode.h"
 #include "FloatConversion.h"
 #include "FloatQuad.h"
@@ -110,6 +112,11 @@ public:
         c->setLineCap(m_canvasContext->getLineCap());
         c->setLineJoin(m_canvasContext->getLineJoin());
         c->setMiterLimit(m_canvasContext->miterLimit());
+        const Vector<float>& lineDash = m_canvasContext->getLineDash();
+        DashArray convertedLineDash(lineDash.size());
+        for (size_t i = 0; i < lineDash.size(); ++i)
+            convertedLineDash[i] = static_cast<DashArrayElement>(lineDash[i]);
+        c->setLineDash(convertedLineDash, m_canvasContext->lineDashOffset());
     }
 
 private:
@@ -852,6 +859,18 @@ void CanvasRenderingContext2D::beginPath()
     m_path.clear();
 }
 
+#if ENABLE(CANVAS_PATH)
+PassRefPtr<DOMPath> CanvasRenderingContext2D::currentPath()
+{
+    return DOMPath::create(m_path);
+}
+
+void CanvasRenderingContext2D::setCurrentPath(DOMPath* path)
+{
+    m_path = path->path();
+}
+#endif
+
 static bool validateRectForCanvas(float& x, float& y, float& width, float& height)
 {
     if (!isfinite(x) | !isfinite(y) | !isfinite(width) | !isfinite(height))
@@ -996,6 +1015,25 @@ bool CanvasRenderingContext2D::isPointInPath(const float x, const float y, const
         return false;
     
     return m_path.contains(transformedPoint, windRule);
+}
+
+
+bool CanvasRenderingContext2D::isPointInStroke(const float x, const float y)
+{
+    GraphicsContext* c = drawingContext();
+    if (!c)
+        return false;
+    if (!state().m_invertibleCTM)
+        return false;
+
+    FloatPoint point(x, y);
+    AffineTransform ctm = state().m_transform;
+    FloatPoint transformedPoint = ctm.inverse().mapPoint(point);
+    if (!isfinite(transformedPoint.x()) || !isfinite(transformedPoint.y()))
+        return false;
+
+    CanvasStrokeStyleApplier applier(this);
+    return m_path.strokeContains(&applier, transformedPoint);
 }
 
 void CanvasRenderingContext2D::clearRect(float x, float y, float width, float height)

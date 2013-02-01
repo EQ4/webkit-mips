@@ -1,3 +1,102 @@
+2013-02-01  Alexis Menard  <alexis@webkit.org>
+
+        Enable unprefixed CSS transitions by default.
+        https://bugs.webkit.org/show_bug.cgi?id=108216
+
+        Reviewed by Dean Jackson.
+
+        Rename the flag CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED
+        to CSS_TRANSFORMS_ANIMATIONS_UNPREFIXED which will be used later to
+        guard the unprefixing work for CSS Transforms and animations.
+
+        * Source/cmake/WebKitFeatures.cmake:
+        * Source/cmakeconfig.h.cmake:
+
+2013-01-31  Christophe Dumez  <dchris@gmail.com>
+
+        [EFL] Disable Web Intents
+        https://bugs.webkit.org/show_bug.cgi?id=108457
+
+        Reviewed by Alexey Proskuryakov.
+
+        Turn off WEB_INTENTS flag in EFL CMake project.
+
+        * Source/cmake/OptionsEfl.cmake:
+
+2013-01-31  Simon Hausmann  <simon.hausmann@digia.com>
+
+        [Qt] Make it possible to compile WebKit2 Qt related files without access to internal WK2 C++ API
+        https://bugs.webkit.org/show_bug.cgi?id=108472
+
+        Reviewed by Andreas Kling.
+
+        When linking WebKit2, also link the WebKit2QML module.
+
+        * Source/api.pri:
+
+2013-01-30  Dominik Röttsches  <dominik.rottsches@intel.com>
+
+        [HarfBuzz] Remove the HarfBuzz-old code
+        https://bugs.webkit.org/show_bug.cgi?id=108077
+
+        Reviewed by Benjamin Poulain.
+
+        Rename WTF_USE_HARFBUZZ_NG to WTF_USE_HARFBUZZ since there
+        won't be a distinction between ng and non-ng HarfBuzz after
+        removing the old code.
+
+        * Source/cmake/OptionsEfl.cmake:
+
+2013-01-29  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK build fix after r141175.
+
+        * Source/autotools/symbols.filter: Export the WebCore::Element::createShadowRoot symbol.
+
+2013-01-29  Shinya Kawanaka  <shinyak@chromium.org>
+
+        [Chromium] Cannot copy text when selecting readonly (or disabled) input elements
+        https://bugs.webkit.org/show_bug.cgi?id=106287
+
+        Reviewed by Hajime Morita.
+
+        * Source/autotools/symbols.filter:
+
+2013-01-29  Laszlo Gombos  <l.gombos@samsung.com>
+
+        [CMake] Add minimum version information for tool dependencies
+        https://bugs.webkit.org/show_bug.cgi?id=97592
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Capture the minimum version information for the tools that are required
+        to build WebKit for all CMake based build systems.
+
+        * CMakeLists.txt:
+
+2013-01-29  Nate Chapin  <japhet@chromium.org>
+
+        Enable reuse of cached main resources
+        https://bugs.webkit.org/show_bug.cgi?id=105667
+
+        Reviewed by Adam Barth.
+
+        * Source/autotools/symbols.filter: Expose MemoryCache::resourceForURL().
+
+2013-01-29  Laszlo Gombos  <l.gombos@samsung.com>
+
+        Enable Workers for WinCE
+        https://bugs.webkit.org/show_bug.cgi?id=108099
+
+        Reviewed by Gyuyoung Kim.
+
+        WORKERS are enabled for all CMake based ports except WinCE.
+        Turn on WORKERS for all CMake based ports.
+
+        * Source/cmake/OptionsBlackBerry.cmake:
+        * Source/cmake/OptionsEfl.cmake:
+        * Source/cmake/WebKitFeatures.cmake:
+
 2013-01-28  Halton Huo  <halton.huo@intel.com>
 
         [EFL] Quit debug build without -DSHARED_CORE=ON

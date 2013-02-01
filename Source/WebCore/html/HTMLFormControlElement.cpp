@@ -70,11 +70,6 @@ HTMLFormControlElement::~HTMLFormControlElement()
 {
 }
 
-void HTMLFormControlElement::willAddAuthorShadowRoot()
-{
-    ensureUserAgentShadowRoot();
-}
-
 String HTMLFormControlElement::formEnctype() const
 {
     return FormSubmission::Attributes::parseEncodingType(fastGetAttribute(formenctypeAttr));
@@ -87,7 +82,10 @@ void HTMLFormControlElement::setFormEnctype(const String& value)
 
 String HTMLFormControlElement::formMethod() const
 {
-    return FormSubmission::Attributes::methodString(FormSubmission::Attributes::parseMethodType(fastGetAttribute(formmethodAttr)));
+    const AtomicString& formMethodAttr = fastGetAttribute(formmethodAttr);
+    if (formMethodAttr.isNull())
+        return emptyString();
+    return FormSubmission::Attributes::methodString(FormSubmission::Attributes::parseMethodType(formMethodAttr));
 }
 
 void HTMLFormControlElement::setFormMethod(const String& value)
@@ -487,7 +485,7 @@ void HTMLFormControlElement::reportMemoryUsage(MemoryObjectInfo* memoryObjectInf
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::DOM);
     LabelableElement::reportMemoryUsage(memoryObjectInfo);
-    info.addMember(m_validationMessage);
+    info.addMember(m_validationMessage, "validationMessage");
 }
 
 } // namespace Webcore

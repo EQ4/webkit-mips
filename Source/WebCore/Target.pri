@@ -19,13 +19,13 @@ SOURCES += \
     Modules/geolocation/GeolocationController.cpp \
     Modules/geolocation/NavigatorGeolocation.cpp \
     \
-    Modules/webdatabase/AbstractDatabase.cpp \
     Modules/webdatabase/DOMWindowWebDatabase.cpp \
     Modules/webdatabase/Database.cpp \
     Modules/webdatabase/DatabaseAuthorizer.cpp \
+    Modules/webdatabase/DatabaseBackend.cpp \
     Modules/webdatabase/DatabaseContext.cpp \
+    Modules/webdatabase/DatabaseServer.cpp \
     Modules/webdatabase/DatabaseSync.cpp \
-    Modules/webdatabase/DBBackendServer.cpp \
     Modules/webdatabase/WorkerContextWebDatabase.cpp \
     \
     accessibility/AccessibilityImageMapLink.cpp \
@@ -153,7 +153,7 @@ SOURCES += \
      bindings/js/JSMessagePortCustom.cpp \
      bindings/js/JSMessagePortCustom.h \
      bindings/js/JSMicroDataItemValueCustom.cpp \
-     bindings/js/JSMutationCallbackCustom.cpp \
+     bindings/js/JSMutationCallback.cpp \
      bindings/js/JSMutationObserverCustom.cpp \
      bindings/js/JSNamedNodeMapCustom.cpp \
      bindings/js/JSNodeCustom.cpp \
@@ -711,6 +711,7 @@ SOURCES += \
     html/canvas/CanvasRenderingContext2D.cpp \
     html/canvas/CanvasStyle.cpp \
     html/canvas/DataView.cpp \
+    html/parser/BackgroundHTMLInputStream.cpp \
     html/parser/BackgroundHTMLParser.cpp \
     html/parser/CSSPreloadScanner.cpp \
     html/parser/CompactHTMLToken.cpp \
@@ -734,6 +735,7 @@ SOURCES += \
     html/parser/TextDocumentParser.cpp \
     html/parser/TextViewSourceParser.cpp \
     html/parser/XSSAuditor.cpp \
+    html/parser/XSSAuditorDelegate.cpp \
     html/shadow/ContentDistributor.cpp \
     html/shadow/ContentSelectorQuery.cpp \
     html/shadow/DateTimeEditElement.cpp \
@@ -1366,6 +1368,7 @@ HEADERS += \
     bindings/js/JSImageConstructor.h \
     bindings/js/JSLazyEventListener.h \
     bindings/js/JSLocationCustom.h \
+    bindings/js/JSMutationCallback.h \
     bindings/js/JSNodeCustom.h \
     bindings/js/JSNodeFilterCondition.h \
     bindings/js/JSPluginElementFunctions.h \
@@ -1434,19 +1437,20 @@ HEADERS += \
     Modules/proximity/DeviceProximityController.h \
     Modules/proximity/DeviceProximityEvent.h \
     \
-    Modules/webdatabase/AbstractDatabase.h \
     Modules/webdatabase/AbstractDatabaseServer.h \
     Modules/webdatabase/ChangeVersionWrapper.h \
     Modules/webdatabase/DOMWindowWebDatabase.h \
     Modules/webdatabase/DatabaseAuthorizer.h \
     Modules/webdatabase/Database.h \
+    Modules/webdatabase/DatabaseBackend.h \
     Modules/webdatabase/DatabaseCallback.h \
+    Modules/webdatabase/DatabaseError.h \
     Modules/webdatabase/DatabaseManager.h \
+    Modules/webdatabase/DatabaseServer.h \
     Modules/webdatabase/DatabaseSync.h \
     Modules/webdatabase/DatabaseTask.h \
     Modules/webdatabase/DatabaseThread.h \
     Modules/webdatabase/DatabaseTracker.h \
-    Modules/webdatabase/DBBackendServer.h \
     Modules/webdatabase/OriginQuotaManager.h \
     Modules/webdatabase/OriginUsageRecord.h \
     Modules/webdatabase/SQLCallbackWrapper.h \
@@ -1908,6 +1912,7 @@ HEADERS += \
     html/parser/HTMLTreeBuilder.h \
     html/parser/HTMLViewSourceParser.h \
     html/parser/XSSAuditor.h \
+    html/parser/XSSAuditorDelegate.h \
     html/shadow/ContentDistributor.h \
     html/shadow/ContentSelectorQuery.h \
     html/shadow/HTMLContentElement.h \
@@ -2236,6 +2241,18 @@ HEADERS += \
     platform/graphics/surfaces/GraphicsSurface.h \
     platform/graphics/surfaces/GraphicsSurfaceToken.h \
     platform/graphics/SurrogatePairAwareTextIterator.h \
+    platform/graphics/texmap/coordinated/AreaAllocator.h \
+    platform/graphics/texmap/coordinated/CoordinatedBackingStore.h \
+    platform/graphics/texmap/coordinated/CoordinatedCustomFilterOperation.h \
+    platform/graphics/texmap/coordinated/CoordinatedCustomFilterProgram.h \
+    platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.h \
+    platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.h \
+    platform/graphics/texmap/coordinated/CoordinatedImageBacking.h \
+    platform/graphics/texmap/coordinated/CoordinatedLayerInfo.h \
+    platform/graphics/texmap/coordinated/CoordinatedSurface.h \
+    platform/graphics/texmap/coordinated/CoordinatedTile.h \
+    platform/graphics/texmap/coordinated/SurfaceUpdateInfo.h \
+    platform/graphics/texmap/coordinated/UpdateAtlas.h \
     platform/graphics/texmap/GraphicsLayerTextureMapper.h \
     platform/graphics/texmap/TextureMapper.h \
     platform/graphics/texmap/TextureMapperBackingStore.h \
@@ -2356,7 +2373,6 @@ HEADERS += \
     platform/text/DecodeEscapeSequences.h \
     platform/text/Hyphenation.h \
     platform/text/QuotedPrintable.h \
-    platform/text/qt/TextCodecQt.h \
     platform/text/RegularExpression.h \
     platform/text/SegmentedString.h \
     platform/text/TextBoundaries.h \
@@ -2872,6 +2888,14 @@ SOURCES += \
     platform/graphics/qt/PathQt.cpp \
     platform/graphics/qt/PatternQt.cpp \
     platform/graphics/qt/StillImageQt.cpp \
+    platform/graphics/texmap/coordinated/AreaAllocator.cpp \
+    platform/graphics/texmap/coordinated/CoordinatedBackingStore.cpp \
+    platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.cpp \
+    platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp \
+    platform/graphics/texmap/coordinated/CoordinatedImageBacking.cpp \
+    platform/graphics/texmap/coordinated/CoordinatedSurface.cpp \
+    platform/graphics/texmap/coordinated/CoordinatedTile.cpp \
+    platform/graphics/texmap/coordinated/UpdateAtlas.cpp \
     platform/graphics/texmap/GraphicsLayerTextureMapper.cpp \
     platform/graphics/texmap/TextureMapper.cpp \
     platform/graphics/texmap/TextureMapperBackingStore.cpp \
@@ -2926,7 +2950,6 @@ SOURCES += \
     platform/qt/TemporaryLinkStubsQt.cpp \
     platform/text/qt/TextBoundariesQt.cpp \
     platform/text/qt/TextBreakIteratorInternalICUQt.cpp \
-    platform/text/qt/TextCodecQt.cpp \
     platform/qt/WidgetQt.cpp
 
 use?(LIBXML2) {
@@ -3062,8 +3085,7 @@ enable?(INDEXED_DATABASE) {
         Modules/indexeddb/IDBObjectStore.h \
         Modules/indexeddb/IDBObjectStoreBackendImpl.h \
         Modules/indexeddb/IDBRequest.h \
-        Modules/indexeddb/IDBTransaction.h \
-        Modules/indexeddb/IDBTransactionBackendInterface.h
+        Modules/indexeddb/IDBTransaction.h
 
     SOURCES += \
         bindings/js/IDBBindingUtilities.cpp \

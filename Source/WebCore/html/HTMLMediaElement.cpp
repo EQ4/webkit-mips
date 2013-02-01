@@ -1331,7 +1331,8 @@ bool HTMLMediaElement::textTracksAreReady() const
     // in the disabled state when the element's resource selection algorithm last started now
     // have a text track readiness state of loaded or failed to load.
     for (unsigned i = 0; i < m_textTracksWhenResourceSelectionBegan.size(); ++i) {
-        if (m_textTracksWhenResourceSelectionBegan[i]->readinessState() == TextTrack::Loading)
+        if (m_textTracksWhenResourceSelectionBegan[i]->readinessState() == TextTrack::Loading
+            || m_textTracksWhenResourceSelectionBegan[i]->readinessState() == TextTrack::NotLoaded)
             return false;
     }
 
@@ -1343,6 +1344,12 @@ void HTMLMediaElement::textTrackReadyStateChanged(TextTrack* track)
     if (m_player && m_textTracksWhenResourceSelectionBegan.contains(track)) {
         if (track->readinessState() != TextTrack::Loading)
             setReadyState(m_player->readyState());
+    } else {
+        // The track readiness state might have changed as a result of the user
+        // clicking the captions button. In this case, a check whether all the
+        // resources have failed loading should be done in order to hide the CC button.
+        if (hasMediaControls() && track->readinessState() == TextTrack::FailedToLoad)
+            mediaControls()->refreshClosedCaptionsButtonVisibility();
     }
 }
 
@@ -1438,6 +1445,7 @@ void HTMLMediaElement::textTrackRemoveCue(TextTrack*, PassRefPtr<TextTrackCue> c
     if (index != notFound)
         m_currentlyActiveCues.remove(index);
 
+    cue->removeDisplayTree();
     updateActiveTextTrackCues(currentTime());
 }
 
@@ -1840,8 +1848,10 @@ void HTMLMediaElement::setReadyState(MediaPlayer::ReadyState state)
 
     if (shouldUpdateDisplayState) {
         updateDisplayState();
-        if (hasMediaControls())
+        if (hasMediaControls()) {
+            mediaControls()->refreshClosedCaptionsButtonVisibility();
             mediaControls()->updateStatusDisplay();
+        }
     }
 
     updatePlayState();
@@ -1978,12 +1988,6 @@ void HTMLMediaElement::progressEventTimerFired(Timer<HTMLMediaElement>*)
         m_sentStalledEvent = true;
         setShouldDelayLoadEvent(false);
     }
-}
-
-void HTMLMediaElement::willAddAuthorShadowRoot()
-{
-    if (!userAgentShadowRoot())
-        ensureUserAgentShadowRoot();
 }
 
 void HTMLMediaElement::rewind(float timeDelta)
@@ -2906,6 +2910,9 @@ void HTMLMediaElement::didAddTrack(HTMLTrackElement* trackElement)
     // in the markup have been added.
     if (!m_parsingInProgress)
         scheduleLoad(TextTrackResource);
+
+    if (hasMediaControls())
+        mediaControls()->closedCaptionTracksChanged();
 }
 
 void HTMLMediaElement::didRemoveTrack(HTMLTrackElement* trackElement)
@@ -4131,6 +4138,9 @@ bool HTMLMediaElement::hasClosedCaptions() const
 #if ENABLE(VIDEO_TRACK)
     if (RuntimeEnabledFeatures::webkitVideoTrackEnabled() && m_textTracks)
     for (unsigned i = 0; i < m_textTracks->length(); ++i) {
+        if (m_textTracks->item(i)->readinessState() == TextTrack::FailedToLoad)
+            continue;
+
         if (m_textTracks->item(i)->kind() == TextTrack::captionsKeyword()
             || m_textTracks->item(i)->kind() == TextTrack::subtitlesKeyword())
             return true;
@@ -4279,7 +4289,7 @@ bool HTMLMediaElement::hasMediaControls() const
 {
     if (ShadowRoot* userAgent = userAgentShadowRoot()) {
         Node* node = userAgent->firstChild();
-        ASSERT(!node || node->isMediaControls());
+        ASSERT_WITH_SECURITY_IMPLICATION(!node || node->isMediaControls());
         return node;
     }
 
@@ -4742,37 +4752,37 @@ void HTMLMediaElement::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) con
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::DOM);
     HTMLElement::reportMemoryUsage(memoryObjectInfo);
     ActiveDOMObject::reportMemoryUsage(memoryObjectInfo);
-    info.addMember(m_loadTimer);
-    info.addMember(m_progressEventTimer);
-    info.addMember(m_playbackProgressTimer);
-    info.addMember(m_playedTimeRanges);
-    info.addMember(m_asyncEventQueue);
-    info.addMember(m_currentSrc);
-    info.addMember(m_error);
-    info.addMember(m_currentSourceNode);
-    info.addMember(m_nextChildNodeToConsider);
-    info.addMember(m_player);
+    info.addMember(m_loadTimer, "loadTimer");
+    info.addMember(m_progressEventTimer, "progressEventTimer");
+    info.addMember(m_playbackProgressTimer, "playbackProgressTimer");
+    info.addMember(m_playedTimeRanges, "playedTimeRanges");
+    info.addMember(m_asyncEventQueue, "asyncEventQueue");
+    info.addMember(m_currentSrc, "currentSrc");
+    info.addMember(m_error, "error");
+    info.addMember(m_currentSourceNode, "currentSourceNode");
+    info.addMember(m_nextChildNodeToConsider, "nextChildNodeToConsider");
+    info.addMember(m_player, "player");
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
-    info.addMember(m_proxyWidget);
+    info.addMember(m_proxyWidget, "proxyWidget");
 #endif
 #if ENABLE(MEDIA_SOURCE)
-    info.addMember(m_mediaSourceURL);
-    info.addMember(m_mediaSource);
+    info.addMember(m_mediaSourceURL, "mediaSourceURL");
+    info.addMember(m_mediaSource, "mediaSource");
 #endif
 #if ENABLE(VIDEO_TRACK)
-    info.addMember(m_textTracks);
-    info.addMember(m_textTracksWhenResourceSelectionBegan);
-    info.addMember(m_cueTree);
-    info.addMember(m_currentlyActiveCues);
+    info.addMember(m_textTracks, "textTracks");
+    info.addMember(m_textTracksWhenResourceSelectionBegan, "textTracksWhenResourceSelectionBegan");
+    info.addMember(m_cueTree, "cueTree");
+    info.addMember(m_currentlyActiveCues, "currentlyActiveCues");
 #endif
-    info.addMember(m_mediaGroup);
-    info.addMember(m_mediaController);
+    info.addMember(m_mediaGroup, "mediaGroup");
+    info.addMember(m_mediaController, "mediaController");
 
 #if PLATFORM(MAC)
-    info.addMember(m_sleepDisabler);
+    info.addMember(m_sleepDisabler, "sleepDisabler");
 #endif
 #if ENABLE(WEB_AUDIO)
-    info.addMember(m_audioSourceNode);
+    info.addMember(m_audioSourceNode, "audioSourceNode");
 #endif
 
 }

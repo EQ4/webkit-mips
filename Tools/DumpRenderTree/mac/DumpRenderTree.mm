@@ -110,9 +110,11 @@ using namespace std;
 +(void)setAllowsAnyHTTPSCertificate:(BOOL)allow forHost:(NSString *)host;
 @end
 
+#if USE(APPKIT)
 @interface NSSound (Details)
 + (void)_setAlertType:(NSUInteger)alertType;
 @end
+#endif
 
 static void runTest(const string& testPathOrURL);
 
@@ -843,6 +845,12 @@ static void prepareConsistentTestingEnvironment()
     allocateGlobalControllers();
     
     makeLargeMallocFailSilently();
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+    static id assertion = [[[NSProcessInfo processInfo] beginSuspensionOfSystemBehaviors:NSSystemBehaviorCommonBehaviors
+        reason:@"DumpRenderTree should not be subject to process suppression"] retain];
+    ASSERT_UNUSED(assertion, assertion);
+#endif
 }
 
 void dumpRenderTree(int argc, const char *argv[])
@@ -854,7 +862,9 @@ void dumpRenderTree(int argc, const char *argv[])
     if (forceComplexText)
         [WebView _setAlwaysUsesComplexTextCodePath:YES];
 
+#if USE(APPKIT)
     [NSSound _setAlertType:0];
+#endif
 
     WebView *webView = createWebViewAndOffscreenWindow();
     mainFrame = [webView mainFrame];

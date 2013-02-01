@@ -982,6 +982,7 @@ void Editor::cut()
         return;
     }
     RefPtr<Range> selection = selectedRange();
+    willWriteSelectionToPasteboard(selection);
     if (shouldDeleteRange(selection.get())) {
         updateMarkersForWordsAffectedByEditing(true);
         if (enclosingTextFormControl(m_frame->selection()->start())) {
@@ -1003,6 +1004,7 @@ void Editor::copy()
         return;
     }
 
+    willWriteSelectionToPasteboard(selectedRange());
     if (enclosingTextFormControl(m_frame->selection()->start())) {
         Pasteboard::generalPasteboard()->writePlainText(selectedText(),
             canSmartCopyOrDelete() ? Pasteboard::CanSmartReplace : Pasteboard::CannotSmartReplace);
@@ -1275,6 +1277,12 @@ void Editor::didEndEditing()
         client()->didEndEditing();
 }
 
+void Editor::willWriteSelectionToPasteboard(PassRefPtr<Range> range)
+{
+    if (client())
+        client()->willWriteSelectionToPasteboard(range.get());
+}
+
 void Editor::didWriteSelectionToPasteboard()
 {
     if (client())
@@ -1333,6 +1341,17 @@ void Editor::cancelComposition()
     if (!m_compositionNode)
         return;
     setComposition(emptyString(), CancelComposition);
+}
+
+bool Editor::cancelCompositionIfSelectionIsInvalid()
+{
+    unsigned start;
+    unsigned end;
+    if (!hasComposition() || ignoreCompositionSelectionChange() || getCompositionSelection(start, end))
+        return false;
+
+    cancelComposition();
+    return true;
 }
 
 void Editor::confirmComposition(const String& text)
@@ -1776,7 +1795,14 @@ Vector<String> Editor::guessesForMisspelledWord(const String& word) const
 Vector<String> Editor::guessesForMisspelledOrUngrammatical(bool& misspelled, bool& ungrammatical)
 {
     if (unifiedTextCheckerEnabled()) {
-        RefPtr<Range> range = frame()->selection()->toNormalizedRange();
+        RefPtr<Range> range;
+        FrameSelection* frameSelection = frame()->selection();
+        if (frameSelection->isCaret() && behavior().shouldAllowSpellingSuggestionsWithoutSelection()) {
+            VisibleSelection wordSelection = VisibleSelection(frameSelection->base());
+            wordSelection.expandUsingGranularity(WordGranularity);
+            range = wordSelection.toNormalizedRange();
+        } else
+            range = frameSelection->toNormalizedRange();
         if (!range)
             return Vector<String>();
         return TextCheckingHelper(client(), range).guessesForMisspelledOrUngrammaticalRange(isGrammarCheckingEnabled(), misspelled, ungrammatical);
@@ -2709,9 +2735,9 @@ PassRefPtr<Range> Editor::rangeOfString(const String& target, Range* referenceRa
     if (resultRange->collapsed() && shadowTreeRoot) {
         searchRange = rangeOfContents(m_frame->document());
         if (forward)
-            searchRange->setStartAfter(shadowTreeRoot->deprecatedShadowAncestorNode());
+            searchRange->setStartAfter(shadowTreeRoot->shadowHost());
         else
-            searchRange->setEndBefore(shadowTreeRoot->deprecatedShadowAncestorNode());
+            searchRange->setEndBefore(shadowTreeRoot->shadowHost());
 
         resultRange = findPlainText(searchRange.get(), target, options);
     }
@@ -2768,7 +2794,7 @@ unsigned Editor::countMatchesForText(const String& target, Range* range, FindOpt
             if (!resultRange->startContainer()->isInShadowTree())
                 break;
 
-            searchRange->setStartAfter(resultRange->startContainer()->deprecatedShadowAncestorNode(), exception);
+            searchRange->setStartAfter(resultRange->startContainer()->shadowHost(), exception);
             searchRange->setEnd(originalEndContainer, originalEndOffset, exception);
             continue;
         }

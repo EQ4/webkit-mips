@@ -24,8 +24,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
 
-#if ENABLE(CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED)
-
 #ifndef TransitionEvent_h
 #define TransitionEvent_h
 
@@ -38,6 +36,7 @@ struct TransitionEventInit : public EventInit {
 
     String propertyName;
     double elapsedTime;
+    String pseudoElement;
 };
 
 class TransitionEvent : public Event {
@@ -46,9 +45,9 @@ public:
     {
         return adoptRef(new TransitionEvent);
     }
-    static PassRefPtr<TransitionEvent> create(const AtomicString& type, const String& propertyName, double elapsedTime)
+    static PassRefPtr<TransitionEvent> create(const AtomicString& type, const String& propertyName, double elapsedTime, const String& pseudoElement)
     {
-        return adoptRef(new TransitionEvent(type, propertyName, elapsedTime));
+        return adoptRef(new TransitionEvent(type, propertyName, elapsedTime, pseudoElement));
     }
     static PassRefPtr<TransitionEvent> create(const AtomicString& type, const TransitionEventInit& initializer)
     {
@@ -59,20 +58,21 @@ public:
 
     const String& propertyName() const;
     double elapsedTime() const;
+    const String& pseudoElement() const;
 
     virtual const AtomicString& interfaceName() const;
 
 private:
     TransitionEvent();
-    TransitionEvent(const AtomicString& type, const String& propertyName, double elapsedTime);
+    TransitionEvent(const AtomicString& type, const String& propertyName, double elapsedTime, const String& pseudoElement);
     TransitionEvent(const AtomicString& type, const TransitionEventInit& initializer);
 
     String m_propertyName;
     double m_elapsedTime;
+    String m_pseudoElement;
 };
 
 } // namespace WebCore
 
 #endif // TransitionEvent_h
 
-#endif // ENABLE(CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED)

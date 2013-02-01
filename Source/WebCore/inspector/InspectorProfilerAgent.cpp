@@ -432,12 +432,12 @@ private:
 
 };
 
-void InspectorProfilerAgent::takeHeapSnapshot(ErrorString*)
+void InspectorProfilerAgent::takeHeapSnapshot(ErrorString*, const bool* reportProgress)
 {
     String title = makeString(UserInitiatedProfileName, '.', String::number(m_nextUserInitiatedHeapSnapshotNumber));
     ++m_nextUserInitiatedHeapSnapshotNumber;
 
-    HeapSnapshotProgress progress(m_frontend);
+    HeapSnapshotProgress progress(reportProgress && *reportProgress ? m_frontend : 0);
     RefPtr<ScriptHeapSnapshot> snapshot = ScriptProfiler::takeHeapSnapshot(title, &progress);
     if (snapshot) {
         m_snapshots.add(snapshot->uid(), snapshot);
@@ -495,12 +495,12 @@ void InspectorProfilerAgent::reportMemoryUsage(MemoryObjectInfo* memoryObjectInf
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::InspectorProfilerAgent);
     InspectorBaseAgent<InspectorProfilerAgent>::reportMemoryUsage(memoryObjectInfo);
-    info.addMember(m_consoleAgent);
-    info.addMember(m_injectedScriptManager);
+    info.addMember(m_consoleAgent, "consoleAgent");
+    info.addMember(m_injectedScriptManager, "injectedScriptManager");
     info.addWeakPointer(m_frontend);
-    info.addMember(m_profiles);
-    info.addMember(m_snapshots);
-    info.addMember(m_profileNameIdleTimeMap);
+    info.addMember(m_profiles, "profiles");
+    info.addMember(m_snapshots, "snapshots");
+    info.addMember(m_profileNameIdleTimeMap, "profileNameIdleTimeMap");
 }
 
 void InspectorProfilerAgent::willProcessTask()

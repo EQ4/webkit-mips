@@ -645,6 +645,11 @@ bool WebFrameImpl::hasVisibleContent() const
     return frame()->view()->visibleWidth() > 0 && frame()->view()->visibleHeight() > 0;
 }
 
+WebRect WebFrameImpl::visibleContentRect() const
+{
+    return frame()->view()->visibleContentRect();
+}
+
 bool WebFrameImpl::hasHorizontalScrollbar() const
 {
     return frame() && frame()->view() && frame()->view()->horizontalScrollbar();
@@ -836,6 +841,9 @@ void WebFrameImpl::addMessageToConsole(const WebConsoleMessage& message)
         break;
     case WebConsoleMessage::LevelError:
         webCoreMessageLevel = ErrorMessageLevel;
+        break;
+    case WebConsoleMessage::LevelDebug:
+        webCoreMessageLevel = DebugMessageLevel;
         break;
     default:
         ASSERT_NOT_REACHED();
@@ -1375,8 +1383,14 @@ bool WebFrameImpl::selectWordAroundCaret()
 
 void WebFrameImpl::selectRange(const WebPoint& base, const WebPoint& extent)
 {
-    VisiblePosition basePosition = visiblePositionForWindowPoint(base);
-    VisiblePosition extentPosition = visiblePositionForWindowPoint(extent);
+    IntPoint unscaledBase = base;
+    IntPoint unscaledExtent = extent;
+    if (frame()->page()->settings()->applyPageScaleFactorInCompositor()) {
+        unscaledExtent.scale(1 / view()->pageScaleFactor(), 1 / view()->pageScaleFactor());
+        unscaledBase.scale(1 / view()->pageScaleFactor(), 1 / view()->pageScaleFactor());
+    }
+    VisiblePosition basePosition = visiblePositionForWindowPoint(unscaledBase);
+    VisiblePosition extentPosition = visiblePositionForWindowPoint(unscaledExtent);
     VisibleSelection newSelection = VisibleSelection(basePosition, extentPosition);
     if (frame()->selection()->shouldChangeSelection(newSelection))
         frame()->selection()->setSelection(newSelection, CharacterGranularity);
@@ -1390,8 +1404,12 @@ void WebFrameImpl::selectRange(const WebRange& webRange)
 
 void WebFrameImpl::moveCaretSelectionTowardsWindowPoint(const WebPoint& point)
 {
+    IntPoint unscaledPoint(point);
+    if (frame()->page()->settings()->applyPageScaleFactorInCompositor())
+        unscaledPoint.scale(1 / view()->pageScaleFactor(), 1 / view()->pageScaleFactor());
+
     Element* editable = frame()->selection()->rootEditableElement();
-    IntPoint contentsPoint = frame()->view()->windowToContents(IntPoint(point));
+    IntPoint contentsPoint = frame()->view()->windowToContents(unscaledPoint);
     LayoutPoint localPoint(editable->convertFromPage(contentsPoint));
     VisiblePosition position = editable->renderer()->positionForPoint(localPoint);
     if (frame()->selection()->shouldChangeSelection(position))

@@ -942,9 +942,6 @@
     <ClCompile Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMouseEvent.cpp">
       <Filter>DerivedSources</Filter>
     </ClCompile>
-    <ClCompile Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationCallback.cpp">
-      <Filter>DerivedSources</Filter>
-    </ClCompile>
     <ClCompile Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationEvent.cpp">
       <Filter>DerivedSources</Filter>
     </ClCompile>
@@ -1827,9 +1824,6 @@
     <ClCompile Include="..\Modules\notifications\WorkerContextNotifications.cpp">
       <Filter>Modules\notifications</Filter>
     </ClCompile>
-    <ClCompile Include="..\Modules\webdatabase\AbstractDatabase.cpp">
-      <Filter>Modules\webdatabase</Filter>
-    </ClCompile>
     <ClCompile Include="..\Modules\webdatabase\ChangeVersionWrapper.cpp">
       <Filter>Modules\webdatabase</Filter>
     </ClCompile>
@@ -1839,10 +1833,16 @@
     <ClCompile Include="..\Modules\webdatabase\DatabaseAuthorizer.cpp">
       <Filter>Modules\webdatabase</Filter>
     </ClCompile>
+    <ClCompile Include="..\Modules\webdatabase\DatabaseBackend.cpp">
+      <Filter>Modules\webdatabase</Filter>
+    </ClCompile>
     <ClCompile Include="..\Modules\webdatabase\DatabaseContext.cpp">
       <Filter>Modules\webdatabase</Filter>
     </ClCompile>
     <ClCompile Include="..\Modules\webdatabase\DatabaseManager.cpp">
+      <Filter>Modules\webdatabase</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Modules\webdatabase\DatabaseServer.cpp">
       <Filter>Modules\webdatabase</Filter>
     </ClCompile>
     <ClCompile Include="..\Modules\webdatabase\DatabaseSync.cpp">
@@ -1855,9 +1855,6 @@
       <Filter>Modules\webdatabase</Filter>
     </ClCompile>
     <ClCompile Include="..\Modules\webdatabase\DatabaseTracker.cpp">
-      <Filter>Modules\webdatabase</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Modules\webdatabase\DBBackendServer.cpp">
       <Filter>Modules\webdatabase</Filter>
     </ClCompile>
     <ClCompile Include="..\Modules\webdatabase\DOMWindowWebDatabase.cpp">
@@ -5628,6 +5625,9 @@
     <ClCompile Include="..\html\WeekInputType.cpp">
       <Filter>html</Filter>
     </ClCompile>
+    <ClCompile Include="..\html\parser\BackgroundHTMLInputStream.cpp">
+      <Filter>html\parser</Filter>
+    </ClCompile>
     <ClCompile Include="..\html\parser\BackgroundHTMLParser.cpp">
       <Filter>html\parser</Filter>
     </ClCompile>
@@ -5695,6 +5695,9 @@
       <Filter>html\parser</Filter>
     </ClCompile>
     <ClCompile Include="..\html\parser\XSSAuditor.cpp">
+      <Filter>html\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="..\html\parser\XSSAuditorDelegate.cpp">
       <Filter>html\parser</Filter>
     </ClCompile>
     <ClCompile Include="..\html\shadow\ContentDistributor.cpp">
@@ -6024,7 +6027,7 @@
     <ClCompile Include="..\bindings\js\JSMicroDataItemValueCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
-    <ClCompile Include="..\bindings\js\JSMutationCallbackCustom.cpp">
+    <ClCompile Include="..\bindings\js\JSMutationCallback.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
     <ClCompile Include="..\bindings\js\JSMutationObserverCustom.cpp">
@@ -7448,9 +7451,6 @@
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMouseEvent.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
-    <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationCallback.h">
-      <Filter>DerivedSources</Filter>
-    </ClInclude>
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationEvent.h">
       <Filter>DerivedSources</Filter>
     </ClInclude>
@@ -8432,9 +8432,6 @@
     <ClInclude Include="..\Modules\notifications\WorkerContextNotifications.h">
       <Filter>Modules\notifications</Filter>
     </ClInclude>
-    <ClInclude Include="..\Modules\webdatabase\AbstractDatabase.h">
-      <Filter>Modules\webdatabase</Filter>
-    </ClInclude>
     <ClInclude Include="..\Modules\webdatabase\AbstractDatabaseServer.h">
       <Filter>Modules\webdatabase</Filter>
     </ClInclude>
@@ -8447,13 +8444,22 @@
     <ClInclude Include="..\Modules\webdatabase\DatabaseAuthorizer.h">
       <Filter>Modules\webdatabase</Filter>
     </ClInclude>
+    <ClInclude Include="..\Modules\webdatabase\DatabaseBackend.h">
+      <Filter>Modules\webdatabase</Filter>
+    </ClInclude>
     <ClInclude Include="..\Modules\webdatabase\DatabaseCallback.h">
       <Filter>Modules\webdatabase</Filter>
     </ClInclude>
     <ClInclude Include="..\Modules\webdatabase\DatabaseContext.h">
       <Filter>Modules\webdatabase</Filter>
     </ClInclude>
+    <ClInclude Include="..\Modules\webdatabase\DatabaseError.h">
+      <Filter>Modules\webdatabase</Filter>
+    </ClInclude>
     <ClInclude Include="..\Modules\webdatabase\DatabaseManager.h">
+      <Filter>Modules\webdatabase</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Modules\webdatabase\DatabaseServer.h">
       <Filter>Modules\webdatabase</Filter>
     </ClInclude>
     <ClInclude Include="..\Modules\webdatabase\DatabaseSync.h">
@@ -8466,9 +8472,6 @@
       <Filter>Modules\webdatabase</Filter>
     </ClInclude>
     <ClInclude Include="..\Modules\webdatabase\DatabaseTracker.h">
-      <Filter>Modules\webdatabase</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Modules\webdatabase\DBBackendServer.h">
       <Filter>Modules\webdatabase</Filter>
     </ClInclude>
     <ClInclude Include="..\Modules\webdatabase\DOMWindowWebDatabase.h">
@@ -12584,6 +12587,9 @@
     <ClInclude Include="..\html\parser\XSSAuditor.h">
       <Filter>html\parser</Filter>
     </ClInclude>
+    <ClInclude Include="..\html\parser\XSSAuditorDelegate.h">
+      <Filter>html\parser</Filter>
+    </ClInclude>
     <ClInclude Include="..\html\shadow\ContentDistributor.h">
       <Filter>html\shadow</Filter>
     </ClInclude>
@@ -12774,6 +12780,9 @@
       <Filter>bindings\js</Filter>
     </ClInclude>
     <ClInclude Include="..\bindings\js\JSMessagePortCustom.h">
+      <Filter>bindings\js</Filter>
+    </ClInclude>
+    <ClInclude Include="..\bindings\js\JSMutationCallback.h">
       <Filter>bindings\js</Filter>
     </ClInclude>
     <ClInclude Include="..\bindings\js\JSNodeCustom.h">
@@ -13876,9 +13885,6 @@
       <Filter>ForwardingHeaders\masm</Filter>
     </ClInclude>
     <ClInclude Include="..\ForwardingHeaders\heap\AllocationSpace.h">
-      <Filter>ForwardingHeaders\heap</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ForwardingHeaders\heap\CardSet.h">
       <Filter>ForwardingHeaders\heap</Filter>
     </ClInclude>
     <ClInclude Include="..\ForwardingHeaders\heap\Heap.h">

@@ -2022,7 +2022,7 @@ void FrameView::visibleContentsResized()
     if (!frame()->view())
         return;
 
-    if (needsLayout())
+    if (!useFixedLayout() && needsLayout())
         layout();
 
 #if USE(ACCELERATED_COMPOSITING)
@@ -3815,8 +3815,12 @@ void FrameView::removeChild(Widget* widget)
 
 bool FrameView::wheelEvent(const PlatformWheelEvent& wheelEvent)
 {
+    // Note that to allow for rubber-band over-scroll behavior, even non-scrollable views
+    // should handle wheel events.
+#if !ENABLE(RUBBER_BANDING)
     if (!isScrollable())
         return false;
+#endif
 
     if (delegatesScrolling()) {
         IntSize offset = scrollOffset();

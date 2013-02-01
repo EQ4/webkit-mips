@@ -634,7 +634,7 @@ void PluginView::storageBlockingStateChanged()
     if (!m_isInitialized || !m_plugin)
         return;
 
-    bool storageBlockingPolicy = !frame()->document()->securityOrigin()->canAccessPluginStorage(frame()->tree()->top()->document()->securityOrigin());
+    bool storageBlockingPolicy = !frame()->document()->securityOrigin()->canAccessPluginStorage(frame()->document()->topOrigin());
 
     m_plugin->storageBlockingStateChanged(storageBlockingPolicy);
 }
@@ -885,6 +885,14 @@ bool PluginView::getResourceData(const unsigned char*& bytes, unsigned& length) 
         return false;
 
     return m_plugin->getResourceData(bytes, length);
+}
+
+bool PluginView::performDictionaryLookupAtLocation(const WebCore::FloatPoint& point)
+{
+    if (!m_isInitialized || !m_plugin)
+        return false;
+
+    return m_plugin->performDictionaryLookupAtLocation(point);
 }
 
 void PluginView::notifyWidget(WidgetNotification notification)
@@ -1432,7 +1440,7 @@ bool PluginView::isPrivateBrowsingEnabled()
     if (!frame())
         return true;
 
-    if (!frame()->document()->securityOrigin()->canAccessPluginStorage(frame()->tree()->top()->document()->securityOrigin()))
+    if (!frame()->document()->securityOrigin()->canAccessPluginStorage(frame()->document()->topOrigin()))
         return true;
 
     Settings* settings = frame()->settings();

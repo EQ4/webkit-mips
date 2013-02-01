@@ -1,3 +1,241 @@
+2013-01-18  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Web Inspector: Native Memory Instrumentation: provide edge names and class names for WTF containers and strings
+        https://bugs.webkit.org/show_bug.cgi?id=107303
+
+        Reviewed by Yury Semikhatsky.
+
+        I'd like to use ValueType[] as className for the container data members
+        because class names of template parameters already present in the container class names.
+
+        * wtf/MemoryInstrumentationArrayBufferView.h:
+        (WTF::reportMemoryUsage):
+        * wtf/MemoryInstrumentationHashCountedSet.h:
+        (WTF::reportMemoryUsage):
+        * wtf/MemoryInstrumentationHashMap.h:
+        (WTF::reportMemoryUsage):
+        * wtf/MemoryInstrumentationHashSet.h:
+        (WTF::reportMemoryUsage):
+        * wtf/MemoryInstrumentationListHashSet.h:
+        (WTF::reportMemoryUsage):
+        * wtf/MemoryInstrumentationSequence.h:
+        * wtf/MemoryInstrumentationString.h:
+        (WTF::reportMemoryUsage):
+        * wtf/MemoryInstrumentationVector.h:
+        (WTF::reportMemoryUsage):
+
+2013-02-01  Geoffrey Garen  <ggaren@apple.com>
+
+        Added TriState to WTF and started using it in one place
+        https://bugs.webkit.org/show_bug.cgi?id=108628
+
+        Reviewed by Beth Dakin.
+
+        Useful for expressing "maybe" conditions in a boolean context.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/TriState.h: Added.
+        (WTF):
+
+2013-02-01  Patrick Gansterer  <paroga@webkit.org>
+
+        Build fix for WinCE after r137709
+        https://bugs.webkit.org/show_bug.cgi?id=105767
+
+        Do not pass functions as const references to
+        templated arguments to make the compiler happy.
+
+        * wtf/StdLibExtras.h:
+        (WTF::binarySearch):
+        (WTF::tryBinarySearch):
+        (WTF::approximateBinarySearch):
+
+2013-01-31  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Web Inspector: Native Memory Instrumentation: replace nodeName argument with className
+        https://bugs.webkit.org/show_bug.cgi?id=107278
+
+        Reviewed by Yury Semikhatsky.
+
+        I replaced nodeName with className because we newer report node name for private and raw buffers
+        but need to report their class names.
+
+        * wtf/MemoryInstrumentation.cpp:
+        (WTF::MemoryInstrumentation::reportLinkToBuffer):
+        (WTF::MemoryClassInfo::addRawBuffer):
+        (WTF::MemoryClassInfo::addPrivateBuffer):
+        * wtf/MemoryInstrumentation.h:
+        (WTF::MemoryInstrumentation::addRawBuffer):
+        (MemoryClassInfo):
+
+2013-01-31  Jessie Berlin  <jberlin@apple.com>
+
+        Rolling out r141407 because it is causing crashes under
+        WTF::TCMalloc_Central_FreeList::FetchFromSpans() in Release builds.
+
+        * wtf/Deque.h:
+        (WTF::::expandCapacity):
+        * wtf/FastMalloc.cpp:
+        * wtf/FastMalloc.h:
+        (WTF):
+        * wtf/Vector.h:
+        (WTF::VectorBufferBase::allocateBuffer):
+        (WTF::VectorBufferBase::tryAllocateBuffer):
+        (WTF::VectorBufferBase::reallocateBuffer):
+
+2013-01-31  Mark Lam  <mark.lam@apple.com>
+
+        Abstraction for hiding enum class.
+        https://bugs.webkit.org/show_bug.cgi?id=108533
+
+        Reviewed by Anders Carlsson.
+
+        * wtf/Compiler.h:
+        * wtf/EnumClass.h: Copied from Source/WTF/wtf/TypeSafeEnum.h.
+        (WTF::EnumClass::EnumClass):
+        (WTF::EnumClass::operator==):
+        (WTF::EnumClass::operator!=):
+        (WTF::EnumClass::operator<):
+        (WTF::EnumClass::operator<=):
+        (WTF::EnumClass::operator>):
+        (WTF::EnumClass::operator>=):
+        * wtf/TypeSafeEnum.h: Removed.
+
+2013-01-31  Andreas Kling  <akling@apple.com>
+
+        Vector should consult allocator about ideal size when choosing capacity.
+        <http://webkit.org/b/108410>
+        <rdar://problem/13124002>
+
+        Reviewed by Benjamin Poulain.
+
+        Added WTF::fastMallocGoodSize(), a workalike/wrapper for OS X's malloc_good_size().
+        It returns the actual size of the block that will get allocated for a given byte size.
+
+        Vector's internal buffer now checks with the allocator if the resulting allocation
+        could actually house more objects and updates its capacity to make use of the space.
+
+        * wtf/Deque.h:
+        (WTF::::expandCapacity):
+        * wtf/FastMalloc.cpp:
+        (WTF::fastMallocGoodSize):
+        * wtf/FastMalloc.h:
+        * wtf/Vector.h:
+        (WTF::VectorBufferBase::allocateBuffer):
+        (WTF::VectorBufferBase::tryAllocateBuffer):
+        (WTF::VectorBufferBase::reallocateBuffer):
+
+2013-01-30  Christophe Dumez  <christophe.dumez@intel.com>
+
+        Add a StringTypeAdapter for ASCIILiteral
+        https://bugs.webkit.org/show_bug.cgi?id=108338
+
+        Reviewed by Benjamin Poulain.
+
+        Add StringTypeAdapter for ASCIILiteral type so that concatenation of an
+        ASCIILiteral and a String using + operator is efficiently handled.
+
+        * wtf/text/StringConcatenate.h:
+        * wtf/text/StringOperators.h:
+        (WTF::operator+): Inline some of the operator+ functions that were not
+        yet.
+        (WTF):
+
+2013-01-30  David Kilzer  <ddkilzer@apple.com>
+
+        Upstream iOS build file changes for WTF
+        <http://webkit.org/b/108221>
+
+        Reviewed by Mark Rowe.
+
+        * Configurations/Base.xcconfig:
+        - Import iOS.xcconfig.
+        - Remove VALID_ARCHS.  Modern Xcodes define these correctly.
+        - Make HEADER_SEARCH_PATHS work with iOS Simulator builds.
+        - Add SUPPORTED_PLATFORMS so both Mac and iOS SDKs appear in
+          schemes.
+        - Define INSTALL_PATH when building for macosx SDK.
+        * Configurations/CopyWTFHeaders.xcconfig:
+        - Make PRIVATE_HEADERS_FOLDER_PATH work with iOS Simulator
+          builds.
+        * Configurations/DebugRelease.xcconfig:
+        - Simplify ARCHS.  This works correctly on 32-bit-only SDKs.
+        * Configurations/WTF.xcconfig:
+        - Fix installation directory for iOS Simulator builds by
+          defining INSTALL_PATH_ACTUAL.
+        * Configurations/iOS.xcconfig: Add.
+        * WTF.xcodeproj/project.pbxproj:
+        - Add iOS.xcconfig to the project.
+
+2013-01-29  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Structure::m_outOfLineCapacity is unnecessary
+        https://bugs.webkit.org/show_bug.cgi?id=108206
+
+        Reviewed by Geoffrey Garen.
+
+        We're adding a new function that gives us the ability to round a value up to the next power of a certain base.
+
+        * wtf/MathExtras.h:
+        (WTF::roundUpToPowerOf):
+
+2013-01-30  Zeno Albisser  <zeno@webkit.org>
+
+        [Qt] Fix Qt/Mac build after r141024 and r141037
+        https://bugs.webkit.org/show_bug.cgi?id=108318
+
+        Reviewed by Kentaro Hara.
+
+        * wtf/Functional.h:
+            Make sure Block.h is included and its functionality
+            is enabled for Qt on Mac.
+
+2013-01-30  Simon Hausmann  <simon.hausmann@digia.com>
+
+        [Qt] Remove QT4_UNICODE related code paths
+        https://bugs.webkit.org/show_bug.cgi?id=108316
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Get rid of QT4_UNICODE and any related code paths. The Qt port
+        requires Qt5 and ICU these days.
+
+        * WTF.gypi:
+        * WTF.pro:
+        * wtf/unicode/Unicode.h:
+        * wtf/unicode/qt4/UnicodeQt4.h: Removed.
+
+2013-01-29  Mark Lam  <mark.lam@apple.com>
+
+        Introducing WTF::TypeSafeEnum and DatabaseError.
+        https://bugs.webkit.org/show_bug.cgi?id=108279.
+
+        Reviewed by Geoffrey Garen.
+
+        * WTF.xcodeproj/project.pbxproj:
+        * wtf/TypeSafeEnum.h: Added.
+        (WTF):
+        (TypeSafeEnum):
+        (WTF::TypeSafeEnum::TypeSafeEnum):
+        (WTF::TypeSafeEnum::value):
+        (WTF::TypeSafeEnum::operator==):
+        (WTF::TypeSafeEnum::operator!=):
+        (WTF::TypeSafeEnum::operator<):
+        (WTF::TypeSafeEnum::operator<=):
+        (WTF::TypeSafeEnum::operator>):
+        (WTF::TypeSafeEnum::operator>=):
+
+2013-01-29  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r140983.
+        http://trac.webkit.org/changeset/140983
+        https://bugs.webkit.org/show_bug.cgi?id=108277
+
+        Unfortunately, this API has one last client (Requested by
+        abarth on #webkit).
+
+        * wtf/Platform.h:
+
 2013-01-28  Benjamin Poulain  <benjamin@webkit.org>
 
         String constructed from Literals should be non-empty

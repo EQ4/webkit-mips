@@ -480,6 +480,14 @@
                     { "name": "data", "type": "string", "description": "Base64-encoded image data (PNG)." }
                 ],
                 "hidden": true
+            },
+            {
+                "name": "handleJavaScriptDialog",
+                "description": "Accepts or dismisses a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload).",
+                "parameters": [
+                    { "name": "accept", "type": "boolean", "description": "Whether to accept or dismiss the dialog." }
+                ],
+                "hidden": true
             }
         ],
         "events": [
@@ -542,6 +550,19 @@
                 "parameters": [
                     { "name": "frameId", "$ref": "Network.FrameId", "description": "Id of the frame that has cleared its scheduled navigation." }
                 ],
+                "hidden": true
+            },
+            {
+                "name": "javascriptDialogOpening",
+                "description": "Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) is about to open.",
+                "parameters": [
+                    { "name": "message", "type": "string", "description": "Message that will be displayed by the dialog." }
+                ],
+                "hidden": true
+            },
+            {
+                "name": "javascriptDialogClosed",
+                "description": "Fired when a JavaScript initiated dialog (alert, confirm, prompt, or onbeforeunload) has been closed.",
                 "hidden": true
             }
         ]
@@ -3033,12 +3054,28 @@
                 ]
             },
             {
+                "id": "CPUProfileNode",
+                "type": "object",
+                "description": "CPU Profile node. Holds callsite information, execution statistics and child nodes.",
+                "properties": [
+                    { "name": "functionName", "type": "string", "description": "Function name." },
+                    { "name": "url", "type": "string", "description": "URL." },
+                    { "name": "lineNumber", "type": "integer", "description": "Line number." },
+                    { "name": "totalTime", "type": "number", "description": "Total execution time." },
+                    { "name": "selfTime", "type": "number", "description": "Self time." },
+                    { "name": "numberOfCalls", "type": "integer", "description": "Number of calls." },
+                    { "name": "visible", "type": "boolean", "description": "Visibility." },
+                    { "name": "callUID", "type": "number", "description": "Call UID." },
+                    { "name": "children", "type": "array", "items": { "$ref": "CPUProfileNode" }, "description": "Child nodes." }
+                ]
+            },
+            {
                 "id": "CPUProfile",
                 "type": "object",
                 "description": "Profile.",
                 "properties": [
-                    { "name": "head", "type": "object", "optional": true },
-                    { "name": "bottomUpHead", "type": "object", "optional": true },
+                    { "name": "head", "$ref": "CPUProfileNode", "optional": true },
+                    { "name": "bottomUpHead", "$ref": "CPUProfileNode", "optional": true },
                     { "name": "idleTime", "type": "number", "optional": true }
                 ]
             },
@@ -3111,7 +3148,10 @@
                 "name": "clearProfiles"
             },
             {
-                "name": "takeHeapSnapshot"
+                "name": "takeHeapSnapshot",
+                "parameters": [
+                    { "name": "reportProgress", "type": "boolean", "optional": true, "description": "If true 'reportHeapSnapshotProgress' events will be generated while snapshot is being taken." }
+                ]
             },
             {
                 "name": "collectGarbage"
@@ -3328,15 +3368,23 @@
             },
             {
                 "name": "captureFrame",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "optional": true, "description": "Identifier of the frame containing document whose canvases are to be captured. If omitted, main frame is assumed." }
+                ],
                 "returns": [
-                    { "name": "traceLogId", "$ref": "TraceLogId" }
-                ]
+                    { "name": "traceLogId", "$ref": "TraceLogId", "description": "Identifier of the trace log containing captured canvas calls." }
+                ],
+                "description": "Starts (or continues) a canvas frame capturing which will be stopped automatically after the next frame is prepared."
             },
             {
                 "name": "startCapturing",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "optional": true, "description": "Identifier of the frame containing document whose canvases are to be captured. If omitted, main frame is assumed." }
+                ],
                 "returns": [
-                    { "name": "traceLogId", "$ref": "TraceLogId" }
-                ]
+                    { "name": "traceLogId", "$ref": "TraceLogId", "description": "Identifier of the trace log containing captured canvas calls." }
+                ],
+                "description": "Starts (or continues) consecutive canvas frames capturing. The capturing is stopped by the corresponding stopCapturing command."
             },
             {
                 "name": "stopCapturing",
@@ -3385,7 +3433,23 @@
                 ]
             }
         ],
-        "events": []
+        "events": [
+            {
+                "name": "contextCreated",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "description": "Identifier of the frame containing a canvas with a context." }
+                ],
+                "description": "Fired when a canvas context has been created in the given frame. The context may not be instrumented (see hasUninstrumentedCanvases command)."
+            },
+            {
+                "name": "traceLogsRemoved",
+                "parameters": [
+                    { "name": "frameId", "$ref": "Network.FrameId", "optional": true, "description": "If given, trace logs from the given frame were removed." },
+                    { "name": "traceLogId", "$ref": "TraceLogId", "optional": true, "description": "If given, trace log with the given ID was removed." }
+                ],
+                "description": "Fired when a set of trace logs were removed from the backend. If no parameters are given, all trace logs were removed."
+            }
+        ]
     },
     {
         "domain": "Input",

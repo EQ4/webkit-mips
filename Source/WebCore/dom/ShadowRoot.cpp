@@ -28,31 +28,13 @@
 #include "ShadowRoot.h"
 
 #include "ContentDistributor.h"
-#include "DOMSelection.h"
-#include "DOMWindow.h"
-#include "Document.h"
-#include "DocumentFragment.h"
-#include "Element.h"
 #include "ElementShadow.h"
-#include "HTMLContentElement.h"
-#include "HTMLInputElement.h"
-#include "HTMLNames.h"
-#include "HTMLTextAreaElement.h"
 #include "HistogramSupport.h"
 #include "InsertionPoint.h"
-#include "NodeRareData.h"
 #include "RuntimeEnabledFeatures.h"
-#include "SVGNames.h"
 #include "StyleResolver.h"
 #include "Text.h"
 #include "markup.h"
-
-// FIXME: This shouldn't happen. https://bugs.webkit.org/show_bug.cgi?id=88834
-#define GuardOrphanShadowRoot(rejectStatement) \
-    if (!this->host()) {                       \
-        rejectStatement;                       \
-        return;                                \
-    }
 
 namespace WebCore {
 
@@ -62,6 +44,12 @@ struct SameSizeAsShadowRoot : public DocumentFragment, public TreeScope, public 
 };
 
 COMPILE_ASSERT(sizeof(ShadowRoot) == sizeof(SameSizeAsShadowRoot), shadowroot_should_stay_small);
+
+enum ShadowRootUsageOriginType {
+    ShadowRootUsageOriginWeb = 0,
+    ShadowRootUsageOriginNotWeb,
+    ShadowRootUsageOriginMax
+};
 
 ShadowRoot::ShadowRoot(Document* document, ShadowRootType type)
     : DocumentFragment(document, CreateShadowRoot)
@@ -76,6 +64,13 @@ ShadowRoot::ShadowRoot(Document* document, ShadowRootType type)
 {
     ASSERT(document);
     setTreeScope(this);
+
+#if PLATFORM(CHROMIUM)
+    if (type == ShadowRoot::AuthorShadowRoot) {
+        ShadowRootUsageOriginType usageType = document->url().protocolIsInHTTPFamily() ? ShadowRootUsageOriginWeb : ShadowRootUsageOriginNotWeb;
+        HistogramSupport::histogramEnumeration("WebCore.ShadowRoot.constructor", usageType, ShadowRootUsageOriginMax);
+    }
+#endif
 }
 
 ShadowRoot::~ShadowRoot()
@@ -94,71 +89,6 @@ ShadowRoot::~ShadowRoot()
         clearRareData();
 }
 
-static bool allowsAuthorShadowRoot(Element* element)
-{
-#if ENABLE(SHADOW_DOM)
-    if (RuntimeEnabledFeatures::authorShadowDOMForAnyElementEnabled())
-        return true;
-#endif
-    return element->areAuthorShadowsAllowed();
-}
-
-enum ShadowRootUsageOriginType {
-    ShadowRootUsageOriginWeb = 0,
-    ShadowRootUsageOriginNotWeb,
-    ShadowRootUsageOriginTypes
-};
-
-static inline ShadowRootUsageOriginType determineUsageType(Element* host)
-{
-    // Enables only on CHROMIUM since this cost won't worth paying for platforms which don't collect this metrics.
-#if PLATFORM(CHROMIUM)
-    if (!host)
-        return ShadowRootUsageOriginWeb;
-    return host->document()->url().string().startsWith("http") ? ShadowRootUsageOriginWeb : ShadowRootUsageOriginNotWeb;
-#else
-    UNUSED_PARAM(host);
-    return ShadowRootUsageOriginWeb;
-#endif
-}
-
-PassRefPtr<ShadowRoot> ShadowRoot::create(Element* element, ExceptionCode& ec)
-{
-    HistogramSupport::histogramEnumeration("WebCore.ShadowRoot.constructor", determineUsageType(element), ShadowRootUsageOriginTypes);
-    return create(element, AuthorShadowRoot, ec);
-}
-
-PassRefPtr<ShadowRoot> ShadowRoot::create(Element* element, ShadowRootType type, ExceptionCode& ec)
-{
-    if (!element) {
-        ec = HIERARCHY_REQUEST_ERR;
-        return 0;
-    }
-
-    // Since some elements recreates shadow root dynamically, multiple shadow subtrees won't work well in that element.
-    // Until they are fixed, we disable adding author shadow root for them.
-    if (type == AuthorShadowRoot && !allowsAuthorShadowRoot(element)) {
-        ec = HIERARCHY_REQUEST_ERR;
-        return 0;
-    }
-
-    RefPtr<ShadowRoot> shadowRoot = adoptRef(new ShadowRoot(element->document(), type));
-
-    ec = 0;
-    element->ensureShadow()->addShadowRoot(element, shadowRoot, type, ec);
-    if (ec)
-        return 0;
-    ASSERT(element == shadowRoot->host());
-    ASSERT(element->shadow());
-    return shadowRoot.release();
-}
-
-PassRefPtr<Node> ShadowRoot::cloneNode(bool)
-{
-    // ShadowRoot should not be arbitrarily cloned.
-    return 0;
-}
-
 PassRefPtr<Node> ShadowRoot::cloneNode(bool, ExceptionCode& ec)
 {
     ec = DATA_CLONE_ERR;
@@ -172,7 +102,10 @@ String ShadowRoot::innerHTML() const
 
 void ShadowRoot::setInnerHTML(const String& markup, ExceptionCode& ec)
 {
-    GuardOrphanShadowRoot(ec = INVALID_ACCESS_ERR);
+    if (isOrphan()) {
+        ec = INVALID_ACCESS_ERR;
+        return;
+    }
 
     if (RefPtr<DocumentFragment> fragment = createFragmentForInnerOuterHTML(markup, host(), AllowScriptingContent, ec))
         replaceChildrenWithFragment(this, fragment.release(), ec);
@@ -213,21 +146,10 @@ void ShadowRoot::recalcStyle(StyleChange change)
     clearChildNeedsStyleRecalc();
 }
 
-ElementShadow* ShadowRoot::owner() const
-{
-    if (host())
-        return host()->shadow();
-    return 0;
-}
-
-bool ShadowRoot::applyAuthorStyles() const
-{
-    return m_applyAuthorStyles;
-}
-
 void ShadowRoot::setApplyAuthorStyles(bool value)
 {
-    GuardOrphanShadowRoot({ });
+    if (isOrphan())
+        return;
 
     if (m_applyAuthorStyles != value) {
         m_applyAuthorStyles = value;
@@ -235,14 +157,10 @@ void ShadowRoot::setApplyAuthorStyles(bool value)
     }
 }
 
-bool ShadowRoot::resetStyleInheritance() const
-{
-    return m_resetStyleInheritance;
-}
-
 void ShadowRoot::setResetStyleInheritance(bool value)
 {
-    GuardOrphanShadowRoot({ });
+    if (isOrphan())
+        return;
 
     if (value != m_resetStyleInheritance) {
         m_resetStyleInheritance = value;
@@ -297,7 +215,8 @@ void ShadowRoot::removedFrom(ContainerNode* insertionPoint)
 
 void ShadowRoot::childrenChanged(bool changedByParser, Node* beforeChange, Node* afterChange, int childCountDelta)
 {
-    GuardOrphanShadowRoot({ });
+    if (isOrphan())
+        return;
 
     ContainerNode::childrenChanged(changedByParser, beforeChange, afterChange, childCountDelta);
     owner()->invalidateDistribution();
@@ -330,9 +249,9 @@ void ShadowRoot::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::DOM);
     DocumentFragment::reportMemoryUsage(memoryObjectInfo);
     TreeScope::reportMemoryUsage(memoryObjectInfo);
-    info.addMember(m_prev);
-    info.addMember(m_next);
-    info.addMember(m_scopeDistribution);
+    info.addMember(m_prev, "prev");
+    info.addMember(m_next, "next");
+    info.addMember(m_scopeDistribution, "scopeDistribution");
 }
 
 }

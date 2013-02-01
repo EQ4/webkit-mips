@@ -37,7 +37,6 @@
 #include "InjectedBundleBackForwardList.h"
 #include "InjectedBundleUserMessageCoders.h"
 #include "LayerTreeHost.h"
-#include "MessageID.h"
 #include "NetscapePlugin.h"
 #include "NotificationPermissionRequestManager.h"
 #include "PageOverlay.h"
@@ -147,11 +146,6 @@
 
 #if ENABLE(NETWORK_INFO)
 #include "WebNetworkInfoClient.h"
-#endif
-
-#if ENABLE(WEB_INTENTS)
-#include "IntentData.h"
-#include <WebCore/Intent.h>
 #endif
 
 #if ENABLE(VIBRATION)
@@ -507,9 +501,9 @@ PassRefPtr<Plugin> WebPage::createPlugin(WebFrame* frame, HTMLPlugInElement* plu
 {
     String pluginPath;
     uint32_t pluginLoadPolicy;
-    if (!WebProcess::shared().connection()->sendSync(
-            Messages::WebProcessProxy::GetPluginPath(parameters.mimeType, parameters.url.string()),
-            Messages::WebProcessProxy::GetPluginPath::Reply(pluginPath, pluginLoadPolicy), 0)) {
+    if (!sendSync(
+            Messages::WebPageProxy::GetPluginPath(parameters.mimeType, parameters.url.string()),
+            Messages::WebPageProxy::GetPluginPath::Reply(pluginPath, pluginLoadPolicy))) {
         return 0;
     }
 
@@ -1217,6 +1211,9 @@ void WebPage::scalePage(double scale, const IntPoint& origin)
     for (HashSet<PluginView*>::const_iterator it = m_pluginViews.begin(), end = m_pluginViews.end(); it != end; ++it)
         (*it)->pageScaleFactorDidChange();
 
+    if (m_drawingArea->layerTreeHost())
+        m_drawingArea->layerTreeHost()->deviceOrPageScaleFactorChanged();
+
     send(Messages::WebPageProxy::PageScaleFactorDidChange(scale));
 }
 
@@ -1247,6 +1244,9 @@ void WebPage::setDeviceScaleFactor(float scaleFactor)
         layoutIfNeeded();
         m_findController.deviceScaleFactorDidChange();
     }
+
+    if (m_drawingArea->layerTreeHost())
+        m_drawingArea->layerTreeHost()->deviceOrPageScaleFactorChanged();
 }
 
 float WebPage::deviceScaleFactor() const
@@ -1265,6 +1265,8 @@ void WebPage::setUseFixedLayout(bool fixed)
 #if USE(COORDINATED_GRAPHICS)
     m_page->settings()->setAcceleratedCompositingForFixedPositionEnabled(fixed);
     m_page->settings()->setFixedPositionCreatesStackingContext(fixed);
+    m_page->settings()->setApplyDeviceScaleFactorInCompositor(fixed);
+    m_page->settings()->setApplyPageScaleFactorInCompositor(fixed);
 #endif
 
 #if USE(TILED_BACKING_STORE) && ENABLE(SMOOTH_SCROLLING)
@@ -1766,7 +1768,7 @@ void WebPage::highlightPotentialActivation(const IntPoint& point, const IntSize&
 #endif
         // Find the node to highlight. This is not the same as the node responding the tap gesture, because many
         // pages has a global click handler and we do not want to highlight the body.
-        for (Node* node = adjustedNode; node; node = node->parentOrHostNode()) {
+        for (Node* node = adjustedNode; node; node = node->parentOrShadowHostNode()) {
             if (node->isDocumentNode() || node->isFrameOwnerElement())
                 break;
 
@@ -2245,23 +2247,6 @@ void WebPage::forceRepaint(uint64_t callbackID)
     forceRepaintWithoutCallback();
     send(Messages::WebPageProxy::VoidCallback(callbackID));
 }
-
-#if ENABLE(WEB_INTENTS)
-void WebPage::deliverIntentToFrame(uint64_t frameID, const IntentData& intentData)
-{
-    WebFrame* frame = WebProcess::shared().webFrame(frameID);
-    if (!frame)
-        return;
-
-    frame->deliverIntent(intentData);
-}
-
-void WebPage::deliverCoreIntentToFrame(uint64_t frameID, Intent* coreIntent)
-{
-    if (WebFrame* frame = WebProcess::shared().webFrame(frameID))
-        frame->deliverIntent(coreIntent);
-}
-#endif
 
 void WebPage::preferencesDidChange(const WebPreferencesStore& store)
 {
@@ -2977,43 +2962,43 @@ bool WebPage::windowAndWebPageAreFocused() const
     return m_page->focusController()->isFocused() && m_page->focusController()->isActive();
 }
 
-void WebPage::didReceiveMessage(CoreIPC::Connection* connection, CoreIPC::MessageID messageID, CoreIPC::MessageDecoder& decoder)
+void WebPage::didReceiveMessage(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder)
 {
-    if (messageID.is<CoreIPC::MessageClassDrawingArea>()) {
+    if (decoder.messageReceiverName() == Messages::DrawingArea::messageReceiverName()) {
         if (m_drawingArea)
-            m_drawingArea->didReceiveDrawingAreaMessage(connection, messageID, decoder);
+            m_drawingArea->didReceiveDrawingAreaMessage(connection, decoder);
         return;
     }
 
 #if USE(TILED_BACKING_STORE) && USE(ACCELERATED_COMPOSITING)
-    if (messageID.is<CoreIPC::MessageClassCoordinatedLayerTreeHost>()) {
+    if (decoder.messageReceiverName() == Messages::CoordinatedLayerTreeHost::messageReceiverName()) {
         if (m_drawingArea)
-            m_drawingArea->didReceiveCoordinatedLayerTreeHostMessage(connection, messageID, decoder);
+            m_drawingArea->didReceiveCoordinatedLayerTreeHostMessage(connection, decoder);
         return;
     }
 #endif
     
 #if ENABLE(INSPECTOR)
-    if (messageID.is<CoreIPC::MessageClassWebInspector>()) {
+    if (decoder.messageReceiverName() == Messages::WebInspector::messageReceiverName()) {
         if (WebInspector* inspector = this->inspector())
-            inspector->didReceiveWebInspectorMessage(connection, messageID, decoder);
+            inspector->didReceiveWebInspectorMessage(connection, decoder);
         return;
     }
 #endif
 
 #if ENABLE(FULLSCREEN_API)
-    if (messageID.is<CoreIPC::MessageClassWebFullScreenManager>()) {
-        fullScreenManager()->didReceiveMessage(connection, messageID, decoder);
+    if (decoder.messageReceiverName() == Messages::WebFullScreenManager::messageReceiverName()) {
+        fullScreenManager()->didReceiveMessage(connection, decoder);
         return;
     }
 #endif
 
-    didReceiveWebPageMessage(connection, messageID, decoder);
+    didReceiveWebPageMessage(connection, decoder);
 }
 
-void WebPage::didReceiveSyncMessage(CoreIPC::Connection* connection, CoreIPC::MessageID messageID, CoreIPC::MessageDecoder& decoder, OwnPtr<CoreIPC::MessageEncoder>& replyEncoder)
+void WebPage::didReceiveSyncMessage(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, OwnPtr<CoreIPC::MessageEncoder>& replyEncoder)
 {   
-    didReceiveSyncWebPageMessage(connection, messageID, decoder, replyEncoder);
+    didReceiveSyncWebPageMessage(connection, decoder, replyEncoder);
 }
     
 InjectedBundleBackForwardList* WebPage::backForwardList()
@@ -3681,13 +3666,13 @@ void WebPage::setScrollingPerformanceLoggingEnabled(bool enabled)
     frameView->setScrollingPerformanceLoggingEnabled(enabled);
 }
 
-static bool canPluginHandleResponse(const ResourceResponse& response)
+bool WebPage::canPluginHandleResponse(const ResourceResponse& response)
 {
 #if ENABLE(NETSCAPE_PLUGIN_API)
     String pluginPath;
     uint32_t pluginLoadPolicy;
     
-    if (!WebProcess::shared().connection()->sendSync(Messages::WebProcessProxy::GetPluginPath(response.mimeType(), response.url().string()), Messages::WebProcessProxy::GetPluginPath::Reply(pluginPath, pluginLoadPolicy), 0))
+    if (!sendSync(Messages::WebPageProxy::GetPluginPath(response.mimeType(), response.url().string()), Messages::WebPageProxy::GetPluginPath::Reply(pluginPath, pluginLoadPolicy)))
         return false;
 
     return pluginLoadPolicy != PluginModuleBlocked && !pluginPath.isEmpty();
@@ -3696,7 +3681,7 @@ static bool canPluginHandleResponse(const ResourceResponse& response)
 #endif
 }
 
-bool WebPage::shouldUseCustomRepresentationForResponse(const ResourceResponse& response) const
+bool WebPage::shouldUseCustomRepresentationForResponse(const ResourceResponse& response)
 {
     if (!m_mimeTypesWithCustomRepresentations.contains(response.mimeType()))
         return false;

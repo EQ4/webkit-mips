@@ -353,7 +353,7 @@ END
     }
 
     push(@headerContent, <<END);
-    static bool HasInstance(v8::Handle<v8::Value>);
+    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
     static ${nativeType}* toNative(v8::Handle<v8::Object> object)
@@ -792,7 +792,7 @@ sub GenerateDomainSafeFunctionGetter
 static v8::Handle<v8::Value> ${funcName}AttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     static v8::Persistent<v8::FunctionTemplate> privateTemplate = v8::Persistent<v8::FunctionTemplate>::New($newTemplateString);
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(${v8InterfaceName}::GetTemplate());
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(${v8InterfaceName}::GetTemplate(info.GetIsolate()));
     if (holder.IsEmpty()) {
         // can only reach here by 'object.__proto__.func', and it should passed
         // domain security check already
@@ -822,7 +822,7 @@ sub GenerateDomainSafeFunctionSetter
     push(@implContentDecls, <<END);
 static void ${interfaceName}DomainSafeFunctionSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(${v8InterfaceName}::GetTemplate());
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(${v8InterfaceName}::GetTemplate(info.GetIsolate()));
     if (holder.IsEmpty())
         return;
     ${interfaceName}* imp = ${v8InterfaceName}::toNative(holder);
@@ -916,7 +916,7 @@ END
         } else {
             # perform lookup first
             push(@implContentDecls, <<END);
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(${v8InterfaceName}::GetTemplate());
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(${v8InterfaceName}::GetTemplate(info.GetIsolate()));
     if (holder.IsEmpty())
         return v8Undefined();
 END
@@ -1159,6 +1159,7 @@ sub GenerateNormalAttrSetter
     my $v8InterfaceName = "V8$interfaceName";
     my $attrName = $attribute->signature->name;
     my $attrExt = $attribute->signature->extendedAttributes;
+    my $attrType = $attribute->signature->type;
 
     my $conditionalString = $codeGenerator->GenerateConditionalString($attribute->signature);
     push(@implContentDecls, "#if ${conditionalString}\n\n") if $conditionalString;
@@ -1174,7 +1175,7 @@ sub GenerateNormalAttrSetter
     if ($attribute->signature->extendedAttributes->{"StrictTypeChecking"}) {
         my $argType = $attribute->signature->type;
         if (IsWrapperType($argType)) {
-            push(@implContentDecls, "    if (!isUndefinedOrNull(value) && !V8${argType}::HasInstance(value)) {\n");
+            push(@implContentDecls, "    if (!isUndefinedOrNull(value) && !V8${argType}::HasInstance(value, info.GetIsolate())) {\n");
             push(@implContentDecls, "        throwTypeError(0, info.GetIsolate());\n");
             push(@implContentDecls, "        return;\n");
             push(@implContentDecls, "    }\n");
@@ -1203,7 +1204,6 @@ END
     ${interfaceName}* imp = ${v8InterfaceName}::toNative(info.Holder());
 END
     } else {
-        my $attrType = $attribute->signature->type;
         my $reflect = $attribute->signature->extendedAttributes->{"Reflect"};
         if ($reflect && $codeGenerator->InheritsInterface($interface, "Node") && $codeGenerator->IsStringType($attrType)) {
             # Generate super-compact call for regular attribute setter:
@@ -1243,6 +1243,21 @@ END
         } else {
             push(@implContentDecls, "    $nativeType v = $value;\n");
         }
+    }
+
+    if ($codeGenerator->IsEnumType($attrType)) {
+        # setter ignores invalid enumeration values
+        my @enumValues = $codeGenerator->ValidEnumValues($attrType);
+        my @validEqualities = ();
+        foreach my $enumValue (@enumValues) {
+            push(@validEqualities, "string == \"$enumValue\"");
+        }
+        my $enumValidationExpression = join(" || ", @validEqualities);
+        push(@implContentDecls, <<END);
+    String string = v;
+    if (!($enumValidationExpression))
+        return;
+END
     }
 
     my $result = "v";
@@ -1411,9 +1426,9 @@ sub GenerateParametersCheckExpression
             }
         } elsif (IsWrapperType($type)) {
             if ($parameter->isNullable) {
-                push(@andExpression, "(${value}->IsNull() || V8${type}::HasInstance($value))");
+                push(@andExpression, "(${value}->IsNull() || V8${type}::HasInstance($value, args.GetIsolate()))");
             } else {
-                push(@andExpression, "(V8${type}::HasInstance($value))");
+                push(@andExpression, "(V8${type}::HasInstance($value, args.GetIsolate()))");
             }
         }
 
@@ -1788,7 +1803,7 @@ sub GenerateParametersCheck
             if (IsWrapperType($argType)) {
                 $parameterCheckString .= "    Vector<$nativeElementType> $parameterName;\n";
                 $parameterCheckString .= "    for (int i = $paramIndex; i < args.Length(); ++i) {\n";
-                $parameterCheckString .= "        if (!V8${argType}::HasInstance(args[i]))\n";
+                $parameterCheckString .= "        if (!V8${argType}::HasInstance(args[i], args.GetIsolate()))\n";
                 $parameterCheckString .= "            return throwTypeError(0, args.GetIsolate());\n";
                 $parameterCheckString .= "        $parameterName.append(V8${argType}::toNative(v8::Handle<v8::Object>::Cast(args[i])));\n";
                 $parameterCheckString .= "    }\n";
@@ -1809,7 +1824,7 @@ sub GenerateParametersCheck
                 my $argValue = "args[$paramIndex]";
                 my $argType = $parameter->type;
                 if (IsWrapperType($argType)) {
-                    $parameterCheckString .= "    if (args.Length() > $paramIndex && !isUndefinedOrNull($argValue) && !V8${argType}::HasInstance($argValue))\n";
+                    $parameterCheckString .= "    if (args.Length() > $paramIndex && !isUndefinedOrNull($argValue) && !V8${argType}::HasInstance($argValue, args.GetIsolate()))\n";
                     $parameterCheckString .= "        return throwTypeError(0, args.GetIsolate());\n";
                 }
             }
@@ -2190,7 +2205,7 @@ v8::Persistent<v8::FunctionTemplate> ${v8InterfaceName}Constructor::GetTemplate(
     v8::Local<v8::ObjectTemplate> instance = result->InstanceTemplate();
     instance->SetInternalFieldCount(${v8InterfaceName}::internalFieldCount);
     result->SetClassName(v8::String::NewSymbol("${interfaceName}"));
-    result->Inherit(${v8InterfaceName}::GetTemplate());
+    result->Inherit(${v8InterfaceName}::GetTemplate(isolate));
 
     cachedTemplate = v8::Persistent<v8::FunctionTemplate>::New(result);
     return cachedTemplate;
@@ -2640,7 +2655,7 @@ sub GenerateImplementation
         my $parent = $_;
         AddToImplIncludes("V8${parent}.h");
         $parentClass = "V8" . $parent;
-        $parentClassTemplate = $parentClass . "::GetTemplate()";
+        $parentClassTemplate = $parentClass . "::GetTemplate(isolate)";
         last;
     }
 
@@ -3133,9 +3148,11 @@ v8::Persistent<v8::FunctionTemplate> ${v8InterfaceName}::GetTemplate(v8::Isolate
     return templ;
 }
 
-bool ${v8InterfaceName}::HasInstance(v8::Handle<v8::Value> value)
+bool ${v8InterfaceName}::HasInstance(v8::Handle<v8::Value> value, v8::Isolate* isolate)
 {
-    return GetRawTemplate()->HasInstance(value);
+    if (!isolate)
+        isolate = v8::Isolate::GetCurrent();
+    return GetRawTemplate(isolate)->HasInstance(value);
 }
 
 END
@@ -3862,8 +3879,8 @@ sub GetNativeType
     return "unsigned long long" if $type eq "unsigned long long";
     return "bool" if $type eq "boolean";
 
-    return "V8StringResource" if $type eq "DOMString" and $isParameter;
-    return "String" if $type eq "DOMString";
+    return "V8StringResource" if ($type eq "DOMString" or $codeGenerator->IsEnumType($type)) and $isParameter;
+    return "String" if $type eq "DOMString" or $codeGenerator->IsEnumType($type);
 
     return "Range::CompareHow" if $type eq "CompareHow";
     return "DOMTimeStamp" if $type eq "DOMTimeStamp";
@@ -3947,6 +3964,10 @@ sub JSValueToNative
     return "toDOMStringList($value, $getIsolate)" if $type eq "DOMStringList";
 
     if ($type eq "DOMString") {
+        return $value;
+    }
+
+    if ($codeGenerator->IsEnumType($type)) {
         return $value;
     }
 
@@ -4226,7 +4247,7 @@ sub NativeToJSValue
     return "v8::Number::New($value)" if $codeGenerator->IsPrimitiveType($type);
     return "$value.v8Value()" if $nativeType eq "ScriptValue";
 
-    if ($codeGenerator->IsStringType($type)) {
+    if ($codeGenerator->IsStringType($type) or $codeGenerator->IsEnumType($type)) {
         my $conv = $signature->extendedAttributes->{"TreatReturnedNullStringAs"};
         if (defined $conv) {
             return "v8StringOrNull($value, $getIsolate$returnHandleTypeArg)" if $conv eq "Null";
@@ -4353,7 +4374,7 @@ sub ConvertToV8StringResource
     my $suffix = shift;
 
     die "Wrong native type passed: $nativeType" unless $nativeType =~ /^V8StringResource/;
-    if ($signature->type eq "DOMString") {
+    if ($signature->type eq "DOMString" or $codeGenerator->IsEnumType($signature->type)) {
         my $macro = "V8TRYCATCH_FOR_V8STRINGRESOURCE";
         $macro .= "_$suffix" if $suffix;
         return "$macro($nativeType, $variableName, $value);"

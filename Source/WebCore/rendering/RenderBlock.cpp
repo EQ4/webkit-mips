@@ -2334,7 +2334,7 @@ void RenderBlock::updateBlockChildDirtyBitsBeforeLayout(bool relayoutChildren, R
 {
     // FIXME: Technically percentage height objects only need a relayout if their percentage isn't going to be turned into
     // an auto value. Add a method to determine this, so that we can avoid the relayout.
-    if (relayoutChildren || (child->hasRelativeLogicalHeight() && !isRenderView()))
+    if (relayoutChildren || (child->hasRelativeLogicalHeight() && !isRenderView()) || child->hasViewportPercentageLogicalHeight())
         child->setChildNeedsLayout(true, MarkOnlyThis);
 
     // If relayoutChildren is set and the child has percentage padding or an embedded content box, we also need to invalidate the childs pref widths.
@@ -7838,10 +7838,10 @@ void RenderBlock::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
 {
     MemoryClassInfo info(memoryObjectInfo, this, PlatformMemoryTypes::Rendering);
     RenderBox::reportMemoryUsage(memoryObjectInfo);
-    info.addMember(m_floatingObjects);
-    info.addMember(m_rareData);
-    info.addMember(m_children);
-    info.addMember(m_lineBoxes);
+    info.addMember(m_floatingObjects, "floatingObjects");
+    info.addMember(m_rareData, "rareData");
+    info.addMember(m_children, "children");
+    info.addMember(m_lineBoxes, "lineBoxes");
 }
 
 void RenderBlock::reportStaticMembersMemoryUsage(MemoryInstrumentation* memoryInstrumentation)

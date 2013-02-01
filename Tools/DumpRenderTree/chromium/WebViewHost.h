@@ -129,8 +129,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     virtual WebKit::WebIntentRequest* currentWebIntentRequest() OVERRIDE;
     virtual std::string makeURLErrorDescription(const WebKit::WebURLError&) OVERRIDE;
     virtual std::string normalizeLayoutTestURL(const std::string&) OVERRIDE;
-    virtual void setSelectTrailingWhitespaceEnabled(bool) OVERRIDE;
-    virtual void setSmartInsertDeleteEnabled(bool) OVERRIDE;
     virtual void setClientWindowRect(const WebKit::WebRect&) OVERRIDE;
     virtual void showDevTools() OVERRIDE;
     virtual void closeDevTools() OVERRIDE;
@@ -176,11 +174,10 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     virtual void closeRemainingWindows() OVERRIDE;
     virtual int navigationEntryCount() OVERRIDE;
     virtual int windowCount() OVERRIDE;
-    virtual void setCustomPolicyDelegate(bool, bool) OVERRIDE;
-    virtual void waitForPolicyDelegate() OVERRIDE;
     virtual void goToOffset(int) OVERRIDE;
     virtual void reload() OVERRIDE;
-    void loadURLForFrame(const WebKit::WebURL&, const std::string& frameName) OVERRIDE;
+    virtual void loadURLForFrame(const WebKit::WebURL&, const std::string& frameName) OVERRIDE;
+    virtual bool allowExternalPages() OVERRIDE;
 
     // NavigationHost
     virtual bool navigate(const TestNavigationEntry&, bool reload);
@@ -210,7 +207,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     virtual void runModalAlertDialog(WebKit::WebFrame*, const WebKit::WebString&);
     virtual bool runModalConfirmDialog(WebKit::WebFrame*, const WebKit::WebString&);
     virtual bool runModalPromptDialog(WebKit::WebFrame*, const WebKit::WebString& message, const WebKit::WebString& defaultValue, WebKit::WebString* actualValue);
-    virtual bool runModalBeforeUnloadDialog(WebKit::WebFrame*, const WebKit::WebString&);
     virtual void showContextMenu(WebKit::WebFrame*, const WebKit::WebContextMenuData&);
     virtual void didUpdateLayout();
     virtual void navigateBackForwardSoon(int offset);
@@ -267,7 +263,6 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
         WebKit::WebNavigationType, const WebKit::WebNode&,
         WebKit::WebNavigationPolicy, bool isRedirect);
     virtual bool canHandleRequest(WebKit::WebFrame*, const WebKit::WebURLRequest&);
-    virtual WebKit::WebURLError cannotHandleRequestError(WebKit::WebFrame*, const WebKit::WebURLRequest&);
     virtual WebKit::WebURLError cancelledError(WebKit::WebFrame*, const WebKit::WebURLRequest&);
     virtual void unableToImplementPolicyWithError(WebKit::WebFrame*, const WebKit::WebURLError&);
     virtual void didCreateDataSource(WebKit::WebFrame*, WebKit::WebDataSource*);
@@ -306,8 +301,6 @@ private:
         CallbackMethodType m_callback;
     };
 
-    WebTestRunner::WebTestRunner* testRunner() const;
-
     // Called the title of the page changes.
     // Can be used to update the title of the window.
     void setPageTitle(const WebKit::WebString&);
@@ -330,18 +323,6 @@ private:
     WebUserMediaClientMock* userMediaClientMock();
     webkit_support::TestMediaStreamClient* testMediaStreamClient();
 #endif
-
-    // Causes navigation actions just printout the intended navigation instead
-    // of taking you to the page. This is used for cases like mailto, where you
-    // don't actually want to open the mail program.
-    bool m_policyDelegateEnabled;
-
-    // Toggles the behavior of the policy delegate. If true, then navigations
-    // will be allowed. Otherwise, they will be ignored (dropped).
-    bool m_policyDelegateIsPermissive;
-
-    // If true, the policy delegate will signal layout test completion.
-    bool m_policyDelegateShouldNotifyDone;
 
     // Non-owning pointer. The WebViewHost instance is owned by this TestShell instance.
     TestShell* m_shell;
@@ -366,12 +347,6 @@ private:
     bool m_shutdownWasInvoked;
 
     WebKit::WebRect m_windowRect;
-
-    // true if we want to enable smart insert/delete.
-    bool m_smartInsertDeleteEnabled;
-
-    // true if we want to enable selection of trailing whitespaces
-    bool m_selectTrailingWhitespaceEnabled;
 
     // Edit command associated to the current keyboard event.
     std::string m_editCommandName;

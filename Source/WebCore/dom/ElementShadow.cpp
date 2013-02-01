@@ -32,36 +32,11 @@
 
 namespace WebCore {
 
-static bool validateShadowRoot(Document* document, ShadowRoot* shadowRoot, ExceptionCode& ec)
+ShadowRoot* ElementShadow::addShadowRoot(Element* shadowHost, ShadowRoot::ShadowRootType type)
 {
-    if (!shadowRoot)
-        return true;
+    RefPtr<ShadowRoot> shadowRoot = ShadowRoot::create(shadowHost->document(), type);
 
-    if (shadowRoot->host()) {
-        ec = HIERARCHY_REQUEST_ERR;
-        return false;
-    }
-
-    if (shadowRoot->document() != document) {
-        ec = WRONG_DOCUMENT_ERR;
-        return false;
-    }
-
-    return true;
-}
-
-void ElementShadow::addShadowRoot(Element* shadowHost, PassRefPtr<ShadowRoot> shadowRoot, ShadowRoot::ShadowRootType type, ExceptionCode& ec)
-{
-    ASSERT(shadowHost);
-    ASSERT(shadowRoot);
-
-    if (!validateShadowRoot(shadowHost->document(), shadowRoot.get(), ec))
-        return;
-
-    if (type == ShadowRoot::AuthorShadowRoot)
-        shadowHost->willAddAuthorShadowRoot();
-
-    shadowRoot->setHost(shadowHost);
+    shadowRoot->setParentOrShadowHostNode(shadowHost);
     shadowRoot->setParentTreeScope(shadowHost->treeScope());
     m_shadowRoots.push(shadowRoot.get());
     m_distributor.didShadowBoundaryChange(shadowHost);
@@ -77,6 +52,8 @@ void ElementShadow::addShadowRoot(Element* shadowHost, PassRefPtr<ShadowRoot> sh
         shadowHost->lazyReattach();
 
     InspectorInstrumentation::didPushShadowRoot(shadowHost, shadowRoot.get());
+
+    return shadowRoot.get();
 }
 
 void ElementShadow::removeAllShadowRoots()
@@ -92,7 +69,7 @@ void ElementShadow::removeAllShadowRoots()
             oldRoot->detach();
 
         m_shadowRoots.removeHead();
-        oldRoot->setHost(0);
+        oldRoot->setParentOrShadowHostNode(0);
         oldRoot->setParentTreeScope(shadowHost->document());
         oldRoot->setPrev(0);
         oldRoot->setNext(0);
@@ -149,13 +126,13 @@ void ElementShadow::recalcStyle(Node::StyleChange change)
 void ElementShadow::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::DOM);
-    info.addMember(m_shadowRoots);
+    info.addMember(m_shadowRoots, "shadowRoots");
     ShadowRoot* shadowRoot = m_shadowRoots.head();
     while (shadowRoot) {
-        info.addMember(shadowRoot);
+        info.addMember(shadowRoot, "shadowRoot");
         shadowRoot = shadowRoot->next();
     }
-    info.addMember(m_distributor);
+    info.addMember(m_distributor, "distributor");
 }
 
 } // namespace

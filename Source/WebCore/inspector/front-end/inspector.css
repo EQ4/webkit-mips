@@ -1560,7 +1560,7 @@ iframe.panel.extension {
     display: block;
 }
 
-.pane.expanded .properties, .event-bar .event-properties {
+.pane.expanded .section .properties, .event-bar .event-properties {
     padding-left: 16px;
 }
 
@@ -3055,4 +3055,9 @@ body.platform-mac .progress-bar-container progress {
 .progress-bar-container button.status-bar-item {
     border-left: none;
     margin-top: 1px;
+}
+
+.source-frame-position {
+    padding-left: 6px;
+    padding-top: 5px;
 }

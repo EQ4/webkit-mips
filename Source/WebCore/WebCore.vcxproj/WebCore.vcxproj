@@ -874,10 +874,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationCallback.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationEvent.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -1853,17 +1849,17 @@
     <ClCompile Include="..\Modules\notifications\Notification.cpp" />
     <ClCompile Include="..\Modules\notifications\NotificationCenter.cpp" />
     <ClCompile Include="..\Modules\notifications\WorkerContextNotifications.cpp" />
-    <ClCompile Include="..\Modules\webdatabase\AbstractDatabase.cpp" />
     <ClCompile Include="..\Modules\webdatabase\ChangeVersionWrapper.cpp" />
     <ClCompile Include="..\Modules\webdatabase\Database.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DatabaseAuthorizer.cpp" />
+    <ClCompile Include="..\Modules\webdatabase\DatabaseBackend.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DatabaseContext.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DatabaseManager.cpp" />
+    <ClCompile Include="..\Modules\webdatabase\DatabaseServer.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DatabaseSync.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DatabaseTask.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DatabaseThread.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DatabaseTracker.cpp" />
-    <ClCompile Include="..\Modules\webdatabase\DBBackendServer.cpp" />
     <ClCompile Include="..\Modules\webdatabase\DOMWindowWebDatabase.cpp" />
     <ClCompile Include="..\Modules\webdatabase\OriginQuotaManager.cpp" />
     <ClCompile Include="..\Modules\webdatabase\OriginUsageRecord.cpp" />
@@ -4869,6 +4865,7 @@
     <ClCompile Include="..\html\ValidationMessage.cpp" />
     <ClCompile Include="..\html\ValidityState.cpp" />
     <ClCompile Include="..\html\WeekInputType.cpp" />
+    <ClCompile Include="..\html\parser\BackgroundHTMLInputStream.cpp" />
     <ClCompile Include="..\html\parser\BackgroundHTMLParser.cpp" />
     <ClCompile Include="..\html\parser\CompactHTMLToken.cpp" />
     <ClCompile Include="..\html\parser\CSSPreloadScanner.cpp" />
@@ -4892,6 +4889,7 @@
     <ClCompile Include="..\html\parser\TextDocumentParser.cpp" />
     <ClCompile Include="..\html\parser\TextViewSourceParser.cpp" />
     <ClCompile Include="..\html\parser\XSSAuditor.cpp" />
+    <ClCompile Include="..\html\parser\XSSAuditorDelegate.cpp" />
     <ClCompile Include="..\html\shadow\ContentDistributor.cpp" />
     <ClCompile Include="..\html\shadow\ContentSelectorQuery.cpp" />
     <ClCompile Include="..\html\shadow\DateTimeEditElement.cpp" />
@@ -5297,7 +5295,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\bindings\js\JSMutationCallbackCustom.cpp">
+    <ClCompile Include="..\bindings\js\JSMutationCallback.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -6022,7 +6020,6 @@
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMetadataCallback.h" />
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMicroDataItemValue.h" />
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMouseEvent.h" />
-    <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationCallback.h" />
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationEvent.h" />
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationObserver.h" />
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationRecord.h" />
@@ -6263,7 +6260,6 @@
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\XMLViewerJS.h" />
     <ClInclude Include="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\XPathGrammar.h" />
     <ClInclude Include="..\ForwardingHeaders\heap\AllocationSpace.h" />
-    <ClInclude Include="..\ForwardingHeaders\heap\CardSet.h" />
     <ClInclude Include="..\ForwardingHeaders\heap\Heap.h" />
     <ClInclude Include="..\ForwardingHeaders\heap\SlotVisitor.h" />
     <ClInclude Include="..\ForwardingHeaders\heap\StrongInlines.h" />
@@ -6400,19 +6396,20 @@
     <ClInclude Include="..\Modules\notifications\NotificationCenter.h" />
     <ClInclude Include="..\Modules\notifications\NotificationClient.h" />
     <ClInclude Include="..\Modules\notifications\WorkerContextNotifications.h" />
-    <ClInclude Include="..\Modules\webdatabase\AbstractDatabase.h" />
     <ClInclude Include="..\Modules\webdatabase\AbstractDatabaseServer.h" />
     <ClInclude Include="..\Modules\webdatabase\ChangeVersionWrapper.h" />
     <ClInclude Include="..\Modules\webdatabase\Database.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseAuthorizer.h" />
+    <ClInclude Include="..\Modules\webdatabase\DatabaseBackend.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseCallback.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseContext.h" />
+    <ClInclude Include="..\Modules\webdatabase\DatabaseError.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseManager.h" />
+    <ClInclude Include="..\Modules\webdatabase\DatabaseServer.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseSync.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseTask.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseThread.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseTracker.h" />
-    <ClInclude Include="..\Modules\webdatabase\DBBackendServer.h" />
     <ClInclude Include="..\Modules\webdatabase\DOMWindowWebDatabase.h" />
     <ClInclude Include="..\Modules\webdatabase\OriginQuotaManager.h" />
     <ClInclude Include="..\Modules\webdatabase\OriginUsageRecord.h" />
@@ -7934,6 +7931,7 @@
     <ClInclude Include="..\html\parser\TextDocumentParser.h" />
     <ClInclude Include="..\html\parser\TextViewSourceParser.h" />
     <ClInclude Include="..\html\parser\XSSAuditor.h" />
+    <ClInclude Include="..\html\parser\XSSAuditorDelegate.h" />
     <ClInclude Include="..\html\shadow\ContentDistributor.h" />
     <ClInclude Include="..\html\shadow\ContentSelectorQuery.h" />
     <ClInclude Include="..\html\shadow\DateTimeEditElement.h" />
@@ -8006,6 +8004,7 @@
     <ClInclude Include="..\bindings\js\JSLocationCustom.h" />
     <ClInclude Include="..\bindings\js\JSMainThreadExecState.h" />
     <ClInclude Include="..\bindings\js\JSMessagePortCustom.h" />
+    <ClInclude Include="..\bindings\js\JSMutationCallback.h" />
     <ClInclude Include="..\bindings\js\JSNodeCustom.h" />
     <ClInclude Include="..\bindings\js\JSNodeFilterCondition.h" />
     <ClInclude Include="..\bindings\js\JSPluginElementFunctions.h" />

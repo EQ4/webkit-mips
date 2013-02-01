@@ -547,6 +547,11 @@ bool InputType::hasCustomFocusLogic() const
     return true;
 }
 
+bool InputType::isFocusableByClickOnLabel() const
+{
+    return isMouseFocusable();
+}
+
 bool InputType::isKeyboardFocusable(KeyboardEvent* event) const
 {
     return element()->isTextFormControlKeyboardFocusable(event);
@@ -737,6 +742,11 @@ Icon* InputType::icon() const
 {
     ASSERT_NOT_REACHED();
     return 0;
+}
+
+bool InputType::shouldApplyLocaleDirection() const
+{
+    return false;
 }
 
 bool InputType::shouldResetOnDocumentActivation()

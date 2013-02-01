@@ -1,3 +1,86 @@
+2013-01-31  Tommy Widenflycht  <tommyw@google.com>
+
+        [chromium] MediaStream API: Rename WebMediaStreamDescriptor and WebMediaStreamComponent to WebMediaStream and WebMediaStreamTrack
+        https://bugs.webkit.org/show_bug.cgi?id=108458
+
+        Only renames, no other code changes.
+
+        Reviewed by Adam Barth.
+
+        * Platform.gypi:
+        * chromium/public/WebMediaStream.h: Copied from Source/Platform/chromium/public/WebMediaStreamDescriptor.h.
+        (WebCore):
+        (WebKit):
+        (WebMediaStream):
+        (ExtraData):
+        (WebKit::WebMediaStream::ExtraData::~ExtraData):
+        (WebKit::WebMediaStream::WebMediaStream):
+        (WebKit::WebMediaStream::~WebMediaStream):
+        (WebKit::WebMediaStream::operator=):
+        (WebKit::WebMediaStream::isNull):
+        * chromium/public/WebMediaStreamCenter.h:
+        (WebKit):
+        (WebMediaStreamCenter):
+        (WebKit::WebMediaStreamCenter::didAddMediaStreamTrack):
+        (WebKit::WebMediaStreamCenter::didRemoveMediaStreamTrack):
+        * chromium/public/WebMediaStreamCenterClient.h:
+        (WebKit):
+        (WebMediaStreamCenterClient):
+        * chromium/public/WebMediaStreamComponent.h:
+        * chromium/public/WebMediaStreamDescriptor.h:
+        * chromium/public/WebMediaStreamTrack.h: Added.
+        (WebCore):
+        (WebKit):
+        (WebMediaStreamTrack):
+        (WebKit::WebMediaStreamTrack::WebMediaStreamTrack):
+        (WebKit::WebMediaStreamTrack::~WebMediaStreamTrack):
+        (WebKit::WebMediaStreamTrack::operator=):
+        (WebKit::WebMediaStreamTrack::isNull):
+        * chromium/public/WebRTCPeerConnectionHandler.h:
+        (WebKit):
+        (WebRTCPeerConnectionHandler):
+        * chromium/public/WebRTCPeerConnectionHandlerClient.h:
+        (WebKit):
+        (WebRTCPeerConnectionHandlerClient):
+        * chromium/public/WebRTCStatsRequest.h:
+        (WebKit):
+        (WebRTCStatsRequest):
+
+2013-01-30  Yusuf Ozuysal  <yusufo@google.com>
+
+        Start sending scrollType as NonBubblingGesture for flings
+        https://bugs.webkit.org/show_bug.cgi?id=108372
+
+        Reviewed by James Robinson.
+
+        Using the newly defined scrollType layerTreeHostImpl will stop bubbling flings to
+        parent layers. It will only bubble if the child layer is at the end of its scroll
+        range
+
+        * chromium/public/WebInputHandlerClient.h:
+
+2013-01-30  Dana Jansens  <danakj@chromium.org>
+
+        [chromium] Add recordRenderingStats to WebSettings
+        https://bugs.webkit.org/show_bug.cgi?id=108358
+
+        Reviewed by James Robinson.
+
+        * chromium/public/WebLayerTreeView.h:
+        (WebKit::WebLayerTreeView::Settings::Settings):
+        (Settings):
+
+2013-01-29  Tommy Widenflycht  <tommyw@google.com>
+
+        MediaStream API: A MediaStreamComponent should be able to return the MediaStreamDescriptor it belongs to
+        https://bugs.webkit.org/show_bug.cgi?id=108173
+
+        Reviewed by Adam Barth.
+
+        * chromium/public/WebMediaStreamComponent.h:
+        (WebKit):
+        (WebMediaStreamComponent):
+
 2013-01-28  Alexandre Elias  <aelias@chromium.org>
 
         Make page scale shrink FrameView in applyPageScaleInCompositor mode

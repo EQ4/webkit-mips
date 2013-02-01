@@ -762,8 +762,9 @@ void RenderLayer::updateLayerPositionsAfterScroll(RenderGeometryMap* geometryMap
         computeRepaintRects(renderer()->containerForRepaint(), geometryMap);
     } else {
         // Check that our cached rects are correct.
-        ASSERT(m_repaintRect == renderer()->clippedOverflowRectForRepaint(renderer()->containerForRepaint()));
-        ASSERT(m_outlineBox == renderer()->outlineBoundsForRepaint(renderer()->containerForRepaint(), geometryMap));
+        // FIXME: re-enable these assertions when the issue with table cells is resolved: https://bugs.webkit.org/show_bug.cgi?id=103432
+        // ASSERT(m_repaintRect == renderer()->clippedOverflowRectForRepaint(renderer()->containerForRepaint()));
+        // ASSERT(m_outlineBox == renderer()->outlineBoundsForRepaint(renderer()->containerForRepaint(), geometryMap));
     }
     
     for (RenderLayer* child = firstChild(); child; child = child->nextSibling())
@@ -2244,9 +2245,12 @@ void RenderLayer::updateCompositingLayersAfterScroll()
         // Our stacking container is guaranteed to contain all of our descendants that may need
         // repositioning, so update compositing layers from there.
         if (RenderLayer* compositingAncestor = stackingContainer()->enclosingCompositingLayer()) {
-            if (compositor()->compositingConsultsOverlap())
-                compositor()->updateCompositingLayers(CompositingUpdateOnScroll, compositingAncestor);
-            else
+            if (compositor()->compositingConsultsOverlap()) {
+                if (usesCompositedScrolling() && !hasOutOfFlowPositionedDescendant())
+                    compositor()->updateCompositingLayers(CompositingUpdateOnCompositedScroll, compositingAncestor);
+                else
+                    compositor()->updateCompositingLayers(CompositingUpdateOnScroll, compositingAncestor);
+            } else
                 compositingAncestor->backing()->updateAfterLayout(RenderLayerBacking::IsUpdateRoot);
         }
     }
@@ -2382,7 +2386,7 @@ void RenderLayer::resize(const PlatformMouseEvent& evt, const LayoutSize& oldOff
     
     LayoutSize difference = (currentSize + newOffset - adjustedOldOffset).expandedTo(minimumSize) - currentSize;
 
-    ASSERT(element->isStyledElement());
+    ASSERT_WITH_SECURITY_IMPLICATION(element->isStyledElement());
     StyledElement* styledElement = static_cast<StyledElement*>(element);
     bool isBoxSizingBorder = renderer->style()->boxSizing() == BORDER_BOX;
 
@@ -5885,19 +5889,19 @@ void RenderLayer::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     info.addWeakPointer(m_next);
     info.addWeakPointer(m_first);
     info.addWeakPointer(m_last);
-    info.addMember(m_hBar);
-    info.addMember(m_vBar);
-    info.addMember(m_posZOrderList);
-    info.addMember(m_negZOrderList);
-    info.addMember(m_normalFlowList);
-    info.addMember(m_clipRectsCache);
-    info.addMember(m_marquee);
-    info.addMember(m_transform);
+    info.addMember(m_hBar, "hBar");
+    info.addMember(m_vBar, "vBar");
+    info.addMember(m_posZOrderList, "posZOrderList");
+    info.addMember(m_negZOrderList, "negZOrderList");
+    info.addMember(m_normalFlowList, "normalFlowList");
+    info.addMember(m_clipRectsCache, "clipRectsCache");
+    info.addMember(m_marquee, "marquee");
+    info.addMember(m_transform, "transform");
     info.addWeakPointer(m_reflection);
     info.addWeakPointer(m_scrollCorner);
     info.addWeakPointer(m_resizer);
 #if USE(ACCELERATED_COMPOSITING)
-    info.addMember(m_backing);
+    info.addMember(m_backing, "backing");
 #endif
     info.setCustomAllocation(true);
 }

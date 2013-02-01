@@ -228,8 +228,6 @@ RenderStyle* StyleResolver::s_styleNotYetAvailable;
 
 static void loadFullDefaultStyle();
 static void loadSimpleDefaultStyle();
-template <class ListType>
-static void collectCSSOMWrappers(HashMap<StyleRule*, RefPtr<CSSStyleRule> >&, ListType*);
 
 // FIXME: It would be nice to use some mechanism that guarantees this is in sync with the real UA stylesheet.
 static const char* simpleUserAgentStyleSheet = "html,body,div{display:block}head{display:none}body{margin:8px}div:focus,span:focus{outline:auto 5px -webkit-focus-ring-color}a:-webkit-any-link{color:-webkit-link;text-decoration:underline}a:-webkit-any-link:active{color:-webkit-activelink}";
@@ -394,8 +392,7 @@ void StyleResolver::appendAuthorStyleSheets(unsigned firstNew, const Vector<RefP
 #endif
 
         m_authorStyle->addRulesFromSheet(sheet, *m_medium, this);
-        if (!m_styleRuleToCSSOMWrapperMap.isEmpty())
-            collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, cssSheet);
+        m_inspectorCSSOMWrappers.collectFromStyleSheetIfNeeded(cssSheet);
     }
     m_authorStyle->shrinkToFit();
     collectFeatures();
@@ -410,7 +407,7 @@ void StyleResolver::appendAuthorStyleSheets(unsigned firstNew, const Vector<RefP
 
 void StyleResolver::pushParentElement(Element* parent)
 {
-    const ContainerNode* parentsParent = parent->parentOrHostElement();
+    const ContainerNode* parentsParent = parent->parentOrShadowHostElement();
 
     // We are not always invoked consistently. For example, script execution can cause us to enter
     // style recalc in the middle of tree building. We may also be invoked from somewhere within the tree.
@@ -423,7 +420,7 @@ void StyleResolver::pushParentElement(Element* parent)
 
     // Note: We mustn't skip ShadowRoot nodes for the scope stack.
     if (m_scopeResolver)
-        m_scopeResolver->push(parent, parent->parentOrHostNode());
+        m_scopeResolver->push(parent, parent->parentOrShadowHostNode());
 }
 
 void StyleResolver::popParentElement(Element* parent)
@@ -669,7 +666,7 @@ void StyleResolver::collectMatchingRules(const MatchRequest& matchRequest, RuleR
     }
 
 #if ENABLE(VIDEO_TRACK)
-    if (m_element->isWebVTTElement() && toWebVTTElement(m_element)->webVTTNodeType())
+    if (m_element->isWebVTTElement())
         collectMatchingRulesForList(matchRequest.ruleSet->cuePseudoRules(), matchRequest, ruleRange);
 #endif
     // Check whether other types of rules are applicable in the current tree scope. Criteria for this:
@@ -1024,6 +1021,13 @@ inline void StyleResolver::initForStyleResolve(Element* e, RenderStyle* parentSt
 static const unsigned cStyleSearchThreshold = 10;
 static const unsigned cStyleSearchLevelThreshold = 10;
 
+static inline bool parentElementPreventsSharing(const Element* parentElement)
+{
+    if (!parentElement)
+        return false;
+    return parentElement->hasFlagsSetDuringStylingOfChildren();
+}
+
 Node* StyleResolver::locateCousinList(Element* parent, unsigned& visitedNodeCount) const
 {
     if (visitedNodeCount >= cStyleSearchThreshold * cStyleSearchLevelThreshold)
@@ -1053,7 +1057,8 @@ Node* StyleResolver::locateCousinList(Element* parent, unsigned& visitedNodeCoun
     while (thisCousin) {
         while (currentNode) {
             ++subcount;
-            if (currentNode->renderStyle() == parentStyle && currentNode->lastChild()) {
+            if (currentNode->renderStyle() == parentStyle && currentNode->lastChild()
+                && currentNode->isElementNode() && !parentElementPreventsSharing(toElement(currentNode))) {
                 // Adjust for unused reserved tries.
                 visitedNodeCount -= cStyleSearchThreshold - subcount;
                 return currentNode->lastChild();
@@ -1262,7 +1267,7 @@ bool StyleResolver::canShareStyleWithElement(StyledElement* element) const
     if (element->isWebVTTElement() != m_element->isWebVTTElement())
         return false;
 
-    if (element->isWebVTTElement() && m_element->isWebVTTElement() && toWebVTTElement(element)->webVTTNodeType() != toWebVTTElement(m_element)->webVTTNodeType())
+    if (element->isWebVTTElement() && m_element->isWebVTTElement() && toWebVTTElement(element)->isPastNode() != toWebVTTElement(m_element)->isPastNode())
         return false;
 #endif
 
@@ -1284,16 +1289,6 @@ inline StyledElement* StyleResolver::findSiblingForStyleSharing(Node* node, unsi
             return 0;
     }
     return static_cast<StyledElement*>(node);
-}
-
-static inline bool parentElementPreventsSharing(const Element* parentElement)
-{
-    if (!parentElement)
-        return false;
-    return parentElement->childrenAffectedByPositionalRules()
-        || parentElement->childrenAffectedByFirstChildRules()
-        || parentElement->childrenAffectedByLastChildRules()
-        || parentElement->childrenAffectedByDirectAdjacentRules();
 }
 
 RenderStyle* StyleResolver::locateSharedStyle()
@@ -2474,7 +2469,8 @@ const StyleResolver::MatchedPropertiesCacheItem* StyleResolver::findFromMatchedP
 void StyleResolver::addToMatchedPropertiesCache(const RenderStyle* style, const RenderStyle* parentStyle, unsigned hash, const MatchResult& matchResult)
 {
     static const unsigned matchedDeclarationCacheAdditionsBetweenSweeps = 100;
-    if (++m_matchedPropertiesCacheAdditionsSinceLastSweep >= matchedDeclarationCacheAdditionsBetweenSweeps) {
+    if (++m_matchedPropertiesCacheAdditionsSinceLastSweep >= matchedDeclarationCacheAdditionsBetweenSweeps
+        && !m_matchedPropertiesCacheSweepTimer.isActive()) {
         static const unsigned matchedDeclarationCacheSweepTimeInSeconds = 60;
         m_matchedPropertiesCacheSweepTimer.startOneShot(matchedDeclarationCacheSweepTimeInSeconds);
     }
@@ -2676,8 +2672,14 @@ String StyleResolver::pageName(int /* pageIndex */) const
     return "";
 }
 
+void InspectorCSSOMWrappers::collectFromStyleSheetIfNeeded(CSSStyleSheet* styleSheet)
+{
+    if (!m_styleRuleToCSSOMWrapperMap.isEmpty())
+        collect(styleSheet);
+}
+
 template <class ListType>
-static void collectCSSOMWrappers(HashMap<StyleRule*, RefPtr<CSSStyleRule> >& wrapperMap, ListType* listType)
+void InspectorCSSOMWrappers::collect(ListType* listType)
 {
     if (!listType)
         return;
@@ -2686,28 +2688,28 @@ static void collectCSSOMWrappers(HashMap<StyleRule*, RefPtr<CSSStyleRule> >& wra
         CSSRule* cssRule = listType->item(i);
         switch (cssRule->type()) {
         case CSSRule::IMPORT_RULE:
-            collectCSSOMWrappers(wrapperMap, static_cast<CSSImportRule*>(cssRule)->styleSheet());
+            collect(static_cast<CSSImportRule*>(cssRule)->styleSheet());
             break;
         case CSSRule::MEDIA_RULE:
-            collectCSSOMWrappers(wrapperMap, static_cast<CSSMediaRule*>(cssRule));
+            collect(static_cast<CSSMediaRule*>(cssRule));
             break;
 #if ENABLE(CSS3_CONDITIONAL_RULES)
         case CSSRule::SUPPORTS_RULE:
-            collectCSSOMWrappers(wrapperMap, static_cast<CSSSupportsRule*>(cssRule));
+            collectCSSOMWrappers(static_cast<CSSSupportsRule*>(cssRule));
             break;
 #endif
 #if ENABLE(CSS_REGIONS)
         case CSSRule::WEBKIT_REGION_RULE:
-            collectCSSOMWrappers(wrapperMap, static_cast<WebKitCSSRegionRule*>(cssRule));
+            collect(static_cast<WebKitCSSRegionRule*>(cssRule));
             break;
 #endif
 #if ENABLE(SHADOW_DOM)
         case CSSRule::HOST_RULE:
-            collectCSSOMWrappers(wrapperMap, static_cast<CSSHostRule*>(cssRule));
+            collect(static_cast<CSSHostRule*>(cssRule));
             break;
 #endif
         case CSSRule::STYLE_RULE:
-            wrapperMap.add(static_cast<CSSStyleRule*>(cssRule)->styleRule(), static_cast<CSSStyleRule*>(cssRule));
+            m_styleRuleToCSSOMWrapperMap.add(static_cast<CSSStyleRule*>(cssRule)->styleRule(), static_cast<CSSStyleRule*>(cssRule));
             break;
         default:
             break;
@@ -2715,43 +2717,50 @@ static void collectCSSOMWrappers(HashMap<StyleRule*, RefPtr<CSSStyleRule> >& wra
     }
 }
 
-static void collectCSSOMWrappers(HashMap<StyleRule*, RefPtr<CSSStyleRule> >& wrapperMap, HashSet<RefPtr<CSSStyleSheet> >& sheetWrapperSet, StyleSheetContents* styleSheet)
+void InspectorCSSOMWrappers::collectFromStyleSheetContents(HashSet<RefPtr<CSSStyleSheet> >& sheetWrapperSet, StyleSheetContents* styleSheet)
 {
     if (!styleSheet)
         return;
     RefPtr<CSSStyleSheet> styleSheetWrapper = CSSStyleSheet::create(styleSheet);
     sheetWrapperSet.add(styleSheetWrapper);
-    collectCSSOMWrappers(wrapperMap, styleSheetWrapper.get());
+    collect(styleSheetWrapper.get());
 }
 
-static void collectCSSOMWrappers(HashMap<StyleRule*, RefPtr<CSSStyleRule> >& wrapperMap, const Vector<RefPtr<CSSStyleSheet> >& sheets)
+void InspectorCSSOMWrappers::collectFromStyleSheets(const Vector<RefPtr<CSSStyleSheet> >& sheets)
 {
     for (unsigned i = 0; i < sheets.size(); ++i)
-        collectCSSOMWrappers(wrapperMap, sheets[i].get());
+        collect(sheets[i].get());
 }
 
-static void collectCSSOMWrappers(HashMap<StyleRule*, RefPtr<CSSStyleRule> >& wrapperMap, DocumentStyleSheetCollection* styleSheetCollection)
+void InspectorCSSOMWrappers::collectFromDocumentStyleSheetCollection(DocumentStyleSheetCollection* styleSheetCollection)
 {
-    collectCSSOMWrappers(wrapperMap, styleSheetCollection->activeAuthorStyleSheets());
-    collectCSSOMWrappers(wrapperMap, styleSheetCollection->pageUserSheet());
-    collectCSSOMWrappers(wrapperMap, styleSheetCollection->injectedUserStyleSheets());
-    collectCSSOMWrappers(wrapperMap, styleSheetCollection->documentUserStyleSheets());
+    collectFromStyleSheets(styleSheetCollection->activeAuthorStyleSheets());
+    collect(styleSheetCollection->pageUserSheet());
+    collectFromStyleSheets(styleSheetCollection->injectedUserStyleSheets());
+    collectFromStyleSheets(styleSheetCollection->documentUserStyleSheets());
 }
 
-CSSStyleRule* StyleResolver::ensureFullCSSOMWrapperForInspector(StyleRule* rule)
+CSSStyleRule* InspectorCSSOMWrappers::getWrapperForRuleInSheets(StyleRule* rule, DocumentStyleSheetCollection* styleSheetCollection)
 {
     if (m_styleRuleToCSSOMWrapperMap.isEmpty()) {
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, m_styleSheetCSSOMWrapperSet, simpleDefaultStyleSheet);
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, m_styleSheetCSSOMWrapperSet, defaultStyleSheet);
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, m_styleSheetCSSOMWrapperSet, quirksStyleSheet);
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, m_styleSheetCSSOMWrapperSet, svgStyleSheet);
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, m_styleSheetCSSOMWrapperSet, mathMLStyleSheet);
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, m_styleSheetCSSOMWrapperSet, mediaControlsStyleSheet);
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, m_styleSheetCSSOMWrapperSet, fullscreenStyleSheet);
+        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, simpleDefaultStyleSheet);
+        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, defaultStyleSheet);
+        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, quirksStyleSheet);
+        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, svgStyleSheet);
+        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, mathMLStyleSheet);
+        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, mediaControlsStyleSheet);
+        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, fullscreenStyleSheet);
 
-        collectCSSOMWrappers(m_styleRuleToCSSOMWrapperMap, document()->styleSheetCollection());
+        collectFromDocumentStyleSheetCollection(styleSheetCollection);
     }
     return m_styleRuleToCSSOMWrapperMap.get(rule).get();
+}
+
+void InspectorCSSOMWrappers::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
+{
+    MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::CSS);
+    info.addMember(m_styleRuleToCSSOMWrapperMap);
+    info.addMember(m_styleSheetCSSOMWrapperSet);
 }
 
 void StyleResolver::applyPropertyToStyle(CSSPropertyID id, CSSValue* value, RenderStyle* style)
@@ -5000,10 +5009,15 @@ bool StyleResolver::parseCustomFilterParameterList(CSSValue* parametersValue, Cu
     return true;
 }
 
-PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperation(WebKitCSSFilterValue* filterValue)
+PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperationWithAtRuleReferenceSyntax(WebKitCSSFilterValue* filterValue)
 {
-    ASSERT(filterValue->length());
+    // FIXME: Implement style resolution for the custom filter at-rule reference syntax.
+    UNUSED_PARAM(filterValue);
+    return 0;
+}
 
+PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperationWithInlineSyntax(WebKitCSSFilterValue* filterValue)
+{
     CSSValue* shadersValue = filterValue->itemWithoutBoundsCheck(0);
     ASSERT(shadersValue->isValueList());
     CSSValueList* shadersList = static_cast<CSSValueList*>(shadersValue);
@@ -5102,6 +5116,14 @@ PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperation(Web
     RefPtr<StyleCustomFilterProgram> program = StyleCustomFilterProgram::create(vertexShader.release(), fragmentShader.release(), programType, mixSettings, meshType);
     return CustomFilterOperation::create(program.release(), parameterList, meshRows, meshColumns, meshType);
 }
+
+PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperation(WebKitCSSFilterValue* filterValue)
+{
+    ASSERT(filterValue->length());
+    bool isAtRuleReferenceSyntax = filterValue->itemWithoutBoundsCheck(0)->isPrimitiveValue();
+    return isAtRuleReferenceSyntax ? createCustomFilterOperationWithAtRuleReferenceSyntax(filterValue) : createCustomFilterOperationWithInlineSyntax(filterValue);
+}
+
 #endif
 
 bool StyleResolver::createFilterOperations(CSSValue* inValue, RenderStyle* style, RenderStyle* rootStyle, FilterOperations& outOperations)
@@ -5413,68 +5435,67 @@ void StyleResolver::collectFeatures()
 void StyleResolver::MatchedProperties::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::CSS);
-    info.addMember(properties);
+    info.addMember(properties, "properties");
 }
 
 void StyleResolver::MatchedPropertiesCacheItem::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::CSS);
-    info.addMember(matchedProperties);
-    info.addMember(ranges);
-    info.addMember(renderStyle);
-    info.addMember(parentRenderStyle);
+    info.addMember(matchedProperties, "matchedProperties");
+    info.addMember(ranges, "ranges");
+    info.addMember(renderStyle, "renderStyle");
+    info.addMember(parentRenderStyle, "parentRenderStyle");
 }
 
 void MediaQueryResult::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::CSS);
-    info.addMember(m_expression);
+    info.addMember(m_expression, "expression");
 }
 
 void StyleResolver::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::CSS);
-    info.addMember(m_style);
-    info.addMember(m_authorStyle);
-    info.addMember(m_userStyle);
-    info.addMember(m_features);
-    info.addMember(m_siblingRuleSet);
-    info.addMember(m_uncommonAttributeRuleSet);
-    info.addMember(m_keyframesRuleMap);
-    info.addMember(m_matchedPropertiesCache);
-    info.addMember(m_matchedPropertiesCacheSweepTimer);
-    info.addMember(m_matchedRules);
+    info.addMember(m_style, "style");
+    info.addMember(m_authorStyle, "authorStyle");
+    info.addMember(m_userStyle, "userStyle");
+    info.addMember(m_features, "features");
+    info.addMember(m_siblingRuleSet, "siblingRuleSet");
+    info.addMember(m_uncommonAttributeRuleSet, "uncommonAttributeRuleSet");
+    info.addMember(m_keyframesRuleMap, "keyframesRuleMap");
+    info.addMember(m_matchedPropertiesCache, "matchedPropertiesCache");
+    info.addMember(m_matchedPropertiesCacheSweepTimer, "matchedPropertiesCacheSweepTimer");
+    info.addMember(m_matchedRules, "matchedRules");
 
-    info.addMember(m_ruleList);
-    info.addMember(m_pendingImageProperties);
-    info.addMember(m_medium);
-    info.addMember(m_rootDefaultStyle);
-    info.addMember(m_document);
+    info.addMember(m_ruleList, "ruleList");
+    info.addMember(m_pendingImageProperties, "pendingImageProperties");
+    info.addMember(m_medium, "medium");
+    info.addMember(m_rootDefaultStyle, "rootDefaultStyle");
+    info.addMember(m_document, "document");
 
     // FIXME: pointer to RenderStyle could point to an already deleted object.
     info.ignoreMember(m_parentStyle);
     info.ignoreMember(m_rootElementStyle);
 
-    info.addMember(m_element);
-    info.addMember(m_styledElement);
-    info.addMember(m_regionForStyling);
-    info.addMember(m_parentNode);
-    info.addMember(m_lineHeightValue);
-    info.addMember(m_fontSelector);
-    info.addMember(m_viewportDependentMediaQueryResults);
+    info.addMember(m_element, "element");
+    info.addMember(m_styledElement, "styledElement");
+    info.addMember(m_regionForStyling, "regionForStyling");
+    info.addMember(m_parentNode, "parentNode");
+    info.addMember(m_lineHeightValue, "lineHeightValue");
+    info.addMember(m_fontSelector, "fontSelector");
+    info.addMember(m_viewportDependentMediaQueryResults, "viewportDependentMediaQueryResults");
     info.ignoreMember(m_styleBuilder);
-    info.addMember(m_styleRuleToCSSOMWrapperMap);
-    info.addMember(m_styleSheetCSSOMWrapperSet);
+    info.addMember(m_inspectorCSSOMWrappers);
 #if ENABLE(CSS_FILTERS) && ENABLE(SVG)
-    info.addMember(m_pendingSVGDocuments);
+    info.addMember(m_pendingSVGDocuments, "pendingSVGDocuments");
 #endif
-    info.addMember(m_scopeResolver);
+    info.addMember(m_scopeResolver, "scopeResolver");
 
     // FIXME: move this to a place where it would be called only once?
-    info.addMember(defaultStyle);
-    info.addMember(defaultQuirksStyle);
-    info.addMember(defaultPrintStyle);
-    info.addMember(defaultViewSourceStyle);
+    info.addMember(defaultStyle, "defaultStyle");
+    info.addMember(defaultQuirksStyle, "defaultQuirksStyle");
+    info.addMember(defaultPrintStyle, "defaultPrintStyle");
+    info.addMember(defaultViewSourceStyle, "defaultViewSourceStyle");
 }
 
 } // namespace WebCore

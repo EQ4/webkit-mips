@@ -34,7 +34,6 @@
     'feature_defines': [
       'ENABLE_3D_PLUGIN=1',
       'ENABLE_BATTERY_STATUS=0',
-      'ENABLE_BINDING_INTEGRITY=0',
       'ENABLE_BLOB=1',
       'ENABLE_BLOB_SLICE=1',
       'ENABLE_CANVAS_PATH=0',
@@ -52,7 +51,7 @@
       'ENABLE_CSS_IMAGE_RESOLUTION=0',
       'ENABLE_CSS_REGIONS=1',
       'ENABLE_CSS_SHADERS=1',
-      'ENABLE_CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED=0',
+      'ENABLE_CSS_TRANSFORMS_ANIMATIONS_UNPREFIXED=0',
       'ENABLE_CSS_VARIABLES=1',
       'ENABLE_CSS_STICKY_POSITION=1',
       'ENABLE_CUSTOM_SCHEME_HANDLER=0',
@@ -205,6 +204,15 @@
           'ENABLE_WEB_AUDIO=1',
         ],
       }],
+      ['OS=="linux" or OS=="mac"', {
+        'feature_defines': [
+          'ENABLE_BINDING_INTEGRITY=1',
+        ],
+      }, { # OS!="linux"
+        'feature_defines': [
+          'ENABLE_BINDING_INTEGRITY=0',
+        ],
+      }],
       ['use_accelerated_compositing==1', {
         'feature_defines': [
           'ENABLE_3D_RENDERING=1',
@@ -241,7 +249,7 @@
       }],
       ['use_x11==1 or OS=="android"', {
         'feature_defines': [
-          'WTF_USE_HARFBUZZ_NG=1',
+          'WTF_USE_HARFBUZZ=1',
         ],
       }],
       ['chromeos==1', {

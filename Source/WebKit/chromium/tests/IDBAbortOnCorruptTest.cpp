@@ -57,12 +57,11 @@ public:
     }
     virtual void onSuccess(PassRefPtr<DOMStringList>) { }
     virtual void onSuccess(PassRefPtr<IDBCursorBackendInterface>, PassRefPtr<IDBKey>, PassRefPtr<IDBKey>, PassRefPtr<SerializedScriptValue>) { }
-    virtual void onSuccess(PassRefPtr<IDBDatabaseBackendInterface>)
+    virtual void onSuccess(PassRefPtr<IDBDatabaseBackendInterface>, const IDBDatabaseMetadata&)
     {
         EXPECT_TRUE(false);
     }
     virtual void onSuccess(PassRefPtr<IDBKey>) { }
-    virtual void onSuccess(PassRefPtr<IDBTransactionBackendInterface>) { }
     virtual void onSuccess(PassRefPtr<SerializedScriptValue>) { }
     virtual void onSuccess(PassRefPtr<SerializedScriptValue>, PassRefPtr<IDBKey>, const IDBKeyPath&) { }
     virtual void onSuccess(int64_t) OVERRIDE { }

@@ -6,7 +6,7 @@ WEBCORE_CSS_VALUE_KEYWORDS := $(WebCore)/css/CSSValueKeywords.in
 
 webcore_cppflags += \
 	-DWTF_USE_FREETYPE=1 \
-	-DWTF_USE_HARFBUZZ_NG=1 \
+	-DWTF_USE_HARFBUZZ=1 \
 	-DWTF_USE_WEBP=1 \
 	-I$(srcdir)/Source/ThirdParty/ANGLE/src \
 	-I$(srcdir)/Source/ThirdParty/ANGLE/include \
@@ -161,6 +161,7 @@ if USE_GSTREAMER
 if ENABLE_DEBUG
 webcore_cppflags += -DGST_DISABLE_DEPRECATED
 endif # END ENABLE_DEBUG
+webcore_cppflags += -DWTF_USE_NATIVE_FULLSCREEN_VIDEO=1
 endif # END USE_GSTREAMER
 else
 feature_defines_overrides += ENABLE_VIDEO=0 ENABLE_VIDEO_TRACK=0

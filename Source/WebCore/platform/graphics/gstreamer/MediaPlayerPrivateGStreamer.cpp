@@ -3,7 +3,7 @@
  * Copyright (C) 2007 Collabora Ltd.  All rights reserved.
  * Copyright (C) 2007 Alp Toker <alp@atoker.com>
  * Copyright (C) 2009 Gustavo Noronha Silva <gns@gnome.org>
- * Copyright (C) 2009, 2010 Igalia S.L
+ * Copyright (C) 2009, 2010, 2011, 2012, 2013 Igalia S.L
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -30,6 +30,7 @@
 #include "Document.h"
 #include "Frame.h"
 #include "FrameView.h"
+#include "FullscreenVideoControllerGStreamer.h"
 #include "GStreamerGWorld.h"
 #include "GStreamerUtilities.h"
 #include "GStreamerVersioning.h"
@@ -268,7 +269,10 @@ MediaPlayerPrivateGStreamer::~MediaPlayerPrivateGStreamer()
         m_mediaLocations = 0;
     }
 
-#ifndef GST_API_VERSION_1
+#if USE(NATIVE_FULLSCREEN_VIDEO)
+    if (m_fullscreenVideoController)
+        exitFullscreen();
+
     if (m_videoSinkBin) {
         gst_object_unref(m_videoSinkBin);
         m_videoSinkBin = 0;
@@ -658,6 +662,14 @@ void MediaPlayerPrivateGStreamer::setVolume(float volume)
 
     gst_stream_volume_set_volume(GST_STREAM_VOLUME(m_playBin.get()), GST_STREAM_VOLUME_FORMAT_CUBIC,
                                  static_cast<double>(volume));
+}
+
+float MediaPlayerPrivateGStreamer::volume() const
+{
+    if (!m_playBin)
+        return 0;
+
+    return gst_stream_volume_get_volume(GST_STREAM_VOLUME(m_playBin.get()), GST_STREAM_VOLUME_FORMAT_CUBIC);
 }
 
 void MediaPlayerPrivateGStreamer::notifyPlayerOfVolumeChange()
@@ -1542,6 +1554,16 @@ void MediaPlayerPrivateGStreamer::setMuted(bool muted)
     g_object_set(m_playBin.get(), "mute", muted, NULL);
 }
 
+bool MediaPlayerPrivateGStreamer::muted() const
+{
+    if (!m_playBin)
+        return false;
+
+    bool muted;
+    g_object_get(m_playBin.get(), "mute", &muted, NULL);
+    return muted;
+}
+
 void MediaPlayerPrivateGStreamer::notifyPlayerOfMute()
 {
     m_muteTimerHandler = 0;
@@ -1740,6 +1762,24 @@ bool MediaPlayerPrivateGStreamer::hasSingleSecurityOrigin() const
     return true;
 }
 
+#if USE(NATIVE_FULLSCREEN_VIDEO)
+void MediaPlayerPrivateGStreamer::enterFullscreen()
+{
+    ASSERT(!m_fullscreenVideoController);
+    m_fullscreenVideoController = FullscreenVideoControllerGStreamer::create(this);
+    if (m_fullscreenVideoController)
+        m_fullscreenVideoController->enterFullscreen();
+}
+
+void MediaPlayerPrivateGStreamer::exitFullscreen()
+{
+    if (!m_fullscreenVideoController)
+        return;
+    m_fullscreenVideoController->exitFullscreen();
+    m_fullscreenVideoController.release();
+}
+#endif
+
 bool MediaPlayerPrivateGStreamer::supportsFullscreen() const
 {
 #if PLATFORM(MAC) && !PLATFORM(IOS) && __MAC_OS_X_VERSION_MIN_REQUIRED == 1050
@@ -1752,12 +1792,14 @@ bool MediaPlayerPrivateGStreamer::supportsFullscreen() const
 
 PlatformMedia MediaPlayerPrivateGStreamer::platformMedia() const
 {
+#if USE(NATIVE_FULLSCREEN_VIDEO)
     PlatformMedia p;
-#ifndef GST_API_VERSION_1
     p.type = PlatformMedia::GStreamerGWorldType;
     p.media.gstreamerGWorld = m_gstGWorld.get();
-#endif
     return p;
+#else
+    return NoPlatformMedia;
+#endif
 }
 
 MediaPlayer::MovieLoadType MediaPlayerPrivateGStreamer::movieLoadType() const
@@ -1843,10 +1885,6 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin()
     // we should not adopt.
     m_playBin = gst_element_factory_make(gPlaybinName, "play");
 
-#ifndef GST_API_VERSION_1
-    m_gstGWorld = GStreamerGWorld::createGWorld(m_playBin.get());
-#endif
-
     GRefPtr<GstBus> bus = webkitGstPipelineGetBus(GST_PIPELINE(m_playBin.get()));
     gst_bus_add_signal_watch(bus.get());
     g_signal_connect(bus.get(), "message", G_CALLBACK(mediaPlayerPrivateMessageCallback), this);
@@ -1859,7 +1897,8 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin()
     g_signal_connect(m_playBin.get(), "video-changed", G_CALLBACK(mediaPlayerPrivateVideoChangedCallback), this);
     g_signal_connect(m_playBin.get(), "audio-changed", G_CALLBACK(mediaPlayerPrivateAudioChangedCallback), this);
 
-#ifndef GST_API_VERSION_1
+#if USE(NATIVE_FULLSCREEN_VIDEO)
+    m_gstGWorld = GStreamerGWorld::createGWorld(m_playBin.get());
     m_webkitVideoSink = webkitVideoSinkNew(m_gstGWorld.get());
 #else
     m_webkitVideoSink = webkitVideoSinkNew();
@@ -1869,19 +1908,24 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin()
     g_signal_connect(m_webkitVideoSink, "repaint-requested", G_CALLBACK(mediaPlayerPrivateRepaintCallback), this);
 
 
-#ifndef GST_API_VERSION_1
-    m_videoSinkBin = gst_bin_new("video-sink");
-
-    GstElement* videoTee = gst_element_factory_make("tee", "videoTee");
-    GstElement* queue = gst_element_factory_make("queue", 0);
-
-    // Take ownership.
-    gst_object_ref_sink(m_videoSinkBin);
-
+#if USE(NATIVE_FULLSCREEN_VIDEO)
     // Build a new video sink consisting of a bin containing a tee
     // (meant to distribute data to multiple video sinks) and our
     // internal video sink. For fullscreen we create an autovideosink
     // and initially block the data flow towards it and configure it
+
+    m_videoSinkBin = gst_bin_new("video-sink");
+
+    // Take ownership.
+    gst_object_ref_sink(m_videoSinkBin);
+
+    GstElement* videoTee = gst_element_factory_make("tee", "videoTee");
+    GstElement* queue = gst_element_factory_make("queue", 0);
+
+#ifdef GST_API_VERSION_1
+    GRefPtr<GstPad> sinkPad = adoptGRef(gst_element_get_static_pad(videoTee, "sink"));
+    GST_OBJECT_FLAG_SET(GST_OBJECT(sinkPad.get()), GST_PAD_FLAG_PROXY_ALLOCATION);
+#endif
 
     gst_bin_add_many(GST_BIN(m_videoSinkBin), videoTee, queue, NULL);
 
@@ -1910,7 +1954,7 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin()
 
             if (g_object_class_find_property(G_OBJECT_GET_CLASS(m_fpsSink), "video-sink")) {
                 g_object_set(m_fpsSink, "video-sink", m_webkitVideoSink, NULL);
-#ifndef GST_API_VERSION_1
+#if USE(NATIVE_FULLSCREEN_VIDEO)
                 gst_bin_add(GST_BIN(m_videoSinkBin), m_fpsSink);
 #endif
                 actualVideoSink = m_fpsSink;
@@ -1921,7 +1965,7 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin()
     }
 
     if (!m_fpsSink) {
-#ifndef GST_API_VERSION_1
+#if USE(NATIVE_FULLSCREEN_VIDEO)
         gst_bin_add(GST_BIN(m_videoSinkBin), m_webkitVideoSink);
 #endif
         actualVideoSink = m_webkitVideoSink;
@@ -1929,7 +1973,7 @@ void MediaPlayerPrivateGStreamer::createGSTPlayBin()
 
     ASSERT(actualVideoSink);
 
-#ifndef GST_API_VERSION_1
+#if USE(NATIVE_FULLSCREEN_VIDEO)
     // Faster elements linking.
     gst_element_link_pads_full(queue, "src", actualVideoSink, "sink", GST_PAD_LINK_CHECK_NOTHING);
 

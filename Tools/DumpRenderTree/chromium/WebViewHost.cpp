@@ -92,68 +92,12 @@ static const int screenWidth = 1920;
 static const int screenHeight = 1080;
 static const int screenUnavailableBorder = 8;
 
-// WebNavigationType debugging strings taken from PolicyDelegate.mm.
-static const char* linkClickedString = "link clicked";
-static const char* formSubmittedString = "form submitted";
-static const char* backForwardString = "back/forward";
-static const char* reloadString = "reload";
-static const char* formResubmittedString = "form resubmitted";
-static const char* otherString = "other";
-static const char* illegalString = "illegal value";
-
 static int nextPageID = 1;
-
-// Get a debugging string from a WebNavigationType.
-static const char* webNavigationTypeToString(WebNavigationType type)
-{
-    switch (type) {
-    case WebKit::WebNavigationTypeLinkClicked:
-        return linkClickedString;
-    case WebKit::WebNavigationTypeFormSubmitted:
-        return formSubmittedString;
-    case WebKit::WebNavigationTypeBackForward:
-        return backForwardString;
-    case WebKit::WebNavigationTypeReload:
-        return reloadString;
-    case WebKit::WebNavigationTypeFormResubmitted:
-        return formResubmittedString;
-    case WebKit::WebNavigationTypeOther:
-        return otherString;
-    }
-    return illegalString;
-}
-
-static string URLDescription(const GURL& url)
-{
-    if (url.SchemeIs("file"))
-        return url.ExtractFileName();
-    return url.possibly_invalid_spec();
-}
-
-static void printNodeDescription(const WebNode& node, int exception)
-{
-    if (exception) {
-        fputs("ERROR", stdout);
-        return;
-    }
-    if (node.isNull()) {
-        fputs("(null)", stdout);
-        return;
-    }
-    fputs(node.nodeName().utf8().data(), stdout);
-    const WebNode& parent = node.parentNode();
-    if (!parent.isNull()) {
-        fputs(" > ", stdout);
-        printNodeDescription(parent, 0);
-    }
-}
 
 // WebViewClient -------------------------------------------------------------
 
 WebView* WebViewHost::createView(WebFrame* creator, const WebURLRequest&, const WebWindowFeatures&, const WebString&, WebNavigationPolicy)
 {
-    if (!testRunner()->canOpenWindows())
-        return 0;
     creator->consumeUserGesture();
     return m_shell->createNewWindow(WebURL())->webView();
 }
@@ -203,12 +147,10 @@ void WebViewHost::didAddMessageToConsole(const WebConsoleMessage& message, const
 
 void WebViewHost::didStartLoading()
 {
-    m_shell->setIsLoading(true);
 }
 
 void WebViewHost::didStopLoading()
 {
-    m_shell->setIsLoading(false);
 }
 
 bool WebViewHost::shouldBeginEditing(const WebRange& range)
@@ -249,12 +191,16 @@ bool WebViewHost::shouldApplyStyle(const WebString& style, const WebRange& range
 
 bool WebViewHost::isSmartInsertDeleteEnabled()
 {
-    return m_smartInsertDeleteEnabled;
+    return true;
 }
 
 bool WebViewHost::isSelectTrailingWhitespaceEnabled()
 {
-    return m_selectTrailingWhitespaceEnabled;
+#if OS(WINDOWS)
+    return true;
+#else
+    return false;
+#endif
 }
 
 bool WebViewHost::handleCurrentKeyboardEvent()
@@ -288,11 +234,6 @@ bool WebViewHost::runModalPromptDialog(WebFrame* frame, const WebString& message
                                        const WebString& defaultValue, WebString*)
 {
     return true;
-}
-
-bool WebViewHost::runModalBeforeUnloadDialog(WebFrame*, const WebString& message)
-{
-    return !testRunner()->shouldStayOnPageAfterHandlingBeforeUnload();
 }
 
 void WebViewHost::showContextMenu(WebFrame*, const WebContextMenuData& contextMenuData)
@@ -408,6 +349,8 @@ void WebViewHost::didAutoResize(const WebSize& newSize)
 void WebViewHost::initializeLayerTreeView(WebLayerTreeViewClient* client, const WebLayer& rootLayer, const WebLayerTreeView::Settings& settings)
 {
     m_layerTreeView = adoptPtr(Platform::current()->compositorSupport()->createLayerTreeView(client, rootLayer, settings));
+    if (m_layerTreeView)
+        m_layerTreeView->setSurfaceReady();
 }
 
 WebLayerTreeView* WebViewHost::layerTreeView()
@@ -627,48 +570,16 @@ void WebViewHost::loadURLExternally(WebFrame*, const WebURLRequest& request, Web
 }
 
 WebNavigationPolicy WebViewHost::decidePolicyForNavigation(
-    WebFrame*, const WebURLRequest& request,
-    WebNavigationType type, const WebNode& originatingNode,
-    WebNavigationPolicy defaultPolicy, bool isRedirect)
+    WebFrame*, const WebURLRequest&,
+    WebNavigationType, const WebNode&,
+    WebNavigationPolicy defaultPolicy, bool)
 {
-    WebNavigationPolicy result;
-    if (!m_policyDelegateEnabled)
-        return defaultPolicy;
-
-    printf("Policy delegate: attempt to load %s with navigation type '%s'",
-           URLDescription(request.url()).c_str(), webNavigationTypeToString(type));
-    if (!originatingNode.isNull()) {
-        fputs(" originating from ", stdout);
-        printNodeDescription(originatingNode, 0);
-    }
-    fputs("\n", stdout);
-    if (m_policyDelegateIsPermissive)
-        result = WebKit::WebNavigationPolicyCurrentTab;
-    else
-        result = WebKit::WebNavigationPolicyIgnore;
-
-    if (m_policyDelegateShouldNotifyDone)
-        testRunner()->policyDelegateDone();
-    return result;
+    return defaultPolicy;
 }
 
 bool WebViewHost::canHandleRequest(WebFrame*, const WebURLRequest& request)
 {
-    GURL url = request.url();
-    // Just reject the scheme used in
-    // LayoutTests/http/tests/misc/redirect-to-external-url.html
-    return !url.SchemeIs("spaceballs");
-}
-
-WebURLError WebViewHost::cannotHandleRequestError(WebFrame*, const WebURLRequest& request)
-{
-    WebURLError error;
-    // A WebKit layout test expects the following values.
-    // unableToImplementPolicyWithError() below prints them.
-    error.domain = WebString::fromUTF8("WebKitErrorDomain");
-    error.reason = 101;
-    error.unreachableURL = request.url();
-    return error;
+    return true;
 }
 
 WebURLError WebViewHost::cancelledError(WebFrame*, const WebURLRequest& request)
@@ -683,8 +594,6 @@ void WebViewHost::unableToImplementPolicyWithError(WebFrame* frame, const WebURL
 void WebViewHost::didCreateDataSource(WebFrame*, WebDataSource* ds)
 {
     ds->setExtraData(m_pendingExtraData.leakPtr());
-    if (!testRunner()->deferMainResourceDataLoad())
-        ds->setDeferMainResourceDataLoad(false);
 }
 
 void WebViewHost::didCommitProvisionalLoad(WebFrame* frame, bool isNewNavigation)
@@ -709,47 +618,12 @@ void WebViewHost::didNavigateWithinPage(WebFrame* frame, bool isNewNavigation)
     updateForCommittedLoad(frame, isNewNavigation);
 }
 
-static void blockRequest(WebURLRequest& request)
-{
-    request.setURL(WebURL());
-}
-
-static bool isLocalhost(const string& host)
-{
-    return host == "127.0.0.1" || host == "localhost";
-}
-
-static bool hostIsUsedBySomeTestsToGenerateError(const string& host)
-{
-    return host == "255.255.255.255";
-}
-
-void WebViewHost::willSendRequest(WebFrame* frame, unsigned identifier, WebURLRequest& request, const WebURLResponse& redirectResponse)
+void WebViewHost::willSendRequest(WebFrame* frame, unsigned, WebURLRequest& request, const WebURLResponse&)
 {
     if (request.url().isEmpty())
         return;
 
-    // Need to use GURL for host() and SchemeIs()
-    GURL url = request.url();
-    string requestURL = url.possibly_invalid_spec();
-
-    GURL mainDocumentURL = request.firstPartyForCookies();
-
     request.setExtraData(webkit_support::CreateWebURLRequestExtraData(frame->document().referrerPolicy()));
-
-    string host = url.host();
-    if (!host.empty() && (url.SchemeIs("http") || url.SchemeIs("https"))) {
-        if (!isLocalhost(host) && !hostIsUsedBySomeTestsToGenerateError(host)
-            && ((!mainDocumentURL.SchemeIs("http") && !mainDocumentURL.SchemeIs("https")) || isLocalhost(mainDocumentURL.host()))
-            && !m_shell->allowExternalPages()) {
-            printf("Blocked access to external URL %s\n", requestURL.c_str());
-            blockRequest(request);
-            return;
-        }
-    }
-
-    // Set the new substituted URL.
-    request.setURL(webkit_support::RewriteLayoutTestsURL(request.url().spec()));
 }
 
 void WebViewHost::openFileSystem(WebFrame* frame, WebFileSystem::Type type, long long size, bool create, WebFileSystemCallbacks* callbacks)
@@ -764,11 +638,6 @@ void WebViewHost::deleteFileSystem(WebKit::WebFrame* frame, WebKit::WebFileSyste
 
 bool WebViewHost::willCheckAndDispatchMessageEvent(WebFrame* sourceFrame, WebFrame* targetFrame, WebSecurityOrigin target, WebDOMMessageEvent event)
 {
-    if (m_shell->testRunner()->shouldInterceptPostMessage()) {
-        fputs("intercepted postMessage\n", stdout);
-        return true;
-    }
-
     return false;
 }
 
@@ -1044,7 +913,7 @@ void WebViewHost::displayInvalidatedRegion()
 
 void WebViewHost::testFinished()
 {
-    m_shell->testFinished();
+    m_shell->testFinished(this);
 }
 
 void WebViewHost::testTimedOut()
@@ -1077,18 +946,6 @@ int WebViewHost::windowCount()
     return m_shell->windowCount();
 }
 
-void WebViewHost::setCustomPolicyDelegate(bool isCustom, bool isPermissive)
-{
-    m_policyDelegateEnabled = isCustom;
-    m_policyDelegateIsPermissive = isPermissive;
-}
-
-void WebViewHost::waitForPolicyDelegate()
-{
-    m_policyDelegateEnabled = true;
-    m_policyDelegateShouldNotifyDone = true;
-}
-
 void WebViewHost::goToOffset(int offset)
 {
     m_shell->goToOffset(offset);
@@ -1105,6 +962,11 @@ void WebViewHost::loadURLForFrame(const WebURL& url, const string& frameName)
         return;
     TestShell::resizeWindowForTest(this, url);
     navigationController()->loadEntry(TestNavigationEntry::create(-1, url, WebString(), WebString::fromUTF8(frameName)).get());
+}
+
+bool WebViewHost::allowExternalPages()
+{
+    return m_shell->allowExternalPages();
 }
 
 // Public functions -----------------------------------------------------------
@@ -1141,6 +1003,7 @@ void WebViewHost::shutdown()
          it < m_popupmenus.end(); ++it)
         (*it)->close();
 
+    webWidget()->willCloseLayerTreeView();
     m_layerTreeView.clear();
     webWidget()->close();
     m_webWidget = 0;
@@ -1152,7 +1015,6 @@ void WebViewHost::setWebWidget(WebKit::WebWidget* widget)
     m_webWidget = widget;
     webView()->setSpellCheckClient(proxy()->spellCheckClient());
     webView()->setPrerendererClient(this);
-    webView()->setCompositorSurfaceReady();
 }
 
 WebView* WebViewHost::webView() const
@@ -1183,19 +1045,10 @@ void WebViewHost::setProxy(WebTestProxyBase* proxy)
 
 void WebViewHost::reset()
 {
-    m_policyDelegateEnabled = false;
-    m_policyDelegateIsPermissive = false;
-    m_policyDelegateShouldNotifyDone = false;
     m_pageId = -1;
     m_lastPageIdUpdated = -1;
     m_hasWindow = false;
     m_inModalLoop = false;
-    m_smartInsertDeleteEnabled = true;
-#if OS(WINDOWS)
-    m_selectTrailingWhitespaceEnabled = true;
-#else
-    m_selectTrailingWhitespaceEnabled = false;
-#endif
     m_isPainting = false;
     m_canvas.clear();
 #if ENABLE(POINTER_LOCK)
@@ -1227,22 +1080,6 @@ void WebViewHost::reset()
         webView()->mainFrame()->setName(WebString());
         webView()->settings()->setMinimumTimerInterval(webkit_support::GetForegroundTabTimerInterval());
     }
-}
-
-void WebViewHost::setSelectTrailingWhitespaceEnabled(bool enabled)
-{
-    m_selectTrailingWhitespaceEnabled = enabled;
-    // In upstream WebKit, smart insert/delete is mutually exclusive with select
-    // trailing whitespace, however, we allow both because Chromium on Windows
-    // allows both.
-}
-
-void WebViewHost::setSmartInsertDeleteEnabled(bool enabled)
-{
-    m_smartInsertDeleteEnabled = enabled;
-    // In upstream WebKit, smart insert/delete is mutually exclusive with select
-    // trailing whitespace, however, we allow both because Chromium on Windows
-    // allows both.
 }
 
 void WebViewHost::setClientWindowRect(const WebKit::WebRect& rect)
@@ -1293,11 +1130,6 @@ bool WebViewHost::navigate(const TestNavigationEntry& entry, bool reload)
 }
 
 // Private functions ----------------------------------------------------------
-
-::WebTestRunner::WebTestRunner* WebViewHost::testRunner() const
-{
-    return m_shell->testRunner();
-}
 
 void WebViewHost::updateForCommittedLoad(WebFrame* frame, bool isNewNavigation)
 {

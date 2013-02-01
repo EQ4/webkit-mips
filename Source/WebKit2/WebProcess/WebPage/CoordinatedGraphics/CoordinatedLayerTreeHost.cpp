@@ -31,12 +31,9 @@
 #include "CoordinatedLayerTreeHost.h"
 
 #include "CoordinatedGraphicsArgumentCoders.h"
-#include "CoordinatedGraphicsLayer.h"
 #include "CoordinatedLayerTreeHostProxyMessages.h"
 #include "DrawingAreaImpl.h"
 #include "GraphicsContext.h"
-#include "MessageID.h"
-#include "SurfaceUpdateInfo.h"
 #include "WebCoordinatedSurface.h"
 #include "WebCoreArgumentCoders.h"
 #include "WebPage.h"
@@ -50,6 +47,7 @@
 #include <WebCore/RenderLayerCompositor.h>
 #include <WebCore/RenderView.h>
 #include <WebCore/Settings.h>
+#include <WebCore/SurfaceUpdateInfo.h>
 #include <WebCore/TextureMapperPlatformLayer.h>
 #include <wtf/TemporaryChange.h>
 
@@ -87,7 +85,6 @@ CoordinatedLayerTreeHost::CoordinatedLayerTreeHost(WebPage* webPage)
     , m_isFlushingLayerChanges(false)
     , m_waitingForUIProcess(true)
     , m_isSuspended(false)
-    , m_contentsScale(1)
     , m_shouldSendScrollPositionUpdate(true)
     , m_shouldSyncFrame(false)
     , m_didInitializeRootCompositingLayer(false)
@@ -115,7 +112,12 @@ CoordinatedLayerTreeHost::CoordinatedLayerTreeHost(WebPage* webPage)
     m_nonCompositedContentLayer->setDrawsContent(true);
     m_nonCompositedContentLayer->setSize(m_webPage->size());
 
+    m_nonCompositedContentLayer->setShowDebugBorder(m_webPage->corePage()->settings()->showDebugBorders());
+    m_nonCompositedContentLayer->setShowRepaintCounter(m_webPage->corePage()->settings()->showRepaintCounter());
+
     m_rootLayer->addChild(m_nonCompositedContentLayer.get());
+
+    CoordinatedSurface::setFactory(createCoordinatedSurface);
 
     if (m_webPage->hasPageOverlay())
         createPageOverlayLayer();
@@ -682,10 +684,24 @@ PassOwnPtr<GraphicsLayer> CoordinatedLayerTreeHost::createGraphicsLayer(Graphics
     layer->setCoordinator(this);
     m_registeredLayers.add(layer);
     m_layersToCreate.append(layer->id());
-    layer->setContentsScale(m_contentsScale);
     layer->setNeedsVisibleRectAdjustment();
     scheduleLayerFlush();
     return adoptPtr(layer);
+}
+
+PassRefPtr<CoordinatedSurface> CoordinatedLayerTreeHost::createCoordinatedSurface(const IntSize& size, CoordinatedSurface::Flags flags)
+{
+    return WebCoordinatedSurface::create(size, flags);
+}
+
+float CoordinatedLayerTreeHost::deviceScaleFactor() const
+{
+    return m_webPage->deviceScaleFactor();
+}
+
+float CoordinatedLayerTreeHost::pageScaleFactor() const
+{
+    return m_webPage->pageScaleFactor();
 }
 
 bool LayerTreeHost::supportsAcceleratedCompositing()
@@ -693,13 +709,13 @@ bool LayerTreeHost::supportsAcceleratedCompositing()
     return true;
 }
 
-void CoordinatedLayerTreeHost::createTile(CoordinatedLayerID layerID, uint32_t tileID, const SurfaceUpdateInfo& updateInfo, const WebCore::IntRect& tileRect)
+void CoordinatedLayerTreeHost::createTile(CoordinatedLayerID layerID, uint32_t tileID, const WebCore::SurfaceUpdateInfo& updateInfo, const WebCore::IntRect& tileRect)
 {
     m_shouldSyncFrame = true;
     m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::CreateTileForLayer(layerID, tileID, tileRect, updateInfo));
 }
 
-void CoordinatedLayerTreeHost::updateTile(CoordinatedLayerID layerID, uint32_t tileID, const SurfaceUpdateInfo& updateInfo, const WebCore::IntRect& tileRect)
+void CoordinatedLayerTreeHost::updateTile(CoordinatedLayerID layerID, uint32_t tileID, const WebCore::SurfaceUpdateInfo& updateInfo, const WebCore::IntRect& tileRect)
 {
     m_shouldSyncFrame = true;
     m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::UpdateTileForLayer(layerID, tileID, tileRect, updateInfo));
@@ -754,24 +770,18 @@ void CoordinatedLayerTreeHost::setLayerAnimations(CoordinatedLayerID layerID, co
     m_webPage->send(Messages::CoordinatedLayerTreeHostProxy::SetLayerAnimations(layerID, activeAnimations));
 }
 
-void CoordinatedLayerTreeHost::setVisibleContentsRect(const FloatRect& rect, float scale, const FloatPoint& trajectoryVector)
+void CoordinatedLayerTreeHost::setVisibleContentsRect(const FloatRect& rect, const FloatPoint& trajectoryVector)
 {
-    bool contentsRectDidChange = rect != m_visibleContentsRect;
-    bool contentsScaleDidChange = scale != m_contentsScale;
-
     // A zero trajectoryVector indicates that tiles all around the viewport are requested.
     toCoordinatedGraphicsLayer(m_nonCompositedContentLayer.get())->setVisibleContentRectTrajectoryVector(trajectoryVector);
 
-    if (contentsRectDidChange || contentsScaleDidChange) {
+    bool contentsRectDidChange = rect != m_visibleContentsRect;
+    if (contentsRectDidChange) {
         m_visibleContentsRect = rect;
-        m_contentsScale = scale;
 
         HashSet<WebCore::CoordinatedGraphicsLayer*>::iterator end = m_registeredLayers.end();
         for (HashSet<WebCore::CoordinatedGraphicsLayer*>::iterator it = m_registeredLayers.begin(); it != end; ++it) {
-            if (contentsScaleDidChange)
-                (*it)->setContentsScale(scale);
-            if (contentsRectDidChange)
-                (*it)->setNeedsVisibleRectAdjustment();
+            (*it)->setNeedsVisibleRectAdjustment();
         }
     }
 
@@ -784,6 +794,14 @@ void CoordinatedLayerTreeHost::setVisibleContentsRect(const FloatRect& rect, flo
 
     if (contentsRectDidChange)
         m_shouldSendScrollPositionUpdate = true;
+}
+
+void CoordinatedLayerTreeHost::deviceOrPageScaleFactorChanged()
+{
+    m_rootLayer->deviceOrPageScaleFactorChanged();
+    m_nonCompositedContentLayer->deviceOrPageScaleFactorChanged();
+    if (m_pageOverlayLayer)
+        m_pageOverlayLayer->deviceOrPageScaleFactorChanged();
 }
 
 GraphicsLayerFactory* CoordinatedLayerTreeHost::graphicsLayerFactory()

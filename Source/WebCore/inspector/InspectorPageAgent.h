@@ -126,6 +126,7 @@ public:
     virtual void getCompositingBordersVisible(ErrorString*, bool* out_param);
     virtual void setCompositingBordersVisible(ErrorString*, bool);
     virtual void captureScreenshot(ErrorString*, String* data);
+    virtual void handleJavaScriptDialog(ErrorString*, bool accept);
 
     // Geolocation override helpers.
     GeolocationPosition* overrideGeolocationPosition(GeolocationPosition*);
@@ -144,6 +145,8 @@ public:
     void frameStoppedLoading(Frame*);
     void frameScheduledNavigation(Frame*, double delay);
     void frameClearedScheduledNavigation(Frame*);
+    void willRunJavaScriptDialog(const String& message);
+    void didRunJavaScriptDialog();
     void applyScreenWidthOverride(long*);
     void applyScreenHeightOverride(long*);
     void applyEmulatedMedia(String*);
@@ -165,6 +168,7 @@ public:
     String createIdentifier();
     Frame* frameForId(const String& frameId);
     String frameId(Frame*);
+    bool hasIdForFrame(Frame*) const;
     String loaderId(DocumentLoader*);
     Frame* assertFrame(ErrorString*, const String& frameId);
     String scriptPreprocessor() { return m_scriptPreprocessor; }

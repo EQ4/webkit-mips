@@ -61,6 +61,7 @@
 #include "TransformState.h"
 #include "WebCoreMemoryInstrumentation.h"
 #include <wtf/MemoryInstrumentationHashMap.h>
+#include <wtf/TemporaryChange.h>
 
 #if ENABLE(PLUGIN_PROXY_FOR_VIDEO)
 #include "HTMLMediaElement.h"
@@ -78,6 +79,12 @@
 // This symbol is used to determine from a script whether 3D rendering is enabled (via 'nm').
 bool WebCoreHas3DRendering = true;
 #endif
+
+#if !PLATFORM(MAC) && !PLATFORM(IOS)
+#define WTF_USE_COMPOSITING_FOR_SMALL_CANVASES 1
+#endif
+
+static const int canvasAreaThresholdRequiringCompositing = 50 * 100;
 
 namespace WebCore {
 
@@ -200,6 +207,7 @@ RenderLayerCompositor::RenderLayerCompositor(RenderView* renderView)
     , m_flushingLayers(false)
     , m_shouldFlushOnReattach(false)
     , m_forceCompositingMode(false)
+    , m_inPostLayoutUpdate(false)
     , m_isTrackingRepaints(false)
     , m_rootLayerAttachment(RootLayerUnattached)
 #if !LOG_DISABLED
@@ -418,6 +426,8 @@ void RenderLayerCompositor::updateCompositingLayers(CompositingUpdateType update
 
     AnimationUpdateBlock animationUpdateBlock(m_renderView->frameView()->frame()->animation());
 
+    TemporaryChange<bool> postLayoutChange(m_inPostLayoutUpdate, true);
+    
     bool checkForHierarchyUpdate = m_reevaluateCompositingAfterLayout;
     bool needGeometryUpdate = false;
 
@@ -431,6 +441,9 @@ void RenderLayerCompositor::updateCompositingLayers(CompositingUpdateType update
         if (m_compositingConsultsOverlap)
             checkForHierarchyUpdate = true; // Overlap can change with scrolling, so need to check for hierarchy updates.
 
+        needGeometryUpdate = true;
+        break;
+    case CompositingUpdateOnCompositedScroll:
         needGeometryUpdate = true;
         break;
     }
@@ -584,9 +597,6 @@ bool RenderLayerCompositor::updateBacking(RenderLayer* layer, CompositingChangeR
 
             layerChanged = true;
         }
-
-        // Need to add for every compositing layer, because a composited layer may change from being non-fixed to fixed.
-        updateViewportConstraintStatus(layer);
     } else {
         if (layer->backing()) {
             // If we're removing backing on a reflection, clear the source GraphicsLayer's pointer to
@@ -1902,7 +1912,12 @@ bool RenderLayerCompositor::requiresCompositingForCanvas(RenderObject* renderer)
 
     if (renderer->isCanvas()) {
         HTMLCanvasElement* canvas = static_cast<HTMLCanvasElement*>(renderer->node());
-        return canvas->renderingContext() && canvas->renderingContext()->isAccelerated();
+#if USE(COMPOSITING_FOR_SMALL_CANVASES)
+        bool isCanvasLargeEnoughToForceCompositing = true;
+#else
+        bool isCanvasLargeEnoughToForceCompositing = canvas->size().area() >= canvasAreaThresholdRequiringCompositing;
+#endif
+        return canvas->renderingContext() && canvas->renderingContext()->isAccelerated() && (canvas->renderingContext()->is3d() || isCanvasLargeEnoughToForceCompositing);
     }
     return false;
 }
@@ -2062,6 +2077,12 @@ bool RenderLayerCompositor::requiresCompositingForPosition(RenderObject* rendere
             *viewportConstrainedNotCompositedReason = RenderLayer::NotCompositedForNonViewContainer;
         return false;
     }
+    
+    // Subsequent tests depend on layout. If we can't tell now, just keep things the way they are until layout is done.
+    if (!m_inPostLayoutUpdate) {
+        m_reevaluateCompositingAfterLayout = true;
+        return layer->isComposited();
+    }
 
     // Fixed position elements that are invisible in the current view don't get their own layer.
     if (FrameView* frameView = m_renderView->frameView()) {
@@ -2072,18 +2093,13 @@ bool RenderLayerCompositor::requiresCompositingForPosition(RenderObject* rendere
         if (!viewBounds.intersects(enclosingIntRect(layerBounds))) {
             if (viewportConstrainedNotCompositedReason)
                 *viewportConstrainedNotCompositedReason = RenderLayer::NotCompositedForBoundsOutOfView;
-            // Reevaluate compositing after layout because the layer bounds may change and become composited.
-            m_reevaluateCompositingAfterLayout = true;
             return false;
         }
     }
     
     bool paintsContent = layer->isVisuallyNonEmpty() || layer->hasVisibleDescendant();
-    if (!paintsContent) {
-        // isVisuallyNonEmpty() depends on layout.
-        m_reevaluateCompositingAfterLayout = true;
+    if (!paintsContent)
         return false;
-    }
 
     return true;
 }
@@ -2884,21 +2900,21 @@ void RenderLayerCompositor::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo
 {
     MemoryClassInfo info(memoryObjectInfo, this, PlatformMemoryTypes::Rendering);
     info.addWeakPointer(m_renderView);
-    info.addMember(m_rootContentLayer);
-    info.addMember(m_updateCompositingLayersTimer);
-    info.addMember(m_clipLayer);
-    info.addMember(m_scrollLayer);
-    info.addMember(m_viewportConstrainedLayers);
-    info.addMember(m_viewportConstrainedLayersNeedingUpdate);
-    info.addMember(m_overflowControlsHostLayer);
-    info.addMember(m_layerForHorizontalScrollbar);
-    info.addMember(m_layerForVerticalScrollbar);
-    info.addMember(m_layerForScrollCorner);
+    info.addMember(m_rootContentLayer, "rootContentLayer");
+    info.addMember(m_updateCompositingLayersTimer, "updateCompositingLayersTimer");
+    info.addMember(m_clipLayer, "clipLayer");
+    info.addMember(m_scrollLayer, "scrollLayer");
+    info.addMember(m_viewportConstrainedLayers, "viewportConstrainedLayers");
+    info.addMember(m_viewportConstrainedLayersNeedingUpdate, "viewportConstrainedLayersNeedingUpdate");
+    info.addMember(m_overflowControlsHostLayer, "overflowControlsHostLayer");
+    info.addMember(m_layerForHorizontalScrollbar, "layerForHorizontalScrollbar");
+    info.addMember(m_layerForVerticalScrollbar, "layerForVerticalScrollbar");
+    info.addMember(m_layerForScrollCorner, "layerForScrollCorner");
 #if ENABLE(RUBBER_BANDING)
-    info.addMember(m_layerForOverhangAreas);
-    info.addMember(m_contentShadowLayer);
+    info.addMember(m_layerForOverhangAreas, "layerForOverhangAreas");
+    info.addMember(m_contentShadowLayer, "contentShadowLayer");
 #endif
-    info.addMember(m_layerUpdater);
+    info.addMember(m_layerUpdater, "layerUpdater");
 }
 
 } // namespace WebCore

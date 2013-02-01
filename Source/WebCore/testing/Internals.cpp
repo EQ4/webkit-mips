@@ -65,6 +65,7 @@
 #include "IntRect.h"
 #include "Language.h"
 #include "MallocStatistics.h"
+#include "MemoryCache.h"
 #include "MockPagePopupDriver.h"
 #include "NodeRenderingContext.h"
 #include "Page.h"
@@ -289,6 +290,14 @@ bool Internals::isPreloaded(const String& url)
 {
     Document* document = contextDocument();
     return document->cachedResourceLoader()->isPreloaded(url);
+}
+
+bool Internals::isLoadingFromMemoryCache(const String& url)
+{
+    if (!contextDocument())
+        return false;
+    CachedResource* resource = memoryCache()->resourceForURL(contextDocument()->completeURL(url));
+    return resource && resource->status() == CachedResource::Cached;
 }
 
 PassRefPtr<Element> Internals::createContentElement(ExceptionCode& ec)
@@ -571,7 +580,7 @@ Internals::ShadowRootIfShadowDOMEnabledOrNode* Internals::ensureShadowRoot(Eleme
     if (ElementShadow* shadow = host->shadow())
         return shadow->youngestShadowRoot();
 
-    return ShadowRoot::create(host, ec).get();
+    return host->createShadowRoot(ec).get();
 }
 
 Internals::ShadowRootIfShadowDOMEnabledOrNode* Internals::createShadowRoot(Element* host, ExceptionCode& ec)
@@ -580,7 +589,7 @@ Internals::ShadowRootIfShadowDOMEnabledOrNode* Internals::createShadowRoot(Eleme
         ec = INVALID_ACCESS_ERR;
         return 0;
     }
-    return ShadowRoot::create(host, ec).get();
+    return host->createShadowRoot(ec).get();
 }
 
 Internals::ShadowRootIfShadowDOMEnabledOrNode* Internals::shadowRoot(Element* host, ExceptionCode& ec)

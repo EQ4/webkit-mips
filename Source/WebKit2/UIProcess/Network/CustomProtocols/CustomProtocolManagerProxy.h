@@ -28,8 +28,6 @@
 
 #if ENABLE(CUSTOM_PROTOCOLS)
 
-#include "MessageID.h"
-
 #if PLATFORM(MAC)
 #include <wtf/HashMap.h>
 #include <wtf/RetainPtr.h>
@@ -53,12 +51,12 @@ class CustomProtocolManagerProxy {
 public:
     explicit CustomProtocolManagerProxy(ChildProcessProxy*);
 
-    void didReceiveMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&);
+    void didReceiveMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&);
     void startLoading(uint64_t customProtocolID, const WebCore::ResourceRequest&);
     void stopLoading(uint64_t customProtocolID);
 
 private:
-    void didReceiveCustomProtocolManagerProxyMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&);
+    void didReceiveCustomProtocolManagerProxyMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&);
 
     ChildProcessProxy* m_childProcessProxy;
 

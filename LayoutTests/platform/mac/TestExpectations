@@ -135,6 +135,13 @@ canvas/philip/tests/2d.drawImage.outsidesource.html
 # IndexedDB is not yet enabled.
 storage/indexeddb
 http/tests/inspector/indexeddb
+http/tests/security/cross-origin-indexeddb-allowed.html
+http/tests/security/cross-origin-indexeddb.html
+http/tests/security/cross-origin-worker-indexeddb-allowed.html
+http/tests/security/cross-origin-worker-indexeddb.html
+
+# Remove from list after enabling CANVAS_PATH
+fast/canvas/canvas-currentPath.html
 
 # This port doesn't support DeviceMotion or DeviceOrientation.
 fast/dom/DeviceMotion
@@ -240,6 +247,7 @@ animations/play-state.html
 # window.eventSender doesn't exist in devtools front-end on mac.
 # https://bugs.webkit.org/show_bug.cgi?id=106793
 inspector/editor/text-editor-formatter.html [ Skip ]
+inspector/editor/text-editor-word-jumps.html [ Skip ]
 
 # https://bugs.webkit.org/show_bug.cgi?id=71120
 inspector/debugger/selected-call-frame-after-formatting-source.html
@@ -263,7 +271,7 @@ inspector/profiler/heap-snapshot-summary-show-ranges.html
 inspector/profiler/heap-snapshot-summary-sorting-fields.html
 inspector/profiler/heap-snapshot-summary-sorting.html
 inspector/profiler/heap-snapshot-summary-sorting-instances.html
-webkit.org/b/50485 inspector-protocol/take-heap-snapshot.html [ Skip ]
+webkit.org/b/50485 inspector-protocol/heap-profiler [ Skip ]
 
 # New inspector/profiler/memory-instrumentation-canvas.html fails on JSC platforms
 webkit.org/b/99001 inspector/profiler/memory-instrumentation-canvas.html
@@ -927,6 +935,9 @@ canvas/philip/tests/2d.gradient.interpolate.colouralpha.html
 canvas/philip/tests/2d.line.miter.lineedge.html
 canvas/philip/tests/2d.strokeRect.zero.4.html
 
+# https://bugs.webkit.org/show_bug.cgi?id=107118
+fast/canvas/canvas-quadratic-same-endpoint.html
+
 # --- Compositing ----
 css3/filters/composited-during-transition-layertree.html
 
@@ -1193,9 +1204,6 @@ webkit.org/b/98257 fast/canvas/webgl/oes-element-index-uint.html [ Failure Pass 
 # Resource Timing is not enable yet, skip it.
 webkit.org/b/61138 http/tests/w3c/webperf/submission/Intel/resource-timing [ Skip ]
 
-# TileCache tests that don't apply to WK1 (they are re-enabled via the WK2 TestExpectations file)
-platform/mac/tiled-drawing/ [ Skip ]
-
 # Can't hide scrollbars in WK1
 fast/css/sticky/sticky-top-zoomed.html [ ImageOnlyFailure ]
 
@@ -1269,10 +1277,6 @@ webkit.org/b/106957 svg/dom/SVGViewSpec-invalid-ref-crash.html [ Failure ]
 webkit.org/b/39725 fast/events/drag-and-drop-autoscroll.html [ Skip ]
 
 # Transient. Needs rebaseline.
-webkit.org/b/103955 fast/repaint/4774354.html [ ImageOnlyFailure ]
-webkit.org/b/103955 fast/repaint/4776765.html [ ImageOnlyFailure ]
-webkit.org/b/103955 fast/repaint/caret-outside-block.html [ ImageOnlyFailure ]
-webkit.org/b/103955 fast/repaint/selection-rl.html [ ImageOnlyFailure ]
 webkit.org/b/103955 fast/repaint/caret-with-transformation.html [ Missing ]
 
 # Needs rebaseline.
@@ -1294,3 +1298,29 @@ webkit.org/b/107567 css2.1/t0505-c16-descendant-01-e.html [ Failure ]
 webkit.org/b/107567 tables/mozilla/bugs/bug1188.html [ Failure ] 
 webkit.org/b/107567 editing/selection/extend-by-sentence-001.html [ Failure ] 
 webkit.org/b/107567 svg/carto.net/combobox.svg [ Failure ] 
+
+webkit.org/b/106415 fast/workers/worker-close-more.html [ Pass Failure ] 
+webkit.org/b/106415 fast/workers/worker-document-leak.html [ Pass Failure ] 
+webkit.org/b/106415 fast/workers/worker-lifecycle.html [ Pass Failure ]
+
+# Spellchecker behavior tests.
+webkit.org/b/108370 editing/spelling/spelling-double-clicked-word.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-double-clicked-word-with-underscores.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-exactly-selected-multiple-words.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-exactly-selected-word.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-multiword-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-should-select-multiple-words.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-should-select-single-word.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-subword-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-with-punctuation-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-with-underscore-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-with-whitespace-selection.html [ Skip ]
+
+webkit.org/b/108257 [ Debug ] compositing/overflow/composited-scrolling-creates-a-stacking-container.html [ Crash ]
+webkit.org/b/108257 [ Debug ] compositing/overflow/automatically-opt-into-composited-scrolling.html [ Crash ]
+
+webkit.org/b/108380 http/tests/cache/cached-main-resource.html [ Failure ]
+webkit.org/b/108380 http/tests/inspector/resource-har-pages.html [ Failure ]
+webkit.org/b/108380 http/tests/loading/redirect-methods.html [ Failure ]
+webkit.org/b/108380 http/tests/misc/link-rel-icon-beforeload.html [ Failure ]
+webkit.org/b/108380 http/tests/misc/favicon-loads-with-images-disabled.html [ Failure ]

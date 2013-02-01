@@ -27,28 +27,25 @@
 #include "config.h"
 #include "TransitionEvent.h"
 
-#if ENABLE(CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED)
-
 #include "EventNames.h"
 
 namespace WebCore {
 
 TransitionEventInit::TransitionEventInit()
-    : propertyName()
-    , elapsedTime(0)
+    : elapsedTime(0)
 {
 }
 
 TransitionEvent::TransitionEvent()
-    : m_propertyName()
-    , m_elapsedTime(0)
+    : m_elapsedTime(0)
 {
 }
 
-TransitionEvent::TransitionEvent(const AtomicString& type, const String& propertyName, double elapsedTime)
+TransitionEvent::TransitionEvent(const AtomicString& type, const String& propertyName, double elapsedTime, const String& pseudoElement)
     : Event(type, true, true)
     , m_propertyName(propertyName)
     , m_elapsedTime(elapsedTime)
+    , m_pseudoElement(pseudoElement)
 {
 }
 
@@ -56,6 +53,7 @@ TransitionEvent::TransitionEvent(const AtomicString& type, const TransitionEvent
     : Event(type, initializer)
     , m_propertyName(initializer.propertyName)
     , m_elapsedTime(initializer.elapsedTime)
+    , m_pseudoElement(initializer.pseudoElement)
 {
 }
 
@@ -73,11 +71,14 @@ double TransitionEvent::elapsedTime() const
     return m_elapsedTime;
 }
 
+const String& TransitionEvent::pseudoElement() const
+{
+    return m_pseudoElement;
+}
+
 const AtomicString& TransitionEvent::interfaceName() const
 {
     return eventNames().interfaceForTransitionEvent;
 }
 
 } // namespace WebCore
-
-#endif // ENABLE(CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED)

@@ -81,8 +81,6 @@ public:
     virtual std::string makeURLErrorDescription(const WebKit::WebURLError&) { return std::string(); }
     virtual std::string normalizeLayoutTestURL(const std::string&) { return std::string(); }
     virtual void setClientWindowRect(const WebKit::WebRect&) { }
-    virtual void setSelectTrailingWhitespaceEnabled(bool) { }
-    virtual void setSmartInsertDeleteEnabled(bool) { }
     virtual void showDevTools() { }
     virtual void closeDevTools() { }
     virtual void evaluateInWebInspector(long, const std::string&) { }
@@ -119,11 +117,10 @@ public:
     virtual void closeRemainingWindows() { }
     virtual int navigationEntryCount() { return 0; }
     virtual int windowCount() { return 0; }
-    virtual void setCustomPolicyDelegate(bool, bool) { }
-    virtual void waitForPolicyDelegate() { }
     virtual void goToOffset(int) { }
     virtual void reload() { }
     virtual void loadURLForFrame(const WebKit::WebURL&, const std::string&) { }
+    virtual bool allowExternalPages() { return false; }
 };
 
 }

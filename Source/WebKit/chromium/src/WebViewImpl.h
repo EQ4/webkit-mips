@@ -143,7 +143,6 @@ public:
     virtual void didEnterFullScreen();
     virtual void willExitFullScreen();
     virtual void didExitFullScreen();
-    virtual void setCompositorSurfaceReady();
     virtual void animate(double);
     virtual void layout(); // Also implements WebLayerTreeViewClient::layout()
     virtual void enterForceCompositingMode(bool enable) OVERRIDE;
@@ -152,7 +151,6 @@ public:
     virtual void themeChanged();
     virtual void composite(bool finish);
     virtual void setNeedsRedraw();
-    virtual bool isInputThrottled() const;
     virtual bool handleInputEvent(const WebInputEvent&);
     virtual bool hasTouchEventHandlersAt(const WebPoint&);
     virtual void mouseCaptureLost();
@@ -184,7 +182,6 @@ public:
     virtual void didChangeWindowResizerRect();
     virtual void instrumentBeginFrame();
     virtual void instrumentCancelFrame();
-    virtual void renderingStats(WebRenderingStats&) const;
 
     // WebView methods:
     virtual void initializeMainFrame(WebFrameClient*);
@@ -484,6 +481,7 @@ public:
         return m_emulatedTextZoomFactor;
     }
 
+    void setInitialPageScaleFactor(float initialPageScaleFactor) { m_initialPageScaleFactor = initialPageScaleFactor; }
     bool ignoreViewportTagMaximumScale() const { return m_ignoreViewportTagMaximumScale; }
 
     // Determines whether a page should e.g. be opened in a background tab.
@@ -579,6 +577,7 @@ public:
     void computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZoomType, float& scale, WebPoint& scroll, bool& isAnchor);
     WebCore::Node* bestTouchLinkNode(const WebGestureEvent& touchEvent);
     void enableTouchHighlight(const WebGestureEvent& touchEvent);
+    void computeScaleAndScrollForFocusedNode(WebCore::Node* focusedNode, float& scale, WebCore::IntPoint& scroll, bool& needAnimation);
 #endif
     void animateZoomAroundPoint(const WebCore::IntPoint&, AutoZoomType);
 
@@ -614,7 +613,7 @@ public:
     WebSettingsImpl* settingsImpl();
 
 private:
-    bool computePageScaleFactorLimits();
+    void computePageScaleFactorLimits();
     float clampPageScaleFactorToLimits(float scale);
     WebCore::IntPoint clampOffsetAtScale(const WebCore::IntPoint& offset, float scale) const;
     WebCore::IntSize contentsSize() const;
@@ -754,6 +753,7 @@ private:
     float m_pageDefinedMaximumPageScaleFactor;
     float m_minimumPageScaleFactor;
     float m_maximumPageScaleFactor;
+    float m_initialPageScaleFactor;
     bool m_ignoreViewportTagMaximumScale;
     bool m_pageScaleFactorIsSet;
 
@@ -849,7 +849,6 @@ private:
     WebCore::IntRect m_rootLayerScrollDamage;
     OwnPtr<NonCompositedContentHost> m_nonCompositedContentHost;
     WebLayerTreeView* m_layerTreeView;
-    bool m_ownsLayerTreeView;
     WebLayer* m_rootLayer;
     WebCore::GraphicsLayer* m_rootGraphicsLayer;
     bool m_isAcceleratedCompositingActive;
@@ -857,7 +856,6 @@ private:
     bool m_compositorCreationFailed;
     // If true, the graphics context is being restored.
     bool m_recreatingGraphicsContext;
-    bool m_compositorSurfaceReady;
     int m_inputHandlerIdentifier;
 #endif
     static const WebInputEvent* m_currentInputEvent;

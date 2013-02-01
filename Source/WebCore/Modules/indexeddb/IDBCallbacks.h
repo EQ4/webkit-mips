@@ -33,7 +33,6 @@
 #include "IDBDatabaseError.h"
 #include "IDBKey.h"
 #include "IDBKeyPath.h"
-#include "IDBTransactionBackendInterface.h"
 #include "SerializedScriptValue.h"
 #include <wtf/RefCounted.h>
 
@@ -71,8 +70,8 @@ public:
     // From IDBFactory.open()/deleteDatabase()
     virtual void onBlocked(int64_t existingVersion) { ASSERT_NOT_REACHED(); }
     // From IDBFactory.open()
-    virtual void onUpgradeNeeded(int64_t oldVersion, PassRefPtr<IDBTransactionBackendInterface>, PassRefPtr<IDBDatabaseBackendInterface>) { ASSERT_NOT_REACHED(); }
-    virtual void onSuccess(PassRefPtr<IDBDatabaseBackendInterface>) { ASSERT_NOT_REACHED(); }
+    virtual void onUpgradeNeeded(int64_t oldVersion, PassRefPtr<IDBDatabaseBackendInterface>, const IDBDatabaseMetadata&) { ASSERT_NOT_REACHED(); }
+    virtual void onSuccess(PassRefPtr<IDBDatabaseBackendInterface>, const IDBDatabaseMetadata&) { ASSERT_NOT_REACHED(); }
 };
 
 } // namespace WebCore

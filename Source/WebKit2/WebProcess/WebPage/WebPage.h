@@ -102,7 +102,6 @@ OBJC_CLASS WKAccessibilityWebPageObject;
 namespace CoreIPC {
     class ArgumentDecoder;
     class Connection;
-    class MessageID;
 }
 
 namespace WebCore {
@@ -110,9 +109,6 @@ namespace WebCore {
     class Frame;
     class FrameView;
     class HTMLPlugInElement;
-#if ENABLE(WEB_INTENTS)
-    class Intent;
-#endif
     class KeyboardEvent;
     class Page;
     class PrintContext;
@@ -153,10 +149,6 @@ struct EditorState;
 struct PrintInfo;
 struct WebPageCreationParameters;
 struct WebPreferencesStore;
-
-#if ENABLE(WEB_INTENTS)
-struct IntentData;
-#endif
 
 #if ENABLE(GESTURE_EVENTS)
 class WebGestureEvent;
@@ -244,8 +236,8 @@ public:
     WebOpenPanelResultListener* activeOpenPanelResultListener() const { return m_activeOpenPanelResultListener.get(); }
     void setActiveOpenPanelResultListener(PassRefPtr<WebOpenPanelResultListener>);
 
-    void didReceiveMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&) OVERRIDE;
-    void didReceiveSyncMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&, OwnPtr<CoreIPC::MessageEncoder>&) OVERRIDE;
+    void didReceiveMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&) OVERRIDE;
+    void didReceiveSyncMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&, OwnPtr<CoreIPC::MessageEncoder>&) OVERRIDE;
 
     // -- InjectedBundle methods
 #if ENABLE(CONTEXT_MENUS)
@@ -491,10 +483,6 @@ public:
     bool isSmartInsertDeleteEnabled() const { return m_isSmartInsertDeleteEnabled; }
 #endif
 
-#if ENABLE(WEB_INTENTS)
-    void deliverCoreIntentToFrame(uint64_t frameID, WebCore::Intent*);
-#endif
-
     void replaceSelectionWithText(WebCore::Frame*, const String&);
     void clearSelection();
 
@@ -583,7 +571,8 @@ public:
     uint64_t nativeWindowHandle() { return m_nativeWindowHandle; }
 #endif
 
-    bool shouldUseCustomRepresentationForResponse(const WebCore::ResourceResponse&) const;
+    bool shouldUseCustomRepresentationForResponse(const WebCore::ResourceResponse&);
+    bool canPluginHandleResponse(const WebCore::ResourceResponse& response);
 
     bool asynchronousPluginInitializationEnabled() const { return m_asynchronousPluginInitializationEnabled; }
     void setAsynchronousPluginInitializationEnabled(bool enabled) { m_asynchronousPluginInitializationEnabled = enabled; }
@@ -623,8 +612,8 @@ private:
 
     void platformInitialize();
 
-    void didReceiveWebPageMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&);
-    void didReceiveSyncWebPageMessage(CoreIPC::Connection*, CoreIPC::MessageID, CoreIPC::MessageDecoder&, OwnPtr<CoreIPC::MessageEncoder>&);
+    void didReceiveWebPageMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&);
+    void didReceiveSyncWebPageMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&, OwnPtr<CoreIPC::MessageEncoder>&);
 
 #if !PLATFORM(MAC)
     static const char* interpretKeyEvent(const WebCore::KeyboardEvent*);
@@ -677,10 +666,6 @@ private:
 #endif
 #if ENABLE(CONTEXT_MENUS)
     void contextMenuHidden() { m_isShowingContextMenu = false; }
-#endif
-
-#if ENABLE(WEB_INTENTS)
-    void deliverIntentToFrame(uint64_t frameID, const IntentData&);
 #endif
 
     static void scroll(WebCore::Page*, WebCore::ScrollDirection, WebCore::ScrollGranularity);

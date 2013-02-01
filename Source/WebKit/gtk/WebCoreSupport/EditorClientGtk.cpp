@@ -262,12 +262,7 @@ void EditorClient::respondToChangedSelection(Frame* frame)
     setSelectionPrimaryClipboardIfNeeded(m_webView);
 #endif
 
-    if (!frame->editor()->hasComposition() || frame->editor()->ignoreCompositionSelectionChange())
-        return;
-
-    unsigned start;
-    unsigned end;
-    if (!frame->editor()->getCompositionSelection(start, end))
+    if (frame->editor()->cancelCompositionIfSelectionIsInvalid())
         m_webView->priv->imFilter.resetContext();
 }
 
@@ -279,6 +274,14 @@ void EditorClient::didEndEditing()
 void EditorClient::didWriteSelectionToPasteboard()
 {
     notImplemented();
+}
+
+void EditorClient::willWriteSelectionToPasteboard(WebCore::Range*)
+{
+}
+
+void EditorClient::getClientPasteboardDataForRange(WebCore::Range*, Vector<String>& pasteboardTypes, Vector<RefPtr<WebCore::SharedBuffer> >& pasteboardData)
+{
 }
 
 void EditorClient::didSetSelectionTypesForPasteboard()

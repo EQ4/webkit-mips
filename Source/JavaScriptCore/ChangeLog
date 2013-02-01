@@ -1,3 +1,624 @@
+2013-02-01  Geoffrey Garen  <ggaren@apple.com>
+
+        Added TriState to WTF and started using it in one place
+        https://bugs.webkit.org/show_bug.cgi?id=108628
+
+        Reviewed by Beth Dakin.
+
+        * runtime/PrototypeMap.h:
+        (JSC::PrototypeMap::isPrototype): Use TriState instead of boolean. In
+        response to review feedback, this is an attempt to clarify that our
+        'true' condition is actually just a 'maybe'.
+
+        * runtime/PrototypeMap.h:
+        (PrototypeMap):
+        (JSC::PrototypeMap::isPrototype):
+
+2013-02-01  Alexis Menard  <alexis@webkit.org>
+
+        Enable unprefixed CSS transitions by default.
+        https://bugs.webkit.org/show_bug.cgi?id=108216
+
+        Reviewed by Dean Jackson.
+
+        Rename the flag CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED
+        to CSS_TRANSFORMS_ANIMATIONS_UNPREFIXED which will be used later to 
+        guard the unprefixing work for CSS Transforms and animations.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-01-31  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG::CFGSimplificationPhase::keepOperandAlive() conflates liveness and availability
+        https://bugs.webkit.org/show_bug.cgi?id=108580
+
+        Reviewed by Oliver Hunt.
+        
+        This is a harmless bug in that it only results in us keeping a bit too many things
+        for OSR.  But it's worth fixing so that the code is consistent.
+
+        keepOperandAlive() is called when block A has a branch to blocks B and C, but the
+        A->B edge is proven to never be taken and we want to optimize the code to have A
+        unconditionally jump to C.  In that case, for the purposes of OSR, we need to
+        preserve the knowledge that the state that B expected to be live incoming from A
+        ought still to be live up to the point of where the A->B,C branch used to be.  The
+        way we keep things alive is by using the variablesAtTail of A (i.e., we use the
+        knowledge of in what manner A made state available to B and C).  The way we choose
+        which state should be kept alive ought to be chosen by the variablesAtHead of B
+        (i.e. the things B says it needs from its predecessors, including A), except that
+        keepOperandAlive() was previously just using variablesAtTail of A for this
+        purpose.
+        
+        The fix is to have keepOperandAlive() use both liveness and availability in its
+        logic. It should use liveness (i.e. B->variablesAtHead) to decide what to keep
+        alive, and it should use availability (i.e. A->variablesAtTail) to decide how to
+        keep it alive.
+        
+        This might be a microscopic win on some programs, but it's mainly intended to be
+        a code clean-up so that I don't end up scratching my head in confusion the next
+        time I look at this code.
+
+        * dfg/DFGCFGSimplificationPhase.cpp:
+        (JSC::DFG::CFGSimplificationPhase::keepOperandAlive):
+        (JSC::DFG::CFGSimplificationPhase::jettisonBlock):
+        (JSC::DFG::CFGSimplificationPhase::mergeBlocks):
+
+2013-01-31  Geoffrey Garen  <ggaren@apple.com>
+
+        REGRESSION (r141192): Crash beneath cti_op_get_by_id_generic @ discussions.apple.com
+        https://bugs.webkit.org/show_bug.cgi?id=108576
+
+        Reviewed by Filip Pizlo.
+
+        This was a long-standing bug. The DFG would destructively reuse a register
+        in op_convert_this, but:
+
+            * The bug only presented during speculation failure for type Other
+
+            * The bug presented by removing the low bits of a pointer, which
+            used to be harmless, since all objects were so aligned anyway.
+
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile): Don't reuse our this register as
+        our scratch register. The whole point of our scratch register is to
+        avoid destructively modifying our this register. I'm pretty sure this
+        was a copy-paste error.
+
+2013-01-31  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Windows build fix.
+
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCoreExports.def:
+
+2013-01-31  Jessie Berlin  <jberlin@apple.com>
+
+        Rolling out r141407 because it is causing crashes under
+        WTF::TCMalloc_Central_FreeList::FetchFromSpans() in Release builds.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+
+2013-01-31  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: JSContext exception property causes reference cycle
+        https://bugs.webkit.org/show_bug.cgi?id=107778
+
+        Reviewed by Darin Adler.
+
+        JSContext has a (retain) JSValue * exception property which, when non-null, creates a 
+        reference cycle (since the JSValue * holds a strong reference back to the JSContext *).
+
+        * API/JSContext.mm: Instead of JSValue *, we now use a plain JSValueRef, which eliminates the reference cycle.
+        (-[JSContext initWithVirtualMachine:]):
+        (-[JSContext setException:]):
+        (-[JSContext exception]):
+
+2013-01-31  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed build fix. Win7 port.
+
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCoreExports.def:
+
+2013-01-31  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Disable ENABLE_FULLSCREEN_API on iOS
+        https://bugs.webkit.org/show_bug.cgi?id=108250
+
+        Reviewed by Benjamin Poulain.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-01-31  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Fix insertion of values greater than the max index allowed by the spec
+        https://bugs.webkit.org/show_bug.cgi?id=108264
+
+        Reviewed by Oliver Hunt.
+
+        Fixed a bug, added a test to the API tests, cleaned up some code.
+
+        * API/JSValue.h: Changed some of the documentation on setValue:atIndex: to indicate that 
+        setting values at indices greater than UINT_MAX - 1 wont' affect the length of JS arrays.
+        * API/JSValue.mm:
+        (-[JSValue valueAtIndex:]): We weren't returning when we should have been.
+        (-[JSValue setValue:atIndex:]): Added a comment about why we do the early check for being larger than UINT_MAX.
+        (objectToValueWithoutCopy): Removed two redundant cases that were already checked previously.
+        * API/tests/testapi.mm:
+
+2013-01-30  Andreas Kling  <akling@apple.com>
+
+        Vector should consult allocator about ideal size when choosing capacity.
+        <http://webkit.org/b/108410>
+        <rdar://problem/13124002>
+
+        Reviewed by Benjamin Poulain.
+
+        Remove assertion about Vector capacity that won't hold anymore since capacity()
+        may not be what you passed to reserveCapacity().
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+
+2013-01-30  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG bytecode parser should have more assertions about the status of local accesses
+        https://bugs.webkit.org/show_bug.cgi?id=108417
+
+        Reviewed by Mark Hahnenberg.
+        
+        Assert some things that we already know to be true, just to reassure ourselves that they are true.
+        This is meant as a prerequisite for https://bugs.webkit.org/show_bug.cgi?id=108414, which will
+        make these rules even stricter.
+
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::getLocal):
+        (JSC::DFG::ByteCodeParser::getArgument):
+
+2013-01-30  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: JSContext's dealloc causes ASSERT due to ordering of releases
+        https://bugs.webkit.org/show_bug.cgi?id=107978
+
+        Reviewed by Filip Pizlo.
+
+        We need to add the Identifier table save/restore in JSContextGroupRelease so that we 
+        have the correct table if we end up destroying the JSGlobalData/Heap.
+
+        * API/JSContextRef.cpp:
+        (JSContextGroupRelease):
+
+2013-01-30  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: exceptionHandler needs to be released in JSContext dealloc
+        https://bugs.webkit.org/show_bug.cgi?id=108378
+
+        Reviewed by Filip Pizlo.
+
+        JSContext has a (copy) exceptionHandler property that it doesn't release in dealloc. 
+        That sounds like the potential for a leak. It should be released.
+
+        * API/JSContext.mm:
+        (-[JSContext dealloc]):
+
+2013-01-30  Filip Pizlo  <fpizlo@apple.com>
+
+        REGRESSION(140504): pure CSE no longer matches things, 10% regression on Kraken
+        https://bugs.webkit.org/show_bug.cgi?id=108366
+
+        Reviewed by Geoffrey Garen and Mark Hahnenberg.
+        
+        This was a longstanding bug that was revealed by http://trac.webkit.org/changeset/140504.
+        Pure CSE requires that the Node::flags() that may affect the behavior of a node match,
+        when comparing a possibly redundant node to its possible replacement. It was doing this
+        by comparing Node::arithNodeFlags(), which as the name might appear to suggest, returns
+        just those flag bits that correspond to actual node behavior and not auxiliary things.
+        Unfortunately, Node::arithNodeFlags() wasn't actually masking off the irrelevant bits.
+        This worked prior to r140504 because CSE itself didn't mutate the flags, so there was a
+        very high probability that matching nodes would also have completely identical flag bits
+        (even the ones that aren't relevant to arithmetic behavior, like NodeDoesNotExit). But
+        r140504 moved one of CSE's side-tables (m_relevantToOSR) into a flag bit for quicker
+        access. These bits would be mutated as the CSE ran over a basic block, in such a way that
+        there was a very high probability that the possible replacement would already have the
+        bit set, while the redundant node did not have the bit set. Since Node::arithNodeFlags()
+        returned all of the bits, this would cause CSEPhase::pureCSE() to reject the match
+        almost every time.
+        
+        The solution is to make Node::arithNodeFlags() do as its name suggests: only return those
+        flags that are relevant to arithmetic behavior. This patch introduces a new mask that
+        represents those bits, and includes NodeBehaviorMask and NodeBackPropMask, which are both
+        used for queries on Node::arithNodeFlags(), and both affect arithmetic code gen. None of
+        the other flags are relevant to Node::arithNodeFlags() since they either correspond to
+        information already conveyed by the opcode (like NodeResultMask, NodeMustGenerate,
+        NodeHasVarArgs, NodeClobbersWorld, NodeMightClobber) or information that doesn't affect
+        the result that the node will produce or any of the queries performed on the result of
+        Node::arithNodeFlags (NodeDoesNotExit and of course NodeRelevantToOSR).
+        
+        This is a 10% speed-up on Kraken, undoing the regression from r140504.
+
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::arithNodeFlags):
+        * dfg/DFGNodeFlags.h:
+        (DFG):
+
+2013-01-29  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Structure::m_outOfLineCapacity is unnecessary
+        https://bugs.webkit.org/show_bug.cgi?id=108206
+
+        Reviewed by Geoffrey Garen.
+
+        We can calculate our out of line capacity by using the outOfLineSize and our knowledge about our resize policy.
+        According to GDB, this knocks Structures down from 136 bytes to 128 bytes (I'm guessing the extra bytes are from
+        better alignment of object fields), which puts Structures in a smaller size class. Woohoo! Looks neutral on our 
+        benchmarks.
+
+        * runtime/Structure.cpp:
+        (JSC::Structure::Structure):
+        (JSC):
+        (JSC::Structure::suggestedNewOutOfLineStorageCapacity):
+        (JSC::Structure::addPropertyTransition):
+        (JSC::Structure::addPropertyWithoutTransition):
+        * runtime/Structure.h:
+        (Structure):
+        (JSC::Structure::outOfLineCapacity):
+        (JSC::Structure::totalStorageCapacity):
+
+2013-01-29  Geoffrey Garen  <ggaren@apple.com>
+
+        Be a little more conservative about emitting table-based switches
+        https://bugs.webkit.org/show_bug.cgi?id=108292
+
+        Reviewed by Filip Pizlo.
+
+        Profiling shows we're using op_switch in cases where it's a regression.
+
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC):
+        (JSC::length):
+        (JSC::CaseBlockNode::tryTableSwitch):
+        (JSC::CaseBlockNode::emitBytecodeForBlock):
+        * parser/Nodes.h:
+        (CaseBlockNode):
+
+2013-01-29  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r140983.
+        http://trac.webkit.org/changeset/140983
+        https://bugs.webkit.org/show_bug.cgi?id=108277
+
+        Unfortunately, this API has one last client (Requested by
+        abarth on #webkit).
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-01-29  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: JSObjCClassInfo creates reference cycle with JSContext
+        https://bugs.webkit.org/show_bug.cgi?id=107839
+
+        Reviewed by Geoffrey Garen.
+
+        Fixing several ASSERTs that were incorrect along with some of the reallocation of m_prototype and 
+        m_constructor that they were based on.
+
+        * API/JSWrapperMap.mm:
+        (-[JSObjCClassInfo allocateConstructorAndPrototypeWithSuperClassInfo:]): We now only allocate those
+        fields that are null (i.e. have been collected or have never been allocated to begin with).
+        (-[JSObjCClassInfo reallocateConstructorAndOrPrototype]): Renamed to better indicate that we're 
+        reallocating one or both of the prototype/constructor combo.
+        (-[JSObjCClassInfo wrapperForObject:]): Call new reallocate function.
+        (-[JSObjCClassInfo constructor]): Ditto.
+
+2013-01-29  Geoffrey Garen  <ggaren@apple.com>
+
+        Make precise size classes more precise
+        https://bugs.webkit.org/show_bug.cgi?id=108270
+
+        Reviewed by Mark Hahnenberg.
+
+        Size inference makes this profitable.
+
+        I chose 8 byte increments because JSString is 24 bytes. Otherwise, 16
+        byte increments might be better.
+
+        * heap/Heap.h:
+        (Heap): Removed firstAllocatorWithoutDestructors because it's unused now.
+
+        * heap/MarkedBlock.h:
+        (MarkedBlock): Updated constants.
+
+        * heap/MarkedSpace.h:
+        (MarkedSpace):
+        (JSC): Also reduced the maximum precise size class because my testing
+        has shown that the smaller size classes are much more common. This
+        offsets some of the size class explosion caused by reducing the precise
+        increment.
+
+        * llint/LLIntData.cpp:
+        (JSC::LLInt::Data::performAssertions): No need for this ASSERT anymore
+        because we don't rely on firstAllocatorWithoutDestructors anymore, since
+        we pick size classes dynamically now.
+
+2013-01-29  Oliver Hunt  <oliver@apple.com>
+
+        Add some hardening to methodTable()
+        https://bugs.webkit.org/show_bug.cgi?id=108253
+
+        Reviewed by Mark Hahnenberg.
+
+        When accessing methodTable() we now always make sure that our
+        structure _could_ be valid.  Added a separate method to get a
+        classes methodTable during destruction as it's not possible to
+        validate the structure at that point.  This separation might
+        also make it possible to improve the performance of methodTable
+        access more generally in future.
+
+        * heap/MarkedBlock.cpp:
+        (JSC::MarkedBlock::callDestructor):
+        * runtime/JSCell.h:
+        (JSCell):
+        * runtime/JSCellInlines.h:
+        (JSC::JSCell::methodTableForDestruction):
+        (JSC):
+        (JSC::JSCell::methodTable):
+
+2013-01-29  Filip Pizlo  <fpizlo@apple.com>
+
+        offlineasm BaseIndex handling is broken on ARM due to MIPS changes
+        https://bugs.webkit.org/show_bug.cgi?id=108261
+
+        Reviewed by Oliver Hunt.
+        
+        Backends shouldn't override each other's methods. That's not cool.
+
+        * offlineasm/mips.rb:
+
+2013-01-29  Filip Pizlo  <fpizlo@apple.com>
+
+        cloop.rb shouldn't use a method called 'dump' for code generation
+        https://bugs.webkit.org/show_bug.cgi?id=108251
+
+        Reviewed by Mark Hahnenberg.
+        
+        Revert http://trac.webkit.org/changeset/141178 and rename 'dump' to 'clDump'.
+        
+        Also made trivial build fixes for !ENABLE(JIT).
+
+        * offlineasm/cloop.rb:
+        * runtime/Executable.h:
+        (ExecutableBase):
+        (JSC::ExecutableBase::intrinsicFor):
+        * runtime/JSGlobalData.h:
+
+2013-01-29  Geoffrey Garen  <ggaren@apple.com>
+
+        Removed GGC because it has been disabled for a long time
+        https://bugs.webkit.org/show_bug.cgi?id=108245
+
+        Reviewed by Filip Pizlo.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * dfg/DFGRepatch.cpp:
+        (JSC::DFG::emitPutReplaceStub):
+        (JSC::DFG::emitPutTransitionStub):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::writeBarrier):
+        * dfg/DFGSpeculativeJIT.h:
+        (SpeculativeJIT):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * heap/CardSet.h: Removed.
+        * heap/Heap.cpp:
+        (JSC::Heap::markRoots):
+        (JSC::Heap::collect):
+        * heap/Heap.h:
+        (Heap):
+        (JSC::Heap::shouldCollect):
+        (JSC::Heap::isWriteBarrierEnabled):
+        (JSC):
+        (JSC::Heap::writeBarrier):
+        * heap/MarkedBlock.h:
+        (MarkedBlock):
+        (JSC):
+        * heap/MarkedSpace.cpp:
+        (JSC):
+        * jit/JITPropertyAccess.cpp:
+        (JSC::JIT::emitWriteBarrier):
+
+2013-01-29  Filip Pizlo  <fpizlo@apple.com>
+
+        Remove redundant AST dump method from cloop.rb, since they are already defined in ast.rb
+        https://bugs.webkit.org/show_bug.cgi?id=108247
+
+        Reviewed by Oliver Hunt.
+        
+        Makes offlineasm dumping easier to read and less likely to cause assertion failures.
+        Also fixes the strange situation where cloop.rb and ast.rb both defined dump methods,
+        but cloop.rb was winning.
+
+        * offlineasm/cloop.rb:
+
+2013-01-29  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: JSObjCClassInfo creates reference cycle with JSContext
+        https://bugs.webkit.org/show_bug.cgi?id=107839
+
+        Reviewed by Oliver Hunt.
+
+        JSContext has a JSWrapperMap, which has an NSMutableDictionary m_classMap, which has values that 
+        are JSObjCClassInfo objects, which have strong references to two JSValue *'s, m_prototype and 
+        m_constructor, which in turn have strong references to the JSContext, creating a reference cycle. 
+        We should make m_prototype and m_constructor Weak<JSObject>. This gets rid of the strong reference 
+        to the JSContext and also prevents clients from accidentally creating reference cycles by assigning 
+        to the prototype of the constructor. If Weak<JSObject> fields are ever garbage collected, we will 
+        reallocate them.
+
+        * API/JSContext.mm:
+        (-[JSContext wrapperMap]):
+        * API/JSContextInternal.h:
+        * API/JSWrapperMap.mm:
+        (-[JSObjCClassInfo initWithContext:forClass:superClassInfo:]):
+        (-[JSObjCClassInfo dealloc]):
+        (-[JSObjCClassInfo allocateConstructorAndPrototypeWithSuperClassInfo:]):
+        (-[JSObjCClassInfo allocateConstructorAndPrototype]):
+        (-[JSObjCClassInfo wrapperForObject:]):
+        (-[JSObjCClassInfo constructor]):
+
+2013-01-29  Oliver Hunt  <oliver@apple.com>
+
+        REGRESSION (r140594): RELEASE_ASSERT_NOT_REACHED in JSC::Interpreter::execute
+        https://bugs.webkit.org/show_bug.cgi?id=108097
+
+        Reviewed by Geoffrey Garen.
+
+        LiteralParser was accepting a bogus 'var a.b = c' statement
+
+        * runtime/LiteralParser.cpp:
+        (JSC::::tryJSONPParse):
+
+2013-01-29  Oliver Hunt  <oliver@apple.com>
+
+        Force debug builds to do bounds checks on contiguous property storage
+        https://bugs.webkit.org/show_bug.cgi?id=108212
+
+        Reviewed by Mark Hahnenberg.
+
+        Add a ContiguousData type that we use to represent contiguous property
+        storage.  In release builds it is simply a pointer to the correct type,
+        but in debug builds it also carries the data length and performs bounds
+        checks.  This means we don't have to add as many manual bounds assertions
+        when performing operations over contiguous data.
+
+        * dfg/DFGOperations.cpp:
+        * runtime/ArrayStorage.h:
+        (ArrayStorage):
+        (JSC::ArrayStorage::vector):
+        * runtime/Butterfly.h:
+        (JSC::ContiguousData::ContiguousData):
+        (ContiguousData):
+        (JSC::ContiguousData::operator[]):
+        (JSC::ContiguousData::data):
+        (JSC::ContiguousData::length):
+        (JSC):
+        (JSC::Butterfly::contiguousInt32):
+        (Butterfly):
+        (JSC::Butterfly::contiguousDouble):
+        (JSC::Butterfly::contiguous):
+        * runtime/JSArray.cpp:
+        (JSC::JSArray::sortNumericVector):
+        (ContiguousTypeAccessor):
+        (JSC::ContiguousTypeAccessor::getAsValue):
+        (JSC::ContiguousTypeAccessor::setWithValue):
+        (JSC::ContiguousTypeAccessor::replaceDataReference):
+        (JSC):
+        (JSC::JSArray::sortCompactedVector):
+        (JSC::JSArray::sort):
+        (JSC::JSArray::fillArgList):
+        (JSC::JSArray::copyToArguments):
+        * runtime/JSArray.h:
+        (JSArray):
+        * runtime/JSObject.cpp:
+        (JSC::JSObject::copyButterfly):
+        (JSC::JSObject::visitButterfly):
+        (JSC::JSObject::createInitialInt32):
+        (JSC::JSObject::createInitialDouble):
+        (JSC::JSObject::createInitialContiguous):
+        (JSC::JSObject::convertUndecidedToInt32):
+        (JSC::JSObject::convertUndecidedToDouble):
+        (JSC::JSObject::convertUndecidedToContiguous):
+        (JSC::JSObject::convertInt32ToDouble):
+        (JSC::JSObject::convertInt32ToContiguous):
+        (JSC::JSObject::genericConvertDoubleToContiguous):
+        (JSC::JSObject::convertDoubleToContiguous):
+        (JSC::JSObject::rageConvertDoubleToContiguous):
+        (JSC::JSObject::ensureInt32Slow):
+        (JSC::JSObject::ensureDoubleSlow):
+        (JSC::JSObject::ensureContiguousSlow):
+        (JSC::JSObject::rageEnsureContiguousSlow):
+        (JSC::JSObject::ensureLengthSlow):
+        * runtime/JSObject.h:
+        (JSC::JSObject::ensureInt32):
+        (JSC::JSObject::ensureDouble):
+        (JSC::JSObject::ensureContiguous):
+        (JSC::JSObject::rageEnsureContiguous):
+        (JSObject):
+        (JSC::JSObject::indexingData):
+        (JSC::JSObject::currentIndexingData):
+
+2013-01-29  Brent Fulgham  <bfulgham@webkit.org>
+
+        [Windows, WinCairo] Unreviewed build fix after r141050
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreExports.def: Update symbols
+        to match JavaScriptCore.vcproj version.
+
+2013-01-29  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt] Implement GCActivityCallback
+        https://bugs.webkit.org/show_bug.cgi?id=103998
+
+        Reviewed by Simon Hausmann.
+
+        Implements the activity triggered garbage collector.
+
+        * runtime/GCActivityCallback.cpp:
+        (JSC::DefaultGCActivityCallback::DefaultGCActivityCallback):
+        (JSC::DefaultGCActivityCallback::scheduleTimer):
+        (JSC::DefaultGCActivityCallback::cancelTimer):
+        * runtime/GCActivityCallback.h:
+        (GCActivityCallback):
+        (DefaultGCActivityCallback):
+
+2013-01-29  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
+
+        Compilation warning in JSC
+        https://bugs.webkit.org/show_bug.cgi?id=108178
+
+        Reviewed by Kentaro Hara.
+
+        Fixed 'comparison between signed and unsigned integer' warning in JSC::Structure constructor.
+
+        * runtime/Structure.cpp:
+        (JSC::Structure::Structure):
+
+2013-01-29  Jocelyn Turcotte  <jocelyn.turcotte@digia.com>
+
+        [Qt] Fix the JSC build on Mac
+
+        Unreviewed, build fix.
+
+        * heap/HeapTimer.h:
+        Qt on Mac has USE(CF) true, and should use the CF HeapTimer in that case.
+
+2013-01-29  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt] Implement IncrementalSweeper and HeapTimer
+        https://bugs.webkit.org/show_bug.cgi?id=103996
+
+        Reviewed by Simon Hausmann.
+
+        Implements the incremental sweeping garbage collection for the Qt platform.
+
+        * heap/HeapTimer.cpp:
+        (JSC::HeapTimer::HeapTimer):
+        (JSC::HeapTimer::~HeapTimer):
+        (JSC::HeapTimer::timerEvent):
+        (JSC::HeapTimer::synchronize):
+        (JSC::HeapTimer::invalidate):
+        (JSC::HeapTimer::didStartVMShutdown):
+        * heap/HeapTimer.h:
+        (HeapTimer):
+        * heap/IncrementalSweeper.cpp:
+        (JSC::IncrementalSweeper::IncrementalSweeper):
+        (JSC::IncrementalSweeper::scheduleTimer):
+        * heap/IncrementalSweeper.h:
+        (IncrementalSweeper):
+
 2013-01-28  Filip Pizlo  <fpizlo@apple.com>
 
         DFG should not use a graph that is a vector, Nodes shouldn't move after allocation, and we should always refer to nodes by Node*

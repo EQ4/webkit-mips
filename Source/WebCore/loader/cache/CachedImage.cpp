@@ -225,7 +225,7 @@ void CachedImage::setContainerSizeForRenderer(const CachedImageClient* renderer,
         return;
     }
 
-    m_svgImageCache->setRequestedSizeAndScales(renderer, SVGImageCache::SizeAndScales(containerSize, containerZoom));
+    m_svgImageCache->setContainerSizeForRenderer(renderer, containerSize, containerZoom);
 #else
     UNUSED_PARAM(containerZoom);
     m_image->setContainerSize(containerSize);
@@ -267,24 +267,13 @@ LayoutSize CachedImage::imageSizeForRenderer(const RenderObject* renderer, float
 
     if (m_image->isBitmapImage() && (renderer && renderer->shouldRespectImageOrientation() == RespectImageOrientation))
         imageSize = static_cast<BitmapImage*>(m_image.get())->sizeRespectingOrientation();
-    else
-        imageSize = m_image->size();
-
 #if ENABLE(SVG)
-    if (m_image->isSVGImage()) {
-        SVGImageCache::SizeAndScales sizeAndScales = m_svgImageCache->requestedSizeAndScales(renderer);
-        if (!sizeAndScales.size.isEmpty()) {
-            float scale = sizeAndScales.scale;
-            if (!scale) {
-                Page* page = renderer->document()->page();
-                scale = page->deviceScaleFactor() * page->pageScaleFactor();
-            }
-
-            imageSize.setWidth(scale * sizeAndScales.size.width() / sizeAndScales.zoom);
-            imageSize.setHeight(scale * sizeAndScales.size.height() / sizeAndScales.zoom);
-        }
+    else if (m_image->isSVGImage()) {
+        imageSize = m_svgImageCache->imageSizeForRenderer(renderer);
     }
 #endif
+    else
+        imageSize = m_image->size();
 
     if (multiplier == 1.0f)
         return imageSize;
@@ -510,10 +499,10 @@ void CachedImage::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::CachedResourceImage);
     memoryObjectInfo->setClassName("CachedImage");
     CachedResource::reportMemoryUsage(memoryObjectInfo);
-    info.addMember(m_pendingContainerSizeRequests);
+    info.addMember(m_pendingContainerSizeRequests, "pendingContainerSizeRequests");
     info.addMember(m_image, "m_image");
 #if ENABLE(SVG)
-    info.addMember(m_svgImageCache);
+    info.addMember(m_svgImageCache, "svgImageCache");
 #endif
 }
 

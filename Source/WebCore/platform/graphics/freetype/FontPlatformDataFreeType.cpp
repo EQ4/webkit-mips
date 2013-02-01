@@ -191,9 +191,7 @@ FontPlatformData& FontPlatformData::operator=(const FontPlatformData& other)
         cairo_scaled_font_destroy(m_scaledFont);
     m_scaledFont = cairo_scaled_font_reference(other.m_scaledFont);
 
-#if USE(HARFBUZZ_NG)
-    m_harfbuzzFace = other.m_harfbuzzFace;
-#endif
+    m_harfBuzzFace = other.m_harfBuzzFace;
 
     return *this;
 }
@@ -201,17 +199,13 @@ FontPlatformData& FontPlatformData::operator=(const FontPlatformData& other)
 FontPlatformData::FontPlatformData(const FontPlatformData& other)
     : m_fallbacks(0)
     , m_scaledFont(0)
-#if USE(HARFBUZZ_NG)
-    , m_harfbuzzFace(other.m_harfbuzzFace)
-#endif
+    , m_harfBuzzFace(other.m_harfBuzzFace)
 {
     *this = other;
 }
 
 FontPlatformData::FontPlatformData(const FontPlatformData& other, float size)
-#if USE(HARFBUZZ_NG)
-    : m_harfbuzzFace(other.m_harfbuzzFace)
-#endif
+    : m_harfBuzzFace(other.m_harfBuzzFace)
 {
     *this = other;
 
@@ -232,15 +226,13 @@ FontPlatformData::~FontPlatformData()
         cairo_scaled_font_destroy(m_scaledFont);
 }
 
-#if USE(HARFBUZZ_NG)
-HarfBuzzNGFace* FontPlatformData::harfbuzzFace() const
+HarfBuzzFace* FontPlatformData::harfBuzzFace() const
 {
-    if (!m_harfbuzzFace)
-        m_harfbuzzFace = HarfBuzzNGFace::create(const_cast<FontPlatformData*>(this), hash());
+    if (!m_harfBuzzFace)
+        m_harfBuzzFace = HarfBuzzFace::create(const_cast<FontPlatformData*>(this), hash());
 
-    return m_harfbuzzFace.get();
+    return m_harfBuzzFace.get();
 }
-#endif
 
 bool FontPlatformData::isFixedPitch()
 {

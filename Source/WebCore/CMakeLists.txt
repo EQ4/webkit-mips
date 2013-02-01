@@ -55,6 +55,8 @@ set(WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/platform/graphics/harfbuzz"
     "${WEBCORE_DIR}/platform/graphics/harfbuzz/ng"
     "${WEBCORE_DIR}/platform/graphics/opentype"
+    "${WEBCORE_DIR}/platform/graphics/texmap"
+    "${WEBCORE_DIR}/platform/graphics/texmap/coordinated"
     "${WEBCORE_DIR}/platform/graphics/transforms"
     "${WEBCORE_DIR}/platform/image-decoders"
     "${WEBCORE_DIR}/platform/image-decoders/bmp"
@@ -374,7 +376,6 @@ set(WebCore_IDL_FILES
     dom/MessageEvent.idl
     dom/MessagePort.idl
     dom/MouseEvent.idl
-    dom/MutationCallback.idl
     dom/MutationEvent.idl
     dom/MutationObserver.idl
     dom/MutationRecord.idl
@@ -944,18 +945,18 @@ set(WebCore_SOURCES
     Modules/webaudio/WaveShaperProcessor.cpp
     Modules/webaudio/WaveTable.cpp
 
-    Modules/webdatabase/AbstractDatabase.cpp
     Modules/webdatabase/ChangeVersionWrapper.cpp
     Modules/webdatabase/DOMWindowWebDatabase.cpp
     Modules/webdatabase/Database.cpp
     Modules/webdatabase/DatabaseAuthorizer.cpp
+    Modules/webdatabase/DatabaseBackend.cpp
     Modules/webdatabase/DatabaseContext.cpp
     Modules/webdatabase/DatabaseManager.cpp
+    Modules/webdatabase/DatabaseServer.cpp
     Modules/webdatabase/DatabaseSync.cpp
     Modules/webdatabase/DatabaseTask.cpp
     Modules/webdatabase/DatabaseThread.cpp
     Modules/webdatabase/DatabaseTracker.cpp
-    Modules/webdatabase/DBBackendServer.cpp
     Modules/webdatabase/OriginQuotaManager.cpp
     Modules/webdatabase/OriginUsageRecord.cpp
     Modules/webdatabase/SQLException.cpp
@@ -1533,6 +1534,7 @@ set(WebCore_SOURCES
     html/canvas/WebGLUniformLocation.cpp
     html/canvas/WebGLVertexArrayObjectOES.cpp
 
+    html/parser/BackgroundHTMLInputStream.cpp
     html/parser/BackgroundHTMLParser.cpp
     html/parser/CSSPreloadScanner.cpp
     html/parser/CompactHTMLToken.cpp
@@ -1556,6 +1558,7 @@ set(WebCore_SOURCES
     html/parser/TextDocumentParser.cpp
     html/parser/TextViewSourceParser.cpp
     html/parser/XSSAuditor.cpp
+    html/parser/XSSAuditorDelegate.cpp
 
     html/shadow/ContentDistributor.cpp
     html/shadow/ContentSelectorQuery.cpp
@@ -1987,6 +1990,14 @@ set(WebCore_SOURCES
     platform/graphics/filters/SourceGraphic.cpp
     platform/graphics/filters/SpotLightSource.cpp
 
+    platform/graphics/texmap/coordinated/AreaAllocator.cpp
+    platform/graphics/texmap/coordinated/CoordinatedBackingStore.cpp
+    platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.cpp
+    platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp
+    platform/graphics/texmap/coordinated/CoordinatedImageBacking.cpp
+    platform/graphics/texmap/coordinated/CoordinatedSurface.cpp
+    platform/graphics/texmap/coordinated/CoordinatedTile.cpp
+    platform/graphics/texmap/coordinated/UpdateAtlas.cpp
     platform/graphics/texmap/TextureMapper.cpp
     platform/graphics/texmap/TextureMapperBackingStore.cpp
     platform/graphics/texmap/TextureMapperImageBuffer.cpp

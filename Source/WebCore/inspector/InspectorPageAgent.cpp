@@ -879,6 +879,11 @@ String InspectorPageAgent::frameId(Frame* frame)
     return identifier;
 }
 
+bool InspectorPageAgent::hasIdForFrame(Frame* frame) const
+{
+    return frame && m_frameToIdentifier.contains(frame);
+}
+
 String InspectorPageAgent::loaderId(DocumentLoader* loader)
 {
     if (!loader)
@@ -934,6 +939,16 @@ void InspectorPageAgent::frameScheduledNavigation(Frame* frame, double delay)
 void InspectorPageAgent::frameClearedScheduledNavigation(Frame* frame)
 {
     m_frontend->frameClearedScheduledNavigation(frameId(frame));
+}
+
+void InspectorPageAgent::willRunJavaScriptDialog(const String& message)
+{
+    m_frontend->javascriptDialogOpening(message);
+}
+
+void InspectorPageAgent::didRunJavaScriptDialog()
+{
+    m_frontend->javascriptDialogClosed();
 }
 
 void InspectorPageAgent::applyScreenWidthOverride(long* width)
@@ -1233,6 +1248,12 @@ void InspectorPageAgent::captureScreenshot(ErrorString* errorString, String* dat
 {
     if (!m_client->captureScreenshot(data))
         *errorString = "Could not capture screenshot";
+}
+
+void InspectorPageAgent::handleJavaScriptDialog(ErrorString* errorString, bool accept)
+{
+    if (!m_client->handleJavaScriptDialog(accept))
+        *errorString = "Could not handle JavaScript dialog";
 }
 
 } // namespace WebCore

@@ -1,3 +1,123 @@
+2013-02-01  Alexis Menard  <alexis@webkit.org>
+
+        Enable unprefixed CSS transitions by default.
+        https://bugs.webkit.org/show_bug.cgi?id=108216
+
+        Reviewed by Dean Jackson.
+
+        Rename the flag CSS_TRANSFORMS_ANIMATIONS_TRANSITIONS_UNPREFIXED
+        to CSS_TRANSFORMS_ANIMATIONS_UNPREFIXED which will be used later to 
+        guard the unprefixing work for CSS Transforms and animations.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-01-31  Aurimas Liutikas  <aurimas@chromium.org>
+
+        Editor::m_compositionNode not updated on HTMLInputElement::setValue()
+        https://bugs.webkit.org/show_bug.cgi?id=107737
+
+        Reviewed by Ryosuke Niwa.
+
+        * WebView/WebHTMLView.mm:
+        (-[WebHTMLView _updateSelectionForInputManager]):
+
+2013-01-31  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r141479.
+        http://trac.webkit.org/changeset/141479
+        https://bugs.webkit.org/show_bug.cgi?id=108564
+
+        breaks chromium test (Requested by morrita on #webkit).
+
+        * WebView/WebHTMLView.mm:
+        (-[WebHTMLView _updateSelectionForInputManager]):
+
+2013-01-31  Enrica Casucci  <enrica@apple.com>
+
+        Mac: Editor::baseWritingDirectionForSelectionStart should return WritingDirection instead of NSWritingDirection.
+        https://bugs.webkit.org/show_bug.cgi?id=108519.
+
+        Reviewed by Sam Weinig.
+
+        There is no need to use AppKit types here.
+        baseWritingDirectionForSelectionStart now returns WritingDirection and
+        WebHTMLView toggleWritingDirection has been modified accordingly.
+
+        * WebView/WebHTMLView.mm:
+        (-[WebHTMLView toggleBaseWritingDirection:]):
+
+2013-01-31  Aurimas Liutikas  <aurimas@chromium.org>
+
+        Editor::m_compositionNode not updated on HTMLInputElement::setValue()
+        https://bugs.webkit.org/show_bug.cgi?id=107737
+
+        Reviewed by Ryosuke Niwa.
+
+        * WebView/WebHTMLView.mm:
+        (-[WebHTMLView _updateSelectionForInputManager]):
+
+2013-01-31  Joseph Pecoraro  <pecoraro@apple.com>
+
+        Disable ENABLE_FULLSCREEN_API on iOS
+        https://bugs.webkit.org/show_bug.cgi?id=108250
+
+        Reviewed by Benjamin Poulain.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-01-31  Enrica Casucci  <enrica@apple.com>
+
+        WebKit2: provide new bundle APIs to allow bundle clients to be notified of pasteboard access.
+        https://bugs.webkit.org/show_bug.cgi?id=108396.
+        <rdar://problem/12920461>
+
+        Reviewed by Alexey Proskuryakov.
+
+        Adds stub implementation for WebKit of the new EditorClient methods.
+
+        * WebCoreSupport/WebEditorClient.h:
+        * WebCoreSupport/WebEditorClient.mm:
+        (WebEditorClient::willWriteSelectionToPasteboard):
+        (WebEditorClient::getClientPasteboardDataForRange):
+
+2013-01-31  Brady Eidson  <beidson@apple.com>
+
+        Lack of a log level string should not obliterate compiled in logging channel state.
+        https://bugs.webkit.org/show_bug.cgi?id=108502
+
+        Reviewed by Alexey Proskuryakov and Sam Weinig.
+
+        * Misc/WebKitLogging.m: If there's no log level string, leave the channel state alone.
+
+2013-01-29  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r140983.
+        http://trac.webkit.org/changeset/140983
+        https://bugs.webkit.org/show_bug.cgi?id=108277
+
+        Unfortunately, this API has one last client (Requested by
+        abarth on #webkit).
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2012-11-28  Jer Noble  <jer.noble@apple.com>
+
+        Allow clients to ask for the WebView/WKView placeholder view when in full screen mode.
+        https://bugs.webkit.org/show_bug.cgi?id=103558
+        <rdar://problem/12763112>
+
+        Reviewed by Benjamin Poulain.
+
+        Clients may want to behave differently when their WebView/WKView has been swapped out by a placeholder
+        view when in full screen mode.  Add a simple accessor for the existing placeholder view to
+        WebFullScreenController and WebView.
+
+        * WebView/WebFullScreenController.h:
+        * WebView/WebFullScreenController.mm:
+        (-[WebFullScreenController webViewPlaceholder]): Added simple accessor.
+        * WebView/WebView.mm:
+        (-[WebView fullScreenPlaceholderView]): Added simple accessor.
+
 2013-01-28  Pratik Solanki  <psolanki@apple.com>
 
         PLATFORM(IOS) should come before __MAC_OS_X_VERSION_MIN_REQUIRED

@@ -391,6 +391,8 @@ webkit.org/b/99057 inspector/styles/variables [ Skip ]
 # DOM4_EVENTS_CONSTRUCTOR is not yet enabled.
 webkit.org/b/107428 fast/events/constructors/ui-event-constructor.html [ Skip ]
 webkit.org/b/107428 fast/events/constructors/mouse-event-constructor.html [ Skip ]
+webkit.org/b/107428 fast/events/constructors/wheel-event-constructor.html [ Skip ]
+webkit.org/b/107428 fast/events/constructors/keyboard-event-constructor.html [ Skip ]
 webkit.org/b/107428 fast/events/constructors/composition-event-constructor.html [ Skip ]
 
 # No CORS support for media elements is implemented yet.
@@ -515,6 +517,9 @@ webkit.org/b/107377 storage/indexeddb/keypath-basics.html [ Crash Pass ]
 webkit.org/b/107377 storage/indexeddb/mozilla/remove-index.html [ Crash Pass ]
 webkit.org/b/107377 storage/indexeddb/mozilla/create-index-unique.html [ Crash Pass ]
 webkit.org/b/107377 storage/indexeddb/objectstore-basics.html [ Crash Pass ]
+webkit.org/b/107194 storage/indexeddb/objectstore-basics-workers.html [ Crash Failure ]
+
+webkit.org/b/108365 http/tests/security/inactive-document-with-empty-security-origin.html [ Crash ]
 
 #////////////////////////////////////////////////////////////////////////////////////////
 # End of Crashing tests
@@ -627,7 +632,6 @@ webkit.org/b/106592 fast/regions/firstletter-inside-flowthread.html [ ImageOnlyF
 
 webkit.org/b/107258 fast/canvas/2d.text.draw.fill.maxWidth.gradient.html [ Failure Pass ]
 
-webkit.org/b/107194 storage/indexeddb/cursor-advance-workers.html [ Failure Pass ]
 webkit.org/b/107194 storage/indexeddb/deletedatabase-delayed-by-open-and-versionchange-workers.html  [ Failure Pass ]
 webkit.org/b/107194 storage/indexeddb/factory-basics-workers.html [ Failure Pass ]
 webkit.org/b/107194 storage/indexeddb/index-basics-workers.html [ Failure Pass ]
@@ -995,8 +999,10 @@ webkit.org/b/50485 inspector/profiler/heap-snapshot-summary-retainers.html [ Fai
 webkit.org/b/50485 inspector/profiler/heap-snapshot-summary-show-ranges.html [ Failure ]
 webkit.org/b/50485 inspector/profiler/heap-snapshot-summary-sorting-fields.html [ Failure ]
 webkit.org/b/50485 inspector/profiler/heap-snapshot-summary-sorting-instances.html [ Failure ]
+webkit.org/b/50485 inspector-protocol/heap-profiler [ Skip ]
+
 webkit.org/b/99001 inspector/profiler/memory-instrumentation-canvas.html [ Failure ]
-webkit.org/b/50485 inspector-protocol/take-heap-snapshot.html [ Skip ]
+
 webkit.org/b/73936 inspector/profiler/canvas2d/canvas-has-uninstrumented-canvases.html [ Failure ]
 webkit.org/b/73936 inspector/profiler/canvas2d/canvas-stack-trace.html [ Failure ]
 
@@ -1360,6 +1366,9 @@ webkit.org/b/102776 media/track/track-cue-rendering-vertical.html [ Failure ]
 
 webkit.org/b/103740 editing/selection/caret-alignment-for-vertical-text.html [ Failure ]
 
+# Remove from list after enabling CANVAS_PATH
+webkit.org/b/108508 fast/canvas/canvas-currentPath.html [ Failure ]
+
 # volume is reset when mediaelement.src is modified
 webkit.org/b/103893 media/video-volume.html [ Failure ]
 
@@ -1398,8 +1407,6 @@ webkit.org/b/107257 [ Debug ] fast/js/large-expressions.html [ Failure ]
 webkit.org/b/106957 svg/dom/SVGViewSpec-invalid-ref-crash.html [ Failure ]
 
 webkit.org/b/107194 storage/indexeddb/dont-commit-on-blocked.html [ Failure ]
-webkit.org/b/107194 storage/indexeddb/objectstore-basics-workers.html [ Failure ]
-webkit.org/b/107194 storage/indexeddb/objectstore-basics.html [ Failure ]
 webkit.org/b/107194 storage/indexeddb/pending-version-change-stuck-works-with-terminate.html [ Failure ]
 webkit.org/b/107194 storage/indexeddb/pending-version-change-stuck.html [ Failure ]
 webkit.org/b/107194 storage/indexeddb/transaction-abort.html [ Failure ]
@@ -1411,9 +1418,29 @@ webkit.org/b/105574 fast/spatial-navigation/snav-div-overflow-scrol-hidden.html 
 
 webkit.org/b/106563 fast/css/image-orientation/image-orientation.html [ Failure ]
 
-webkit.org/b/108100 http/tests/w3c/webperf/submission/Intel/user-timing/test_user_timing_entry_type.html [ Failure ]
-
 webkit.org/b/108169 fast/dom/shadow/touch-event.html [ Failure ]
+
+webkit.org/b/108363 fullscreen/full-screen-iframe-legacy.html [ Failure ]
+webkit.org/b/108363 fullscreen/video-specified-size.html [ Timeout ]
+webkit.org/b/108363 fullscreen/full-screen-no-style-sharing.html [ Timeout ]
+webkit.org/b/108363 fullscreen/full-screen-stacking-context.html [ Timeout ]
+webkit.org/b/108363 fullscreen/video-controls-drag.html [ Timeout ]
+webkit.org/b/108363 fullscreen/full-screen-crash-offsetLeft.html [ Timeout ]
+webkit.org/b/108363 fullscreen/video-controls-override.html [ Timeout ]
+webkit.org/b/108363 fast/regions/full-screen-video-from-region.html [ Timeout ]
+
+# Spellchecker behavior tests.
+webkit.org/b/108370 editing/spelling/spelling-double-clicked-word.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-double-clicked-word-with-underscores.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-exactly-selected-multiple-words.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-exactly-selected-word.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-multiword-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-should-select-multiple-words.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-should-select-single-word.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-subword-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-with-punctuation-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-with-underscore-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-with-whitespace-selection.html [ Skip ]
 
 #////////////////////////////////////////////////////////////////////////////////////////
 # End of Tests failing

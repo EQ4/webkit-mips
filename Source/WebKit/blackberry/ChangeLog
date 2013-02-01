@@ -1,3 +1,91 @@
+2013-01-31  Jacky Jiang  <zhajiang@rim.com>
+
+        [BlackBerry] Bing Images viewport causes layout "fun"
+        https://bugs.webkit.org/show_bug.cgi?id=108393
+
+        Reviewed by Yong Li.
+        Internally reviewed by Arvid Nilsson and partially reviewed by Konrad Piascik.
+
+        PR: 277855
+        Set applyPageScaleFactorInCompositor settting to false by default.
+        Scale down chrome window rect to density-independent pixels.
+
+        * Api/WebPage.cpp:
+        (BlackBerry::WebKit::WebPagePrivate::didChangeSettings):
+        * Api/WebSettings.cpp:
+        (WebKit):
+        (BlackBerry::WebKit::WebSettings::standardSettings):
+        (BlackBerry::WebKit::WebSettings::applyDeviceScaleFactorInCompositor):
+        (BlackBerry::WebKit::WebSettings::setApplyPageScaleFactorInCompositor):
+        * Api/WebSettings.h:
+        * WebCoreSupport/ChromeClientBlackBerry.cpp:
+        (WebCore::ChromeClientBlackBerry::windowRect):
+
+2013-01-31  Enrica Casucci  <enrica@apple.com>
+
+        WebKit2: provide new bundle APIs to allow bundle clients to be notified of pasteboard access.
+        https://bugs.webkit.org/show_bug.cgi?id=108396.
+        <rdar://problem/12920461>
+
+        Reviewed by Alexey Proskuryakov.
+
+        Adds stub implementation for WebKit of the new EditorClient methods.
+
+        * WebCoreSupport/EditorClientBlackBerry.cpp:
+        (WebCore::EditorClientBlackBerry::willWriteSelectionToPasteboard):
+        (WebCore::EditorClientBlackBerry::getClientPasteboardDataForRange):
+        * WebCoreSupport/EditorClientBlackBerry.h:
+
+2013-01-30  Ed Baker  <edbaker@rim.com>
+
+        [BlackBerry] Screenshot is clipped when content is smaller than the desintation size
+        https://bugs.webkit.org/show_bug.cgi?id=107735
+
+        Reviewed by Rob Buis.
+
+        Internal PR #284662
+        Don't scale the transformed content rect when the content is smaller than the destination
+        size. Scale the graphics context when it has a scale factor that isn't 1.0.
+
+        Internally reviewed by Andrew Lo
+
+        * Api/BackingStore.cpp:
+        (BlackBerry::WebKit::BackingStorePrivate::renderContents):
+
+2013-01-30  Xiaobo Wang  <xbwang@torchmobile.com.cn>
+
+        [BlackBerry] Webpage was cut off after rotating to landscape and then rotating back to portrait on specific website
+        https://bugs.webkit.org/show_bug.cgi?id=108281
+        PR 284985
+
+        Reviewed by Rob Buis.
+        Internally reviewed by Jacky Jiang.
+
+        Return correct fixedLayoutSize when overflow exceeds contents size.
+
+        * Api/WebPage.cpp:
+        (BlackBerry::WebKit::WebPagePrivate::fixedLayoutSize):
+
+2013-01-30  Simon Hausmann  <simon.hausmann@digia.com>
+
+        [Qt] Remove QT4_UNICODE related code paths
+        https://bugs.webkit.org/show_bug.cgi?id=108316
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        * WebCoreSupport/AboutDataUseFeatures.in: The feature macro has been removed.
+
+2013-01-29  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r140983.
+        http://trac.webkit.org/changeset/140983
+        https://bugs.webkit.org/show_bug.cgi?id=108277
+
+        Unfortunately, this API has one last client (Requested by
+        abarth on #webkit).
+
+        * WebCoreSupport/AboutDataEnableFeatures.in:
+
 2013-01-28  Andrew Lo  <anlo@rim.com>
 
         [BlackBerry] Small animated zoom level adjustments are unnecessary

@@ -295,7 +295,6 @@ public:
 
     bool hasAuthorShadowRoot() const { return shadowRoot(); }
     virtual void willAddAuthorShadowRoot() { }
-    virtual bool areAuthorShadowsAllowed() const { return true; }
 
     ShadowRoot* userAgentShadowRoot() const;
     ShadowRoot* ensureUserAgentShadowRoot();
@@ -316,6 +315,8 @@ public:
     bool childrenAffectedByForwardPositionalRules() const { return hasRareData() && rareDataChildrenAffectedByForwardPositionalRules(); }
     bool childrenAffectedByBackwardPositionalRules() const { return hasRareData() && rareDataChildrenAffectedByBackwardPositionalRules(); }
     unsigned childIndex() const { return hasRareData() ? rareDataChildIndex() : 0; }
+
+    bool hasFlagsSetDuringStylingOfChildren() const;
 
     void setStyleAffectedByEmpty();
     void setChildrenAffectedByHover(bool);
@@ -530,7 +531,9 @@ private:
     PassRefPtr<PseudoElement> createPseudoElementIfNeeded(PseudoId);
     void setPseudoElement(PseudoId, PassRefPtr<PseudoElement>);
 
+    virtual bool areAuthorShadowsAllowed() const { return true; }
     virtual void didAddUserAgentShadowRoot(ShadowRoot*) { }
+    virtual bool alwaysCreateUserAgentShadowRoot() const { return false; }
 
     // FIXME: Remove the need for Attr to call willModifyAttribute/didModifyAttribute.
     friend class Attr;
@@ -614,13 +617,13 @@ private:
     
 inline Element* toElement(Node* node)
 {
-    ASSERT(!node || node->isElementNode());
+    ASSERT_WITH_SECURITY_IMPLICATION(!node || node->isElementNode());
     return static_cast<Element*>(node);
 }
 
 inline const Element* toElement(const Node* node)
 {
-    ASSERT(!node || node->isElementNode());
+    ASSERT_WITH_SECURITY_IMPLICATION(!node || node->isElementNode());
     return static_cast<const Element*>(node);
 }
 
@@ -856,7 +859,7 @@ inline Node::InsertionNotificationRequest Node::insertedInto(ContainerNode* inse
     ASSERT(insertionPoint->inDocument() || isContainerNode());
     if (insertionPoint->inDocument())
         setFlag(InDocumentFlag);
-    if (parentOrHostNode()->isInShadowTree())
+    if (parentOrShadowHostNode()->isInShadowTree())
         setFlag(IsInShadowTreeFlag);
     return InsertionDone;
 }

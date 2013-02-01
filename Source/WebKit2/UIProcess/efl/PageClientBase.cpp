@@ -27,10 +27,10 @@
 #include "PageClientBase.h"
 
 #include "CoordinatedLayerTreeHostProxy.h"
+#include "DownloadManagerEfl.h"
 #include "DrawingAreaProxyImpl.h"
 #include "EwkView.h"
 #include "InputMethodContextEfl.h"
-#include "LayerTreeRenderer.h"
 #include "NativeWebKeyboardEvent.h"
 #include "NotImplemented.h"
 #include "TextureMapper.h"

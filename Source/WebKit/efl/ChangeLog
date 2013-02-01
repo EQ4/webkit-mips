@@ -1,3 +1,113 @@
+2013-01-31  Aurimas Liutikas  <aurimas@chromium.org>
+
+        Editor::m_compositionNode not updated on HTMLInputElement::setValue()
+        https://bugs.webkit.org/show_bug.cgi?id=107737
+
+        Reviewed by Ryosuke Niwa.
+
+        * WebCoreSupport/EditorClientEfl.cpp:
+        (WebCore::EditorClientEfl::respondToChangedSelection):
+            Adding a call to the newly refactored method.
+
+2013-01-31  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r141479.
+        http://trac.webkit.org/changeset/141479
+        https://bugs.webkit.org/show_bug.cgi?id=108564
+
+        breaks chromium test (Requested by morrita on #webkit).
+
+        * WebCoreSupport/EditorClientEfl.cpp:
+        (WebCore::EditorClientEfl::respondToChangedSelection):
+
+2013-01-31  Aurimas Liutikas  <aurimas@chromium.org>
+
+        Editor::m_compositionNode not updated on HTMLInputElement::setValue()
+        https://bugs.webkit.org/show_bug.cgi?id=107737
+
+        Reviewed by Ryosuke Niwa.
+
+        * WebCoreSupport/EditorClientEfl.cpp:
+        (WebCore::EditorClientEfl::respondToChangedSelection):
+            Adding a call to the newly refactored method.
+
+2013-01-31  Enrica Casucci  <enrica@apple.com>
+
+        WebKit2: provide new bundle APIs to allow bundle clients to be notified of pasteboard access.
+        https://bugs.webkit.org/show_bug.cgi?id=108396.
+        <rdar://problem/12920461>
+
+        Reviewed by Alexey Proskuryakov.
+
+        Adds stub implementation for WebKit of the new EditorClient methods.
+
+        * WebCoreSupport/EditorClientEfl.cpp:
+        (WebCore::EditorClientEfl::willWriteSelectionToPasteboard):
+        (WebCore::EditorClientEfl::getClientPasteboardDataForRange):
+        * WebCoreSupport/EditorClientEfl.h:
+
+2013-01-31  Christophe Dumez  <dchris@gmail.com>
+
+        [EFL] Disable Web Intents
+        https://bugs.webkit.org/show_bug.cgi?id=108457
+
+        Reviewed by Alexey Proskuryakov.
+
+        Remove code related to Web Intents from EFL
+        WebKit.
+
+        * WebCoreSupport/DumpRenderTreeSupportEfl.cpp:
+        * WebCoreSupport/DumpRenderTreeSupportEfl.h:
+        * WebCoreSupport/FrameLoaderClientEfl.cpp:
+        * WebCoreSupport/FrameLoaderClientEfl.h:
+        (FrameLoaderClientEfl):
+        * ewk/EWebKit.h:
+        * ewk/ewk_frame.cpp:
+        * ewk/ewk_frame.h:
+        * ewk/ewk_frame_private.h:
+        * ewk/ewk_intent.cpp: Removed.
+        * ewk/ewk_intent.h: Removed.
+        * ewk/ewk_intent_private.h: Removed.
+        * ewk/ewk_intent_request.cpp: Removed.
+        * ewk/ewk_intent_request.h: Removed.
+
+2013-01-31  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r141110.
+        http://trac.webkit.org/changeset/141110
+        https://bugs.webkit.org/show_bug.cgi?id=108349
+
+        This patch broke WK2-EFL unit tests (Requested by grzegorz on
+        #webkit).
+
+        * WebCoreSupport/EditorClientEfl.h:
+
+2013-01-30  Huang Dongsung  <luxtella@company100.net>
+
+        [TexMap] Remove GraphicsLayer in TextureMapperLayer.
+        https://bugs.webkit.org/show_bug.cgi?id=107073
+
+        Reviewed by Noam Rosenthal.
+
+        Include GraphicsLayerTextureMapper.h to use toTextureMapperLayer().
+
+        * WebCoreSupport/AcceleratedCompositingContextEfl.cpp:
+
+2013-01-29  Grzegorz Czajkowski  <g.czajkowski@samsung.com>
+
+        [EFL] Unified text checker implementation.
+        https://bugs.webkit.org/show_bug.cgi?id=107682
+
+        Reviewed by Anders Carlsson.
+
+        Add an empty checkTextOfParagraph implementation for WK1-EFL
+        to do not break build when WTF_USE_UNIFIED_TEXT_CHECKING
+        is enabled.
+
+        * WebCoreSupport/EditorClientEfl.h:
+        (EditorClientEfl):
+        (WebCore::EditorClientEfl::checkTextOfParagraph):
+
 2013-01-28  Huang Dongsung  <luxtella@company100.net>
 
         [TexMap] Enable debug borders and repaint counter via Settings.

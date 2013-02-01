@@ -539,8 +539,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSMicroDataItemValue.h \
 	DerivedSources/WebCore/JSMouseEvent.cpp \
 	DerivedSources/WebCore/JSMouseEvent.h \
-	DerivedSources/WebCore/JSMutationCallback.cpp \
-	DerivedSources/WebCore/JSMutationCallback.h \
 	DerivedSources/WebCore/JSMutationEvent.cpp \
 	DerivedSources/WebCore/JSMutationEvent.h \
 	DerivedSources/WebCore/JSMutationObserver.cpp \
@@ -1388,7 +1386,6 @@ dom_binding_idls += \
 	$(WebCore)/dom/MessageEvent.idl \
 	$(WebCore)/dom/MessagePort.idl \
 	$(WebCore)/dom/MouseEvent.idl \
-	$(WebCore)/dom/MutationCallback.idl \
 	$(WebCore)/dom/MutationEvent.idl \
 	$(WebCore)/dom/MutationObserver.idl \
 	$(WebCore)/dom/MutationRecord.idl \
@@ -2092,8 +2089,6 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webaudio/WaveShaperNode.h \
 	Source/WebCore/Modules/webaudio/WaveTable.cpp \
 	Source/WebCore/Modules/webaudio/WaveTable.h \
-	Source/WebCore/Modules/webdatabase/AbstractDatabase.cpp \
-	Source/WebCore/Modules/webdatabase/AbstractDatabase.h \
 	Source/WebCore/Modules/webdatabase/AbstractDatabaseServer.h \
 	Source/WebCore/Modules/webdatabase/ChangeVersionWrapper.cpp \
 	Source/WebCore/Modules/webdatabase/ChangeVersionWrapper.h \
@@ -2103,14 +2098,19 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webdatabase/Database.h \
 	Source/WebCore/Modules/webdatabase/DatabaseAuthorizer.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseAuthorizer.h \
+	Source/WebCore/Modules/webdatabase/DatabaseBackend.cpp \
+	Source/WebCore/Modules/webdatabase/DatabaseBackend.h \
 	Source/WebCore/Modules/webdatabase/DatabaseBasicTypes.h \
 	Source/WebCore/Modules/webdatabase/DatabaseCallback.h \
 	Source/WebCore/Modules/webdatabase/DatabaseContext.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseContext.h \
 	Source/WebCore/Modules/webdatabase/DatabaseDetails.h \
+	Source/WebCore/Modules/webdatabase/DatabaseError.h \
 	Source/WebCore/Modules/webdatabase/DatabaseManager.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseManager.h \
 	Source/WebCore/Modules/webdatabase/DatabaseManagerClient.h \
+	Source/WebCore/Modules/webdatabase/DatabaseServer.cpp \
+	Source/WebCore/Modules/webdatabase/DatabaseServer.h \
 	Source/WebCore/Modules/webdatabase/DatabaseSync.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseSync.h \
 	Source/WebCore/Modules/webdatabase/DatabaseTask.cpp \
@@ -2119,8 +2119,6 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webdatabase/DatabaseThread.h \
 	Source/WebCore/Modules/webdatabase/DatabaseTracker.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseTracker.h \
-	Source/WebCore/Modules/webdatabase/DBBackendServer.cpp \
-	Source/WebCore/Modules/webdatabase/DBBackendServer.h \
 	Source/WebCore/Modules/webdatabase/OriginQuotaManager.cpp \
 	Source/WebCore/Modules/webdatabase/OriginQuotaManager.h \
 	Source/WebCore/Modules/webdatabase/OriginUsageRecord.cpp \
@@ -2381,7 +2379,8 @@ webcore_sources += \
 	Source/WebCore/bindings/js/JSMessagePortCustom.cpp \
 	Source/WebCore/bindings/js/JSMessagePortCustom.h \
 	Source/WebCore/bindings/js/JSMicroDataItemValueCustom.cpp \
-	Source/WebCore/bindings/js/JSMutationCallbackCustom.cpp \
+	Source/WebCore/bindings/js/JSMutationCallback.cpp \
+	Source/WebCore/bindings/js/JSMutationCallback.h \
 	Source/WebCore/bindings/js/JSMutationObserverCustom.cpp \
 	Source/WebCore/bindings/js/JSNamedNodeMapCustom.cpp \
 	Source/WebCore/bindings/js/JSNodeCustom.cpp \
@@ -3544,6 +3543,8 @@ webcore_sources += \
 	Source/WebCore/html/MonthInputType.h \
 	Source/WebCore/html/NumberInputType.cpp \
 	Source/WebCore/html/NumberInputType.h \
+	Source/WebCore/html/parser/BackgroundHTMLInputStream.cpp \
+	Source/WebCore/html/parser/BackgroundHTMLInputStream.h \
 	Source/WebCore/html/parser/BackgroundHTMLParser.cpp \
 	Source/WebCore/html/parser/BackgroundHTMLParser.h \
 	Source/WebCore/html/parser/CSSPreloadScanner.cpp \
@@ -3597,6 +3598,8 @@ webcore_sources += \
 	Source/WebCore/html/parser/TextViewSourceParser.h \
 	Source/WebCore/html/parser/XSSAuditor.cpp \
 	Source/WebCore/html/parser/XSSAuditor.h \
+	Source/WebCore/html/parser/XSSAuditorDelegate.cpp \
+	Source/WebCore/html/parser/XSSAuditorDelegate.h \
 	Source/WebCore/html/shadow/PickerIndicatorElement.cpp \
 	Source/WebCore/html/shadow/PickerIndicatorElement.h \
 	Source/WebCore/html/shadow/ContentDistributor.cpp \
@@ -4234,13 +4237,14 @@ webcore_sources += \
 	Source/WebCore/platform/graphics/freetype/FontCustomPlatformDataFreeType.cpp \
 	Source/WebCore/platform/graphics/freetype/GlyphPageTreeNodeFreeType.cpp \
 	Source/WebCore/platform/graphics/freetype/SimpleFontDataFreeType.cpp \
+	Source/WebCore/platform/graphics/freetype/UTF16UChar32Iterator.h \
 	Source/WebCore/platform/graphics/harfbuzz/HarfBuzzShaperBase.cpp \
 	Source/WebCore/platform/graphics/harfbuzz/HarfBuzzShaperBase.h \
-	Source/WebCore/platform/graphics/harfbuzz/ng/HarfBuzzNGFace.cpp \
-	Source/WebCore/platform/graphics/harfbuzz/ng/HarfBuzzNGFace.h \
-	Source/WebCore/platform/graphics/harfbuzz/ng/HarfBuzzNGFaceCairo.cpp \
-	Source/WebCore/platform/graphics/harfbuzz/ng/HarfBuzzShaper.cpp \
-	Source/WebCore/platform/graphics/harfbuzz/ng/HarfBuzzShaper.h \
+	Source/WebCore/platform/graphics/harfbuzz/HarfBuzzFace.cpp \
+	Source/WebCore/platform/graphics/harfbuzz/HarfBuzzFace.h \
+	Source/WebCore/platform/graphics/harfbuzz/HarfBuzzFaceCairo.cpp \
+	Source/WebCore/platform/graphics/harfbuzz/HarfBuzzShaper.cpp \
+	Source/WebCore/platform/graphics/harfbuzz/HarfBuzzShaper.h \
 	Source/WebCore/plugins/npapi.h \
 	Source/WebCore/plugins/npruntime.h \
 	Source/WebCore/plugins/nptypes.h \
@@ -6063,6 +6067,8 @@ webcoregtk_sources += \
 	Source/WebCore/platform/graphics/cairo/GraphicsContextPlatformPrivateCairo.h \
 	Source/WebCore/platform/graphics/freetype/FontPlatformData.h \
 	Source/WebCore/platform/graphics/freetype/FontPlatformDataFreeType.cpp \
+	Source/WebCore/platform/graphics/gstreamer/FullscreenVideoControllerGStreamer.cpp \
+	Source/WebCore/platform/graphics/gstreamer/FullscreenVideoControllerGStreamer.h \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerGWorld.cpp \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerGWorld.h \
 	Source/WebCore/platform/graphics/gstreamer/ImageGStreamerCairo.cpp \
@@ -6076,6 +6082,8 @@ webcoregtk_sources += \
 	Source/WebCore/platform/graphics/gtk/ColorGtk.cpp \
 	Source/WebCore/platform/graphics/gtk/GdkCairoUtilities.cpp \
 	Source/WebCore/platform/graphics/gtk/GdkCairoUtilities.h \
+	Source/WebCore/platform/graphics/gtk/FullscreenVideoControllerGtk.cpp \
+	Source/WebCore/platform/graphics/gtk/FullscreenVideoControllerGtk.h \
 	Source/WebCore/platform/graphics/gtk/IconGtk.cpp \
 	Source/WebCore/platform/graphics/gtk/ImageBufferGtk.cpp \
 	Source/WebCore/platform/graphics/gtk/ImageGtk.cpp \

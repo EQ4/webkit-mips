@@ -11734,62 +11734,6 @@
 				>
 			</File>
 			<File
-				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationCallback.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release_Cairo_CFLite|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug_All|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationCallback.h"
-				>
-			</File>
-			<File
 				RelativePath="$(ConfigurationBuildDir)\obj\$(ProjectName)\DerivedSources\JSMutationEvent.cpp"
 				>
 				<FileConfiguration
@@ -25369,14 +25313,6 @@
 				Name="webdatabase"
 				>
 				<File
-					RelativePath="..\Modules\webdatabase\AbstractDatabase.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\Modules\webdatabase\AbstractDatabase.h"
-					>
-				</File>
-				<File
 					RelativePath="..\Modules\webdatabase\AbstractDatabaseServer.h"
 					>
 				</File>
@@ -25405,6 +25341,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\Modules\webdatabase\DatabaseBackend.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Modules\webdatabase\DatabaseBackend.h"
+					>
+				</File>
+				<File
 					RelativePath="..\Modules\webdatabase\DatabaseCallback.h"
 					>
 				</File>
@@ -25417,11 +25361,23 @@
 					>
 				</File>
 				<File
+					RelativePath="..\Modules\webdatabase\DatabaseError.h"
+					>
+				</File>
+				<File
 					RelativePath="..\Modules\webdatabase\DatabaseManager.cpp"
 					>
 				</File>
 				<File
 					RelativePath="..\Modules\webdatabase\DatabaseManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Modules\webdatabase\DatabaseServer.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Modules\webdatabase\DatabaseServer.h"
 					>
 				</File>
 				<File
@@ -25454,14 +25410,6 @@
 				</File>
 				<File
 					RelativePath="..\Modules\webdatabase\DatabaseTracker.h"
-					>
-				</File>
-				<File
-					RelativePath="..\Modules\webdatabase\DBBackendServer.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\Modules\webdatabase\DBBackendServer.h"
 					>
 				</File>
 				<File
@@ -64809,6 +64757,14 @@
 				Name="parser"
 				>
 				<File
+					RelativePath="..\html\parser\BackgroundHTMLInputStream.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\html\parser\BackgroundHTMLInputStream.h"
+					>
+				</File>
+				<File
 					RelativePath="..\html\parser\BackgroundHTMLParser.cpp"
 					>
 				</File>
@@ -65014,6 +64970,14 @@
 				</File>
 				<File
 					RelativePath="..\html\parser\XSSAuditor.h"
+					>
+				</File>
+				<File
+					RelativePath="..\html\parser\XSSAuditorDelegate.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\html\parser\XSSAuditorDelegate.h"
 					>
 				</File>
 			</Filter>
@@ -70393,7 +70357,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\bindings\js\JSMutationCallbackCustom.cpp"
+					RelativePath="..\bindings\js\JSMutationCallback.cpp"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
@@ -70443,6 +70407,10 @@
 							Name="VCCLCompilerTool"
 						/>
 					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\bindings\js\JSMutationCallback.h"
+					>
 				</File>
 				<File
 					RelativePath="..\bindings\js\JSMutationObserverCustom.cpp"
@@ -77285,10 +77253,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\NativeHeapGraph.js"
-					>
-				</File>
-				<File
 					RelativePath="..\inspector\front-end\NativeHeapSnapshot.js"
 					>
 				</File>
@@ -77802,6 +77766,10 @@
 				</File>
 				<File
 					RelativePath="..\inspector\front-end\View.js"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\ViewportControl.js"
 					>
 				</File>
 				<File

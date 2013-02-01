@@ -57,6 +57,7 @@
 #include "Language.h"
 #include "LocalizedStrings.h"
 #include "MouseEvent.h"
+#include "PlatformLocale.h"
 #include "RenderTextControlSingleLine.h"
 #include "RenderTheme.h"
 #include "RuntimeEnabledFeatures.h"
@@ -64,6 +65,7 @@
 #include "SearchInputType.h"
 #include "ShadowRoot.h"
 #include "ScriptEventListener.h"
+#include "StyleResolver.h"
 #include <wtf/MathExtras.h>
 #include <wtf/StdLibExtras.h>
 
@@ -133,6 +135,9 @@ HTMLInputElement::HTMLInputElement(const QualifiedName& tagName, Document* docum
     , m_inputType(InputType::createText(this))
 {
     ASSERT(hasTagName(inputTag) || hasTagName(isindexTag));
+#if ENABLE(INPUT_MULTIPLE_FIELDS_UI)
+    setHasCustomCallbacks();
+#endif
 }
 
 PassRefPtr<HTMLInputElement> HTMLInputElement::create(const QualifiedName& tagName, Document* document, HTMLFormElement* form, bool createdByParser)
@@ -471,15 +476,16 @@ void HTMLInputElement::updateType()
 
     removeFromRadioButtonGroup();
 
-    bool wasAttached = attached();
-    if (wasAttached)
-        detach();
-
     bool didStoreValue = m_inputType->storesValueSeparateFromAttribute();
     bool neededSuspensionCallback = needsSuspensionCallback();
     bool didRespectHeightAndWidth = m_inputType->shouldRespectHeightAndWidthAttributes();
 
     m_inputType->destroyShadowSubtree();
+
+    bool wasAttached = attached();
+    if (wasAttached)
+        detach();
+
     m_inputType = newType.release();
     m_inputType->createShadowSubtree();
 
@@ -1226,6 +1232,11 @@ bool HTMLInputElement::isURLAttribute(const Attribute& attribute) const
     return attribute.name() == srcAttr || attribute.name() == formactionAttr || HTMLTextFormControlElement::isURLAttribute(attribute);
 }
 
+bool HTMLInputElement::isFocusableByClickOnLabel() const
+{
+    return m_inputType->isFocusableByClickOnLabel();
+}
+
 String HTMLInputElement::defaultValue() const
 {
     return fastGetAttribute(valueAttr);
@@ -1955,13 +1966,28 @@ void HTMLInputElement::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) con
 {
     MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::DOM);
     HTMLTextFormControlElement::reportMemoryUsage(memoryObjectInfo);
-    info.addMember(m_name);
-    info.addMember(m_valueIfDirty);
-    info.addMember(m_suggestedValue);
-    info.addMember(m_inputType);
+    info.addMember(m_name, "name");
+    info.addMember(m_valueIfDirty, "valueIfDirty");
+    info.addMember(m_suggestedValue, "suggestedValue");
+    info.addMember(m_inputType, "inputType");
 #if ENABLE(DATALIST_ELEMENT)
-    info.addMember(m_listAttributeTargetObserver);
+    info.addMember(m_listAttributeTargetObserver, "listAttributeTargetObserver");
 #endif
 }
+
+#if ENABLE(INPUT_MULTIPLE_FIELDS_UI)
+PassRefPtr<RenderStyle> HTMLInputElement::customStyleForRenderer()
+{
+    RefPtr<RenderStyle> originalStyle = document()->styleResolver()->styleForElement(this);
+    if (!m_inputType->shouldApplyLocaleDirection())
+        return originalStyle.release();
+    TextDirection contentDirection = locale().isRTL() ? RTL : LTR;
+    if (originalStyle->direction() == contentDirection)
+        return originalStyle.release();
+    RefPtr<RenderStyle> style = RenderStyle::clone(originalStyle.get());
+    style->setDirection(contentDirection);
+    return style.release();
+}
+#endif
 
 } // namespace
