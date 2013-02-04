@@ -1943,15 +1943,14 @@ WebInspector.TextEditorMainPanel.prototype = {
      */
     _appendOverlayHighlight: function(lineRow, highlight)
     {
-        const extraWidth = 1;
         var metrics = highlight.metrics;
         var cssClass = highlight.cssClass;
         for(var i = 0; i < metrics.length; ++i) {
             var highlightSpan = document.createElement("span");
             highlightSpan._isOverlayHighlightElement = true;
             highlightSpan.addStyleClass(cssClass);
-            highlightSpan.style.left = (metrics[i].left - extraWidth) + "px";
-            highlightSpan.style.width = (metrics[i].width + extraWidth * 2) + "px";
+            highlightSpan.style.left = metrics[i].left + "px";
+            highlightSpan.style.width = metrics[i].width + "px";
             highlightSpan.style.height = metrics[i].height + "px";
             highlightSpan.addStyleClass("text-editor-overlay-highlight");
             lineRow.insertBefore(highlightSpan, lineRow.decorationsElement);
@@ -2826,7 +2825,7 @@ WebInspector.TextEditorMainPanel.RangeHighlightDescriptor.prototype = {
             return [];
 
         var startColumn = lineNumber === this._range.startLine ? this._range.startColumn : 0;
-        var endColumn = lineNumber === this._range.endLine ? Math.max(this._range.endColumn, line.length) : line.length;
+        var endColumn = lineNumber === this._range.endLine ? Math.min(this._range.endColumn, line.length) : line.length;
         return [{
             startColumn: startColumn,
             endColumn: endColumn
@@ -2928,7 +2927,8 @@ WebInspector.TextEditorMainChunk.prototype = {
         this._chunkedPanel.beginDomUpdates();
         this.element.className = "webkit-line-content";
         if (this.element.decorationsElement) {
-            this.element.removeChild(this.element.decorationsElement);
+            if (this.element.decorationsElement.parentElement)
+                this.element.removeChild(this.element.decorationsElement);
             delete this.element.decorationsElement;
         }
         this._chunkedPanel.endDomUpdates();

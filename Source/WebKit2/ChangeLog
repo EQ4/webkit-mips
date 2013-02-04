@@ -1,3 +1,752 @@
+2013-02-04  Balazs Kelemen  <kbalazs@webkit.org>
+
+        [Soup] Wrap SoupSession by NetworkStorageSession
+        https://bugs.webkit.org/show_bug.cgi?id=108615
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebProcess/WebCoreSupport/soup/WebFrameNetworkingContext.cpp:
+        (WebKit::WebFrameNetworkingContext::storageSession):
+        * WebProcess/WebCoreSupport/soup/WebFrameNetworkingContext.h:
+        (WebFrameNetworkingContext):
+
+2013-02-03  David Kilzer  <ddkilzer@apple.com>
+
+        Upstream ENABLE_PDFKIT_PLUGIN settting
+        <http://webkit.org/b/108792>
+
+        Reviewed by Tim Horton.
+
+        * Configurations/FeatureDefines.xcconfig: Disable PDFKIT_PLUGIN
+        on iOS since PDFKit is a Mac-only framework.
+
+2013-02-01  Alexey Proskuryakov  <ap@apple.com>
+
+        Silently block one more directory needed for NSApplication initialization.
+
+        Reviewed by Sam Weinig.
+
+        * WebProcess/com.apple.WebProcess.sb.in:
+
+2013-02-03  KwangYong Choi  <ky0.choi@samsung.com>
+
+        Fix build warning after r141648
+        https://bugs.webkit.org/show_bug.cgi?id=108784
+
+        Reviewed by Kentaro Hara.
+
+        Fix -Wunused-parameter build warning.
+
+        * UIProcess/Storage/StorageManager.cpp:
+        (WebKit::StorageManager::createStorageArea):
+        (WebKit::StorageManager::destroyStorageArea):
+
+2013-02-03  Joanmarie Diggs  <jdiggs@igalia.com>
+
+        [GTK] Make distcheck fails
+        https://bugs.webkit.org/show_bug.cgi?id=108756
+
+        Reviewed by Kentaro Hara.
+
+        * GNUmakefile.list.am: Remove header files which no longer exist
+
+2013-02-02  Sam Weinig  <sam@webkit.org>
+
+        Remove more LegacyReceivers
+        https://bugs.webkit.org/show_bug.cgi?id=108758
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/Downloads/DownloadProxy.cpp:
+        * UIProcess/Downloads/DownloadProxy.messages.in:
+        * UIProcess/WebApplicationCacheManagerProxy.cpp:
+        * UIProcess/WebApplicationCacheManagerProxy.h:
+        (WebApplicationCacheManagerProxy):
+        * UIProcess/WebApplicationCacheManagerProxy.messages.in:
+        * UIProcess/WebCookieManagerProxy.cpp:
+        * UIProcess/WebCookieManagerProxy.h:
+        (WebCookieManagerProxy):
+        * UIProcess/WebCookieManagerProxy.messages.in:
+        * UIProcess/WebDatabaseManagerProxy.cpp:
+        * UIProcess/WebDatabaseManagerProxy.h:
+        (WebDatabaseManagerProxy):
+        * UIProcess/WebDatabaseManagerProxy.messages.in:
+        * UIProcess/mac/RemoteLayerTreeHost.h:
+        (RemoteLayerTreeHost):
+        * UIProcess/mac/RemoteLayerTreeHost.messages.in:
+        * UIProcess/mac/RemoteLayerTreeHost.mm:
+        * WebProcess/ApplicationCache/WebApplicationCacheManager.cpp:
+        * WebProcess/ApplicationCache/WebApplicationCacheManager.h:
+        (WebApplicationCacheManager):
+        * WebProcess/ApplicationCache/WebApplicationCacheManager.messages.in:
+        * WebProcess/Cookies/WebCookieManager.cpp:
+        * WebProcess/Cookies/WebCookieManager.h:
+        (WebCookieManager):
+        * WebProcess/Cookies/WebCookieManager.messages.in:
+        * WebProcess/WebCoreSupport/WebDatabaseManager.cpp:
+        * WebProcess/WebCoreSupport/WebDatabaseManager.h:
+        (WebDatabaseManager):
+        * WebProcess/WebCoreSupport/WebDatabaseManager.messages.in:
+
+2013-02-02  Sam Weinig  <sam@webkit.org>
+
+        Convert CustomProtocolManagerProxy, CustomProtocolManager and AuthenticationManager to be non-LegacyReceivers
+        https://bugs.webkit.org/show_bug.cgi?id=108757
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/Authentication/AuthenticationManager.cpp:
+        * Shared/Authentication/AuthenticationManager.h:
+        (AuthenticationManager):
+        * Shared/Authentication/AuthenticationManager.messages.in:
+        * Shared/Network/CustomProtocols/CustomProtocolManager.h:
+        (CustomProtocolManager):
+        * Shared/Network/CustomProtocols/CustomProtocolManager.messages.in:
+        * Shared/Network/CustomProtocols/mac/CustomProtocolManagerMac.mm:
+        * UIProcess/Network/CustomProtocols/CustomProtocolManagerProxy.h:
+        (CustomProtocolManagerProxy):
+        * UIProcess/Network/CustomProtocols/CustomProtocolManagerProxy.messages.in:
+        * UIProcess/Network/CustomProtocols/mac/CustomProtocolManagerProxyMac.mm:
+
+2013-02-02  Christophe Dumez  <christophe.dumez@intel.com>
+
+        [EFL][WK2] Use C API inside ewk_file_chooser_request
+        https://bugs.webkit.org/show_bug.cgi?id=107811
+
+        Reviewed by Sam Weinig.
+
+        Use C API inside ewk_file_chooser_request instead of
+        accessing the internal C++ classes directly, to
+        avoid violating API layering.
+
+        * UIProcess/API/efl/ewk_file_chooser_request.cpp:
+        (EwkFileChooserRequest::EwkFileChooserRequest):
+        (EwkFileChooserRequest::~EwkFileChooserRequest):
+        (EwkFileChooserRequest::allowMultipleFiles):
+        (EwkFileChooserRequest::acceptedMIMETypes):
+        (EwkFileChooserRequest::cancel):
+        (EwkFileChooserRequest::chooseFiles):
+        (ewk_file_chooser_request_accepted_mimetypes_get):
+        (ewk_file_chooser_request_files_choose):
+        (ewk_file_chooser_request_file_choose):
+        * UIProcess/API/efl/ewk_file_chooser_request_private.h:
+        (EwkFileChooserRequest::create):
+        (EwkFileChooserRequest):
+        * UIProcess/efl/PageUIClientEfl.cpp:
+        (WebKit::PageUIClientEfl::runOpenPanel):
+
+2013-02-02  Sam Weinig  <sam@webkit.org>
+
+        Stop keeping a frame tree in the UIProcess
+        https://bugs.webkit.org/show_bug.cgi?id=81728
+
+        Reviewed by Oliver Hunt.
+
+        This patch removes the parent/child relationships of WebFrameProxys
+        in the UIProcess
+
+        * UIProcess/API/C/WKFrame.cpp:
+        (WKFrameCopyChildFrames):
+        (WKFrameGetParentFrame):
+        * UIProcess/API/C/WKFrame.h:
+        Null out the implementations of WKFrameCopyChildFrames and WKFrameGetParentFrame,
+        but keep them around as their symbols are still needed for nightlies.
+
+        * UIProcess/WebFrameProxy.cpp:
+        (WebKit::WebFrameProxy::WebFrameProxy):
+        (WebKit::WebFrameProxy::disconnect):
+        * UIProcess/WebFrameProxy.h:
+        Remove parent/child connections.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::didCreateSubframe):
+        (WebKit::WebPageProxy::didRemoveFrameFromHierarchy):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in:
+        * WebProcess/WebCoreSupport/WebFrameLoaderClient.cpp:
+        (WebKit::WebFrameLoaderClient::didSaveToPageCache):
+        (WebKit::WebFrameLoaderClient::didRestoreFromPageCache):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::createSubframe):
+        Remove/Update messages that only served to update the parent/child connection.
+
+2013-02-02  Sam Weinig  <sam@webkit.org>
+
+        Make it possible to modify the connection from ChildProcessProxy subclasses.
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/ChildProcessProxy.cpp:
+        (WebKit::ChildProcessProxy::ChildProcessProxy):
+        (WebKit::ChildProcessProxy::didFinishLaunching):
+        (WebKit::ChildProcessProxy::clearConnection):
+        (WebKit::ChildProcessProxy::connectionWillOpen):
+        (WebKit::ChildProcessProxy::connectionWillClose):
+        * Shared/ChildProcessProxy.h:
+        (ChildProcessProxy):
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::WebProcessProxy):
+        (WebKit::WebProcessProxy::connectionWillOpen):
+        (WebKit::WebProcessProxy::connectionWillClose):
+        * UIProcess/WebProcessProxy.h:
+        (WebProcessProxy):
+
+2013-02-02  David Kilzer  <ddkilzer@apple.com>
+
+        Upstream iOS FeatureDefines
+        <http://webkit.org/b/108753>
+
+        Reviewed by Anders Carlsson.
+
+        * Configurations/FeatureDefines.xcconfig:
+        - ENABLE_DEVICE_ORIENTATION: Add iOS configurations.
+        - ENABLE_PLUGIN_PROXY_FOR_VIDEO: Ditto.
+        - FEATURE_DEFINES: Add ENABLE_PLUGIN_PROXY_FOR_VIDEO.  Add
+          PLATFORM_NAME variant to reduce future merge conflicts. 
+
+2013-02-02  Csaba Osztrogonác  <ossy@webkit.org>
+
+        [Qt][WK2] Unreviewed buildfix after r141648.
+
+        * DerivedSources.pri:
+
+2013-02-02  Zan Dobersek  <zdobersek@igalia.com>
+
+        Follow-up to r141682. Adding build targets for the files that should be generated from the new message.in file.
+
+        Unreviewed.
+
+        * GNUmakefile.list.am:
+
+2013-02-01  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK build fix after r141648.
+
+        * GNUmakefile.am: Add UIProcess/Storage to the list of paths that
+        should be searched for *.messages.in files.
+
+2013-02-01  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed build fix after r141648
+
+        Needs to add StorageManager.messages.in to CMakeLists.txt.
+
+        * CMakeLists.txt:
+
+2013-02-01  Benjamin Poulain  <bpoulain@apple.com>
+
+        Build fix for CustomProtocolManagerMac after r141658.
+
+        * Shared/Network/CustomProtocols/mac/CustomProtocolManagerMac.mm:
+        (WebKit::CustomProtocolManager::supplementName): I accidentally typed "const" twice twice.
+
+2013-02-01  Benjamin Poulain  <bpoulain@apple.com>
+
+        [WK2] Use light supplement names instead of static AtomicStrings
+        https://bugs.webkit.org/show_bug.cgi?id=108570
+
+        Reviewed by Anders Carlsson.
+
+        Since all the supplement names are just string literals and are all different,
+        we can just use their pointer as the key in the supplement hashmaps.
+
+        This is lighter and faster than using AtomicString. WebCore already moved to this
+        in Supplementable.
+
+        * NetworkProcess/NetworkProcess.h:
+        (WebKit::NetworkProcess::addSupplement):
+        (NetworkProcess):
+        * Shared/Authentication/AuthenticationManager.cpp:
+        (WebKit::AuthenticationManager::supplementName):
+        * Shared/Authentication/AuthenticationManager.h:
+        (AuthenticationManager):
+        * Shared/Network/CustomProtocols/CustomProtocolManager.h:
+        (CustomProtocolManager):
+        * Shared/Network/CustomProtocols/mac/CustomProtocolManagerMac.mm:
+        (WebKit::CustomProtocolManager::supplementName):
+        * UIProcess/Notifications/WebNotificationManagerProxy.cpp:
+        (WebKit::WebNotificationManagerProxy::supplementName):
+        * UIProcess/Notifications/WebNotificationManagerProxy.h:
+        (WebNotificationManagerProxy):
+        * UIProcess/WebApplicationCacheManagerProxy.cpp:
+        (WebKit::WebApplicationCacheManagerProxy::supplementName):
+        * UIProcess/WebApplicationCacheManagerProxy.h:
+        (WebApplicationCacheManagerProxy):
+        * UIProcess/WebContext.h:
+        (WebContext):
+        * UIProcess/WebCookieManagerProxy.cpp:
+        (WebKit::WebCookieManagerProxy::supplementName):
+        * UIProcess/WebCookieManagerProxy.h:
+        (WebCookieManagerProxy):
+        * UIProcess/WebDatabaseManagerProxy.cpp:
+        (WebKit::WebDatabaseManagerProxy::supplementName):
+        * UIProcess/WebDatabaseManagerProxy.h:
+        (WebDatabaseManagerProxy):
+        * UIProcess/WebGeolocationManagerProxy.cpp:
+        (WebKit::WebGeolocationManagerProxy::supplementName):
+        * UIProcess/WebGeolocationManagerProxy.h:
+        (WebGeolocationManagerProxy):
+        * UIProcess/WebKeyValueStorageManagerProxy.cpp:
+        (WebKit::WebKeyValueStorageManagerProxy::supplementName):
+        * UIProcess/WebKeyValueStorageManagerProxy.h:
+        (WebKeyValueStorageManagerProxy):
+        * UIProcess/WebMediaCacheManagerProxy.cpp:
+        (WebKit::WebMediaCacheManagerProxy::supplementName):
+        * UIProcess/WebMediaCacheManagerProxy.h:
+        (WebMediaCacheManagerProxy):
+        * UIProcess/WebResourceCacheManagerProxy.cpp:
+        (WebKit::WebResourceCacheManagerProxy::supplementName):
+        * UIProcess/WebResourceCacheManagerProxy.h:
+        (WebResourceCacheManagerProxy):
+        * UIProcess/soup/WebSoupRequestManagerProxy.cpp:
+        (WebKit::WebSoupRequestManagerProxy::supplementName):
+        * UIProcess/soup/WebSoupRequestManagerProxy.h:
+        (WebSoupRequestManagerProxy):
+        * WebProcess/ApplicationCache/WebApplicationCacheManager.cpp:
+        (WebKit::WebApplicationCacheManager::supplementName):
+        * WebProcess/ApplicationCache/WebApplicationCacheManager.h:
+        (WebApplicationCacheManager):
+        * WebProcess/Cookies/WebCookieManager.cpp:
+        (WebKit::WebCookieManager::supplementName):
+        * WebProcess/Cookies/WebCookieManager.h:
+        (WebCookieManager):
+        * WebProcess/Geolocation/WebGeolocationManager.cpp:
+        (WebKit::WebGeolocationManager::supplementName):
+        * WebProcess/Geolocation/WebGeolocationManager.h:
+        (WebGeolocationManager):
+        * WebProcess/MediaCache/WebMediaCacheManager.cpp:
+        (WebKit::WebMediaCacheManager::supplementName):
+        * WebProcess/MediaCache/WebMediaCacheManager.h:
+        (WebMediaCacheManager):
+        * WebProcess/Notifications/WebNotificationManager.cpp:
+        (WebKit::WebNotificationManager::supplementName):
+        * WebProcess/Notifications/WebNotificationManager.h:
+        (WebNotificationManager):
+        * WebProcess/ResourceCache/WebResourceCacheManager.cpp:
+        (WebKit::WebResourceCacheManager::supplementName):
+        * WebProcess/ResourceCache/WebResourceCacheManager.h:
+        (WebResourceCacheManager):
+        * WebProcess/Storage/WebKeyValueStorageManager.cpp:
+        (WebKit::WebKeyValueStorageManager::supplementName):
+        * WebProcess/Storage/WebKeyValueStorageManager.h:
+        (WebKeyValueStorageManager):
+        * WebProcess/WebCoreSupport/WebDatabaseManager.cpp:
+        (WebKit::WebDatabaseManager::supplementName):
+        * WebProcess/WebCoreSupport/WebDatabaseManager.h:
+        (WebDatabaseManager):
+        * WebProcess/WebProcess.h:
+        (WebKit::WebProcess::addSupplement):
+        (WebProcess):
+
+2013-02-01  Benjamin Poulain  <bpoulain@apple.com>
+
+        Clean the String->AtomicString conversion for AnimationController::pauseAnimationAtTime
+        https://bugs.webkit.org/show_bug.cgi?id=108558
+
+        Reviewed by Dean Jackson.
+
+        * WebProcess/InjectedBundle/API/c/WKBundleFrame.cpp:
+        (WKBundleFramePauseAnimationOnElementWithId):
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::pauseAnimationOnElementWithId):
+        * WebProcess/WebPage/WebFrame.h:
+        (WebFrame):
+
+2013-02-01  Anders Carlsson  <andersca@apple.com>
+
+        More work on UI side storage
+        https://bugs.webkit.org/show_bug.cgi?id=108700
+
+        Reviewed by Sam Weinig.
+
+        * DerivedSources.make:
+        Add StorageManager.messages.in.
+
+        * Platform/CoreIPC/HandleMessage.h:
+        (CoreIPC::callMemberFunction):
+        Add new overload.
+
+        * UIProcess/Storage/StorageManager.cpp:
+        (WebKit::StorageManager::didReceiveMessageOnConnectionWorkQueue):
+        Call the right function.
+
+        (WebKit::StorageManager::createStorageArea):
+        (WebKit::StorageManager::destroyStorageArea):
+        Add stubs.
+
+        * UIProcess/Storage/StorageManager.messages.in: Added.
+        Add new messages files.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        Add new files.
+
+        * WebProcess/Storage/StorageAreaProxy.cpp:
+        (WebKit::StorageAreaProxy::~StorageAreaProxy):
+        Add another FIXME.
+
+        (WebKit::StorageAreaProxy::canAccessStorage):
+        (WebKit::StorageAreaProxy::incrementAccessCount):
+        (WebKit::StorageAreaProxy::decrementAccessCount):
+        Implement these.
+
+2013-02-01  Caio Marcelo de Oliveira Filho  <caio.oliveira@openbossa.org>
+
+        [Gtk] [WK2] Fix build after r141619
+        https://bugs.webkit.org/show_bug.cgi?id=108687
+
+        Reviewed by Benjamin Poulain.
+
+        Take a reference instead of a pointer for decoding functions.
+
+        * Platform/gtk/SharedMemoryGtk.cpp:
+        (WebKit::SharedMemory::Handle::decode):
+        * Shared/gtk/ArgumentCodersGtk.cpp:
+        (CoreIPC::decodeImage):
+        (CoreIPC::decodeDataObject):
+        (CoreIPC::::decode):
+        (CoreIPC::decodeGKeyFile):
+        (CoreIPC::decode):
+        * Shared/gtk/ArgumentCodersGtk.h:
+        * Shared/gtk/LayerTreeContextGtk.cpp:
+        (WebKit::LayerTreeContext::decode):
+
+2013-02-01  Caio Marcelo de Oliveira Filho  <caio.oliveira@openbossa.org>
+
+        [EFL] [WK2] Fix build after r141619
+        https://bugs.webkit.org/show_bug.cgi?id=108683
+
+        Reviewed by Benjamin Poulain.
+
+        Take a reference instead of a pointer for decoding functions.
+
+        * Shared/WebBatteryStatus.cpp:
+        (WebKit::WebBatteryStatus::Data::decode):
+        * Shared/WebBatteryStatus.h:
+        (Data):
+        * Shared/WebNetworkInfo.cpp:
+        (WebKit::WebNetworkInfo::Data::decode):
+        * Shared/WebNetworkInfo.h:
+        (Data):
+        * Shared/cairo/LayerTreeContextCairo.cpp:
+        (WebKit::LayerTreeContext::decode):
+        * Shared/efl/LayerTreeContextEfl.cpp:
+        (WebKit::LayerTreeContext::decode):
+        * Shared/soup/PlatformCertificateInfo.cpp:
+        (WebKit::PlatformCertificateInfo::decode):
+        * Shared/soup/PlatformCertificateInfo.h:
+        (PlatformCertificateInfo):
+        * Shared/soup/WebCoreArgumentCodersSoup.cpp:
+        (CoreIPC::::decodePlatformData):
+
+2013-02-01  Brady Eidson  <beidson@apple.com>
+
+        Clean up WebArchive loading with the NetworkProcess
+        <rdar://problem/12695840> and https://bugs.webkit.org/show_bug.cgi?id=108673
+
+        Reviewed by Alexey Proskuryakov.
+
+        * NetworkProcess/HostRecord.cpp:
+        (WebKit::HostRecord::servePendingRequestsForQueue):  Add new logging.
+        (WebKit::HostRecord::servePendingRequests): Tweak existing logging.
+
+        * NetworkProcess/NetworkResourceLoadScheduler.cpp:
+        (WebKit::NetworkResourceLoadScheduler::servePendingRequests): Tweak existing logging.
+
+        * WebProcess/Network/WebResourceLoadScheduler.cpp:
+        (WebKit::WebResourceLoadScheduler::scheduleLoad): Handle archive resource scheduling better,
+          and add new logging to better explore archive loading behavior in the future.
+
+2013-02-01  Caio Marcelo de Oliveira Filho  <caio.oliveira@openbossa.org>
+
+        [Qt] [WK2] Fix build after r141619
+        https://bugs.webkit.org/show_bug.cgi?id=108680
+
+        Reviewed by Benjamin Poulain.
+
+        Take a reference instead of a pointer for decoding functions.
+
+        * Platform/unix/SharedMemoryUnix.cpp:
+        (WebKit::SharedMemory::Handle::decode):
+        * Shared/CoordinatedGraphics/CoordinatedGraphicsArgumentCoders.cpp:
+        (CoreIPC::::decode):
+        (CoreIPC::decodeTimingFunction):
+        * Shared/CoordinatedGraphics/CoordinatedGraphicsArgumentCoders.h:
+        * Shared/CoordinatedGraphics/WebCoordinatedSurface.cpp:
+        (WebKit::WebCoordinatedSurface::Handle::decode):
+        * Shared/CoordinatedGraphics/WebCoordinatedSurface.h:
+        (Handle):
+        * Shared/qt/ArgumentCodersQt.cpp:
+        (CoreIPC::::decode):
+        * Shared/qt/ArgumentCodersQt.h:
+        (CoreIPC):
+        * Shared/qt/LayerTreeContextQt.cpp:
+        (WebKit::LayerTreeContext::decode):
+        * Shared/qt/PlatformCertificateInfo.h:
+        (WebKit::PlatformCertificateInfo::decode):
+        * Shared/qt/QtNetworkReplyData.cpp:
+        (WebKit::QtNetworkReplyData::decode):
+        * Shared/qt/QtNetworkReplyData.h:
+        (QtNetworkReplyData):
+        * Shared/qt/QtNetworkRequestData.cpp:
+        (WebKit::QtNetworkRequestData::decode):
+        * Shared/qt/QtNetworkRequestData.h:
+        (QtNetworkRequestData):
+        * Shared/qt/WebCoreArgumentCodersQt.cpp:
+        (CoreIPC::::decodePlatformData):
+
+2013-02-01  Anders Carlsson  <andersca@apple.com>
+
+        Message decoding functions should take a MessageDecoder reference
+        https://bugs.webkit.org/show_bug.cgi?id=108669
+
+        Reviewed by Andreas Kling.
+
+        Message encoding functions already take a reference instead of a pointer, so
+        make the decoding functions take a reference as well.
+
+        * Platform/CoreIPC/ArgumentCoder.h:
+        (CoreIPC::ArgumentCoder::decode):
+        * Platform/CoreIPC/ArgumentCoders.cpp:
+        (CoreIPC::::decode):
+        (CoreIPC::decodeStringText):
+        * Platform/CoreIPC/ArgumentCoders.h:
+        (CoreIPC::SimpleArgumentCoder::decode):
+        * Platform/CoreIPC/ArgumentDecoder.h:
+        (CoreIPC::ArgumentDecoder::decode):
+        * Platform/CoreIPC/Arguments.h:
+        (CoreIPC::Arguments0::decode):
+        (CoreIPC::Arguments1::decode):
+        (CoreIPC::Arguments2::decode):
+        (CoreIPC::Arguments3::decode):
+        (CoreIPC::Arguments4::decode):
+        (CoreIPC::Arguments5::decode):
+        (CoreIPC::Arguments6::decode):
+        (CoreIPC::Arguments7::decode):
+        (CoreIPC::Arguments8::decode):
+        (CoreIPC::Arguments10::decode):
+        * Platform/CoreIPC/Attachment.cpp:
+        (CoreIPC::Attachment::decode):
+        * Platform/CoreIPC/Attachment.h:
+        (Attachment):
+        * Platform/CoreIPC/DataReference.cpp:
+        (CoreIPC::DataReference::decode):
+        * Platform/CoreIPC/DataReference.h:
+        (DataReference):
+        * Platform/CoreIPC/StringReference.cpp:
+        (CoreIPC::StringReference::decode):
+        * Platform/CoreIPC/StringReference.h:
+        (StringReference):
+        * Platform/CoreIPC/mac/MachPort.h:
+        (CoreIPC::MachPort::decode):
+        * Platform/SharedMemory.h:
+        (Handle):
+        * Platform/mac/SharedMemoryMac.cpp:
+        (WebKit::SharedMemory::Handle::decode):
+        * PluginProcess/PluginCreationParameters.cpp:
+        (WebKit::PluginCreationParameters::decode):
+        * PluginProcess/PluginCreationParameters.h:
+        (PluginCreationParameters):
+        * Shared/DictionaryPopupInfo.cpp:
+        (WebKit::DictionaryPopupInfo::decode):
+        * Shared/DictionaryPopupInfo.h:
+        (DictionaryPopupInfo):
+        * Shared/EditorState.cpp:
+        (WebKit::EditorState::decode):
+        * Shared/EditorState.h:
+        (EditorState):
+        * Shared/FontInfo.cpp:
+        (WebKit::FontInfo::decode):
+        * Shared/FontInfo.h:
+        (FontInfo):
+        * Shared/LayerTreeContext.h:
+        (LayerTreeContext):
+        * Shared/Network/NetworkProcessCreationParameters.cpp:
+        (WebKit::NetworkProcessCreationParameters::decode):
+        * Shared/Network/NetworkProcessCreationParameters.h:
+        (NetworkProcessCreationParameters):
+        * Shared/Network/NetworkResourceLoadParameters.cpp:
+        (WebKit::NetworkResourceLoadParameters::decode):
+        * Shared/Network/NetworkResourceLoadParameters.h:
+        (NetworkResourceLoadParameters):
+        * Shared/OriginAndDatabases.cpp:
+        (WebKit::OriginAndDatabases::decode):
+        * Shared/OriginAndDatabases.h:
+        (OriginAndDatabases):
+        * Shared/PlatformPopupMenuData.cpp:
+        (WebKit::PlatformPopupMenuData::decode):
+        * Shared/PlatformPopupMenuData.h:
+        (PlatformPopupMenuData):
+        * Shared/Plugins/NPIdentifierData.cpp:
+        (WebKit::NPIdentifierData::decode):
+        * Shared/Plugins/NPIdentifierData.h:
+        (NPIdentifierData):
+        * Shared/Plugins/NPVariantData.cpp:
+        (WebKit::NPVariantData::decode):
+        * Shared/Plugins/NPVariantData.h:
+        (NPVariantData):
+        * Shared/Plugins/PluginProcessCreationParameters.cpp:
+        (WebKit::PluginProcessCreationParameters::decode):
+        * Shared/Plugins/PluginProcessCreationParameters.h:
+        (PluginProcessCreationParameters):
+        * Shared/PrintInfo.cpp:
+        (WebKit::PrintInfo::decode):
+        * Shared/PrintInfo.h:
+        (PrintInfo):
+        * Shared/SandboxExtension.h:
+        (Handle):
+        (HandleArray):
+        (WebKit::SandboxExtension::Handle::decode):
+        (WebKit::SandboxExtension::HandleArray::decode):
+        * Shared/SecurityOriginData.cpp:
+        (WebKit::SecurityOriginData::decode):
+        * Shared/SecurityOriginData.h:
+        (SecurityOriginData):
+        * Shared/SessionState.cpp:
+        (WebKit::SessionState::decode):
+        * Shared/SessionState.h:
+        (SessionState):
+        * Shared/ShareableBitmap.cpp:
+        (WebKit::ShareableBitmap::Handle::decode):
+        * Shared/ShareableBitmap.h:
+        (Handle):
+        * Shared/ShareableResource.cpp:
+        (WebKit::ShareableResource::Handle::decode):
+        * Shared/ShareableResource.h:
+        (Handle):
+        * Shared/SharedWorkerProcessCreationParameters.cpp:
+        (WebKit::SharedWorkerProcessCreationParameters::decode):
+        * Shared/SharedWorkerProcessCreationParameters.h:
+        (SharedWorkerProcessCreationParameters):
+        * Shared/StatisticsData.cpp:
+        (WebKit::StatisticsData::decode):
+        * Shared/StatisticsData.h:
+        (StatisticsData):
+        * Shared/StringPairVector.h:
+        (WebKit::StringPairVector::decode):
+        * Shared/UpdateInfo.cpp:
+        (WebKit::UpdateInfo::decode):
+        * Shared/UpdateInfo.h:
+        (UpdateInfo):
+        * Shared/UserMessageCoders.h:
+        (WebKit::UserMessageDecoder::baseDecode):
+        * Shared/WebContextMenuItemData.cpp:
+        (WebKit::WebContextMenuItemData::decode):
+        * Shared/WebContextMenuItemData.h:
+        (WebContextMenuItemData):
+        * Shared/WebCoreArgumentCoders.cpp:
+        (CoreIPC::::decode):
+        (CoreIPC::decodeImage):
+        * Shared/WebCoreArgumentCoders.h:
+        * Shared/WebEvent.cpp:
+        (WebKit::WebEvent::decode):
+        * Shared/WebEvent.h:
+        (WebEvent):
+        (WebMouseEvent):
+        (WebWheelEvent):
+        (WebKeyboardEvent):
+        (WebGestureEvent):
+        (WebPlatformTouchPoint):
+        (WebTouchEvent):
+        * Shared/WebGeolocationPosition.cpp:
+        (WebKit::WebGeolocationPosition::Data::decode):
+        * Shared/WebGeolocationPosition.h:
+        (Data):
+        * Shared/WebGestureEvent.cpp:
+        (WebKit::WebGestureEvent::decode):
+        * Shared/WebHitTestResult.cpp:
+        (WebKit::WebHitTestResult::Data::decode):
+        * Shared/WebHitTestResult.h:
+        (Data):
+        * Shared/WebKeyboardEvent.cpp:
+        (WebKit::WebKeyboardEvent::decode):
+        * Shared/WebMouseEvent.cpp:
+        (WebKit::WebMouseEvent::decode):
+        * Shared/WebNavigationDataStore.h:
+        (WebKit::WebNavigationDataStore::decode):
+        * Shared/WebPageCreationParameters.cpp:
+        (WebKit::WebPageCreationParameters::decode):
+        * Shared/WebPageCreationParameters.h:
+        (WebPageCreationParameters):
+        * Shared/WebPageGroupData.cpp:
+        (WebKit::WebPageGroupData::decode):
+        * Shared/WebPageGroupData.h:
+        (WebPageGroupData):
+        * Shared/WebPlatformTouchPoint.cpp:
+        (WebKit::WebPlatformTouchPoint::decode):
+        * Shared/WebPopupItem.cpp:
+        (WebKit::WebPopupItem::decode):
+        * Shared/WebPopupItem.h:
+        * Shared/WebPreferencesStore.cpp:
+        (WebKit::WebPreferencesStore::decode):
+        * Shared/WebPreferencesStore.h:
+        (WebPreferencesStore):
+        * Shared/WebProcessCreationParameters.cpp:
+        (WebKit::WebProcessCreationParameters::decode):
+        * Shared/WebProcessCreationParameters.h:
+        (WebProcessCreationParameters):
+        * Shared/WebTouchEvent.cpp:
+        (WebKit::WebTouchEvent::decode):
+        * Shared/WebWheelEvent.cpp:
+        (WebKit::WebWheelEvent::decode):
+        * Shared/cf/ArgumentCodersCF.cpp:
+        (CoreIPC::decode):
+        * Shared/cf/ArgumentCodersCF.h:
+        (CoreIPC):
+        * Shared/mac/ArgumentCodersMac.h:
+        (CoreIPC):
+        * Shared/mac/ArgumentCodersMac.mm:
+        (CoreIPC::decode):
+        * Shared/mac/AttributedString.h:
+        (AttributedString):
+        * Shared/mac/AttributedString.mm:
+        (WebKit::AttributedString::decode):
+        * Shared/mac/ColorSpaceData.h:
+        (ColorSpaceData):
+        * Shared/mac/ColorSpaceData.mm:
+        (WebKit::ColorSpaceData::decode):
+        * Shared/mac/LayerTreeContextMac.mm:
+        (WebKit::LayerTreeContext::decode):
+        * Shared/mac/ObjCObjectGraphCoders.h:
+        (WebContextObjCObjectGraphDecoder):
+        (InjectedBundleObjCObjectGraphDecoder):
+        * Shared/mac/ObjCObjectGraphCoders.mm:
+        (WebKit::ObjCObjectGraphDecoder::baseDecode):
+        (WebKit::WebContextObjCObjectGraphDecoderImpl::decode):
+        (WebKit::InjectedBundleObjCObjectGraphDecoderImpl::decode):
+        (WebKit::WebContextObjCObjectGraphDecoder::decode):
+        (WebKit::InjectedBundleObjCObjectGraphDecoder::decode):
+        * Shared/mac/PlatformCertificateInfo.h:
+        (PlatformCertificateInfo):
+        * Shared/mac/PlatformCertificateInfo.mm:
+        (WebKit::PlatformCertificateInfo::decode):
+        * Shared/mac/RemoteLayerTreeTransaction.h:
+        (LayerProperties):
+        (RemoteLayerTreeTransaction):
+        * Shared/mac/RemoteLayerTreeTransaction.mm:
+        (WebKit::RemoteLayerTreeTransaction::LayerProperties::decode):
+        (WebKit::RemoteLayerTreeTransaction::decode):
+        * Shared/mac/SandboxExtensionMac.mm:
+        (WebKit::SandboxExtension::Handle::decode):
+        (WebKit::SandboxExtension::HandleArray::decode):
+        * Shared/mac/SecItemRequestData.cpp:
+        (WebKit::SecItemRequestData::decode):
+        * Shared/mac/SecItemRequestData.h:
+        * Shared/mac/SecItemResponseData.cpp:
+        (WebKit::SecItemResponseData::decode):
+        * Shared/mac/SecItemResponseData.h:
+        (SecItemResponseData):
+        * Shared/mac/WebCoreArgumentCodersMac.mm:
+        (CoreIPC::::decodePlatformData):
+        (CoreIPC::::decode):
+        * UIProcess/WebContextUserMessageCoders.h:
+        (WebKit::WebContextUserMessageDecoder::decode):
+        * WebProcess/InjectedBundle/InjectedBundleUserMessageCoders.h:
+        (WebKit::InjectedBundleUserMessageDecoder::decode):
+        * WebProcess/Plugins/Plugin.cpp:
+        (WebKit::Plugin::Parameters::decode):
+        * WebProcess/Plugins/Plugin.h:
+        (Parameters):
+
 2013-02-01  Carlos Garcia Campos  <cgarcia@igalia.com>
 
         [GTK] Adapt WorkQueueGtk to the latest changes in WebKit2 after r141497

@@ -1,3 +1,212 @@
+2013-02-03  Alan Cutter  <alancutter@chromium.org>
+
+        PatchLogs are not getting created on QueueStatusServer
+        https://bugs.webkit.org/show_bug.cgi?id=108593
+
+        Reviewed by Eric Seidel.
+
+        Added missing "added" patch event to submit-to-ews handler.
+
+        * QueueStatusServer/app.yaml:
+        * QueueStatusServer/handlers/submittoews.py:
+        (SubmitToEWS._add_attachment_to_ews_queues):
+
+2013-02-03  Douglas Stockwell  <dstockwell@chromium.org>
+
+        Unreviewed. Add dstockwell as a contributor in comitters.py and to the watchlist for animation
+        https://bugs.webkit.org/show_bug.cgi?id=108777
+
+        * Scripts/webkitpy/common/config/committers.py:
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-02-03  Sam Weinig  <sam@webkit.org>
+
+        Fix failing test.
+
+        * TestWebKitAPI/Tests/WebKit2/ShouldGoToBackForwardListItem.cpp:
+        (TestWebKitAPI::didFinishLoadForFrame):
+
+2013-02-03  Timothy Loh  <timloh@chromium.com>
+
+        Make ChangeLogEntry detect annotations by prepare-ChangeLog (Added/Removed/Copied from/Renamed from) as clean.
+        https://bugs.webkit.org/show_bug.cgi?id=108433
+
+        Reviewed by Eric Seidel.
+
+        PrepareChangeLog is supposed to update the file/function list if we
+        haven't touched it, but the existing regex doesn't handle the
+        annotations prepare-ChangeLog adds (e.g. "Added.")
+
+        * Scripts/webkitpy/common/checkout/changelog.py:
+        (ChangeLogEntry.is_touched_files_text_clean):
+        * Scripts/webkitpy/common/checkout/changelog_unittest.py:
+        (test_is_touched_files_text_clean):
+
+2013-02-02  Dean Jackson  <dino@apple.com>
+
+        Add Antoine Quint to the list of committers
+        https://bugs.webkit.org/show_bug.cgi?id=108750
+
+        No review necessary.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-02  Patrick Gansterer  <paroga@webkit.org>
+
+        [CMake] Adopt the WinCE port to new CMake
+        https://bugs.webkit.org/show_bug.cgi?id=108754
+
+        Reviewed by Laszlo Gombos.
+
+        * WinCELauncher/CMakeLists.txt: Mark WinCELauncher
+        as WIN32 target to use the correct entry point.
+
+2013-02-02  Alexey Proskuryakov  <ap@apple.com>
+
+        One is not allowed to use commit-queue to make oneself a committer.
+
+        * Scripts/webkitpy/common/config/committers.py: Rolled out r141693.
+        Also, changed e-mail order for Yongjun Zhang, so that Bugzilla autocomplete works.
+
+2013-02-02  Antoine Quint  <graouts@apple.com>
+
+        Add Antoine Quint to the list of committers
+        https://bugs.webkit.org/show_bug.cgi?id=108750
+
+        Reviewed by Dean Jackson.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-01  Adrian Perez de Castro  <aperez@igalia.com>
+
+        [GTK] Building fails in an armv5tel board
+        https://bugs.webkit.org/show_bug.cgi?id=108083
+
+        Reviewed by Martin Robinson.
+
+        In some systems in which $architecture is filled-in from "uname -m"
+        the value may not start with "arm-", but with "armvN", where "N" is
+        an architecture version number. The regexp in isARM() is modified
+        so it covers these kind of cases.
+
+        * Scripts/webkitdirs.pm:
+        (isARM):
+
+2013-02-01  Gregg Tavares  <gman@google.com>
+
+        Update LayoutTests scripts to skip webgl folder on ports
+        https://bugs.webkit.org/show_bug.cgi?id=108705
+
+        Reviewed by Dirk Pranke.
+
+        I'm working on checking in the WebGL Conformance Tests
+        as layout tests into LayoutTests/webgl. For ports
+        that do not have WebGL enabled this changes will
+        skip tests in the "webgl" folder.
+
+        * Scripts/webkitpy/layout_tests/port/base.py:
+        (Port._missing_symbol_to_skipped_tests):
+        * Scripts/webkitpy/layout_tests/port/port_testcase.py:
+        (PortTestCase.test_skipped_directories_for_symbols):
+
+2013-02-01  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Fix for webkitpy tests.
+
+        * Scripts/webkitpy/tool/steps/runtests.py:
+        (RunTests.run):
+        * Scripts/webkitpy/tool/steps/runtests_unittest.py:
+
+2013-02-01  Jer Noble  <jer.noble@apple.com>
+
+        LLDB: add synthetic provider for WTF::HashTable
+        https://bugs.webkit.org/show_bug.cgi?id=108718
+
+        Reviewed by Darin Adler.
+
+        Add a synthetic provider which will emit the contents of a given
+        WTF::HashTable. This allows clients using Xcode/lldb to enumerate
+        the hash contents.
+
+        * lldb/lldb_webkit.py:
+        (__lldb_init_module):
+        (__lldb_init_module.lldb_webkit):
+        (WTFHashTable_SummaryProvider):
+        (WTFVectorProvider.has_children):
+        (WTFHashTableProvider):
+        (WTFHashTableProvider.__init__):
+        (WTFHashTableProvider.num_children):
+        (WTFHashTableProvider.get_child_index):
+        (WTFHashTableProvider.get_child_at_index):
+        (WTFHashTableProvider.tableSize):
+        (WTFHashTableProvider.keyCount):
+        (WTFHashTableProvider.update):
+        (WTFHashTableProvider.has_children):
+
+2013-02-01  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Fix webkitpy tests since a build_style is not specified in some cases.
+
+        * Scripts/webkitpy/tool/steps/runtests.py:
+        (RunTests.run):
+
+2013-02-01  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Re-try enabling Win-EWS tests for the third time. 
+        https://bugs.webkit.org/show_bug.cgi?id=107968
+
+        * Scripts/webkitpy/tool/commands/earlywarningsystem.py:
+        (WinEWS):
+
+2013-01-31  Roger Fong  <roger_fong@apple.com>
+
+        Fix test scripts for EWS bots to get them running once and for all.
+        https://bugs.webkit.org/show_bug.cgi?id=108422
+
+        Reviewed by Timothy Horton.
+
+        Disabling --quiet option on Windows for now because that fails when we try to use /dev/null.
+        runtests.py was not passing in a configuration to run-webkit-tests which causes DRT to build in release by default.
+        However, we build in Debug only on the EWS Windows bots, which caused the build to fail.
+
+        * Scripts/webkitpy/tool/steps/runtests.py:
+        (RunTests.options):
+        (RunTests.run):
+
+2013-02-01  Nico Weber  <thakis@chromium.org>
+
+        [chromium] Build webkit with enable_web_intents set to 0.
+        https://bugs.webkit.org/show_bug.cgi?id=108408
+
+        Reviewed by Tony Chang.
+
+        I'll then make chromium build fine with that, then switch
+        enable_web_intents to 0, roll that into webkit, and then
+        actually remove the code hidden behind this flag.
+
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner::WebTestProxyBase::registerIntentService):
+        (WebTestRunner::WebTestProxyBase::dispatchIntent):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebViewHost):
+
+2013-02-01  Zan Dobersek  <zdobersek@igalia.com>
+
+        Set the GTK 64-bit Debug builder to build and test only WebKit1
+        https://bugs.webkit.org/show_bug.cgi?id=108648
+
+        Reviewed by Philippe Normand.
+
+        * BuildSlaveSupport/build.webkit.org-config/config.json: Change the builder name, type and
+        build directory to note that the builder builds and tests only the WebKit1 port on the GTK platform.
+        * BuildSlaveSupport/build.webkit.org-config/master.cfg:
+        (CompileWebKit1Only): Add the new build class that builds only the WebKit1 port of the builder's platform.
+        (BuildAndTestWebKit1OnlyFactory): Add the new factory that uses the CompileWebKit1Only build class
+        for building and testing only WebKit1 on the builder's platform.
+
 2013-02-01  Jochen Eisinger  <jochen@chromium.org>
 
         [chromium] move ownership of TestRunner object to TestInterfaces

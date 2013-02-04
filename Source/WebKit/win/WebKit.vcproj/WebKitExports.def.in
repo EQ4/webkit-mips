@@ -338,7 +338,7 @@ EXPORTS
         ??1BitmapImage@WebCore@@UAE@XZ
         ??0BitmapImage@WebCore@@IAE@PAVImageObserver@1@@Z
         ?isBitmapImage@BitmapImage@WebCore@@UBE_NXZ
-        ?currentFrameHasAlpha@BitmapImage@WebCore@@UAE_NXZ
+        ?currentFrameKnownToBeOpaque@BitmapImage@WebCore@@UAE_NXZ
         ?hasSingleSecurityOrigin@BitmapImage@WebCore@@UBE_NXZ
 #if !ASSERT_DISABLED
         ?notSolidColor@BitmapImage@WebCore@@UAE_NXZ 
@@ -381,7 +381,7 @@ EXPORTS
         ??0StyleSheetContents@WebCore@@AAE@PAVStyleRuleImport@1@ABVString@WTF@@ABUCSSParserContext@1@@Z
         ?addUserSheet@DocumentStyleSheetCollection@WebCore@@QAEXV?$PassRefPtr@VStyleSheetContents@WebCore@@@WTF@@@Z
         ??1StyleSheetContents@WebCore@@QAE@XZ
-        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
+        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVAtomicString@WTF@@N@Z
         ?pseudoElement@Element@WebCore@@QBEPAVPseudoElement@2@W4PseudoId@2@@Z
         ?pauseTransitionAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
         ?addFromLiteralData@AtomicString@WTF@@CA?AV?$PassRefPtr@VStringImpl@WTF@@@2@PBDI@Z
@@ -725,7 +725,7 @@ EXPORTS
         ??1BitmapImage@WebCore@@UAE@XZ
         ??0BitmapImage@WebCore@@IAE@PAVImageObserver@1@@Z
         ?isBitmapImage@BitmapImage@WebCore@@UBE_NXZ
-        ?currentFrameHasAlpha@BitmapImage@WebCore@@UAE_NXZ
+        ?currentFrameKnownToBeOpaque@BitmapImage@WebCore@@UAE_NXZ
         ?hasSingleSecurityOrigin@BitmapImage@WebCore@@UBE_NXZ
 #if !ASSERT_DISABLED
         ?notSolidColor@BitmapImage@WebCore@@UAE_NXZ 
@@ -768,7 +768,7 @@ EXPORTS
         ??0StyleSheetContents@WebCore@@AAE@PAVStyleRuleImport@1@ABVString@WTF@@ABUCSSParserContext@1@@Z
         ?addUserSheet@DocumentStyleSheetCollection@WebCore@@QAEXV?$PassRefPtr@VStyleSheetContents@WebCore@@@WTF@@@Z
         ??1StyleSheetContents@WebCore@@QAE@XZ
-        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
+        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVAtomicString@WTF@@N@Z
         ?pseudoElement@Element@WebCore@@QBEPAVPseudoElement@2@W4PseudoId@2@@Z
         ?pauseTransitionAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
         ?addFromLiteralData@AtomicString@WTF@@CA?AV?$PassRefPtr@VStringImpl@WTF@@@2@PBDI@Z
@@ -1111,7 +1111,7 @@ EXPORTS
         ??1BitmapImage@WebCore@@UAE@XZ
         ??0BitmapImage@WebCore@@IAE@PAVImageObserver@1@@Z
         ?isBitmapImage@BitmapImage@WebCore@@UBE_NXZ
-        ?currentFrameHasAlpha@BitmapImage@WebCore@@UAE_NXZ
+        ?currentFrameKnownToBeOpaque@BitmapImage@WebCore@@UAE_NXZ
         ?hasSingleSecurityOrigin@BitmapImage@WebCore@@UBE_NXZ
 #if !ASSERT_DISABLED
         ?notSolidColor@BitmapImage@WebCore@@UAE_NXZ 
@@ -1154,7 +1154,7 @@ EXPORTS
         ??0StyleSheetContents@WebCore@@AAE@PAVStyleRuleImport@1@ABVString@WTF@@ABUCSSParserContext@1@@Z
         ?addUserSheet@DocumentStyleSheetCollection@WebCore@@QAEXV?$PassRefPtr@VStyleSheetContents@WebCore@@@WTF@@@Z
         ??1StyleSheetContents@WebCore@@QAE@XZ
-        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
+        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVAtomicString@WTF@@N@Z
         ?pseudoElement@Element@WebCore@@QBEPAVPseudoElement@2@W4PseudoId@2@@Z
         ?pauseTransitionAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
         ?addFromLiteralData@AtomicString@WTF@@CA?AV?$PassRefPtr@VStringImpl@WTF@@@2@PBDI@Z
@@ -1503,7 +1503,7 @@ EXPORTS
         ??1BitmapImage@WebCore@@UAE@XZ
         ??0BitmapImage@WebCore@@IAE@PAVImageObserver@1@@Z
         ?isBitmapImage@BitmapImage@WebCore@@UBE_NXZ
-        ?currentFrameHasAlpha@BitmapImage@WebCore@@UAE_NXZ
+        ?currentFrameKnownToBeOpaque@BitmapImage@WebCore@@UAE_NXZ
         ?hasSingleSecurityOrigin@BitmapImage@WebCore@@UBE_NXZ
 #if !ASSERT_DISABLED
         ?notSolidColor@BitmapImage@WebCore@@UAE_NXZ 
@@ -1546,7 +1546,7 @@ EXPORTS
         ??0StyleSheetContents@WebCore@@AAE@PAVStyleRuleImport@1@ABVString@WTF@@ABUCSSParserContext@1@@Z
         ?addUserSheet@DocumentStyleSheetCollection@WebCore@@QAEXV?$PassRefPtr@VStyleSheetContents@WebCore@@@WTF@@@Z
         ??1StyleSheetContents@WebCore@@QAE@XZ
-        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
+        ?pauseAnimationAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVAtomicString@WTF@@N@Z
         ?pseudoElement@Element@WebCore@@QBEPAVPseudoElement@2@W4PseudoId@2@@Z
         ?pauseTransitionAtTime@AnimationController@WebCore@@QAE_NPAVRenderObject@2@ABVString@WTF@@N@Z
         ?addFromLiteralData@AtomicString@WTF@@CA?AV?$PassRefPtr@VStringImpl@WTF@@@2@PBDI@Z

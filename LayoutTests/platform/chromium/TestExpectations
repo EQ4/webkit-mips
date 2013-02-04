@@ -1134,7 +1134,8 @@ crbug.com/27849 http/tests/security/isolatedWorld/didClearWindowObject.html [ Fa
 
 # Due to the differences in initialization checks in KURL and googleurl.
 # Note: this test was also marked as flaky on WIN RELEASE above, BUGCR31342.
-crbug.com/39423 security/block-test.html [ Timeout ]
+# See also https://webkit.org/b/108780
+crbug.com/39423 security/block-test.html [ Timeout Failure ]
 
 crbug.com/20345 http/tests/security/cross-frame-access-getOwnPropertyDescriptor.html [ Failure ]
 webkit.org/b/42769 http/tests/security/401-logout/401-logout.php [ Timeout ]
@@ -1922,9 +1923,6 @@ crbug.com/9798 [ Win Release ] http/tests/xmlhttprequest/small-chunks-response-t
 # so the test timeouts.
 crbug.com/11001 http/tests/history/back-to-post.php [ Timeout ]
 
-# Regressions from WebKit Merge 42932:42994 due to text metric changes.
-crbug.com/11251 [ Android Linux Win ] svg/custom/svg-fonts-in-text-controls.html [ Failure ]
-
 # WebKit 45086:45111
 crbug.com/15270 fast/js/excessive-comma-usage.html [ Failure ]
 
@@ -2022,7 +2020,9 @@ webkit.org/b/ http/tests/appcache/origins-with-appcache.html
 webkit.org/b/ http/tests/appcache/origin-usage.html
 
 # LayoutTestController::setAutomaticLinkDetectionEnabled isn't implemented
+webkit.org/b/85463 editing/inserting/smart-link-when-caret-is-moved-before-URL.html
 webkit.org/b/85463 editing/inserting/typing-space-to-trigger-smart-link.html
+webkit.org/b/85463 editing/inserting/smart-link-when-caret-is-moved-before-URL.html
 
 # These tests got very flaky (failing 8/10 runs!) after
 # http://src.chromium.org/viewvc/chrome?view=rev&revision=34610
@@ -3567,6 +3567,10 @@ webkit.org/b/92570 [ Win Debug ] inspector/timeline/timeline-start-time.html [ F
 
 webkit.org/b/94242 [ Android Debug ] media/track/track-cues-sorted-before-dispatch.html [ Pass Timeout ]
 
+# Needs a rebaseline after WK108429 lands.
+webkit.org/b/108429 svg/custom/text-ctm.svg [ Pass Failure ]
+webkit.org/b/108429 svg/repaint/svgsvgelement-repaint-children.html [ Pass Failure ]
+
 # Chromium still has the CC toggle button, not the menu of tracks.
 webkit.org/b/101670 media/video-controls-captions-trackmenu.html [ Skip ]
 webkit.org/b/101670 media/video-controls-captions-trackmenu-sorted.html [ Skip ]
@@ -3635,9 +3639,7 @@ webkit.org/b/94002 [ Win7 Debug ] inspector/debugger [ Pass Timeout ]
 webkit.org/b/94002 [ Win7 Debug ] inspector/debugger/event-listener-breakpoints.html [ Pass Timeout Failure ]
 
 # Requires a rebaseline after webkit.org/b/108108 
-webkit.org/b/108108 svg/zoom/page/zoom-background-images.html [ ImageOnlyFailure Pass ]
 webkit.org/b/108108 svg/zoom/page/zoom-img-preserveAspectRatio-support-1.html [ ImageOnlyFailure Pass ]
-webkit.org/b/108108 svg/zoom/page/zoom-svg-as-background-with-relative-size.html [ ImageOnlyFailure Pass ]
 webkit.org/b/108108 fast/backgrounds/size/contain-and-cover-zoomed.html [ ImageOnlyFailure Pass ]
 
 # Flaky
@@ -3796,6 +3798,7 @@ crbug.com/146401 [ Android ] fast/css/sticky/sticky-writing-mode-vertical-lr.htm
 
 webkit.org/b/96441 [ Win Android Debug ] fast/hidpi/gradient-with-scaled-ancestor.html [ ImageOnlyFailure ]
 webkit.org/b/96441 [ Linux Win ] platform/chromium/virtual/gpu/fast/hidpi/gradient-with-scaled-ancestor.html [ ImageOnlyFailure ]
+webkit.org/b/96441 [ Win7 Debug ] platform/chromium/virtual/gpu/fast/hidpi/gradient-with-scaled-ancestor.html [ Timeout Pass ]
 
 webkit.org/b/96950 [ Linux ] http/tests/cache/cancel-during-revalidation-succeeded.html [ Failure Pass ]
 
@@ -4238,10 +4241,6 @@ webkit.org/b/107508 platform/chromium/fast/forms/calendar-picker/month-picker-ap
 webkit.org/b/107508 platform/chromium/fast/forms/calendar-picker/calendar-picker-appearance-step.html [ ImageOnlyFailure Pass ]
 webkit.org/b/107508 platform/chromium/fast/forms/calendar-picker/calendar-picker-appearance.html [ ImageOnlyFailure Pass ]
 
-# Rebaseline after currentPath
-webkit.org/b/108246 fast/canvas/canvas-currentPath.html [ Failure ]
-webkit.org/b/108246 platform/chromium/virtual/gpu/fast/canvas/canvas-currentPath.html [ Failure ]
-
 # Broken by Skia flag changes in r139445
 crbug.com/169550 [ Debug ] fast/lists/big-list-marker.html [ Crash ]
 crbug.com/169550 [ Debug ] platform/chromium/virtual/deferred/fast/images/icon-decoding.html [ Crash ]
@@ -4283,8 +4282,13 @@ webkit.org/b/105574 editing/input/caret-at-the-edge-of-contenteditable.html [ Fa
 webkit.org/b/105574 editing/input/reveal-caret-of-multiline-contenteditable.html [ Failure ]
 webkit.org/b/105574 editing/input/reveal-caret-of-multiline-input.html [ Failure ]
 
-webkit.org/b/97333 fast/canvas/canvas-path-object.html [ Failure ]
-webkit.org/b/97333 platform/chromium/virtual/gpu/fast/canvas/canvas-path-object.html [ Failure ]
+# Needs rebaseline after enabling CANVAS_PATH.
+webkit.org/b/108508 fast/canvas/canvas-path-constructors.html [ Failure ]
+webkit.org/b/108508 platform/chromium/virtual/gpu/fast/canvas/canvas-path-constructors.html [ Failure ]
+webkit.org/b/108508 fast/canvas/canvas-path-object.html [ Failure ]
+webkit.org/b/108508 platform/chromium/virtual/gpu/fast/canvas/canvas-path-object.html [ Failure ]
+webkit.org/b/108508 fast/canvas/canvas-currentPath.html [ Failure ]
+webkit.org/b/108508 platform/chromium/virtual/gpu/fast/canvas/canvas-currentPath.html [ Failure ]
 
 # This is won't fix, as the debug and release versions differ.
 webkit.org/b/99138 [ Debug SnowLeopard ] svg/custom/foreign-object-skew.svg [ ImageOnlyFailure ]
@@ -4323,13 +4327,15 @@ webkit.org/b/107899 fast/repaint/selection-clear.html [ ImageOnlyFailure ]
 webkit.org/b/107962 http/tests/misc/favicon-loads-with-images-disabled.html [ Failure ]
 webkit.org/b/107962 http/tests/loading/redirect-methods.html [ Failure ]
 webkit.org/b/107962 http/tests/cache/cached-main-resource.html [ Failure ]
+webkit.org/b/107962 http/tests/cache/iframe-304-crash.html [ Failure ]
 
 webkit.org/b/107893 [ MountainLion ] fast/exclusions/shape-inside/shape-inside-first-fit-001.html [ ImageOnlyFailure ] 
 
 # Needs rebaseline after https://bugs.webkit.org/show_bug.cgi?id=9221
-webkit.org/b/9221 [ Mac ] fast/css/resize-corner-tracking.html [ Failure ]
 webkit.org/b/9221 [ Mac ] fast/css/resize-corner-tracking-transformed.html [ Failure ]
-webkit.org/b/9221 [ Win Mac ] fast/css/resize-corner-tracking-transformed-iframe.html [ Missing Failure ]
+
+# Rebaseline required after https://webkit.org/b/108354
+webkit.org/b/108656 compositing/visibility/visibility-image-layers-dynamic.html [ Failure ]
 
 # The test is flaky on chromium-ews
 webkit.org/b/107953 inspector-protocol/debugger-terminate-dedicated-worker-while-paused.html [ Pass Failure ]
@@ -4337,13 +4343,9 @@ webkit.org/b/107953 inspector-protocol/debugger-terminate-dedicated-worker-while
 webkit.org/b/108286 platform/chromium/virtual/softwarecompositing/geometry/fixed-position-composited-page-scale-down.html [ ImageOnlyFailure ]
 webkit.org/b/108286 platform/chromium/virtual/softwarecompositing/geometry/fixed-position-iframe-composited-page-scale-down.html [ ImageOnlyFailure ]
 
-# Spellchecker behavior tests.
-webkit.org/b/108370 editing/spelling/spelling-double-clicked-word.html [ Failure ]
-webkit.org/b/108370 editing/spelling/spelling-double-clicked-word-with-underscores.html [ Failure ]
-webkit.org/b/108370 editing/spelling/spelling-with-punctuation-selection.html [ Failure ]
-webkit.org/b/108370 editing/spelling/spelling-with-underscore-selection.html [ Failure ]
-webkit.org/b/108370 editing/spelling/spelling-with-whitespace-selection.html [ Failure ]
-
 webkit.org/b/108424 media/video-error-does-not-exist.html [ Failure Crash ]
-webkit.org/b/108566 platform/chromium/fast/forms/calendar-picker/calendar-picker-key-operations.html [ Failure ]
 webkit.org/b/108594 [ Debug ] tables/table-section-overflow-clip-crash.html [ Crash ]
+
+webkit.org/b/108781 [ Win ] fast/css-grid-layout/grid-preferred-logical-widths.html [ Timeout ]
+webkit.org/b/108789 [ Win Mac ] http/tests/workers/terminate-during-sync-operation.html [ Pass Timeout ]
+webkit.org/b/108790 [ Win7 Debug ] platform/chromium/virtual/gpu/fast/hidpi/gradient-with-scaled-ancestor.html [ Pass Timeout ]

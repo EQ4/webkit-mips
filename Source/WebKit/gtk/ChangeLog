@@ -1,3 +1,27 @@
+2013-02-04  Balazs Kelemen  <kbalazs@webkit.org>
+
+        [Soup] Wrap SoupSession by NetworkStorageSession
+        https://bugs.webkit.org/show_bug.cgi?id=108615
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebCoreSupport/FrameNetworkingContextGtk.cpp:
+        (WebKit::FrameNetworkingContextGtk::storageSession):
+        * WebCoreSupport/FrameNetworkingContextGtk.h:
+        (FrameNetworkingContextGtk):
+
+2013-02-03  KwangYong Choi  <ky0.choi@samsung.com>
+
+        Fix build warning after r141473
+        https://bugs.webkit.org/show_bug.cgi?id=108782
+
+        Reviewed by Kentaro Hara.
+
+        Fix -Wunused-parameter build warning.
+
+        * WebCoreSupport/EditorClientGtk.cpp:
+        (WebKit::EditorClient::getClientPasteboardDataForRange):
+
 2013-02-01  Philippe Normand  <pnormand@igalia.com>
 
         [GTK][GStreamer] FullscreenVideoControllerGtk implementation

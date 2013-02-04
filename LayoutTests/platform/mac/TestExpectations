@@ -2,6 +2,9 @@
 #
 # See http://trac.webkit.org/wiki/TestExpectations for more information on this file.
 
+# https://bugs.webkit.org/show_bug.cgi?id=89812
+fast/parser/parser-yield-timing.html [ Pass Failure ]
+
 # <rdar://problem/5647952> fast/events/mouseout-on-window.html needs mac DRT to issue mouse out events
 fast/events/mouseout-on-window.html
 
@@ -139,9 +142,11 @@ http/tests/security/cross-origin-indexeddb-allowed.html
 http/tests/security/cross-origin-indexeddb.html
 http/tests/security/cross-origin-worker-indexeddb-allowed.html
 http/tests/security/cross-origin-worker-indexeddb.html
+http/tests/security/no-indexeddb-from-sandbox.html
 
 # Remove from list after enabling CANVAS_PATH
 fast/canvas/canvas-currentPath.html
+fast/canvas/canvas-path-constructors.html
 
 # This port doesn't support DeviceMotion or DeviceOrientation.
 fast/dom/DeviceMotion
@@ -1148,6 +1153,9 @@ webkit.org/b/101177 svg/repaint/inner-svg-change-viewBox.svg [ ImageOnlyFailure 
 webkit.org/b/98687 fast/css-generated-content/table-row-group-to-inline.html [ Failure ]
 webkit.org/b/104595 fast/css/empty-generated-content.html [ Failure ]
 
+# Needs a rebaseline after WK108429 lands.
+webkit.org/b/108429 svg/custom/text-ctm.svg [ Pass Failure ]
+
 webkit.org/b/93247 [ Debug ] fast/lists/list-marker-remove-crash.html [ Crash ]
 
 # (r125790): Newly added test inspector/timeline/timeline-decode-resize.html is failing on mac
@@ -1248,8 +1256,6 @@ webkit.org/b/105603 http/tests/cookies/single-quoted-value.html [ Failure Pass ]
 
 webkit.org/b/105777 platform/mac/editing/spelling/autocorrection-in-textarea.html [ Failure Pass ]
 
-webkit.org/b/105932 [ MountainLion Debug ] http/tests/inspector/resource-har-pages.html [ Crash ]
-
 webkit.org/b/105986 [ Debug ] transitions/hang-with-bad-transition-list.html [ Pass Crash ]
 webkit.org/b/105986 [ Debug ] svg/dynamic-updates/SVGFEMorphologyElement-dom-in-attr.html [ Pass Crash ]
 webkit.org/b/105986 [ Debug ] svg/dynamic-updates/SVGFEMorphologyElement-dom-radius-attr.html [ Pass Crash ]
@@ -1303,6 +1309,17 @@ webkit.org/b/106415 fast/workers/worker-close-more.html [ Pass Failure ]
 webkit.org/b/106415 fast/workers/worker-document-leak.html [ Pass Failure ] 
 webkit.org/b/106415 fast/workers/worker-lifecycle.html [ Pass Failure ]
 
+# Rebaseline required after https://webkit.org/b/108354
+webkit.org/b/108656 compositing/visible-rect/iframe-no-layers.html [ Failure ]
+webkit.org/b/108656 compositing/visibility/visibility-image-layers-dynamic.html [ Failure ]
+webkit.org/b/108656 platform/mac-wk2/tiled-drawing/fixed-background/fixed-body-background-transformed-html.html [ Failure ]
+webkit.org/b/108656 platform/mac-wk2/tiled-drawing/fixed-background/fixed-html-background.html [ Failure ]
+webkit.org/b/108656 platform/mac-wk2/tiled-drawing/fixed-background/fixed-body-background-zoomed.html [ Failure ]
+webkit.org/b/108656 platform/mac-wk2/tiled-drawing/fixed-background/fixed-body-background-opacity-html.html [ Failure ]
+webkit.org/b/108656 platform/mac-wk2/tiled-drawing/fixed-background/fixed-body-background-body-layer.html [ Failure ]
+webkit.org/b/108656 platform/mac-wk2/tiled-drawing/fixed-background/fixed-body-background.html [ Failure ]
+webkit.org/b/108656 platform/mac-wk2/tiled-drawing/fixed-background/fixed-body-background-positioned.html [ Failure ]
+
 # Spellchecker behavior tests.
 webkit.org/b/108370 editing/spelling/spelling-double-clicked-word.html [ Skip ]
 webkit.org/b/108370 editing/spelling/spelling-double-clicked-word-with-underscores.html [ Skip ]
@@ -1320,6 +1337,7 @@ webkit.org/b/108257 [ Debug ] compositing/overflow/composited-scrolling-creates-
 webkit.org/b/108257 [ Debug ] compositing/overflow/automatically-opt-into-composited-scrolling.html [ Crash ]
 
 webkit.org/b/108380 http/tests/cache/cached-main-resource.html [ Failure ]
+webkit.org/b/108380 http/tests/cache/iframe-304-crash.html [ Failure ]
 webkit.org/b/108380 http/tests/inspector/resource-har-pages.html [ Failure ]
 webkit.org/b/108380 http/tests/loading/redirect-methods.html [ Failure ]
 webkit.org/b/108380 http/tests/misc/link-rel-icon-beforeload.html [ Failure ]

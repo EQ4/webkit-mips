@@ -616,18 +616,11 @@ sub GetInternalFields
     my $interface = shift;
 
     my @customInternalFields = ();
-    # We can't ask whether a parent type has a given extendedAttribute,
-    # so special-case AbstractWorker and WorkerContext to include all sub-types.
     # Event listeners on DOM nodes are explicitly supported in the GC controller.
-    # FIXME: Simplify this when all EventTargets are subtypes of EventTarget.
-    if (!$codeGenerator->InheritsInterface($interface, "Node")
-        && ($interface->extendedAttributes->{"EventTarget"}
-            || $interface->extendedAttributes->{"IsWorkerContext"}
-            || $codeGenerator->InheritsInterface($interface, "AbstractWorker")
-            || $codeGenerator->InheritsInterface($interface, "EventTarget"))) {
+    if (!$codeGenerator->InheritsInterface($interface, "Node") &&
+        $codeGenerator->InheritsExtendedAttribute($interface, "EventTarget")) {
         push(@customInternalFields, "eventListenerCacheIndex");
     }
-
     return @customInternalFields;
 }
 
@@ -4002,11 +3995,11 @@ sub JSValueToNative
         AddToImplIncludes("V8Node.h");
 
         # EventTarget is not in DOM hierarchy, but all Nodes are EventTarget.
-        return "V8Node::HasInstance($value) ? V8Node::toNative(v8::Handle<v8::Object>::Cast($value)) : 0";
+        return "V8Node::HasInstance($value, $getIsolate) ? V8Node::toNative(v8::Handle<v8::Object>::Cast($value)) : 0";
     }
 
     if ($type eq "XPathNSResolver") {
-        return "toXPathNSResolver($value)";
+        return "toXPathNSResolver($value, $getIsolate)";
     }
 
     my $arrayType = $codeGenerator->GetArrayType($type);
@@ -4024,7 +4017,7 @@ sub JSValueToNative
     AddIncludesForType($type);
 
     AddToImplIncludes("V8${type}.h");
-    return "V8${type}::HasInstance($value) ? V8${type}::toNative(v8::Handle<v8::Object>::Cast($value)) : 0";
+    return "V8${type}::HasInstance($value, $getIsolate) ? V8${type}::toNative(v8::Handle<v8::Object>::Cast($value)) : 0";
 }
 
 sub GetV8HeaderName

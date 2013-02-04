@@ -1028,6 +1028,7 @@ set(WebCore_SOURCES
     css/CSSComputedStyleDeclaration.cpp
     css/CSSCrossfadeValue.cpp
     css/CSSCursorImageValue.cpp
+    css/CSSDefaultStyleSheets.cpp
     css/CSSFontFace.cpp
     css/CSSFontFaceRule.cpp
     css/CSSFontFaceSource.cpp
@@ -2058,7 +2059,6 @@ set(WebCore_SOURCES
     platform/network/HTTPValidation.cpp
     platform/network/MIMEHeader.cpp
     platform/network/NetworkStateNotifier.cpp
-    platform/network/NetworkStorageSessionStub.cpp
     platform/network/ParsedContentType.cpp
     platform/network/ProtectionSpace.cpp
     platform/network/ProxyServer.cpp

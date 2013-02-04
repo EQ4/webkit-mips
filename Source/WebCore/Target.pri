@@ -256,6 +256,7 @@ SOURCES += \
     css/CSSCrossfadeValue.cpp \
     css/CSSCursorImageValue.cpp \
     css/CSSFontFace.cpp \
+    css/CSSDefaultStyleSheets.cpp \
     css/CSSFontFaceRule.cpp \
     css/CSSFontFaceSrcValue.cpp \
     css/CSSFontSelector.cpp \
@@ -3079,6 +3080,7 @@ enable?(INDEXED_DATABASE) {
         Modules/indexeddb/IDBFactory.h \
         Modules/indexeddb/IDBFactoryBackendInterface.h \
         Modules/indexeddb/IDBFactoryBackendImpl.h \
+        Modules/indexeddb/IDBHistograms.h \
         Modules/indexeddb/IDBIndex.h \
         Modules/indexeddb/IDBKey.h \
         Modules/indexeddb/IDBKeyRange.h \

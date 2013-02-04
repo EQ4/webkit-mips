@@ -114,8 +114,7 @@ PassRefPtr<WebFrame> WebFrame::createSubframe(WebPage* page, const String& frame
 {
     RefPtr<WebFrame> frame = create();
 
-    WebFrame* parentFrame = static_cast<WebFrameLoaderClient*>(ownerElement->document()->frame()->loader()->client())->webFrame();
-    page->send(Messages::WebPageProxy::DidCreateSubframe(frame->frameID(), parentFrame->frameID()));
+    page->send(Messages::WebPageProxy::DidCreateSubframe(frame->frameID()));
 
     frame->init(page, frameName, ownerElement);
 
@@ -430,7 +429,7 @@ unsigned WebFrame::numberOfActiveAnimations() const
     return controller->numberOfActiveAnimations(m_coreFrame->document());
 }
 
-bool WebFrame::pauseAnimationOnElementWithId(const String& animationName, const String& elementID, double time)
+bool WebFrame::pauseAnimationOnElementWithId(const AtomicString& animationName, const String& elementID, double time)
 {
     if (!m_coreFrame)
         return false;

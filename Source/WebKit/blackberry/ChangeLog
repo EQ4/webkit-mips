@@ -1,3 +1,61 @@
+2013-02-03  KwangYong Choi  <ky0.choi@samsung.com>
+
+        Fix build warning after r141473
+        https://bugs.webkit.org/show_bug.cgi?id=108782
+
+        Reviewed by Kentaro Hara.
+
+        Fix -Wunused-parameter build warning.
+
+        * WebCoreSupport/EditorClientBlackBerry.cpp:
+        (WebCore::EditorClientBlackBerry::getClientPasteboardDataForRange):
+
+2013-02-01  Jacky Jiang  <zhajiang@rim.com>
+
+        [BlackBerry] Zooming in during page load of non-scalable webpage results in fixed magnification
+        https://bugs.webkit.org/show_bug.cgi?id=108252
+
+        Reviewed by Yong Li.
+        Internally reviewed by Konrad Piascik.
+
+        PR: 284828
+        We got float layoutSize(342.284122, 521.448467) and
+        m_maximumScale(2.243750) after computing viewport meta based on the
+        device pixel ratio and laid out the contents at IntSize(342, 521).
+        Therefore, zoomToFitScale(2.245681) would be a bit larger than
+        m_maximumScale based on that contents size and resulted in
+        maximumScale()!=minimumScale(), which made the non-scalable page
+        scalable.
+        Return zoomToFitScale for maximumScale() in such kind of case.
+
+        * Api/WebPage.cpp:
+        (BlackBerry::WebKit::WebPagePrivate::maximumScale):
+
+2013-02-01  Sean Wang  <Xuewen.Wang@torchmobile.com.cn>
+
+        [BlackBerry] InputHandler status is not restored when page history goes back
+        https://bugs.webkit.org/show_bug.cgi?id=108448
+
+        Reviewed by Yong Li.
+
+        PR288406 Internally reviewed by Mike Fenton
+
+        When webpage goes back, it restores the old frame's selection and focused node,
+        but we don't save the InputHandler's status, it becomes non-input mode when page
+        goes back. When it restores the focus, since the new focus node is same as the old
+        document focused node, webcore will not notify client to update the input handler.
+
+        This patch updates the input handler's status by notifying it focus node changed.
+
+
+        * WebCoreSupport/FrameLoaderClientBlackBerry.cpp:
+        (WebCore::FrameLoaderClientBlackBerry::restoreViewState):
+        * WebKitSupport/InputHandler.cpp:
+        (BlackBerry::WebKit::InputHandler::restoreViewState):
+        (WebKit):
+        * WebKitSupport/InputHandler.h:
+        (InputHandler):
+
 2013-01-31  Jacky Jiang  <zhajiang@rim.com>
 
         [BlackBerry] Bing Images viewport causes layout "fun"

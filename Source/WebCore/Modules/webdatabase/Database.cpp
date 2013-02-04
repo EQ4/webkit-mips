@@ -38,6 +38,7 @@
 #include "DatabaseManager.h"
 #include "DatabaseTask.h"
 #include "DatabaseThread.h"
+#include "DatabaseTracker.h"
 #include "Document.h"
 #include "Logging.h"
 #include "NotImplemented.h"
@@ -120,14 +121,17 @@ String Database::version() const
     return DatabaseBackend::version();
 }
 
-bool Database::openAndVerifyVersion(bool setVersionInNewDatabase, ExceptionCode& e, String& errorMessage)
+bool Database::openAndVerifyVersion(bool setVersionInNewDatabase, DatabaseError& error, String& errorMessage)
 {
     DatabaseTaskSynchronizer synchronizer;
     if (!databaseContext()->databaseThread() || databaseContext()->databaseThread()->terminationRequested(&synchronizer))
         return false;
 
+#if PLATFORM(CHROMIUM)
+    DatabaseTracker::tracker().prepareToOpenDatabase(this);
+#endif
     bool success = false;
-    OwnPtr<DatabaseOpenTask> task = DatabaseOpenTask::create(this, setVersionInNewDatabase, &synchronizer, e, errorMessage, success);
+    OwnPtr<DatabaseOpenTask> task = DatabaseOpenTask::create(this, setVersionInNewDatabase, &synchronizer, error, errorMessage, success);
     databaseContext()->databaseThread()->scheduleImmediateTask(task.release());
     synchronizer.waitForTaskCompletion();
 
@@ -171,7 +175,6 @@ void Database::close()
     RefPtr<Database> protect = this;
     databaseContext()->databaseThread()->recordDatabaseClosed(this);
     databaseContext()->databaseThread()->unscheduleDatabaseTasks(this);
-    DatabaseManager::manager().removeOpenDatabase(this);
 }
 
 void Database::closeImmediately()
@@ -189,9 +192,9 @@ unsigned long long Database::maximumSize() const
     return DatabaseManager::manager().getMaxSizeForDatabase(this);
 }
 
-bool Database::performOpenAndVerify(bool setVersionInNewDatabase, ExceptionCode& e, String& errorMessage)
+bool Database::performOpenAndVerify(bool setVersionInNewDatabase, DatabaseError& error, String& errorMessage)
 {
-    if (DatabaseBackend::performOpenAndVerify(setVersionInNewDatabase, e, errorMessage)) {
+    if (DatabaseBackend::performOpenAndVerify(setVersionInNewDatabase, error, errorMessage)) {
         if (databaseContext()->databaseThread())
             databaseContext()->databaseThread()->recordDatabaseOpen(this);
 

@@ -34,6 +34,7 @@
 namespace WebCore {
 
 class DidBlockScriptRequest;
+class Document;
 class HTMLDocumentParser;
 
 class XSSAuditor {
@@ -41,6 +42,7 @@ class XSSAuditor {
 public:
     explicit XSSAuditor(HTMLDocumentParser*);
 
+    void init(Document*);
     PassOwnPtr<DidBlockScriptRequest> filterToken(HTMLToken&);
 
 private:
@@ -56,8 +58,6 @@ private:
         SrcLikeAttribute,
         ScriptLikeAttribute
     };
-
-    void init();
 
     bool filterStartToken(HTMLToken&);
     void filterEndToken(HTMLToken&);
@@ -85,6 +85,7 @@ private:
 
     // FIXME: Remove this dependency.
     HTMLDocumentParser* m_parser;
+    KURL m_documentURL;
     bool m_isEnabled;
     XSSProtectionDisposition m_xssProtection;
 

@@ -1,3 +1,65 @@
+2013-02-02  Andreas Kling  <akling@apple.com>
+
+        Vector should consult allocator about ideal size when choosing capacity.
+        <http://webkit.org/b/108410>
+        <rdar://problem/13124002>
+
+        Reviewed by Benjamin Poulain.
+
+        Added WTF::fastMallocGoodSize(), a workalike/wrapper for OS X's malloc_good_size().
+        It returns the actual size of the block that will get allocated for a given byte size.
+
+        Vector's internal buffer now checks with the allocator if the resulting allocation
+        could actually house more objects and updates its capacity to make use of the space.
+
+        * wtf/Deque.h:
+        (WTF::::expandCapacity):
+        * wtf/FastMalloc.cpp:
+        (WTF::fastMallocGoodSize):
+        * wtf/FastMalloc.h:
+        * wtf/Vector.h:
+        (WTF::VectorBufferBase::allocateBuffer):
+        (WTF::VectorBufferBase::tryAllocateBuffer):
+        (WTF::VectorBufferBase::reallocateBuffer):
+
+2013-02-02  Mark Rowe  <mrowe@apple.com>
+
+        <http://webkit.org/b/108745> WTF shouldn't use a script build phase to detect the presence of headers when the compiler can do it for us
+
+        Reviewed by Sam Weinig.
+
+        * WTF.xcodeproj/project.pbxproj: Remove the script phase that used to generate a header file
+        containing information about whether certain header files exist on the system.
+        * wtf/FastMalloc.cpp: Use Clang's __has_include to detect whether the header exists before including it.
+
+2013-02-01  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. WTF VS2010 project cleanup.
+
+        * WTF.vcxproj/WTF.vcxproj:
+        * WTF.vcxproj/WTF.vcxproj.filters:
+        * WTF.vcxproj/WTFPreLink.cmd: Removed.
+
+2013-02-01  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Add WTFURL source files to the build
+        https://bugs.webkit.org/show_bug.cgi?id=108215
+
+        Reviewed by Benjamin Poulain.
+
+        The WTFURL implementation sources are all still guarded by the USE(WTFURL) guard,
+        meaning that the GTK port still uses the default KURL backend. To use the WTFURL
+        backend instead, one would have to define WTF_USE_WTFURL in Platform.h.
+
+        * GNUmakefile.am: List the directories from which source headers will be included.
+        Plenty of WTFURL code currently just includes the required header by name rather
+        than specifying the header path as relative to Source/WTF. In the future all the inclusions
+        should probaby be changed to include the header through the path relative to Source/WTF.
+        * GNUmakefile.list.am: Add build targets for the WTFURL source files.
+        * wtf/url/api/ParsedURL.cpp: Specify the complete path to the required headers and
+        reorder the inclusions.
+        * wtf/url/src/URLCanon.h: Ditto.
+
 2013-01-18  Ilya Tikhonovsky  <loislo@chromium.org>
 
         Web Inspector: Native Memory Instrumentation: provide edge names and class names for WTF containers and strings

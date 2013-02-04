@@ -34,6 +34,7 @@
 #include "DatabaseAuthorizer.h"
 #include "DatabaseContext.h"
 #include "DatabaseManager.h"
+#include "DatabaseTracker.h"
 #include "ExceptionCode.h"
 #include "Logging.h"
 #include "SQLiteStatement.h"
@@ -52,6 +53,35 @@
 #if PLATFORM(CHROMIUM)
 #include "DatabaseObserver.h" // For error reporting.
 #endif
+
+// Registering "opened" databases with the DatabaseTracker
+// =======================================================
+// The DatabaseTracker maintains a list of databases that have been
+// "opened" so that the client can call interrupt or delete on every database
+// associated with a DatabaseContext.
+//
+// We will only call DatabaseTracker::addOpenDatabase() to add the database
+// to the tracker as opened when we've succeeded in opening the database,
+// and will set m_opened to true. Similarly, we only call
+// DatabaseTracker::removeOpenDatabase() to remove the database from the
+// tracker when we set m_opened to false in closeDatabase(). This sets up
+// a simple symmetry between open and close operations, and a direct
+// correlation to adding and removing databases from the tracker's list,
+// thus ensuring that we have a correct list for the interrupt and
+// delete operations to work on.
+//
+// The only databases instances not tracked by the tracker's open database
+// list are the ones that have not been added yet, or the ones that we
+// attempted an open on but failed to. Such instances only exist in the
+// DatabaseManager's factory methods for creating DatabaseBackends.
+//
+// The factory methods will either call openAndVerifyVersion() or
+// performOpenAndVerify(). These methods will add the newly instantiated
+// DatabaseBackend if they succeed in opening the requested database.
+// In the case of failure to open the database, the factory methods will
+// simply discard the newly instantiated DatabaseBackend when they return.
+// The ref counting mechanims will automatically destruct the un-added
+// (and un-returned) databases instances.
 
 namespace WebCore {
 
@@ -208,7 +238,6 @@ DatabaseBackend::DatabaseBackend(PassRefPtr<DatabaseContext> databaseContext, co
     }
 
     m_filename = DatabaseManager::manager().fullPathForDatabase(securityOrigin(), m_name);
-    DatabaseManager::manager().addOpenDatabase(this);
 }
 
 DatabaseBackend::~DatabaseBackend()
@@ -223,6 +252,8 @@ void DatabaseBackend::closeDatabase()
 
     m_sqliteDatabase.close();
     m_opened = false;
+    // See comment at the top this file regarding calling removeOpenDatabase().
+    DatabaseTracker::tracker().removeOpenDatabase(this);
     {
         MutexLocker locker(guidMutex());
 
@@ -246,16 +277,42 @@ String DatabaseBackend::version() const
     return getCachedVersion();
 }
 
-bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, ExceptionCode& ec, String& errorMessage)
+class DoneCreatingDatabaseOnExitCaller {
+public:
+    DoneCreatingDatabaseOnExitCaller(DatabaseBackend* database)
+        : m_database(database)
+        , m_openSucceeded(false)
+    {
+    }
+    ~DoneCreatingDatabaseOnExitCaller()
+    {
+#if !PLATFORM(CHROMIUM)
+        DatabaseTracker::tracker().doneCreatingDatabase(m_database);
+#else
+        if (!m_openSucceeded)
+            DatabaseTracker::tracker().failedToOpenDatabase(m_database);
+#endif            
+    }
+
+    void setOpenSucceeded() { m_openSucceeded = true; }
+
+private:
+    DatabaseBackend* m_database;
+    bool m_openSucceeded;
+};
+
+bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, DatabaseError& error, String& errorMessage)
 {
+    DoneCreatingDatabaseOnExitCaller onExitCaller(this);
     ASSERT(errorMessage.isEmpty());
+    ASSERT(error == DatabaseError::None); // Better not have any errors already.
+    error = DatabaseError::CannotOpenDatabase; // Presumed failure. We'll clear it if we succeed below.
 
     const int maxSqliteBusyWaitTime = 30000;
 
     if (!m_sqliteDatabase.open(m_filename, true)) {
         reportOpenDatabaseResult(1, INVALID_STATE_ERR, m_sqliteDatabase.lastError());
         errorMessage = formatErrorMessage("unable to open database", m_sqliteDatabase.lastError(), m_sqliteDatabase.lastErrorMsg());
-        ec = INVALID_STATE_ERR;
         return false;
     }
     if (!m_sqliteDatabase.turnOnIncrementalAutoVacuum())
@@ -297,7 +354,6 @@ bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, E
             if (!transaction.inProgress()) {
                 reportOpenDatabaseResult(2, INVALID_STATE_ERR, m_sqliteDatabase.lastError());
                 errorMessage = formatErrorMessage("unable to open database, failed to start transaction", m_sqliteDatabase.lastError(), m_sqliteDatabase.lastErrorMsg());
-                ec = INVALID_STATE_ERR;
                 m_sqliteDatabase.close();
                 return false;
             }
@@ -309,7 +365,6 @@ bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, E
                 if (!m_sqliteDatabase.executeCommand("CREATE TABLE " + tableName + " (key TEXT NOT NULL ON CONFLICT FAIL UNIQUE ON CONFLICT REPLACE,value TEXT NOT NULL ON CONFLICT FAIL);")) {
                     reportOpenDatabaseResult(3, INVALID_STATE_ERR, m_sqliteDatabase.lastError());
                     errorMessage = formatErrorMessage("unable to open database, failed to create 'info' table", m_sqliteDatabase.lastError(), m_sqliteDatabase.lastErrorMsg());
-                    ec = INVALID_STATE_ERR;
                     transaction.rollback();
                     m_sqliteDatabase.close();
                     return false;
@@ -317,7 +372,6 @@ bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, E
             } else if (!getVersionFromDatabase(currentVersion, false)) {
                 reportOpenDatabaseResult(4, INVALID_STATE_ERR, m_sqliteDatabase.lastError());
                 errorMessage = formatErrorMessage("unable to open database, failed to read current version", m_sqliteDatabase.lastError(), m_sqliteDatabase.lastErrorMsg());
-                ec = INVALID_STATE_ERR;
                 transaction.rollback();
                 m_sqliteDatabase.close();
                 return false;
@@ -330,7 +384,6 @@ bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, E
                 if (!setVersionInDatabase(m_expectedVersion, false)) {
                     reportOpenDatabaseResult(5, INVALID_STATE_ERR, m_sqliteDatabase.lastError());
                     errorMessage = formatErrorMessage("unable to open database, failed to write current version", m_sqliteDatabase.lastError(), m_sqliteDatabase.lastErrorMsg());
-                    ec = INVALID_STATE_ERR;
                     transaction.rollback();
                     m_sqliteDatabase.close();
                     return false;
@@ -352,7 +405,6 @@ bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, E
     if ((!m_new || shouldSetVersionInNewDatabase) && m_expectedVersion.length() && m_expectedVersion != currentVersion) {
         reportOpenDatabaseResult(6, INVALID_STATE_ERR, 0);
         errorMessage = "unable to open database, version mismatch, '" + m_expectedVersion + "' does not match the currentVersion of '" + currentVersion + "'";
-        ec = INVALID_STATE_ERR;
         m_sqliteDatabase.close();
         return false;
     }
@@ -360,7 +412,13 @@ bool DatabaseBackend::performOpenAndVerify(bool shouldSetVersionInNewDatabase, E
     ASSERT(m_databaseAuthorizer);
     m_sqliteDatabase.setAuthorizer(m_databaseAuthorizer);
 
+    // See comment at the top this file regarding calling addOpenDatabase().
+    DatabaseTracker::tracker().addOpenDatabase(this);
     m_opened = true;
+
+    // Declare success:
+    error = DatabaseError::None; // Clear the presumed error from above.
+    onExitCaller.setOpenSucceeded();
 
     if (m_new && !shouldSetVersionInNewDatabase)
         m_expectedVersion = ""; // The caller provided a creationCallback which will set the expected version.
