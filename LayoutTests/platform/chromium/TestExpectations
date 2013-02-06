@@ -936,6 +936,9 @@ fast/dom/timer-throttling-hidden-page.html [ WontFix ]
 # Chromium disabled MATHML
 crbug.com/22554 mathml [ Skip ]
 
+# Chromium disabled web intents
+crbug.com/173194 webintents [ Skip ]
+
 # Skipping rules for ANDROID are in platform/chromium-android/TestExpectations.
 
 # -----------------------------------------------------------------
@@ -1427,6 +1430,11 @@ webkit.org/b/64876 [ Linux Win ] platform/chromium/virtual/gpu/fast/canvas/canva
 webkit.org/b/75276 [ Android ] fast/repaint/shadow-multiple-horizontal.html [ ImageOnlyFailure ]
 webkit.org/b/75276 [ Android ] fast/repaint/shadow-multiple-strict-horizontal.html [ ImageOnlyFailure ]
 webkit.org/b/75276 [ Android ] fast/repaint/shadow-multiple-strict-vertical.html [ ImageOnlyFailure ]
+
+# -----------------------------------------------------------------
+# WebGL Tests
+# -----------------------------------------------------------------
+crbug.com/174268 webgl/conformance/attribs/gl-vertex-attrib-zero-issues.html [ Skip ]
 
 # -----------------------------------------------------------------
 # Other failures
@@ -3324,8 +3332,6 @@ webkit.org/b/84802 [ Mac Win Debug ] fast/js/random-array-gc-stress.html [ Pass 
 
 webkit.org/b/84847 [ Win Release ] inspector/timeline/timeline-start-time.html [ Failure Pass ]
 
-crbug.com/128325 platform/chromium/compositing/overflow/overflow-scrolling-touch-stacking-context.html [ Failure ]
-
 webkit.org/b/85106 tables/mozilla/other/slashlogo.html [ Pass Slow ]
 
 webkit.org/b/85174 fast/files/blob-constructor.html [ Failure ]
@@ -3677,20 +3683,9 @@ webkit.org/b/95581 http/tests/misc/javascript-url-stop-loaders.html [ Pass Timeo
 webkit.org/b/99734 [ Mac ] http/tests/xmlhttprequest/request-encoding2.html [ Pass Timeout ]
 
 # ENABLE_ACCELERATED_OVERFLOW_SCROLLING is not currently enabled in Chromium.
-webkit.org/b/94353 compositing/overflow/scrolling-content-clip-to-viewport.html [ Failure ]
-webkit.org/b/94353 platform/chromium/virtual/softwarecompositing/overflow/scrolling-content-clip-to-viewport.html [ Failure ]
-webkit.org/b/94353 platform/chromium/virtual/gpu/compositedscrolling/overflow/scrolling-content-clip-to-viewport.html [ Failure ]
-webkit.org/b/94353 compositing/overflow/scrolling-without-painting.html [ Failure ]
-webkit.org/b/94353 platform/chromium/virtual/softwarecompositing/overflow/scrolling-without-painting.html [ Failure ]
-webkit.org/b/94353 compositing/overflow/updating-scrolling-content.html [ Failure ]
-webkit.org/b/94353 platform/chromium/virtual/softwarecompositing/overflow/updating-scrolling-content.html [ Failure ]
-webkit.org/b/94353 compositing/overflow/textarea-scroll-touch.html [ Failure ]
-webkit.org/b/94353 platform/chromium/virtual/softwarecompositing/overflow/textarea-scroll-touch.html [ Failure ]
-
-# Failing on Linux (Content Shell) only now
-webkit.org/b/94353 [ Android Linux ] compositing/overflow/nested-scrolling.html [ Failure Pass ]
-webkit.org/b/94353 [ Android Linux ] platform/chromium/virtual/softwarecompositing/overflow/nested-scrolling.html [ Failure Pass ]
+webkit.org/b/94353 compositing/overflow/overflow-auto-with-touch-toggle.html [ Failure ]
 webkit.org/b/94353 compositing/overflow/overflow-auto-with-touch.html [ Failure ]
+webkit.org/b/94353 platform/chromium/virtual/softwarecompositing/overflow/overflow-auto-with-touch-toggle.html [ Failure ]
 webkit.org/b/94353 platform/chromium/virtual/softwarecompositing/overflow/overflow-auto-with-touch.html [ Failure ]
 webkit.org/b/94353 compositing/overflow/overflow-overlay-with-touch.html [ Failure ]
 webkit.org/b/94353 platform/chromium/virtual/softwarecompositing/overflow/overflow-overlay-with-touch.html [ Failure ]
@@ -4018,9 +4013,6 @@ webkit.org/b/102166 [ MountainLion ] fast/css/text-indent-first-line-006.html [ 
 webkit.org/b/99749 [ MountainLion ] fast/repaint/positioned-document-element.html [ ImageOnlyFailure ]
 webkit.org/b/96430 [ MountainLion ] fast/text/fallback-traits-fixup.html [ Failure ]
 webkit.org/b/99749 [ MountainLion ] fast/writing-mode/broken-ideograph-small-caps.html [ Failure ]
-webkit.org/b/99749 [ MountainLion ] fast/writing-mode/japanese-lr-text.html [ Failure ]
-webkit.org/b/99749 [ MountainLion ] fast/writing-mode/japanese-rl-selection.html [ Failure ]
-webkit.org/b/99749 [ MountainLion ] fast/writing-mode/japanese-rl-text.html [ Failure ]
 
 webkit.org/b/101897 [ MountainLion ] fast/regions/region-style-inline-background-color.html [ ImageOnlyFailure ]
 
@@ -4201,9 +4193,6 @@ webkit.org/b/103667 [ Linux ] fast/ruby/position-after.html [ ImageOnlyFailure ]
 
 webkit.org/b/104834 [ MountainLion ] fast/css/nested-rounded-corners.html [ Failure Pass ]
 
-webkit.org/b/105471 [ Win ] platform/chromium/virtual/gpu/compositedscrolling/overflow/scrolling-without-painting.html
-webkit.org/b/105471 [ Win ] platform/chromium/virtual/gpu/compositedscrolling/overflow/updating-scrolling-content.html
-
 webkit.org/b/105595 [ Mac ] svg/text/alt-glyph-for-surrogate-pair.svg [ ImageOnlyFailure ]
 webkit.org/b/47975 [ MountainLion ] fast/block/float/max-width-clear-float-with-overflow-hidden.html [ ImageOnlyFailure ]
 
@@ -4349,3 +4338,8 @@ webkit.org/b/108594 [ Debug ] tables/table-section-overflow-clip-crash.html [ Cr
 webkit.org/b/108781 [ Win ] fast/css-grid-layout/grid-preferred-logical-widths.html [ Timeout ]
 webkit.org/b/108789 [ Win Mac ] http/tests/workers/terminate-during-sync-operation.html [ Pass Timeout ]
 webkit.org/b/108790 [ Win7 Debug ] platform/chromium/virtual/gpu/fast/hidpi/gradient-with-scaled-ancestor.html [ Pass Timeout ]
+
+webkit.org/b/108876 [ Linux ] media/track/track-cues-cuechange.html [ Slow ]
+webkit.org/b/108876 [ Linux ] media/track/track-cues-enter-exit.html [ Slow ]
+
+webkit.org/b/108912 inspector-protocol/heap-profiler/heap-snapshot-with-detached-dom-tree.html [ Pass Failure ]

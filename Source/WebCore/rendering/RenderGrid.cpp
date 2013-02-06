@@ -262,11 +262,6 @@ LayoutUnit RenderGrid::computeUsedBreadthOfSpecifiedLength(TrackSizingDirection 
     return valueForLength(trackLength, direction == ForColumns ? logicalWidth() : computeContentLogicalHeight(MainOrPreferredSize, style()->logicalHeight()), view());
 }
 
-static bool sortByGridTrackGrowthPotential(GridTrack* track1, GridTrack* track2)
-{
-    return (track1->m_maxBreadth - track1->m_usedBreadth) <= (track2->m_maxBreadth - track2->m_usedBreadth);
-}
-
 const GridTrackSize& RenderGrid::gridTrackSize(TrackSizingDirection direction, size_t i)
 {
     const Vector<GridTrackSize>& trackStyles = (direction == ForColumns) ? style()->gridColumns() : style()->gridRows();
@@ -308,6 +303,7 @@ LayoutUnit RenderGrid::minContentForChild(RenderBox* child, TrackSizingDirection
     if (child->needsLayout()) {
         size_t columnTrack = resolveGridPosition(ForColumns, child);
         child->setOverrideContainingBlockContentLogicalWidth(columnTracks[columnTrack].m_usedBreadth);
+        child->clearOverrideContainingBlockContentLogicalHeight();
         child->layout();
     }
     return child->logicalHeight();
@@ -329,6 +325,7 @@ LayoutUnit RenderGrid::maxContentForChild(RenderBox* child, TrackSizingDirection
     if (child->needsLayout()) {
         size_t columnTrack = resolveGridPosition(ForColumns, child);
         child->setOverrideContainingBlockContentLogicalWidth(columnTracks[columnTrack].m_usedBreadth);
+        child->clearOverrideContainingBlockContentLogicalHeight();
         child->layout();
     }
     return child->logicalHeight();
@@ -382,6 +379,11 @@ void RenderGrid::resolveContentBasedTrackSizingFunctionsForItems(TrackSizingDire
         // FIXME: We should pass different values for |tracksForGrowthAboveMaxBreadth|.
         distributeSpaceToTracks(tracks, &tracks, trackGetter, trackGrowthFunction, additionalBreadthSpace);
     }
+}
+
+static bool sortByGridTrackGrowthPotential(const GridTrack* track1, const GridTrack* track2)
+{
+    return (track1->m_maxBreadth - track1->m_usedBreadth) < (track2->m_maxBreadth - track2->m_usedBreadth);
 }
 
 void RenderGrid::distributeSpaceToTracks(Vector<GridTrack*>& tracks, Vector<GridTrack*>* tracksForGrowthAboveMaxBreadth, AccumulatorGetter trackGetter, AccumulatorGrowFunction trackGrowthFunction, LayoutUnit& availableLogicalSpace)

@@ -14,6 +14,18 @@ WEBKIT += javascriptcore
 
 CONFIG += staticlib
 
+# Do it in the WebCore static lib to support force_static_libs_as_shared
+# since the QtWebKitWidgets lib wouldn't load QtWebKit in that case.
+# This should match the opposite statement in api.pri for the QtWebKit lib.
+!win* {
+    RESOURCES += $$PWD/WebCore.qrc
+    include_webinspector {
+        RESOURCES += \
+            $$PWD/inspector/front-end/WebKit.qrc \
+            $${WEBCORE_GENERATED_SOURCES_DIR}/InspectorBackendCommands.qrc
+    }
+}
+
 SOURCES += \
     Modules/geolocation/Geolocation.cpp \
     Modules/geolocation/GeolocationController.cpp \
@@ -297,6 +309,7 @@ SOURCES += \
     css/CSSValuePool.cpp \
     css/FontFeatureValue.cpp \
     css/FontValue.cpp \
+    css/InspectorCSSOMWrappers.cpp \
     css/LengthFunctions.cpp \
     css/MediaFeatureNames.cpp \
     css/MediaList.cpp \
@@ -1444,6 +1457,11 @@ HEADERS += \
     Modules/webdatabase/DatabaseAuthorizer.h \
     Modules/webdatabase/Database.h \
     Modules/webdatabase/DatabaseBackend.h \
+    Modules/webdatabase/DatabaseBackendAsync.h \
+    Modules/webdatabase/DatabaseBackendContext.h \
+    Modules/webdatabase/DatabaseBackendSync.h \
+    Modules/webdatabase/DatabaseBase.h \
+    Modules/webdatabase/DatabaseBasicTypes.h \
     Modules/webdatabase/DatabaseCallback.h \
     Modules/webdatabase/DatabaseError.h \
     Modules/webdatabase/DatabaseManager.h \
@@ -2242,18 +2260,6 @@ HEADERS += \
     platform/graphics/surfaces/GraphicsSurface.h \
     platform/graphics/surfaces/GraphicsSurfaceToken.h \
     platform/graphics/SurrogatePairAwareTextIterator.h \
-    platform/graphics/texmap/coordinated/AreaAllocator.h \
-    platform/graphics/texmap/coordinated/CoordinatedBackingStore.h \
-    platform/graphics/texmap/coordinated/CoordinatedCustomFilterOperation.h \
-    platform/graphics/texmap/coordinated/CoordinatedCustomFilterProgram.h \
-    platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.h \
-    platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.h \
-    platform/graphics/texmap/coordinated/CoordinatedImageBacking.h \
-    platform/graphics/texmap/coordinated/CoordinatedLayerInfo.h \
-    platform/graphics/texmap/coordinated/CoordinatedSurface.h \
-    platform/graphics/texmap/coordinated/CoordinatedTile.h \
-    platform/graphics/texmap/coordinated/SurfaceUpdateInfo.h \
-    platform/graphics/texmap/coordinated/UpdateAtlas.h \
     platform/graphics/texmap/GraphicsLayerTextureMapper.h \
     platform/graphics/texmap/TextureMapper.h \
     platform/graphics/texmap/TextureMapperBackingStore.h \
@@ -2889,14 +2895,6 @@ SOURCES += \
     platform/graphics/qt/PathQt.cpp \
     platform/graphics/qt/PatternQt.cpp \
     platform/graphics/qt/StillImageQt.cpp \
-    platform/graphics/texmap/coordinated/AreaAllocator.cpp \
-    platform/graphics/texmap/coordinated/CoordinatedBackingStore.cpp \
-    platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.cpp \
-    platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp \
-    platform/graphics/texmap/coordinated/CoordinatedImageBacking.cpp \
-    platform/graphics/texmap/coordinated/CoordinatedSurface.cpp \
-    platform/graphics/texmap/coordinated/CoordinatedTile.cpp \
-    platform/graphics/texmap/coordinated/UpdateAtlas.cpp \
     platform/graphics/texmap/GraphicsLayerTextureMapper.cpp \
     platform/graphics/texmap/TextureMapper.cpp \
     platform/graphics/texmap/TextureMapperBackingStore.cpp \
@@ -3038,6 +3036,10 @@ use?(PLUGIN_BACKEND_XLIB) {
 enable?(SQL_DATABASE) {
     SOURCES += \
         Modules/webdatabase/ChangeVersionWrapper.cpp \
+        Modules/webdatabase/DatabaseBackendAsync.cpp \
+        Modules/webdatabase/DatabaseBackendContext.cpp \
+        Modules/webdatabase/DatabaseBackendSync.cpp \
+        Modules/webdatabase/DatabaseBase.cpp \
         Modules/webdatabase/DatabaseManager.cpp \
         Modules/webdatabase/DatabaseTask.cpp \
         Modules/webdatabase/DatabaseThread.cpp \
@@ -4069,7 +4071,19 @@ use?(3D_GRAPHICS) {
         platform/graphics/gpu/TilingData.h \
         platform/graphics/opengl/Extensions3DOpenGL.h \
         platform/graphics/texmap/TextureMapperGL.h \
-        platform/graphics/texmap/TextureMapperShaderProgram.h
+        platform/graphics/texmap/TextureMapperShaderProgram.h \
+        platform/graphics/texmap/coordinated/AreaAllocator.h \
+        platform/graphics/texmap/coordinated/CoordinatedBackingStore.h \
+        platform/graphics/texmap/coordinated/CoordinatedCustomFilterOperation.h \
+        platform/graphics/texmap/coordinated/CoordinatedCustomFilterProgram.h \
+        platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.h \
+        platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.h \
+        platform/graphics/texmap/coordinated/CoordinatedImageBacking.h \
+        platform/graphics/texmap/coordinated/CoordinatedLayerInfo.h \
+        platform/graphics/texmap/coordinated/CoordinatedSurface.h \
+        platform/graphics/texmap/coordinated/CoordinatedTile.h \
+        platform/graphics/texmap/coordinated/SurfaceUpdateInfo.h \
+        platform/graphics/texmap/coordinated/UpdateAtlas.h
 
     SOURCES += \
         platform/graphics/ANGLEWebKitBridge.cpp \
@@ -4082,7 +4096,15 @@ use?(3D_GRAPHICS) {
         platform/graphics/opengl/Extensions3DOpenGLCommon.cpp \
         platform/graphics/qt/GraphicsContext3DQt.cpp \
         platform/graphics/texmap/TextureMapperGL.cpp \
-        platform/graphics/texmap/TextureMapperShaderProgram.cpp
+        platform/graphics/texmap/TextureMapperShaderProgram.cpp \
+        platform/graphics/texmap/coordinated/AreaAllocator.cpp \
+        platform/graphics/texmap/coordinated/CoordinatedBackingStore.cpp \
+        platform/graphics/texmap/coordinated/CoordinatedGraphicsLayer.cpp \
+        platform/graphics/texmap/coordinated/CoordinatedGraphicsScene.cpp \
+        platform/graphics/texmap/coordinated/CoordinatedImageBacking.cpp \
+        platform/graphics/texmap/coordinated/CoordinatedSurface.cpp \
+        platform/graphics/texmap/coordinated/CoordinatedTile.cpp \
+        platform/graphics/texmap/coordinated/UpdateAtlas.cpp
 
     INCLUDEPATH += $$PWD/platform/graphics/gpu
 

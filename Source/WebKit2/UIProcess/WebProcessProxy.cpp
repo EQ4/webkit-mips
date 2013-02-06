@@ -129,11 +129,17 @@ void WebProcessProxy::getLaunchOptions(ProcessLauncher::LaunchOptions& launchOpt
 
 void WebProcessProxy::connectionWillOpen(CoreIPC::Connection* connection)
 {
+    ASSERT(this->connection() == connection);
+
+    m_context->processWillOpenConnection(this);
     connection->addQueueClient(this);
 }
 
 void WebProcessProxy::connectionWillClose(CoreIPC::Connection* connection)
 {
+    ASSERT(this->connection() == connection);
+
+    m_context->processWillCloseConnection(this);
     connection->removeQueueClient(this);
 }
 
@@ -455,10 +461,16 @@ void WebProcessProxy::didReceiveSyncMessage(CoreIPC::Connection* connection, Cor
     pageProxy->didReceiveSyncMessage(connection, decoder, replyEncoder);
 }
 
-void WebProcessProxy::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, bool& didHandleMessage)
+void WebProcessProxy::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, OwnPtr<CoreIPC::MessageDecoder>& decoder)
 {
-    if (decoder.messageReceiverName() == Messages::WebProcessProxy::messageReceiverName())
-        didReceiveWebProcessProxyMessageOnConnectionWorkQueue(connection, decoder, didHandleMessage);
+    if (decoder->messageReceiverName() == Messages::WebProcessProxy::messageReceiverName()) {
+        didReceiveWebProcessProxyMessageOnConnectionWorkQueue(connection, decoder);
+        return;
+    }
+}
+
+void WebProcessProxy::didCloseOnConnectionWorkQueue(CoreIPC::Connection*)
+{
 }
 
 void WebProcessProxy::didClose(CoreIPC::Connection*)
@@ -525,7 +537,6 @@ void WebProcessProxy::didFinishLaunching(ProcessLauncher* launcher, CoreIPC::Con
 
     m_webConnection = WebConnectionToWebProcess::create(this);
 
-    // Tell the context that we finished launching.
     m_context->processDidFinishLaunching(this);
 
 #if PLATFORM(MAC)

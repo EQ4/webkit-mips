@@ -27,6 +27,8 @@
 #include "StorageManager.h"
 
 #include "StorageManagerMessages.h"
+#include "WebProcessProxy.h"
+#include "WorkQueue.h"
 
 namespace WebKit {
 
@@ -36,6 +38,7 @@ PassRefPtr<StorageManager> StorageManager::create()
 }
 
 StorageManager::StorageManager()
+    : m_queue(WorkQueue::create("com.apple.WebKit.StorageManager"))
 {
 }
 
@@ -43,14 +46,32 @@ StorageManager::~StorageManager()
 {
 }
 
-void StorageManager::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, bool& didHandleMessage)
+void StorageManager::processWillOpenConnection(WebProcessProxy* webProcessProxy)
 {
-    if (decoder.messageReceiverName() == Messages::StorageManager::messageReceiverName())
-        didReceiveStorageManagerMessageOnConnectionWorkQueue(connection, decoder, didHandleMessage);
+    webProcessProxy->connection()->addQueueClient(this);
 }
 
-void StorageManager::createStorageArea(CoreIPC::Connection*, uint64_t /* storageAreaID */, uint64_t /* storageNamespaceID */, const SecurityOriginData&)
+void StorageManager::processWillCloseConnection(WebProcessProxy* webProcessProxy)
 {
+    webProcessProxy->connection()->removeQueueClient(this);
+}
+
+void StorageManager::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, OwnPtr<CoreIPC::MessageDecoder>& decoder)
+{
+    if (decoder->messageReceiverName() == Messages::StorageManager::messageReceiverName()) {
+        didReceiveStorageManagerMessageOnConnectionWorkQueue(connection, decoder);
+        return;
+    }
+}
+
+void StorageManager::didCloseOnConnectionWorkQueue(CoreIPC::Connection*)
+{
+}
+
+void StorageManager::createStorageArea(CoreIPC::Connection*, uint64_t storageAreaID, uint64_t storageNamespaceID, const SecurityOriginData&)
+{
+    UNUSED_PARAM(storageAreaID);
+    UNUSED_PARAM(storageNamespaceID);
 }
 
 void StorageManager::destroyStorageArea(CoreIPC::Connection*, uint64_t)

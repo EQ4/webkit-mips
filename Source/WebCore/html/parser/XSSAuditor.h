@@ -36,14 +36,30 @@ namespace WebCore {
 class DidBlockScriptRequest;
 class Document;
 class HTMLDocumentParser;
+class HTMLSourceTracker;
+class TextResourceDecoder;
+
+struct FilterTokenRequest {
+    FilterTokenRequest(HTMLToken& token, HTMLSourceTracker& sourceTracker, const TextResourceDecoder* decoder, bool shouldAllowCDATA)
+        : token(token)
+        , sourceTracker(sourceTracker)
+        , decoder(decoder)
+        , shouldAllowCDATA(shouldAllowCDATA)
+    { }
+
+    HTMLToken& token;
+    HTMLSourceTracker& sourceTracker;
+    const TextResourceDecoder* decoder;
+    bool shouldAllowCDATA;
+};
 
 class XSSAuditor {
     WTF_MAKE_NONCOPYABLE(XSSAuditor);
 public:
-    explicit XSSAuditor(HTMLDocumentParser*);
+    XSSAuditor();
 
     void init(Document*);
-    PassOwnPtr<DidBlockScriptRequest> filterToken(HTMLToken&);
+    PassOwnPtr<DidBlockScriptRequest> filterToken(const FilterTokenRequest&);
 
 private:
     static const size_t kMaximumFragmentLengthTarget = 100;
@@ -59,32 +75,30 @@ private:
         ScriptLikeAttribute
     };
 
-    bool filterStartToken(HTMLToken&);
-    void filterEndToken(HTMLToken&);
-    bool filterCharacterToken(HTMLToken&);
-    bool filterScriptToken(HTMLToken&);
-    bool filterObjectToken(HTMLToken&);
-    bool filterParamToken(HTMLToken&);
-    bool filterEmbedToken(HTMLToken&);
-    bool filterAppletToken(HTMLToken&);
-    bool filterIframeToken(HTMLToken&);
-    bool filterMetaToken(HTMLToken&);
-    bool filterBaseToken(HTMLToken&);
-    bool filterFormToken(HTMLToken&);
+    bool filterStartToken(const FilterTokenRequest&);
+    void filterEndToken(const FilterTokenRequest&);
+    bool filterCharacterToken(const FilterTokenRequest&);
+    bool filterScriptToken(const FilterTokenRequest&);
+    bool filterObjectToken(const FilterTokenRequest&);
+    bool filterParamToken(const FilterTokenRequest&);
+    bool filterEmbedToken(const FilterTokenRequest&);
+    bool filterAppletToken(const FilterTokenRequest&);
+    bool filterIframeToken(const FilterTokenRequest&);
+    bool filterMetaToken(const FilterTokenRequest&);
+    bool filterBaseToken(const FilterTokenRequest&);
+    bool filterFormToken(const FilterTokenRequest&);
 
-    bool eraseDangerousAttributesIfInjected(HTMLToken&);
-    bool eraseAttributeIfInjected(HTMLToken&, const QualifiedName&, const String& replacementValue = String(), AttributeKind treatment = NormalAttribute);
+    bool eraseDangerousAttributesIfInjected(const FilterTokenRequest&);
+    bool eraseAttributeIfInjected(const FilterTokenRequest&, const QualifiedName&, const String& replacementValue = String(), AttributeKind treatment = NormalAttribute);
 
     String decodedSnippetForToken(const HTMLToken&);
-    String decodedSnippetForName(const HTMLToken&);
-    String decodedSnippetForAttribute(const HTMLToken&, const HTMLToken::Attribute&, AttributeKind treatment = NormalAttribute);
-    String decodedSnippetForJavaScript(const HTMLToken&);
+    String decodedSnippetForName(const FilterTokenRequest&);
+    String decodedSnippetForAttribute(const FilterTokenRequest&, const HTMLToken::Attribute&, AttributeKind treatment = NormalAttribute);
+    String decodedSnippetForJavaScript(const FilterTokenRequest&);
 
     bool isContainedInRequest(const String&);
     bool isLikelySafeResource(const String& url);
 
-    // FIXME: Remove this dependency.
-    HTMLDocumentParser* m_parser;
     KURL m_documentURL;
     bool m_isEnabled;
     XSSProtectionDisposition m_xssProtection;
@@ -97,7 +111,6 @@ private:
 
     State m_state;
     String m_cachedDecodedSnippet;
-    bool m_shouldAllowCDATA;
     unsigned m_scriptTagNestingLevel;
     KURL m_reportURL;
 };

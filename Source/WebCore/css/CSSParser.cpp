@@ -836,6 +836,10 @@ static inline bool isValidKeywordPropertyAndValue(CSSPropertyID propertyId, int 
         if (valueID == CSSValueNone || valueID == CSSValueManual || valueID == CSSValueAuto)
             return true;
         break;
+    case CSSPropertyWebkitGridAutoFlow:
+        if (valueID == CSSValueNone || valueID == CSSValueRow || valueID == CSSValueColumn)
+            return true;
+        break;
     case CSSPropertyWebkitLineAlign:
         if (valueID == CSSValueNone || valueID == CSSValueEdges)
             return true;
@@ -1049,6 +1053,7 @@ static inline bool isKeywordPropertyID(CSSPropertyID propertyId)
     case CSSPropertyWebkitFontKerning:
     case CSSPropertyWebkitFontSmoothing:
     case CSSPropertyWebkitHyphens:
+    case CSSPropertyWebkitGridAutoFlow:
     case CSSPropertyWebkitLineAlign:
     case CSSPropertyWebkitLineBreak:
     case CSSPropertyWebkitLineSnap:
@@ -2892,6 +2897,7 @@ bool CSSParser::parseValue(CSSPropertyID propId, bool important)
     case CSSPropertyWebkitFontKerning:
     case CSSPropertyWebkitFontSmoothing:
     case CSSPropertyWebkitHyphens:
+    case CSSPropertyWebkitGridAutoFlow:
     case CSSPropertyWebkitLineAlign:
     case CSSPropertyWebkitLineBreak:
     case CSSPropertyWebkitLineSnap:

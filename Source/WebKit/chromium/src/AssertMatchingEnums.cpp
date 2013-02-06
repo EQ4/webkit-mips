@@ -56,7 +56,7 @@
 #include "IDBCursor.h"
 #include "IDBDatabaseBackendInterface.h"
 #include "IDBDatabaseException.h"
-#include "IDBFactoryBackendInterface.h"
+#include "IDBFactoryBackendInterfaceChromium.h"
 #include "IDBKey.h"
 #include "IDBKeyPath.h"
 #include "IDBMetadata.h"
@@ -469,6 +469,7 @@ COMPILE_ASSERT_MATCHING_ENUM(WebScrollbar::ScrollbarOverlayStyleLight, Scrollbar
 COMPILE_ASSERT_MATCHING_ENUM(WebSettings::EditingBehaviorMac, EditingMacBehavior);
 COMPILE_ASSERT_MATCHING_ENUM(WebSettings::EditingBehaviorWin, EditingWindowsBehavior);
 COMPILE_ASSERT_MATCHING_ENUM(WebSettings::EditingBehaviorUnix, EditingUnixBehavior);
+COMPILE_ASSERT_MATCHING_ENUM(WebSettings::EditingBehaviorAndroid, EditingAndroidBehavior);
 
 COMPILE_ASSERT_MATCHING_ENUM(WebTextAffinityUpstream, UPSTREAM);
 COMPILE_ASSERT_MATCHING_ENUM(WebTextAffinityDownstream, DOWNSTREAM);

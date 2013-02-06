@@ -172,9 +172,9 @@ static v8::Handle<v8::Value> toV8Object(WebGLExtension* extension, v8::Handle<v8
     v8::Handle<v8::Value> extensionObject;
     const char* referenceName = 0;
     switch (extension->getName()) {
-    case WebGLExtension::WebKitWebGLLoseContextName:
+    case WebGLExtension::WebGLLoseContextName:
         extensionObject = toV8(static_cast<WebGLLoseContext*>(extension), contextObject, isolate);
-        referenceName = "webKitWebGLLoseContextName";
+        referenceName = "webGLLoseContextName";
         break;
     case WebGLExtension::EXTTextureFilterAnisotropicName:
         extensionObject = toV8(static_cast<EXTTextureFilterAnisotropic*>(extension), contextObject, isolate);
@@ -204,13 +204,13 @@ static v8::Handle<v8::Value> toV8Object(WebGLExtension* extension, v8::Handle<v8
         extensionObject = toV8(static_cast<WebGLDebugShaders*>(extension), contextObject, isolate);
         referenceName = "webGLDebugShadersName";
         break;
-    case WebGLExtension::WebKitWebGLCompressedTextureS3TCName:
+    case WebGLExtension::WebGLCompressedTextureS3TCName:
         extensionObject = toV8(static_cast<WebGLCompressedTextureS3TC*>(extension), contextObject, isolate);
-        referenceName = "webKitWebGLCompressedTextureS3TCName";
+        referenceName = "webGLCompressedTextureS3TCName";
         break;
-    case WebGLExtension::WebKitWebGLDepthTextureName:
+    case WebGLExtension::WebGLDepthTextureName:
         extensionObject = toV8(static_cast<WebGLDepthTexture*>(extension), contextObject, isolate);
-        referenceName = "webKitWebGLDepthTextureName";
+        referenceName = "webGLDepthTextureName";
         break;
     }
     ASSERT(!extensionObject.IsEmpty());
@@ -259,7 +259,7 @@ static WebGLUniformLocation* toWebGLUniformLocation(v8::Handle<v8::Value> value,
 {
     ok = false;
     WebGLUniformLocation* location = 0;
-    if (V8WebGLUniformLocation::HasInstance(value)) {
+    if (V8WebGLUniformLocation::HasInstance(value, isolate)) {
         location = V8WebGLUniformLocation::toNative(value->ToObject());
         ok = true;
     }

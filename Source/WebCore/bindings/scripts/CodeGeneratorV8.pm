@@ -187,9 +187,9 @@ sub GenerateOpaqueRootForGC
     }
 
     push(@implContent, <<END);
-void* V8${interfaceName}::opaqueRootForGC(void* object, v8::Persistent<v8::Object> wrapper)
+void* V8${interfaceName}::opaqueRootForGC(void* object, v8::Persistent<v8::Object> wrapper, v8::Isolate* isolate)
 {
-    ASSERT(!wrapper.IsIndependent());
+    ASSERT(!wrapper.IsIndependent(isolate));
     ${interfaceName}* impl = static_cast<${interfaceName}*>(object);
 END
     if (GetGenerateIsReachable($interface) eq  "ImplDocument" ||
@@ -207,7 +207,7 @@ END
 
         push(@implContent, <<END);
     if (Node* owner = impl->${methodName}())
-        return V8GCController::opaqueRootForGC(owner);
+        return V8GCController::opaqueRootForGC(owner, isolate);
 END
     }
 
@@ -353,7 +353,7 @@ END
     }
 
     push(@headerContent, <<END);
-    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate* = 0);
+    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
     static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
     static ${nativeType}* toNative(v8::Handle<v8::Object> object)
@@ -365,7 +365,7 @@ END
 END
 
     if (NeedsCustomOpaqueRootForGC($interface)) {
-        push(@headerContent, "    static void* opaqueRootForGC(void*, v8::Persistent<v8::Object>);\n");
+        push(@headerContent, "    static void* opaqueRootForGC(void*, v8::Persistent<v8::Object>, v8::Isolate*);\n");
     }
 
     if ($codeGenerator->InheritsExtendedAttribute($interface, "ActiveDOMObject")) {
@@ -384,7 +384,7 @@ END
 
     if ($interfaceName eq "HTMLDocument") {
       push(@headerContent, <<END);
-    static v8::Local<v8::Object> wrapInShadowObject(v8::Local<v8::Object> wrapper, Node* impl);
+    static v8::Local<v8::Object> wrapInShadowObject(v8::Local<v8::Object> wrapper, Node* impl, v8::Isolate*);
     static v8::Handle<v8::Value> getNamedProperty(HTMLDocument* htmlDocument, const AtomicString& key, v8::Handle<v8::Object> creationContext, v8::Isolate*);
 END
     }
@@ -394,7 +394,7 @@ END
         my $name = $function->signature->name;
         my $attrExt = $function->signature->extendedAttributes;
 
-        if (($attrExt->{"Custom"} || $attrExt->{"V8Custom"}) && !$attrExt->{"ImplementedBy"} && $function->{overloadIndex} == 1) {
+        if (HasCustomMethod($attrExt) && !$attrExt->{"ImplementedBy"} && $function->{overloadIndex} == 1) {
             my $conditionalString = $codeGenerator->GenerateConditionalString($function->signature);
             push(@headerContent, "#if ${conditionalString}\n") if $conditionalString;
             push(@headerContent, <<END);
@@ -422,18 +422,14 @@ END
         my $name = $attribute->signature->name;
         my $attrExt = $attribute->signature->extendedAttributes;
         my $conditionalString = $codeGenerator->GenerateConditionalString($attribute->signature);
-        if (($attrExt->{"V8CustomGetter"} || $attrExt->{"CustomGetter"} ||
-             $attrExt->{"V8Custom"} || $attrExt->{"Custom"}) &&
-            !$attrExt->{"ImplementedBy"}) {
+        if (HasCustomGetter($attrExt) && !$attrExt->{"ImplementedBy"}) {
             push(@headerContent, "#if ${conditionalString}\n") if $conditionalString;
             push(@headerContent, <<END);
     static v8::Handle<v8::Value> ${name}AccessorGetter(v8::Local<v8::String> name, const v8::AccessorInfo&);
 END
             push(@headerContent, "#endif // ${conditionalString}\n") if $conditionalString;
         }
-        if (($attrExt->{"V8CustomSetter"} || $attrExt->{"CustomSetter"} ||
-             $attrExt->{"V8Custom"} || $attrExt->{"Custom"}) &&
-            !$attrExt->{"ImplementedBy"}) {
+        if (HasCustomSetter($attrExt) && !$attrExt->{"ImplementedBy"}) {
             push(@headerContent, "#if ${conditionalString}\n") if $conditionalString;
             push(@headerContent, <<END);
     static void ${name}AccessorSetter(v8::Local<v8::String> name, v8::Local<v8::Value>, const v8::AccessorInfo&);
@@ -458,11 +454,11 @@ END
 
     if (@enabledPerContextAttributes) {
         push(@headerContent, <<END);
-    static void installPerContextProperties(v8::Handle<v8::Object>, ${nativeType}*);
+    static void installPerContextProperties(v8::Handle<v8::Object>, ${nativeType}*, v8::Isolate*);
 END
     } else {
         push(@headerContent, <<END);
-    static void installPerContextProperties(v8::Handle<v8::Object>, ${nativeType}*) { }
+    static void installPerContextProperties(v8::Handle<v8::Object>, ${nativeType}*, v8::Isolate*) { }
 END
     }
 
@@ -755,6 +751,24 @@ sub HasCustomConstructor
     my $interface = shift;
 
     return $interface->extendedAttributes->{"CustomConstructor"} || $interface->extendedAttributes->{"V8CustomConstructor"};
+}
+
+sub HasCustomGetter
+{
+    my $attrExt = shift;
+    return $attrExt->{"Custom"} || $attrExt->{"V8Custom"} || $attrExt->{"CustomGetter"} || $attrExt->{"V8CustomGetter"};
+}
+
+sub HasCustomSetter
+{
+    my $attrExt = shift;
+    return $attrExt->{"Custom"} || $attrExt->{"V8Custom"} || $attrExt->{"CustomSetter"} || $attrExt->{"V8CustomSetter"};
+}
+
+sub HasCustomMethod
+{
+    my $attrExt = shift;
+    return $attrExt->{"Custom"} || $attrExt->{"V8Custom"};
 }
 
 sub IsReadonly
@@ -1273,7 +1287,7 @@ END
             my $implSetterFunctionName = $codeGenerator->WK_ucfirst($attrName);
             AddToImplIncludes("V8AbstractEventListener.h");
             if (!$codeGenerator->InheritsInterface($interface, "Node")) {
-                push(@implContentDecls, "    transferHiddenDependency(info.Holder(), imp->$attrName(), value, ${v8InterfaceName}::eventListenerCacheIndex);\n");
+                push(@implContentDecls, "    transferHiddenDependency(info.Holder(), imp->$attrName(), value, ${v8InterfaceName}::eventListenerCacheIndex, info.GetIsolate());\n");
             }
             AddToImplIncludes("V8EventListenerList.h");
             if ($interfaceName eq "WorkerContext" and $attribute->signature->name eq "onerror") {
@@ -1343,12 +1357,7 @@ sub GetFunctionTemplateCallbackName
 
     my $name = $function->signature->name;
 
-    if ($function->signature->extendedAttributes->{"Custom"} ||
-        $function->signature->extendedAttributes->{"V8Custom"}) {
-        if ($function->signature->extendedAttributes->{"Custom"} &&
-            $function->signature->extendedAttributes->{"V8Custom"}) {
-            die "Custom and V8Custom should be mutually exclusive!"
-        }
+    if (HasCustomMethod($function->signature->extendedAttributes)) {
         return "V8${interfaceName}::${name}Callback";
     } else {
         return "${interfaceName}V8Internal::${name}Callback";
@@ -1375,7 +1384,7 @@ static v8::Handle<v8::Value> ${functionName}EventListenerCallback(const v8::Argu
 END
     if ($requiresHiddenDependency) {
         push(@implContentDecls, <<END);
-        ${hiddenDependencyAction}HiddenDependency(args.Holder(), args[1], V8${interfaceName}::eventListenerCacheIndex);
+        ${hiddenDependencyAction}HiddenDependency(args.Holder(), args[1], V8${interfaceName}::eventListenerCacheIndex, args.GetIsolate());
 END
     }
     push(@implContentDecls, <<END);
@@ -2258,14 +2267,7 @@ sub GenerateSingleBatchedAttribute
     }
     $accessControl = "static_cast<v8::AccessControl>(" . $accessControl . ")";
 
-    my $customAccessor =
-        $attrExt->{"Custom"} ||
-        $attrExt->{"CustomSetter"} ||
-        $attrExt->{"CustomGetter"} ||
-        $attrExt->{"V8Custom"} ||
-        $attrExt->{"V8CustomSetter"} ||
-        $attrExt->{"V8CustomGetter"} ||
-        "";
+    my $customAccessor = HasCustomGetter($attrExt) || HasCustomSetter($attrExt) || "";
     if ($customAccessor eq "VALUE_IS_MISSING") {
         # use the naming convension, interface + (capitalize) attr name
         $customAccessor = $interfaceName . "::" . $attrName;
@@ -2312,13 +2314,11 @@ sub GenerateSingleBatchedAttribute
             $setter = "${interfaceName}V8Internal::${interfaceName}ReplaceableAttrSetter";
         }
 
-        # Custom Setter
-        if ($attrExt->{"CustomSetter"} || $attrExt->{"V8CustomSetter"} || $attrExt->{"Custom"} || $attrExt->{"V8Custom"}) {
+        if (HasCustomSetter($attrExt)) {
             $setter = "V8${customAccessor}AccessorSetter";
         }
 
-        # Custom Getter
-        if ($attrExt->{"CustomGetter"} || $attrExt->{"V8CustomGetter"} || $attrExt->{"Custom"} || $attrExt->{"V8Custom"}) {
+        if (HasCustomGetter($attrExt)) {
             $getter = "V8${customAccessor}AccessorGetter";
         }
     }
@@ -2700,43 +2700,31 @@ END
     for (my $index = 0; $index < @{$interface->attributes}; $index++) {
         my $attribute = @{$interface->attributes}[$index];
         my $attrType = $attribute->signature->type;
+        my $attrExt = $attribute->signature->extendedAttributes;
 
         # Generate special code for the constructor attributes.
         if ($attrType =~ /Constructor$/) {
-            if (!($attribute->signature->extendedAttributes->{"CustomGetter"} ||
-                $attribute->signature->extendedAttributes->{"V8CustomGetter"})) {
+            if (!HasCustomGetter($attrExt)) {
                 $hasConstructors = 1;
             }
             next;
         }
 
         if ($attrType eq "EventListener" && $interfaceName eq "DOMWindow") {
-            $attribute->signature->extendedAttributes->{"V8OnProto"} = 1;
+            $attrExt->{"V8OnProto"} = 1;
         }
 
         if ($attrType eq "SerializedScriptValue") {
             AddToImplIncludes("SerializedScriptValue.h");
         }
 
-        # Do not generate accessor if this is a custom attribute.  The
-        # call will be forwarded to a hand-written accessor
-        # implementation.
-        if ($attribute->signature->extendedAttributes->{"Custom"} ||
-            $attribute->signature->extendedAttributes->{"V8Custom"}) {
-            next;
-        }
-
-        # Generate the accessor.
-        if (!($attribute->signature->extendedAttributes->{"CustomGetter"} ||
-            $attribute->signature->extendedAttributes->{"V8CustomGetter"})) {
+        if (!HasCustomGetter($attrExt)) {
             GenerateNormalAttrGetter($attribute, $interface);
         }
 
-        if ($attribute->signature->extendedAttributes->{"Replaceable"}) {
+        if ($attrExt->{"Replaceable"}) {
             $hasReplaceable = 1;
-        } elsif (!$attribute->signature->extendedAttributes->{"CustomSetter"} &&
-            !$attribute->signature->extendedAttributes->{"V8CustomSetter"} &&
-            !IsReadonly($attribute)) {
+        } elsif (!HasCustomSetter($attrExt) && !IsReadonly($attribute)) {
             GenerateNormalAttrSetter($attribute, $interface);
         }
     }
@@ -2775,7 +2763,7 @@ END
     my $needsDomainSafeFunctionSetter = 0;
     # Generate methods for functions.
     foreach my $function (@{$interface->functions}) {
-        my $isCustom = $function->signature->extendedAttributes->{"Custom"} || $function->signature->extendedAttributes->{"V8Custom"};
+        my $isCustom = HasCustomMethod($function->signature->extendedAttributes);
         if (!$isCustom) {
             GenerateFunctionCallback($function, $interface);
             if ($function->{overloadIndex} > 1 && $function->{overloadIndex} == @{$function->{overloads}}) {
@@ -2941,7 +2929,7 @@ END
         push(@implContent, <<END);
 static v8::Persistent<v8::ObjectTemplate> ConfigureShadowObjectTemplate(v8::Persistent<v8::ObjectTemplate> templ, v8::Isolate* isolate)
 {
-    V8DOMConfiguration::batchConfigureAttributes(templ, v8::Handle<v8::ObjectTemplate>(), shadowAttrs, WTF_ARRAY_LENGTH(shadowAttrs));
+    V8DOMConfiguration::batchConfigureAttributes(templ, v8::Handle<v8::ObjectTemplate>(), shadowAttrs, WTF_ARRAY_LENGTH(shadowAttrs), isolate);
 
     // Install a security handler with V8.
     templ->SetAccessCheckCallbacks(V8DOMWindow::namedSecurityCheck, V8DOMWindow::indexedSecurityCheck, v8::External::New(&V8DOMWindow::info));
@@ -2967,7 +2955,7 @@ END
         my $enable_function = GetRuntimeEnableFunctionName($interface);
         push(@implContent, <<END);
     if (!${enable_function}())
-        defaultSignature = V8DOMConfiguration::configureTemplate(desc, \"\", $parentClassTemplate, ${v8InterfaceName}::internalFieldCount, 0, 0, 0, 0);
+        defaultSignature = V8DOMConfiguration::configureTemplate(desc, \"\", $parentClassTemplate, ${v8InterfaceName}::internalFieldCount, 0, 0, 0, 0, isolate);
     else
 END
     }
@@ -2987,14 +2975,14 @@ END
 
     if ($has_callbacks) {
         push(@implContent, <<END);
-        ${v8InterfaceName}Callbacks, WTF_ARRAY_LENGTH(${v8InterfaceName}Callbacks));
+        ${v8InterfaceName}Callbacks, WTF_ARRAY_LENGTH(${v8InterfaceName}Callbacks), isolate);
 END
     } else {
         push(@implContent, <<END);
-        0, 0);
+        0, 0, isolate);
 END
     }
-    
+
     AddToImplIncludes("wtf/UnusedParam.h");
     push(@implContent, <<END);
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
@@ -3027,7 +3015,7 @@ END
         push(@implContent, "        static const V8DOMConfiguration::BatchedAttribute attrData =\\\n");
         GenerateSingleBatchedAttribute($interfaceName, $runtime_attr, ";", "    ");
         push(@implContent, <<END);
-        V8DOMConfiguration::configureAttribute(instance, proto, attrData);
+        V8DOMConfiguration::configureAttribute(instance, proto, attrData, isolate);
     }
 END
         push(@implContent, "\n#endif // ${conditionalString}\n") if $conditionalString;
@@ -3043,7 +3031,7 @@ END
         push(@implContent, "    if (${enable_function}()) {\n");
         push(@implContent, <<END);
         static const V8DOMConfiguration::BatchedConstant constData = {"${name}", static_cast<signed int>(${value})};
-        V8DOMConfiguration::batchConfigureConstants(desc, proto, &constData, 1);
+        V8DOMConfiguration::batchConfigureConstants(desc, proto, &constData, 1, isolate);
 END
         push(@implContent, "    }\n");
         push(@implContent, "\n#endif // ${conditionalString}\n") if $conditionalString;
@@ -3070,7 +3058,7 @@ END
 
     if ($has_constants) {
         push(@implContent, <<END);
-    V8DOMConfiguration::batchConfigureConstants(desc, proto, ${v8InterfaceName}Consts, WTF_ARRAY_LENGTH(${v8InterfaceName}Consts));
+    V8DOMConfiguration::batchConfigureConstants(desc, proto, ${v8InterfaceName}Consts, WTF_ARRAY_LENGTH(${v8InterfaceName}Consts), isolate);
 END
     }
 
@@ -3143,8 +3131,6 @@ v8::Persistent<v8::FunctionTemplate> ${v8InterfaceName}::GetTemplate(v8::Isolate
 
 bool ${v8InterfaceName}::HasInstance(v8::Handle<v8::Value> value, v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     return GetRawTemplate(isolate)->HasInstance(value);
 }
 
@@ -3152,7 +3138,7 @@ END
 
     if (@enabledPerContextAttributes) {
         push(@implContent, <<END);
-void ${v8InterfaceName}::installPerContextProperties(v8::Handle<v8::Object> instance, ${nativeType}* impl)
+void ${v8InterfaceName}::installPerContextProperties(v8::Handle<v8::Object> instance, ${nativeType}* impl, v8::Isolate* isolate)
 {
     v8::Local<v8::Object> proto = v8::Local<v8::Object>::Cast(instance->GetPrototype());
     // When building QtWebkit with V8 this variable is unused when none of the features are enabled.
@@ -3168,7 +3154,7 @@ END
             push(@implContent, "        static const V8DOMConfiguration::BatchedAttribute attrData =\\\n");
             GenerateSingleBatchedAttribute($interfaceName, $runtimeAttr, ";", "    ");
             push(@implContent, <<END);
-        V8DOMConfiguration::configureAttribute(instance, proto, attrData);
+        V8DOMConfiguration::configureAttribute(instance, proto, attrData, isolate);
 END
             push(@implContent, "    }\n");
             push(@implContent, "#endif // ${conditionalString}\n") if $conditionalString;
@@ -3551,11 +3537,11 @@ END
 
     push(@implContent, <<END);
 
-    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get());
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get(), isolate);
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
-    installPerContextProperties(wrapper, impl.get());
+    installPerContextProperties(wrapper, impl.get(), isolate);
     v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();
@@ -4084,8 +4070,7 @@ sub RequiresCustomSignature
 {
     my $function = shift;
     # No signature needed for Custom function
-    if ($function->signature->extendedAttributes->{"Custom"} ||
-        $function->signature->extendedAttributes->{"V8Custom"}) {
+    if (HasCustomMethod($function->signature->extendedAttributes)) {
         return 0;
     }
     # No signature needed for overloaded function

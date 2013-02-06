@@ -34,7 +34,7 @@ namespace WebCore {
 class V8TestCustomNamedGetter {
 public:
     static const bool hasDependentLifetime = false;
-    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate* = 0);
+    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
     static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
     static TestCustomNamedGetter* toNative(v8::Handle<v8::Object> object)
@@ -45,7 +45,7 @@ public:
     static WrapperTypeInfo info;
     static v8::Handle<v8::Value> namedPropertyGetter(v8::Local<v8::String>, const v8::AccessorInfo&);
     static const int internalFieldCount = v8DefaultWrapperInternalFieldCount + 0;
-    static void installPerContextProperties(v8::Handle<v8::Object>, TestCustomNamedGetter*) { }
+    static void installPerContextProperties(v8::Handle<v8::Object>, TestCustomNamedGetter*, v8::Isolate*) { }
     static void installPerContextPrototypeProperties(v8::Handle<v8::Object>) { }
 private:
     friend v8::Handle<v8::Object> wrap(TestCustomNamedGetter*, v8::Handle<v8::Object> creationContext, v8::Isolate*);

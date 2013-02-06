@@ -1,3 +1,325 @@
+2013-02-06  Stephen Chenney  <schenney@chromium.org>
+
+        Add Skia code suppression flags to WebKit skia.gyp
+
+        Unreviewed.
+
+        This is step one in removing these flags. First we get them into
+        WebKit, then we can remove them from Chrome.
+
+        * skia_webkit.gyp:
+
+2013-02-06  Mike West  <mkwst@chromium.org>
+
+        Add an ENABLE_NOSNIFF feature flag.
+        https://bugs.webkit.org/show_bug.cgi?id=109029
+
+        Reviewed by Jochen Eisinger.
+
+        This new flag will control the behavior of 'X-Content-Type-Options: nosniff'
+        when processing script and other resource types.
+
+        * features.gypi:
+
+2013-02-05  David Dorwin  <ddorwin@chromium.org>
+
+        [chromium] Explicitly destroy the WebMediaPlayer in WebMediaPlayerClientImpl's destructor
+        https://bugs.webkit.org/show_bug.cgi?id=108989
+
+        Reviewed by Kent Tamura.
+
+        * src/WebMediaPlayerClientImpl.cpp:
+        (WebKit::WebMediaPlayerClientImpl::~WebMediaPlayerClientImpl):
+
+2013-02-04  Kentaro Hara  <haraken@chromium.org>
+
+        [V8] Reduce usage of deprecatedString() and deprecatedInteger()
+        https://bugs.webkit.org/show_bug.cgi?id=108909
+
+        Reviewed by Adam Barth.
+
+        No tests. No change in behavior.
+
+        * src/WebBindings.cpp:
+        (WebKit::WebBindings::toV8Value):
+
+2013-02-05  Kentaro Hara  <haraken@chromium.org>
+
+        [V8] Make an Isolate parameter mandatory in HasInstance()
+        https://bugs.webkit.org/show_bug.cgi?id=108917
+
+        Reviewed by Adam Barth.
+
+        Because these methods do not have an Isolate, we have to call
+        v8::Isolate::GetCurrent().
+
+        No tests. No change in behavior.
+
+        * src/WebArrayBuffer.cpp:
+        (WebKit::WebArrayBuffer::createFromV8Value):
+        * src/WebArrayBufferView.cpp:
+        (WebKit::WebArrayBufferView::createFromV8Value):
+        * src/WebBindings.cpp:
+        (WebKit::getRangeImpl):
+        (WebKit::getNodeImpl):
+        (WebKit::getElementImpl):
+        (WebKit::getArrayBufferImpl):
+        (WebKit::getArrayBufferViewImpl):
+        (WebKit::WebBindings::getRange):
+        (WebKit::WebBindings::getArrayBuffer):
+        (WebKit::WebBindings::getArrayBufferView):
+        (WebKit::WebBindings::getNode):
+        (WebKit::WebBindings::getElement):
+
+2013-02-05  Dana Jansens  <danakj@chromium.org>
+
+        [chromium] Provide compositor offscreen context through the WebLayerTreeViewClient interface
+        https://bugs.webkit.org/show_bug.cgi?id=107776
+
+        Reviewed by James Robinson.
+
+        * WebKit.gyp:
+        * src/WebGraphicsContext3D.cpp: Removed.
+
+2013-02-05  Mark Lam  <mark.lam@apple.com>
+
+        Introduced back-end database classes + a few small fixes.
+        https://bugs.webkit.org/show_bug.cgi?id=108759.
+
+        Reviewed by Brady Eidson.
+
+        * src/DatabaseObserver.cpp:
+        (WebCore::DatabaseObserver::databaseOpened):
+        (WebCore::DatabaseObserver::databaseModified):
+        (WebCore::DatabaseObserver::databaseClosed):
+
+2013-02-05  Adam Barth  <abarth@webkit.org>
+
+        DumpRenderTree should be able to enable the threaded parser
+        https://bugs.webkit.org/show_bug.cgi?id=108970
+
+        Reviewed by Eric Seidel.
+
+        * public/WebSettings.h:
+        * src/WebSettingsImpl.cpp:
+        (WebKit::WebSettingsImpl::setThreadedHTMLParser):
+        (WebKit):
+        * src/WebSettingsImpl.h:
+        (WebSettingsImpl):
+
+2013-02-05  Sami Kyostila  <skyostil@chromium.org>
+
+        [chromium] Make overlay layers slow-scrolling
+        https://bugs.webkit.org/show_bug.cgi?id=108957
+
+        Reviewed by James Robinson.
+
+        Since overlay layers get inserted on top of everything else, we must
+        mark them slow-scrolling to prevent all scroll input events to the rest
+        of the page from getting blocked. This is also more correct because
+        generally the overlay contents need to be repainted whenever the scroll
+        offset changes, and with this patch the painting happens in sync with
+        page scrolling.
+
+2013-02-05  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r141896.
+        http://trac.webkit.org/changeset/141896
+        https://bugs.webkit.org/show_bug.cgi?id=108956
+
+        crashes indexdb security tests (Requested by gavinp on
+        #webkit).
+
+        * public/platform/WebKitPlatformSupport.h:
+        (WebKit):
+        (WebKitPlatformSupport):
+        (WebKit::WebKitPlatformSupport::idbFactory):
+        * src/IDBFactoryBackendProxy.cpp:
+        (WebKit::IDBFactoryBackendProxy::IDBFactoryBackendProxy):
+
+2013-02-05  Mark Pilgrim  <pilgrim@chromium.org>
+
+        [Chromium] Remove idbFactory from WebKitPlatformSupport
+        https://bugs.webkit.org/show_bug.cgi?id=106457
+
+        Reviewed by Adam Barth.
+
+        Now that https://codereview.chromium.org/12181010/ has landed, the
+        idbFactory method is no longer needed. (Embedders must now call
+        the new setIDBFactory method upon initialization.) Part of a
+        larger refactoring series; see tracking bug 82948.
+
+        * public/platform/WebKitPlatformSupport.h:
+        (WebKit):
+        * src/IDBFactoryBackendProxy.cpp:
+        (WebKit::IDBFactoryBackendProxy::IDBFactoryBackendProxy):
+
+2013-02-05  Kentaro Hara  <haraken@chromium.org>
+
+        Unreviewed, rolling out r141865.
+        http://trac.webkit.org/changeset/141865
+        https://bugs.webkit.org/show_bug.cgi?id=108909
+
+        webkit unit tests are broken
+
+        * src/WebBindings.cpp:
+        (WebKit::WebBindings::toV8Value):
+
+2013-02-05  Kentaro Hara  <haraken@chromium.org>
+
+        [V8] Reduce usage of deprecatedString() and deprecatedInteger()
+        https://bugs.webkit.org/show_bug.cgi?id=108909
+
+        Reviewed by Adam Barth.
+
+        No tests. No change in behavior.
+
+        * src/WebBindings.cpp:
+        (WebKit::WebBindings::toV8Value):
+
+2013-02-04  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r180583.  Requested by
+        "Mark Pilgrim" <pilgrim@chromium.org> via sheriffbot.
+
+        * DEPS:
+
+2013-02-04  James Simonsen  <simonjam@chromium.org>
+
+        [Chromium] Add a signal for when the body is inserted in the document
+        https://bugs.webkit.org/show_bug.cgi?id=108725
+
+        Reviewed by Adam Barth.
+
+        * public/WebFrameClient.h:
+        (WebFrameClient):
+        (WebKit::WebFrameClient::willInsertBody):
+        * src/FrameLoaderClientImpl.cpp:
+        (WebKit::FrameLoaderClientImpl::dispatchWillInsertBody):
+        (WebKit):
+        * src/FrameLoaderClientImpl.h:
+        (FrameLoaderClientImpl):
+        * tests/WebFrameTest.cpp:
+
+2013-02-04  Chris Hopman  <cjhopman@chromium.org>
+
+        Make moveCaretTowardsWindowPoint not snap to the beginning/end when moved above/below editable
+        https://bugs.webkit.org/show_bug.cgi?id=107850
+
+        Reviewed by Ojan Vafai.
+
+        On Android, EditingBehavior::shouldMoveCaret[...] controls the
+        behavior of insertion handles. This change adds a new Android specific
+        editing behavior type so that we can change these settings independent
+        of behavior for other platforms.
+
+        * public/WebSettings.h:
+        * src/AssertMatchingEnums.cpp:
+        Just add the corresponding assertion for the new editing behavior.
+
+        * public/WebSettings.h:
+        * src/AssertMatchingEnums.cpp:
+
+        * tests/WebFrameTest.cpp:
+        * tests/data/move_caret.html: Added.
+        Add a test that moveCaretTowardsWindowPoint works as expected on
+        Android.
+
+2013-01-31  Kentaro Hara  <haraken@chromium.org>
+
+        Implement WheelEvent::deltaMode
+        https://bugs.webkit.org/show_bug.cgi?id=108455
+
+        Reviewed by Adam Barth.
+
+        * src/WebInputEventConversion.cpp:
+        (WebKit::WebMouseWheelEventBuilder::WebMouseWheelEventBuilder):
+
+2013-02-04  Mark Pilgrim  <pilgrim@chromium.org>
+
+        [Chromium] Move WorkerContextProxy to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=108847
+
+        Reviewed by Adam Barth.
+
+        Part of a larger refactoring series; see tracking bug 106829.
+
+        * WebKit.gyp:
+        * src/WebKit.cpp:
+        (WebKit::initializeWithoutV8):
+        * src/WorkerContextProxy.cpp: Removed.
+
+2013-02-04  Abhishek Arya  <inferno@chromium.org>
+
+        Add ASSERT_WITH_SECURITY_IMPLICATION to detect out of bounds access
+        https://bugs.webkit.org/show_bug.cgi?id=108668
+
+        Reviewed by Eric Seidel.
+
+        * src/ContextFeaturesClientImpl.cpp:
+        (WebKit::ContextFeaturesCache::entryFor):
+        * src/WebFrameImpl.cpp:
+        (WebKit::WebFrameImpl::selectFindMatch):
+
+2013-02-04  Mark Pilgrim  <pilgrim@chromium.org>
+
+        [Chromium] Move IDBFactoryBackendInterface to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=108638
+
+        Reviewed by Adam Barth.
+
+        Part of a larger refactoring series; see tracking bug 106829.
+
+        * WebKit.gyp:
+        * src/AssertMatchingEnums.cpp:
+        * src/IDBFactoryBackendInterface.cpp: Removed.
+        * src/IDBFactoryBackendProxy.h:
+        * src/WebKit.cpp:
+        (WebKit::initializeWithoutV8):
+
+2013-02-04  Abhishek Arya  <inferno@chromium.org>
+
+        Add ASSERT_WITH_SECURITY_IMPLICATION to detect bad cast in DOM, CSS, etc.
+        https://bugs.webkit.org/show_bug.cgi?id=108688
+
+        Reviewed by Eric Seidel.
+
+        * src/IDBFactoryBackendProxy.cpp:
+        (WebKit::IDBFactoryBackendProxy::allowIndexedDB):
+        (WebKit::getWebFrame):
+        * src/LocalFileSystemChromium.cpp:
+        (WebCore::LocalFileSystem::deleteFileSystem):
+        * src/WebSharedWorkerImpl.cpp:
+        (WebKit::WebSharedWorkerImpl::connectTask):
+        (WebKit::resumeWorkerContextTask):
+        (WebKit::connectToWorkerContextInspectorTask):
+        (WebKit::reconnectToWorkerContextInspectorTask):
+        (WebKit::disconnectFromWorkerContextInspectorTask):
+        (WebKit::dispatchOnInspectorBackendTask):
+
+2013-02-04  Sami Kyostila  <skyostil@chromium.org>
+
+        Disable -webkit-overflow-scrolling CSS attribute on Chromium
+        https://bugs.webkit.org/show_bug.cgi?id=108020
+
+        Reviewed by James Robinson.
+
+        Now that we can automatically promote overflow elements to accelerated
+        scrolling layers there is no use for the -webkit-overflow-scrolling CSS
+        attribute any longer on Chromium.
+
+        This patch enables composited overflow scrolling in
+        ScrollingCoordinatorChromiumTest. Because this also causes the overflow div
+        in non-fast-scrollable.html to become composited, we also need to modify that
+        test to opt it out of composited scrolling.
+
+        * features.gypi:
+        * tests/ScrollingCoordinatorChromiumTest.cpp:
+        (WebKit::ScrollingCoordinatorChromiumTest::ScrollingCoordinatorChromiumTest):
+        (WebKit::TEST_F):
+        * tests/data/non-fast-scrollable.html:
+        * tests/data/overflow-scrolling.html: Renamed from Source/WebKit/chromium/tests/data/touch-overflow-scrolling.html.
+
 2013-02-03  KwangYong Choi  <ky0.choi@samsung.com>
 
         Fix build warning after r141473

@@ -42,11 +42,12 @@ public:
 private:
     SecItemShimProxy();
 
-    // QueueClient
-    virtual void didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection*, CoreIPC::MessageDecoder&, bool& didHandleMessage);
+    // CoreIPC::Connection::QueueClient
+    virtual void didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection*, OwnPtr<CoreIPC::MessageDecoder>&) OVERRIDE;
+    virtual void didCloseOnConnectionWorkQueue(CoreIPC::Connection*) OVERRIDE;
 
     // Implemented in generated SecItemShimProxyMessageReceiver.cpp.
-    void didReceiveSecItemShimProxyMessageOnConnectionWorkQueue(CoreIPC::Connection*, CoreIPC::MessageDecoder&, bool& didHandleMessage);
+    void didReceiveSecItemShimProxyMessageOnConnectionWorkQueue(CoreIPC::Connection*, OwnPtr<CoreIPC::MessageDecoder>&);
 
     void secItemRequest(CoreIPC::Connection*, uint64_t requestID, const SecItemRequestData&);
 };

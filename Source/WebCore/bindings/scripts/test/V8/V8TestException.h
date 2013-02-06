@@ -34,7 +34,7 @@ namespace WebCore {
 class V8TestException {
 public:
     static const bool hasDependentLifetime = false;
-    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate* = 0);
+    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
     static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
     static TestException* toNative(v8::Handle<v8::Object> object)
@@ -44,7 +44,7 @@ public:
     static void derefObject(void*);
     static WrapperTypeInfo info;
     static const int internalFieldCount = v8DefaultWrapperInternalFieldCount + 0;
-    static void installPerContextProperties(v8::Handle<v8::Object>, TestException*) { }
+    static void installPerContextProperties(v8::Handle<v8::Object>, TestException*, v8::Isolate*) { }
     static void installPerContextPrototypeProperties(v8::Handle<v8::Object>) { }
 private:
     friend v8::Handle<v8::Object> wrap(TestException*, v8::Handle<v8::Object> creationContext, v8::Isolate*);

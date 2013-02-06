@@ -1,3 +1,36 @@
+2013-02-06  Mike West  <mkwst@chromium.org>
+
+        Add an ENABLE_NOSNIFF feature flag.
+        https://bugs.webkit.org/show_bug.cgi?id=109029
+
+        Reviewed by Jochen Eisinger.
+
+        This new flag will control the behavior of 'X-Content-Type-Options: nosniff'
+        when processing script and other resource types.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-04  Benjamin Poulain  <bpoulain@apple.com>
+
+        Kill suspendAnimation(), resumeAnimation() and numberOfActiveAnimations() from DRT/WTR; use Internals
+        https://bugs.webkit.org/show_bug.cgi?id=108741
+
+        Reviewed by Tony Chang.
+
+        * WebView/WebFrame.mm:
+        * WebView/WebFramePrivate.h:
+
+2013-02-04  Enrica Casucci  <enrica@apple.com>
+
+        Add specific EditActions for Bold and Italic commands.
+        https://bugs.webkit.org/show_bug.cgi?id=108842.
+        <rdar://problem/13098252>
+
+        Reviewed by Ryosuke Niwa.
+
+        * WebCoreSupport/WebEditorClient.mm:
+        (undoNameForEditAction):
+
 2013-02-03  David Kilzer  <ddkilzer@apple.com>
 
         Upstream ENABLE_PDFKIT_PLUGIN settting

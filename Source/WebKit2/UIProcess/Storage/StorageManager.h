@@ -30,25 +30,35 @@
 #include <wtf/PassRefPtr.h>
 #include <wtf/ThreadSafeRefCounted.h>
 
-namespace WebKit {
-struct SecurityOriginData;
+class WorkQueue;
 
-class StorageManager : public ThreadSafeRefCounted<StorageManager>, public CoreIPC::Connection::QueueClient {
+namespace WebKit {
+
+struct SecurityOriginData;
+class WebProcessProxy;
+
+class StorageManager : public ThreadSafeRefCounted<StorageManager>, private CoreIPC::Connection::QueueClient {
 public:
     static PassRefPtr<StorageManager> create();
     ~StorageManager();
 
+    void processWillOpenConnection(WebProcessProxy*);
+    void processWillCloseConnection(WebProcessProxy*);
+
 private:
     StorageManager();
 
-    // CoreIPC::Connection::QueueClient.
-    virtual void didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection*, CoreIPC::MessageDecoder&, bool& didHandleMessage) OVERRIDE;
+    // CoreIPC::Connection::QueueClient
+    virtual void didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection*, OwnPtr<CoreIPC::MessageDecoder>&) OVERRIDE;
+    virtual void didCloseOnConnectionWorkQueue(CoreIPC::Connection*) OVERRIDE;
 
-    void didReceiveStorageManagerMessageOnConnectionWorkQueue(CoreIPC::Connection*, CoreIPC::MessageDecoder&, bool& didHandleMessage);
+    void didReceiveStorageManagerMessageOnConnectionWorkQueue(CoreIPC::Connection*, OwnPtr<CoreIPC::MessageDecoder>&);
 
     // Message handlers.
     void createStorageArea(CoreIPC::Connection*, uint64_t storageAreaID, uint64_t storageNamespaceID, const SecurityOriginData&);
     void destroyStorageArea(CoreIPC::Connection*, uint64_t storageAreaID);
+
+    RefPtr<WorkQueue> m_queue;
 };
 
 } // namespace WebKit

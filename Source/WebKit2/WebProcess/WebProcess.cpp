@@ -634,12 +634,16 @@ void WebProcess::didReceiveInvalidMessage(CoreIPC::Connection*, CoreIPC::StringR
     // we'll let it slide.
 }
 
-void WebProcess::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, bool& didHandleMessage)
+void WebProcess::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, OwnPtr<CoreIPC::MessageDecoder>& decoder)
 {
-    if (decoder.messageReceiverName() == Messages::WebProcess::messageReceiverName()) {
-        didReceiveWebProcessMessageOnConnectionWorkQueue(connection, decoder, didHandleMessage);
+    if (decoder->messageReceiverName() == Messages::WebProcess::messageReceiverName()) {
+        didReceiveWebProcessMessageOnConnectionWorkQueue(connection, decoder);
         return;
     }
+}
+
+void WebProcess::didCloseOnConnectionWorkQueue(CoreIPC::Connection*)
+{
 }
 
 WebFrame* WebProcess::webFrame(uint64_t frameID) const

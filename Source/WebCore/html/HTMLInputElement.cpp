@@ -370,14 +370,10 @@ void HTMLInputElement::defaultBlur()
     HTMLTextFormControlElement::blur();
 }
 
-void HTMLInputElement::defaultFocus(bool restorePreviousSelection, FocusDirection direction)
-{
-    HTMLTextFormControlElement::focus(restorePreviousSelection, direction);
-}
-
 void HTMLInputElement::focus(bool restorePreviousSelection, FocusDirection direction)
 {
-    m_inputType->focus(restorePreviousSelection, direction);
+    if (!m_inputType->willCancelFocus(restorePreviousSelection, direction))
+        HTMLTextFormControlElement::focus(restorePreviousSelection, direction);
 }
 
 bool HTMLInputElement::hasCustomFocusLogic() const
@@ -437,10 +433,9 @@ bool HTMLInputElement::shouldUseInputMethod()
     return m_inputType->shouldUseInputMethod();
 }
 
-void HTMLInputElement::handleFocusEvent(FocusDirection)
+void HTMLInputElement::handleFocusEvent(FocusDirection direction)
 {
-    // FIXME: Pass the FocusDirection argument to InputType:handleFocusEvent.
-    m_inputType->handleFocusEvent();
+    m_inputType->handleFocusEvent(direction);
 }
 
 void HTMLInputElement::handleBlurEvent()
@@ -1231,11 +1226,6 @@ bool HTMLInputElement::willRespondToMouseClickEvents()
 bool HTMLInputElement::isURLAttribute(const Attribute& attribute) const
 {
     return attribute.name() == srcAttr || attribute.name() == formactionAttr || HTMLTextFormControlElement::isURLAttribute(attribute);
-}
-
-bool HTMLInputElement::isFocusableByClickOnLabel() const
-{
-    return m_inputType->isFocusableByClickOnLabel();
 }
 
 String HTMLInputElement::defaultValue() const

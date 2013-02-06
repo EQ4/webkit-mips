@@ -127,11 +127,14 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/bytecode/LineInfo.h \
 	Source/JavaScriptCore/bytecode/MethodOfGettingAValueProfile.cpp \
 	Source/JavaScriptCore/bytecode/MethodOfGettingAValueProfile.h \
+	Source/JavaScriptCore/bytecode/ObjectAllocationProfile.h \
 	Source/JavaScriptCore/bytecode/Opcode.cpp \
 	Source/JavaScriptCore/bytecode/Opcode.h \
 	Source/JavaScriptCore/bytecode/Operands.h \
 	Source/JavaScriptCore/bytecode/PolymorphicPutByIdList.cpp \
 	Source/JavaScriptCore/bytecode/PolymorphicPutByIdList.h \
+	Source/JavaScriptCore/bytecode/PreciseJumpTargets.cpp \
+	Source/JavaScriptCore/bytecode/PreciseJumpTargets.h \
 	Source/JavaScriptCore/bytecode/SpeculatedType.cpp \
 	Source/JavaScriptCore/bytecode/SpeculatedType.h \
 	Source/JavaScriptCore/bytecode/PutByIdStatus.cpp \
@@ -164,6 +167,8 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/bytecompiler/LabelScope.h \
 	Source/JavaScriptCore/bytecompiler/NodesCodegen.cpp \
 	Source/JavaScriptCore/bytecompiler/RegisterID.h \
+	Source/JavaScriptCore/bytecompiler/StaticPropertyAnalysis.h \
+	Source/JavaScriptCore/bytecompiler/StaticPropertyAnalyzer.h \
 	Source/JavaScriptCore/dfg/DFGAbstractState.cpp \
 	Source/JavaScriptCore/dfg/DFGAbstractState.h \
 	Source/JavaScriptCore/dfg/DFGAbstractValue.h \
@@ -614,8 +619,9 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/runtime/JSCell.cpp \
 	Source/JavaScriptCore/runtime/JSCell.h \
 	Source/JavaScriptCore/runtime/JSDateMath.cpp \
+	Source/JavaScriptCore/runtime/JSCellInlines.h \
 	Source/JavaScriptCore/runtime/JSDateMath.h \
-    Source/JavaScriptCore/runtime/JSDestructibleObject.h \
+	Source/JavaScriptCore/runtime/JSDestructibleObject.h \
 	Source/JavaScriptCore/runtime/JSFunction.cpp \
 	Source/JavaScriptCore/runtime/JSFunction.h \
 	Source/JavaScriptCore/runtime/JSBoundFunction.cpp \

@@ -125,7 +125,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestNamedConstructorTempl
     v8::Local<v8::Signature> defaultSignature;
     defaultSignature = V8DOMConfiguration::configureTemplate(desc, "TestNamedConstructor", v8::Persistent<v8::FunctionTemplate>(), V8TestNamedConstructor::internalFieldCount,
         0, 0,
-        0, 0);
+        0, 0, isolate);
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
     
 
@@ -167,8 +167,6 @@ v8::Persistent<v8::FunctionTemplate> V8TestNamedConstructor::GetTemplate(v8::Iso
 
 bool V8TestNamedConstructor::HasInstance(v8::Handle<v8::Value> value, v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     return GetRawTemplate(isolate)->HasInstance(value);
 }
 
@@ -187,11 +185,11 @@ v8::Handle<v8::Object> V8TestNamedConstructor::createWrapper(PassRefPtr<TestName
     checkTypeOrDieTrying(impl.get());
 #endif
 
-    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get());
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get(), isolate);
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
-    installPerContextProperties(wrapper, impl.get());
+    installPerContextProperties(wrapper, impl.get(), isolate);
     v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();

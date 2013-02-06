@@ -216,13 +216,14 @@ set(WebCore_IDL_FILES
     Modules/mediastream/LocalMediaStream.idl
     Modules/mediastream/MediaStream.idl
     Modules/mediastream/MediaStreamEvent.idl
-    Modules/mediastream/MediaStreamList.idl
     Modules/mediastream/MediaStreamTrack.idl
     Modules/mediastream/MediaStreamTrackEvent.idl
     Modules/mediastream/NavigatorMediaStream.idl
     Modules/mediastream/NavigatorUserMediaError.idl
     Modules/mediastream/NavigatorUserMediaErrorCallback.idl
     Modules/mediastream/NavigatorUserMediaSuccessCallback.idl
+    Modules/mediastream/RTCDTMFSender.idl
+    Modules/mediastream/RTCDTMFToneChangeEvent.idl
     Modules/mediastream/RTCDataChannel.idl
     Modules/mediastream/RTCDataChannelEvent.idl
     Modules/mediastream/RTCErrorCallback.idl
@@ -860,11 +861,12 @@ set(WebCore_SOURCES
     Modules/mediastream/MediaConstraintsImpl.cpp
     Modules/mediastream/MediaStream.cpp
     Modules/mediastream/MediaStreamEvent.cpp
-    Modules/mediastream/MediaStreamList.cpp
     Modules/mediastream/MediaStreamRegistry.cpp
     Modules/mediastream/MediaStreamTrack.cpp
     Modules/mediastream/MediaStreamTrackEvent.cpp
     Modules/mediastream/NavigatorMediaStream.cpp
+    Modules/mediastream/RTCDTMFSender.cpp
+    Modules/mediastream/RTCDTMFToneChangeEvent.cpp
     Modules/mediastream/RTCDataChannel.cpp
     Modules/mediastream/RTCDataChannelEvent.cpp
     Modules/mediastream/RTCIceCandidate.cpp
@@ -950,6 +952,10 @@ set(WebCore_SOURCES
     Modules/webdatabase/Database.cpp
     Modules/webdatabase/DatabaseAuthorizer.cpp
     Modules/webdatabase/DatabaseBackend.cpp
+    Modules/webdatabase/DatabaseBackendAsync.cpp
+    Modules/webdatabase/DatabaseBackendContext.cpp
+    Modules/webdatabase/DatabaseBackendSync.cpp
+    Modules/webdatabase/DatabaseBase.cpp
     Modules/webdatabase/DatabaseContext.cpp
     Modules/webdatabase/DatabaseManager.cpp
     Modules/webdatabase/DatabaseServer.cpp
@@ -1070,6 +1076,7 @@ set(WebCore_SOURCES
     css/CSSValuePool.cpp
     css/FontFeatureValue.cpp
     css/FontValue.cpp
+    css/InspectorCSSOMWrappers.cpp
     css/LengthFunctions.cpp
     css/MediaFeatureNames.cpp
     css/MediaList.cpp

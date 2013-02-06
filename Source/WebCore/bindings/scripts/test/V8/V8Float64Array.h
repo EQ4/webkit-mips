@@ -35,7 +35,7 @@ namespace WebCore {
 class V8Float64Array {
 public:
     static const bool hasDependentLifetime = V8ArrayBufferView::hasDependentLifetime;
-    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate* = 0);
+    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
     static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
     static Float64Array* toNative(v8::Handle<v8::Object> object)
@@ -46,7 +46,7 @@ public:
     static WrapperTypeInfo info;
     static v8::Handle<v8::Value> constructorCallback(const v8::Arguments&);
     static const int internalFieldCount = v8DefaultWrapperInternalFieldCount + 0;
-    static void installPerContextProperties(v8::Handle<v8::Object>, Float64Array*) { }
+    static void installPerContextProperties(v8::Handle<v8::Object>, Float64Array*, v8::Isolate*) { }
     static void installPerContextPrototypeProperties(v8::Handle<v8::Object>) { }
 private:
     friend v8::Handle<v8::Object> wrap(Float64Array*, v8::Handle<v8::Object> creationContext, v8::Isolate*);

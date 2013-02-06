@@ -42,7 +42,11 @@ namespace WebCore {
 
 static v8::Local<v8::String> makeExternalString(const String& string)
 {
+#ifdef V8_ONE_BYTE_STRINGS_ENABLED
+    if (string.is8Bit()) {
+#else
     if (string.is8Bit() && string.containsOnlyASCII()) {
+#endif
         WebCoreStringResource8* stringResource = new WebCoreStringResource8(string);
         v8::Local<v8::String> newString = v8::String::NewExternal(stringResource);
         if (newString.IsEmpty())
@@ -58,7 +62,7 @@ static v8::Local<v8::String> makeExternalString(const String& string)
     return newString;
 }
 
-static void cachedStringCallback(v8::Persistent<v8::Value> wrapper, void* parameter)
+static void cachedStringCallback(v8::Isolate* isolate, v8::Persistent<v8::Value> wrapper, void* parameter)
 {
     StringImpl* stringImpl = static_cast<StringImpl*>(parameter);
     V8PerIsolateData::current()->stringCache()->remove(stringImpl);
@@ -103,7 +107,7 @@ v8::Handle<v8::String> StringCache::v8ExternalStringSlow(StringImpl* stringImpl,
 
     stringImpl->ref();
     wrapper.MarkIndependent();
-    wrapper.MakeWeak(stringImpl, cachedStringCallback);
+    wrapper.MakeWeak(isolate, stringImpl, cachedStringCallback);
     m_stringCache.set(stringImpl, *wrapper);
 
     m_lastStringImpl = stringImpl;

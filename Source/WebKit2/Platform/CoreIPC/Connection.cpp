@@ -601,10 +601,8 @@ void Connection::processIncomingMessage(PassOwnPtr<MessageDecoder> incomingMessa
 
     // Hand off the message to the connection queue clients.
     for (size_t i = 0; i < m_connectionQueueClients.size(); ++i) {
-        bool didHandleMessage = false;
-
-        m_connectionQueueClients[i]->didReceiveMessageOnConnectionWorkQueue(this, *message, didHandleMessage);
-        if (didHandleMessage) {
+        m_connectionQueueClients[i]->didReceiveMessageOnConnectionWorkQueue(this, message);
+        if (!message) {
             // A connection queue client handled the message, our work here is done.
             return;
         }
@@ -636,8 +634,11 @@ void Connection::connectionDidClose()
             iter->value->semaphore.signal();
     }
 
+    for (size_t i = 0; i < m_connectionQueueClients.size(); ++i)
+        m_connectionQueueClients[i]->didCloseOnConnectionWorkQueue(this);
+
     if (m_didCloseOnConnectionWorkQueueCallback)
-        m_didCloseOnConnectionWorkQueueCallback(m_connectionQueue.get(), this);
+        m_didCloseOnConnectionWorkQueueCallback(this);
 
     m_clientRunLoop->dispatch(WTF::bind(&Connection::dispatchConnectionDidClose, this));
 }

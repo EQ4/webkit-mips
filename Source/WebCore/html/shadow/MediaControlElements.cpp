@@ -32,6 +32,7 @@
 #if ENABLE(VIDEO)
 #include "MediaControlElements.h"
 
+#include "CaptionUserPreferences.h"
 #include "DOMTokenList.h"
 #include "EventNames.h"
 #include "EventTarget.h"
@@ -871,18 +872,13 @@ void MediaControlClosedCaptionsTrackListElement::rebuildTrackListMenu()
         return;
 
     Document* doc = document();
+    CaptionUserPreferences* captionsUserPreferences = doc->page()->group().captionPreferences();
 
     RefPtr<Element> captionsSection = doc->createElement(sectionTag, ASSERT_NO_EXCEPTION);
     RefPtr<Element> captionsHeader = doc->createElement(h3Tag, ASSERT_NO_EXCEPTION);
-    captionsHeader->appendChild(doc->createTextNode(textTrackClosedCaptionsText()));
+    captionsHeader->appendChild(doc->createTextNode(textTrackSubtitlesText()));
     captionsSection->appendChild(captionsHeader);
     RefPtr<Element> captionsMenuList = doc->createElement(ulTag, ASSERT_NO_EXCEPTION);
-
-    RefPtr<Element> subtitlesSection = doc->createElement(sectionTag, ASSERT_NO_EXCEPTION);
-    RefPtr<Element> subtitlesHeader = doc->createElement(h3Tag, ASSERT_NO_EXCEPTION);
-    subtitlesHeader->appendChild(doc->createTextNode(textTrackSubtitlesText()));
-    subtitlesSection->appendChild(subtitlesHeader);
-    RefPtr<Element> subtitlesMenuList = doc->createElement(ulTag, ASSERT_NO_EXCEPTION);
 
     RefPtr<Element> trackItem;
 
@@ -891,15 +887,6 @@ void MediaControlClosedCaptionsTrackListElement::rebuildTrackListMenu()
     trackItem->setAttribute(trackIndexAttributeName(), textTracksOffAttrValue, ASSERT_NO_EXCEPTION);
     captionsMenuList->appendChild(trackItem);
     m_menuItems.append(trackItem);
-
-    trackItem = doc->createElement(liTag, ASSERT_NO_EXCEPTION);
-    trackItem->appendChild(doc->createTextNode(textTrackOffText()));
-    trackItem->setAttribute(trackIndexAttributeName(), textTracksOffAttrValue, ASSERT_NO_EXCEPTION);
-    subtitlesMenuList->appendChild(trackItem);
-    m_menuItems.append(trackItem);
-
-    bool hasCaptions = false;
-    bool hasSubtitles = false;
 
     for (unsigned i = 0, length = trackList->length(); i < length; ++i) {
         TextTrack* track = trackList->item(i);
@@ -911,31 +898,17 @@ void MediaControlClosedCaptionsTrackListElement::rebuildTrackListMenu()
         // should always be in sync.
         trackItem->setAttribute(trackIndexAttributeName(), String::number(i), ASSERT_NO_EXCEPTION);
 
-        AtomicString labelText = track->label();
-        if (labelText.isNull() || labelText.isEmpty())
-            labelText = displayNameForLanguageLocale(track->language());
-        if (labelText.isNull() || labelText.isEmpty())
-            labelText = textTrackNoLabelText();
-        trackItem->appendChild(doc->createTextNode(labelText));
+        if (captionsUserPreferences)
+            trackItem->appendChild(doc->createTextNode(captionsUserPreferences->displayNameForTrack(track)));
+        else
+            trackItem->appendChild(doc->createTextNode(track->label()));
 
-        if (track->kind() == track->captionsKeyword()) {
-            hasCaptions = true;
-            insertTextTrackMenuItemIntoSortedContainer(trackItem, captionsMenuList);
-        }
-        if (track->kind() == track->subtitlesKeyword()) {
-            hasSubtitles = true;
-            insertTextTrackMenuItemIntoSortedContainer(trackItem, subtitlesMenuList);
-        }
+        insertTextTrackMenuItemIntoSortedContainer(trackItem, captionsMenuList);
         m_menuItems.append(trackItem);
     }
 
     captionsSection->appendChild(captionsMenuList);
-    subtitlesSection->appendChild(subtitlesMenuList);
-
-    if (hasCaptions)
-        appendChild(captionsSection);
-    if (hasSubtitles)
-        appendChild(subtitlesSection);
+    appendChild(captionsSection);
 
     updateDisplay();
 #endif
@@ -1333,7 +1306,7 @@ void MediaControlTextTrackContainerElement::updateDisplay()
     }
 }
 
-void MediaControlTextTrackContainerElement::updateSizes()
+void MediaControlTextTrackContainerElement::updateSizes(bool forceUpdate)
 {
     HTMLMediaElement* mediaElement = toParentMediaElement(this);
     if (!mediaElement)
@@ -1352,7 +1325,7 @@ void MediaControlTextTrackContainerElement::updateSizes()
         videoBox = toRenderVideo(mediaElement->renderer())->videoBox();
     }
 
-    if (m_videoDisplaySize == videoBox)
+    if (!forceUpdate && m_videoDisplaySize == videoBox)
         return;
     m_videoDisplaySize = videoBox;
 
@@ -1363,10 +1336,11 @@ void MediaControlTextTrackContainerElement::updateSizes()
 
     float smallestDimension = std::min(m_videoDisplaySize.size().height(), m_videoDisplaySize.size().width());
 
-    float fontSize = smallestDimension * (document()->page()->group().captionFontSizeScale());
+    bool important;
+    float fontSize = smallestDimension * (document()->page()->group().captionFontSizeScale(important));
     if (fontSize != m_fontSize) {
         m_fontSize = fontSize;
-        setInlineStyleProperty(CSSPropertyFontSize, String::number(fontSize) + "px");
+        setInlineStyleProperty(CSSPropertyFontSize, String::number(fontSize) + "px", important);
     }
 }
 

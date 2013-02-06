@@ -55,6 +55,7 @@ class WebImage;
 class WebIntentRequest;
 class WebIntentServiceInfo;
 class WebNode;
+class WebPlugin;
 class WebRange;
 class WebSerializedScriptValue;
 class WebSpellCheckClient;
@@ -64,6 +65,7 @@ class WebURLRequest;
 class WebURLResponse;
 class WebView;
 struct WebConsoleMessage;
+struct WebPluginParams;
 struct WebPoint;
 struct WebSize;
 struct WebWindowFeatures;
@@ -72,6 +74,7 @@ struct WebWindowFeatures;
 namespace WebTestRunner {
 
 class SpellCheckClient;
+class TestInterfaces;
 class WebTestDelegate;
 class WebTestInterfaces;
 class WebTestRunner;
@@ -117,6 +120,7 @@ protected:
     void registerIntentService(WebKit::WebFrame*, const WebKit::WebIntentServiceInfo&);
     void dispatchIntent(WebKit::WebFrame* source, const WebKit::WebIntentRequest&);
     bool createView(WebKit::WebFrame* creator, const WebKit::WebURLRequest&, const WebKit::WebWindowFeatures&, const WebKit::WebString& frameName, WebKit::WebNavigationPolicy);
+    WebKit::WebPlugin* createPlugin(WebKit::WebFrame*, const WebKit::WebPluginParams&);
     void setStatusText(const WebKit::WebString&);
     void didStopLoading();
     bool isSmartInsertDeleteEnabled();
@@ -158,7 +162,7 @@ protected:
 private:
     void locationChangeDone(WebKit::WebFrame*);
 
-    WebTestInterfaces* m_testInterfaces;
+    TestInterfaces* m_testInterfaces;
     WebTestDelegate* m_delegate;
 
     SpellCheckClient* m_spellcheck;
@@ -297,6 +301,13 @@ public:
         if (!WebTestProxyBase::createView(creator, request, features, frameName, policy))
             return 0;
         return Base::createView(creator, request, features, frameName, policy);
+    }
+    WebKit::WebPlugin* createPlugin(WebKit::WebFrame* frame, const WebKit::WebPluginParams& params)
+    {
+        WebKit::WebPlugin* plugin = WebTestProxyBase::createPlugin(frame, params);
+        if (plugin)
+            return plugin;
+        return Base::createPlugin(frame, params);
     }
     virtual void setStatusText(const WebKit::WebString& text)
     {

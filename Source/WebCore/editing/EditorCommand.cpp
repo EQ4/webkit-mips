@@ -272,7 +272,7 @@ static RefPtr<Range> unionDOMRanges(Range* a, Range* b)
     Range* end = a->compareBoundaryPoints(Range::END_TO_END, b, ec) <= 0 ? b : a;
     ASSERT(!ec);
 
-    return Range::create(a->startContainer(ec)->ownerDocument(), start->startContainer(ec), start->startOffset(ec), end->endContainer(ec), end->endOffset(ec));
+    return Range::create(a->ownerDocument(), start->startContainer(), start->startOffset(), end->endContainer(), end->endOffset());
 }
 
 // Execute command functions
@@ -1096,12 +1096,12 @@ static bool executeTakeFindStringFromSelection(Frame* frame, Event*, EditorComma
 
 static bool executeToggleBold(Frame* frame, Event*, EditorCommandSource source, const String&)
 {
-    return executeToggleStyle(frame, source, EditActionChangeAttributes, CSSPropertyFontWeight, "normal", "bold");
+    return executeToggleStyle(frame, source, EditActionBold, CSSPropertyFontWeight, "normal", "bold");
 }
 
 static bool executeToggleItalic(Frame* frame, Event*, EditorCommandSource source, const String&)
 {
-    return executeToggleStyle(frame, source, EditActionChangeAttributes, CSSPropertyFontStyle, "normal", "italic");
+    return executeToggleStyle(frame, source, EditActionItalics, CSSPropertyFontStyle, "normal", "italic");
 }
 
 static bool executeTranspose(Frame* frame, Event*, EditorCommandSource, const String&)

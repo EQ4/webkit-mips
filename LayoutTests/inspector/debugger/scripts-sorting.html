@@ -12,10 +12,20 @@ function test()
 
     var navigator = new WebInspector.ScriptsNavigator();
 
+    var MockProject = function() {}
+    MockProject.prototype.name = function()
+    {
+        return "network";
+    }
+
     var uiSourceCodes = [];
     function addUISourceCode(url, isContentScript)
     {
         var uiSourceCode = new WebInspector.UISourceCode(WebInspector.workspace, url, url, url, WebInspector.resourceTypes.Script, null);
+        uiSourceCode.project = function()
+        {
+            return new MockProject();
+        }
         uiSourceCode.isContentScript = isContentScript;
         navigator.addUISourceCode(uiSourceCode);
         uiSourceCodes.push(uiSourceCode);
@@ -24,8 +34,6 @@ function test()
     function dumpScriptsList(noReveal)
     {
         InspectorTest.addResult("");
-        InspectorTest.addResult("WebInspector.settings.showScriptFolders = " + WebInspector.settings.showScriptFolders.get());
-
         InspectorTest.dumpScriptsNavigator(navigator);
         if (noReveal)
             return;
@@ -62,14 +70,6 @@ function test()
     for (var i = 0; i < extensions.length; ++i)
         addUISourceCode(extensions[i], true);
     addUISourceCode("*Non*URL*path", true);
-
-    try {
-        dumpScriptsList();
-        WebInspector.settings.showScriptFolders.set(false);
-        dumpScriptsList(true);
-    } finally {
-        WebInspector.settings.showScriptFolders.set(true);
-    }
     dumpScriptsList();
     InspectorTest.completeTest();
 }

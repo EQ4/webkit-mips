@@ -73,12 +73,16 @@ void EventDispatcher::removeScrollingTreeForPage(WebPage* webPage)
 }
 #endif
 
-void EventDispatcher::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, bool& didHandleMessage)
+void EventDispatcher::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, OwnPtr<CoreIPC::MessageDecoder>& decoder)
 {
-    if (decoder.messageReceiverName() == Messages::EventDispatcher::messageReceiverName()) {
-        didReceiveEventDispatcherMessageOnConnectionWorkQueue(connection, decoder, didHandleMessage);
+    if (decoder->messageReceiverName() == Messages::EventDispatcher::messageReceiverName()) {
+        didReceiveEventDispatcherMessageOnConnectionWorkQueue(connection, decoder);
         return;
     }
+}
+
+void EventDispatcher::didCloseOnConnectionWorkQueue(CoreIPC::Connection*)
+{
 }
 
 void EventDispatcher::wheelEvent(CoreIPC::Connection*, uint64_t pageID, const WebWheelEvent& wheelEvent, bool canGoBack, bool canGoForward)

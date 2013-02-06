@@ -72,6 +72,7 @@ PageUIClientEfl::PageUIClientEfl(EwkView* view)
     uiClient.setIsResizable = setIsResizable;
     uiClient.getWindowFrame = getWindowFrame;
     uiClient.setWindowFrame = setWindowFrame;
+    uiClient.runBeforeUnloadConfirmPanel = runBeforeUnloadConfirmPanel;
 #if ENABLE(SQL_DATABASE)
     uiClient.exceededDatabaseQuota = exceededDatabaseQuota;
 #endif
@@ -94,17 +95,17 @@ void PageUIClientEfl::close(WKPageRef, const void* clientInfo)
 void PageUIClientEfl::takeFocus(WKPageRef, WKFocusDirection, const void* clientInfo)
 {
     // FIXME: this is only a partial implementation.
-    evas_object_focus_set(toPageUIClientEfl(clientInfo)->m_view->view(), false);
+    evas_object_focus_set(toPageUIClientEfl(clientInfo)->m_view->evasObject(), false);
 }
 
 void PageUIClientEfl::focus(WKPageRef, const void* clientInfo)
 {
-    evas_object_focus_set(toPageUIClientEfl(clientInfo)->m_view->view(), true);
+    evas_object_focus_set(toPageUIClientEfl(clientInfo)->m_view->evasObject(), true);
 }
 
 void PageUIClientEfl::unfocus(WKPageRef, const void* clientInfo)
 {
-    evas_object_focus_set(toPageUIClientEfl(clientInfo)->m_view->view(), false);
+    evas_object_focus_set(toPageUIClientEfl(clientInfo)->m_view->evasObject(), false);
 }
 
 void PageUIClientEfl::runJavaScriptAlert(WKPageRef, WKStringRef alertText, WKFrameRef, const void* clientInfo)
@@ -187,6 +188,11 @@ WKRect PageUIClientEfl::getWindowFrame(WKPageRef, const void* clientInfo)
 void PageUIClientEfl::setWindowFrame(WKPageRef, WKRect frame, const void* clientInfo)
 {
     toPageUIClientEfl(clientInfo)->m_view->setWindowGeometry(frame);
+}
+
+bool PageUIClientEfl::runBeforeUnloadConfirmPanel(WKPageRef, WKStringRef message, WKFrameRef, const void* clientInfo)
+{
+    return toPageUIClientEfl(clientInfo)->m_view->requestJSConfirmPopup(WKEinaSharedString(message));
 }
 
 #if ENABLE(SQL_DATABASE)

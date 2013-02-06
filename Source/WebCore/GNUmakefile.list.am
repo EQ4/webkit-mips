@@ -515,8 +515,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSMediaStreamAudioSourceNode.h \
 	DerivedSources/WebCore/JSMediaStreamEvent.cpp \
 	DerivedSources/WebCore/JSMediaStreamEvent.h \
-	DerivedSources/WebCore/JSMediaStreamList.cpp \
-	DerivedSources/WebCore/JSMediaStreamList.h \
 	DerivedSources/WebCore/JSMediaStreamTrack.cpp \
 	DerivedSources/WebCore/JSMediaStreamTrack.h \
 	DerivedSources/WebCore/JSMediaStreamTrackEvent.cpp \
@@ -633,6 +631,10 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSRequestAnimationFrameCallback.h \
 	DerivedSources/WebCore/JSRGBColor.cpp \
 	DerivedSources/WebCore/JSRGBColor.h \
+	DerivedSources/WebCore/JSRTCDTMFSender.cpp \
+	DerivedSources/WebCore/JSRTCDTMFSender.h \
+	DerivedSources/WebCore/JSRTCDTMFToneChangeEvent.cpp \
+	DerivedSources/WebCore/JSRTCDTMFToneChangeEvent.h \
 	DerivedSources/WebCore/JSRTCDataChannel.cpp \
 	DerivedSources/WebCore/JSRTCDataChannel.h \
 	DerivedSources/WebCore/JSRTCDataChannelEvent.cpp \
@@ -1239,13 +1241,14 @@ dom_binding_idls += \
 	$(WebCore)/Modules/mediastream/LocalMediaStream.idl \
 	$(WebCore)/Modules/mediastream/MediaStream.idl \
 	$(WebCore)/Modules/mediastream/MediaStreamEvent.idl \
-	$(WebCore)/Modules/mediastream/MediaStreamList.idl \
 	$(WebCore)/Modules/mediastream/MediaStreamTrack.idl \
 	$(WebCore)/Modules/mediastream/MediaStreamTrackEvent.idl \
 	$(WebCore)/Modules/mediastream/NavigatorMediaStream.idl \
 	$(WebCore)/Modules/mediastream/NavigatorUserMediaError.idl \
 	$(WebCore)/Modules/mediastream/NavigatorUserMediaErrorCallback.idl \
 	$(WebCore)/Modules/mediastream/NavigatorUserMediaSuccessCallback.idl \
+	$(WebCore)/Modules/mediastream/RTCDTMFSender.idl \
+	$(WebCore)/Modules/mediastream/RTCDTMFToneChangeEvent.idl \
 	$(WebCore)/Modules/mediastream/RTCDataChannel.idl \
 	$(WebCore)/Modules/mediastream/RTCDataChannelEvent.idl \
 	$(WebCore)/Modules/mediastream/RTCErrorCallback.idl \
@@ -1929,8 +1932,6 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/mediastream/MediaStream.h \
 	Source/WebCore/Modules/mediastream/MediaStreamEvent.cpp \
 	Source/WebCore/Modules/mediastream/MediaStreamEvent.h \
-	Source/WebCore/Modules/mediastream/MediaStreamList.cpp \
-	Source/WebCore/Modules/mediastream/MediaStreamList.h \
 	Source/WebCore/Modules/mediastream/MediaStreamRegistry.cpp \
 	Source/WebCore/Modules/mediastream/MediaStreamRegistry.h \
 	Source/WebCore/Modules/mediastream/MediaStreamTrack.cpp \
@@ -1942,6 +1943,10 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/mediastream/NavigatorUserMediaError.h \
 	Source/WebCore/Modules/mediastream/NavigatorUserMediaErrorCallback.h \
 	Source/WebCore/Modules/mediastream/NavigatorUserMediaSuccessCallback.h \
+	Source/WebCore/Modules/mediastream/RTCDTMFSender.cpp \
+	Source/WebCore/Modules/mediastream/RTCDTMFSender.h \
+	Source/WebCore/Modules/mediastream/RTCDTMFToneChangeEvent.cpp \
+	Source/WebCore/Modules/mediastream/RTCDTMFToneChangeEvent.h \
 	Source/WebCore/Modules/mediastream/RTCDataChannel.cpp \
 	Source/WebCore/Modules/mediastream/RTCDataChannel.h \
 	Source/WebCore/Modules/mediastream/RTCDataChannelEvent.cpp \
@@ -2099,6 +2104,14 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webdatabase/DatabaseAuthorizer.h \
 	Source/WebCore/Modules/webdatabase/DatabaseBackend.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseBackend.h \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendAsync.cpp \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendAsync.h \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendContext.cpp \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendContext.h \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendSync.cpp \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendSync.h \
+	Source/WebCore/Modules/webdatabase/DatabaseBase.cpp \
+	Source/WebCore/Modules/webdatabase/DatabaseBase.h \
 	Source/WebCore/Modules/webdatabase/DatabaseBasicTypes.h \
 	Source/WebCore/Modules/webdatabase/DatabaseCallback.h \
 	Source/WebCore/Modules/webdatabase/DatabaseContext.cpp \
@@ -2250,6 +2263,7 @@ webcore_sources += \
 	Source/WebCore/bindings/js/CallbackFunction.h \
 	Source/WebCore/bindings/js/DOMObjectHashTableMap.cpp \
 	Source/WebCore/bindings/js/DOMObjectHashTableMap.h \
+	Source/WebCore/bindings/js/DOMRequestState.h \
 	Source/WebCore/bindings/js/DOMWrapperWorld.cpp \
 	Source/WebCore/bindings/js/DOMWrapperWorld.h \
 	Source/WebCore/bindings/js/GCController.cpp \
@@ -2620,6 +2634,8 @@ webcore_sources += \
 	Source/WebCore/css/FontFeatureValue.h \
 	Source/WebCore/css/FontValue.cpp \
 	Source/WebCore/css/FontValue.h \
+	Source/WebCore/css/InspectorCSSOMWrappers.cpp \
+	Source/WebCore/css/InspectorCSSOMWrappers.h \
 	Source/WebCore/css/LengthFunctions.cpp \
 	Source/WebCore/css/LengthFunctions.h \
 	Source/WebCore/css/MediaFeatureNames.cpp \
@@ -4067,6 +4083,7 @@ webcore_sources += \
 	Source/WebCore/page/AutoscrollController.h \
 	Source/WebCore/page/BarInfo.cpp \
 	Source/WebCore/page/BarInfo.h \
+	Source/WebCore/page/CaptionUserPreferences.h \
 	Source/WebCore/page/Chrome.cpp \
 	Source/WebCore/page/Chrome.h \
 	Source/WebCore/page/ChromeClient.h \
@@ -5755,6 +5772,8 @@ webcore_platform_sources += \
 	Source/WebCore/platform/mediastream/MediaStreamSource.h \
 	Source/WebCore/platform/mediastream/MediaStreamSourcesQueryClient.h \
 	Source/WebCore/platform/mediastream/RTCConfiguration.h \
+	Source/WebCore/platform/mediastream/RTCDTMFSenderHandler.h \
+	Source/WebCore/platform/mediastream/RTCDTMFSenderHandlerClient.h \
 	Source/WebCore/platform/mediastream/RTCDataChannelHandler.h \
 	Source/WebCore/platform/mediastream/RTCDataChannelHandlerClient.h \
 	Source/WebCore/platform/mediastream/RTCIceCandidateDescriptor.cpp \
@@ -6307,6 +6326,7 @@ webcore_sources += \
 	Source/ThirdParty/ANGLE/src/compiler/ForLoopUnroll.cpp \
 	Source/ThirdParty/ANGLE/src/compiler/ForLoopUnroll.h \
 	Source/ThirdParty/ANGLE/src/compiler/glslang.h \
+	Source/ThirdParty/ANGLE/src/compiler/HashNames.h \
 	Source/ThirdParty/ANGLE/src/compiler/InfoSink.cpp \
 	Source/ThirdParty/ANGLE/src/compiler/InfoSink.h \
 	Source/ThirdParty/ANGLE/src/compiler/Initialize.cpp \

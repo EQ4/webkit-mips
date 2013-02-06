@@ -34,7 +34,7 @@ namespace WebCore {
 class V8TestEventTarget {
 public:
     static const bool hasDependentLifetime = false;
-    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate* = 0);
+    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
     static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
     static TestEventTarget* toNative(v8::Handle<v8::Object> object)
@@ -48,7 +48,7 @@ public:
     static v8::Handle<v8::Value> namedPropertyGetter(v8::Local<v8::String>, const v8::AccessorInfo&);
     static const int eventListenerCacheIndex = v8DefaultWrapperInternalFieldCount + 0;
     static const int internalFieldCount = v8DefaultWrapperInternalFieldCount + 1;
-    static void installPerContextProperties(v8::Handle<v8::Object>, TestEventTarget*) { }
+    static void installPerContextProperties(v8::Handle<v8::Object>, TestEventTarget*, v8::Isolate*) { }
     static void installPerContextPrototypeProperties(v8::Handle<v8::Object>) { }
 private:
     friend v8::Handle<v8::Object> wrap(TestEventTarget*, v8::Handle<v8::Object> creationContext, v8::Isolate*);

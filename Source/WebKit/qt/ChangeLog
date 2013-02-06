@@ -1,3 +1,33 @@
+2013-02-04  Benjamin Poulain  <bpoulain@apple.com>
+
+        Kill suspendAnimation(), resumeAnimation() and numberOfActiveAnimations() from DRT/WTR; use Internals
+        https://bugs.webkit.org/show_bug.cgi?id=108741
+
+        Reviewed by Tony Chang.
+
+        * WebCoreSupport/DumpRenderTreeSupportQt.cpp:
+        * WebCoreSupport/DumpRenderTreeSupportQt.h:
+
+2013-02-04  Enrica Casucci  <enrica@apple.com>
+
+        Add specific EditActions for Bold and Italic commands.
+        https://bugs.webkit.org/show_bug.cgi?id=108842.
+        <rdar://problem/13098252>
+
+        Reviewed by Ryosuke Niwa.
+
+        * WebCoreSupport/UndoStepQt.cpp:
+        (undoNameForEditAction):
+
+2013-02-04  Abhishek Arya  <inferno@chromium.org>
+
+        Add ASSERT_WITH_SECURITY_IMPLICATION to detect bad cast in DOM, CSS, etc.
+        https://bugs.webkit.org/show_bug.cgi?id=108688
+
+        Reviewed by Eric Seidel.
+
+        * WebCoreSupport/FrameLoaderClientQt.cpp:
+
 2013-02-03  KwangYong Choi  <ky0.choi@samsung.com>
 
         Fix build warning after r141473

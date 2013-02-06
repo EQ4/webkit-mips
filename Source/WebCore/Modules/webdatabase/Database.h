@@ -31,7 +31,8 @@
 
 #if ENABLE(SQL_DATABASE)
 
-#include "DatabaseBackend.h"
+#include "DatabaseBackendAsync.h"
+#include "DatabaseBase.h"
 #include "DatabaseBasicTypes.h"
 #include "DatabaseError.h"
 #include <wtf/Deque.h>
@@ -50,7 +51,7 @@ class SQLTransactionErrorCallback;
 class SQLTransactionWrapper;
 class VoidCallback;
 
-class Database : public DatabaseBackend {
+class Database : public DatabaseBase, public DatabaseBackendAsync {
 public:
     virtual ~Database();
 
@@ -62,6 +63,8 @@ public:
     void readTransaction(PassRefPtr<SQLTransactionCallback>, PassRefPtr<SQLTransactionErrorCallback>, PassRefPtr<VoidCallback> successCallback);
 
     // Internal engine support
+    static Database* from(DatabaseBackendAsync*);
+
     Vector<String> tableNames();
 
     virtual SecurityOrigin* securityOrigin() const;
@@ -82,13 +85,10 @@ public:
     SQLTransactionCoordinator* transactionCoordinator() const;
 
 private:
-    class DatabaseOpenTask;
-    class DatabaseCloseTask;
-    class DatabaseTransactionTask;
-    class DatabaseTableNamesTask;
+    Database(PassRefPtr<DatabaseBackendContext>, const String& name,
+        const String& expectedVersion, const String& displayName, unsigned long estimatedSize);
+    PassRefPtr<DatabaseBackendAsync> backend();
 
-    Database(PassRefPtr<DatabaseContext>, const String& name, const String& expectedVersion,
-             const String& displayName, unsigned long estimatedSize);
     void runTransaction(PassRefPtr<SQLTransactionCallback>, PassRefPtr<SQLTransactionErrorCallback>,
                         PassRefPtr<VoidCallback> successCallback, PassRefPtr<SQLTransactionWrapper>, bool readOnly);
 
@@ -110,6 +110,7 @@ private:
     bool m_deleted;
 
     friend class DatabaseManager;
+    friend class DatabaseBackendAsync; // FIXME: remove this when the backend has been split out.
 };
 
 } // namespace WebCore

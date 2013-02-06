@@ -132,14 +132,18 @@ void SecItemShim::initialize(ChildProcess* process)
     func(callbacks);
 }
 
-void SecItemShim::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, bool& didHandleMessage)
+void SecItemShim::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, OwnPtr<CoreIPC::MessageDecoder>& decoder)
 {
-    if (decoder.messageReceiverName() == Messages::SecItemShim::messageReceiverName()) {
-        didReceiveSecItemShimMessageOnConnectionWorkQueue(connection, decoder, didHandleMessage);
+    if (decoder->messageReceiverName() == Messages::SecItemShim::messageReceiverName()) {
+        didReceiveSecItemShimMessageOnConnectionWorkQueue(connection, decoder);
         return;
     }
 }
 
+void SecItemShim::didCloseOnConnectionWorkQueue(CoreIPC::Connection*)
+{
 }
 
-#endif
+} // namespace WebKit
+
+#endif // USE(SECURITY_FRAMEWORK)

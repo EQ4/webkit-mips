@@ -286,7 +286,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestInterfaceTemplate(v8:
     v8::Local<v8::Signature> defaultSignature;
     defaultSignature = V8DOMConfiguration::configureTemplate(desc, "TestInterface", v8::Persistent<v8::FunctionTemplate>(), V8TestInterface::internalFieldCount,
         V8TestInterfaceAttrs, WTF_ARRAY_LENGTH(V8TestInterfaceAttrs),
-        V8TestInterfaceCallbacks, WTF_ARRAY_LENGTH(V8TestInterfaceCallbacks));
+        V8TestInterfaceCallbacks, WTF_ARRAY_LENGTH(V8TestInterfaceCallbacks), isolate);
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
 #if ENABLE(TEST_INTERFACE)
     desc->SetCallHandler(V8TestInterface::constructorCallback);
@@ -307,7 +307,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestInterfaceTemplate(v8:
 #if ENABLE(Condition11) || ENABLE(Condition12)
     desc->Set(v8::String::NewSymbol("supplementalMethod4"), v8::FunctionTemplate::New(TestInterfaceV8Internal::supplementalMethod4Callback, v8Undefined(), v8::Local<v8::Signature>()));
 #endif // ENABLE(Condition11) || ENABLE(Condition12)
-    V8DOMConfiguration::batchConfigureConstants(desc, proto, V8TestInterfaceConsts, WTF_ARRAY_LENGTH(V8TestInterfaceConsts));
+    V8DOMConfiguration::batchConfigureConstants(desc, proto, V8TestInterfaceConsts, WTF_ARRAY_LENGTH(V8TestInterfaceConsts), isolate);
 
     // Custom toString template
     desc->Set(v8::String::NewSymbol("toString"), V8PerIsolateData::current()->toStringTemplate());
@@ -347,8 +347,6 @@ v8::Persistent<v8::FunctionTemplate> V8TestInterface::GetTemplate(v8::Isolate* i
 
 bool V8TestInterface::HasInstance(v8::Handle<v8::Value> value, v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     return GetRawTemplate(isolate)->HasInstance(value);
 }
 
@@ -367,11 +365,11 @@ v8::Handle<v8::Object> V8TestInterface::createWrapper(PassRefPtr<TestInterface> 
     checkTypeOrDieTrying(impl.get());
 #endif
 
-    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get());
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get(), isolate);
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
-    installPerContextProperties(wrapper, impl.get());
+    installPerContextProperties(wrapper, impl.get(), isolate);
     v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();

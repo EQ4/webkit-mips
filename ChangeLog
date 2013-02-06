@@ -1,3 +1,49 @@
+2013-02-06  Mike West  <mkwst@chromium.org>
+
+        Add an ENABLE_NOSNIFF feature flag.
+        https://bugs.webkit.org/show_bug.cgi?id=109029
+
+        Reviewed by Jochen Eisinger.
+
+        This new flag will control the behavior of 'X-Content-Type-Options: nosniff'
+        when processing script and other resource types.
+
+        * Source/cmake/WebKitFeatures.cmake:
+        * Source/cmakeconfig.h.cmake:
+
+2013-02-05  Jocelyn Turcotte  <jocelyn.turcotte@digia.com>
+
+        [Qt] REGRESSION(r137436): It made all inspector tests timeout on developer builds
+        https://bugs.webkit.org/show_bug.cgi?id=106554
+
+        Reviewed by Simon Hausmann.
+
+        Explicitely link WebCore resources in the final DLL only on Windows to
+        support force_static_libs_as_shared on other platforms.
+
+        WebKit1 applications don't get the QtWebKit dynamic library loaded
+        since libQtWebKitWidgets doesn't depend on libQtWebKit if WebCore and
+        WebKit1 are dynamic libraries of their own.
+
+        * Source/api.pri:
+
+2013-02-05  Martin Robinson  <mrobinson@igalia.com>
+
+        Update the NEWS and configuration in preparation for 1.11.5.
+
+        Reviewed by Philippe Normand.
+
+        * configure.ac:
+
+2013-02-04  Benjamin Poulain  <bpoulain@apple.com>
+
+        Kill suspendAnimation(), resumeAnimation() and numberOfActiveAnimations() from DRT/WTR; use Internals
+        https://bugs.webkit.org/show_bug.cgi?id=108741
+
+        Reviewed by Tony Chang.
+
+        * Source/autotools/symbols.filter:
+
 2013-02-02  Patrick Gansterer  <paroga@webkit.org>
 
         [CMake] Adopt the WinCE port to new CMake

@@ -3563,6 +3563,10 @@ void WebPagePrivate::resumeBackingStore()
         m_backingStore->d->resetTiles();
         m_backingStore->d->updateTiles(false /* updateVisible */, false /* immediate */);
 
+#if USE(ACCELERATED_COMPOSITING)
+        setNeedsOneShotDrawingSynchronization();
+#endif
+
         m_backingStore->d->renderAndBlitVisibleContentsImmediately();
     } else {
         if (m_backingStore->d->isOpenGLCompositing())
@@ -3570,11 +3574,10 @@ void WebPagePrivate::resumeBackingStore()
 
         // Rendering was disabled while we were hidden, so we need to update all tiles.
         m_backingStore->d->updateTiles(true /* updateVisible */, false /* immediate */);
-    }
-
 #if USE(ACCELERATED_COMPOSITING)
-    setNeedsOneShotDrawingSynchronization();
+        setNeedsOneShotDrawingSynchronization();
 #endif
+    }
 
     setShouldResetTilesWhenShown(false);
 }
@@ -3931,14 +3934,14 @@ bool WebPage::mouseEvent(const Platform::MouseEvent& mouseEvent, bool* wheelDelt
         buttonType = MiddleButton;
 
     // Create our event.
-    PlatformMouseEvent platformMouseEvent(d->mapFromTransformed(mouseEvent.position()), mouseEvent.screenPosition(),
+    PlatformMouseEvent platformMouseEvent(mouseEvent.documentViewportPosition(), mouseEvent.screenPosition(),
         toWebCoreMouseEventType(mouseEvent.type()), clickCount, buttonType,
         mouseEvent.shiftActive(), mouseEvent.ctrlActive(), mouseEvent.altActive(), PointingDevice);
     d->m_lastMouseEvent = platformMouseEvent;
     bool success = d->handleMouseEvent(platformMouseEvent);
 
     if (mouseEvent.wheelTicks()) {
-        PlatformWheelEvent wheelEvent(d->mapFromTransformed(mouseEvent.position()), mouseEvent.screenPosition(),
+        PlatformWheelEvent wheelEvent(mouseEvent.documentViewportPosition(), mouseEvent.screenPosition(),
             0, -mouseEvent.wheelDelta(),
             0, -mouseEvent.wheelTicks(),
             ScrollByPixelWheelEvent,
@@ -4022,7 +4025,7 @@ bool WebPagePrivate::handleMouseEvent(PlatformMouseEvent& mouseEvent)
 
             // We do focus <select>/<option> on mouse down so that a Focus event is fired and have the
             // element painted in its focus state on repaint.
-            ASSERT(node->isElementNode());
+            ASSERT_WITH_SECURITY_IMPLICATION(node->isElementNode());
             if (node->isElementNode()) {
                 Element* element = static_cast<Element*>(node);
                 element->focus();

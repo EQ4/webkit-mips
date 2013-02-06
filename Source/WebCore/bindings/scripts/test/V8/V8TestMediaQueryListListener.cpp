@@ -85,7 +85,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestMediaQueryListListene
     v8::Local<v8::Signature> defaultSignature;
     defaultSignature = V8DOMConfiguration::configureTemplate(desc, "TestMediaQueryListListener", v8::Persistent<v8::FunctionTemplate>(), V8TestMediaQueryListListener::internalFieldCount,
         0, 0,
-        V8TestMediaQueryListListenerCallbacks, WTF_ARRAY_LENGTH(V8TestMediaQueryListListenerCallbacks));
+        V8TestMediaQueryListListenerCallbacks, WTF_ARRAY_LENGTH(V8TestMediaQueryListListenerCallbacks), isolate);
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
     v8::Local<v8::ObjectTemplate> instance = desc->InstanceTemplate();
     v8::Local<v8::ObjectTemplate> proto = desc->PrototypeTemplate();
@@ -131,8 +131,6 @@ v8::Persistent<v8::FunctionTemplate> V8TestMediaQueryListListener::GetTemplate(v
 
 bool V8TestMediaQueryListListener::HasInstance(v8::Handle<v8::Value> value, v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     return GetRawTemplate(isolate)->HasInstance(value);
 }
 
@@ -146,11 +144,11 @@ v8::Handle<v8::Object> V8TestMediaQueryListListener::createWrapper(PassRefPtr<Te
     checkTypeOrDieTrying(impl.get());
 #endif
 
-    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get());
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get(), isolate);
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
-    installPerContextProperties(wrapper, impl.get());
+    installPerContextProperties(wrapper, impl.get(), isolate);
     v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();

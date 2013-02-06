@@ -120,7 +120,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestEventConstructorTempl
     v8::Local<v8::Signature> defaultSignature;
     defaultSignature = V8DOMConfiguration::configureTemplate(desc, "TestEventConstructor", v8::Persistent<v8::FunctionTemplate>(), V8TestEventConstructor::internalFieldCount,
         V8TestEventConstructorAttrs, WTF_ARRAY_LENGTH(V8TestEventConstructorAttrs),
-        0, 0);
+        0, 0, isolate);
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
     desc->SetCallHandler(V8TestEventConstructor::constructorCallback);
     
@@ -163,8 +163,6 @@ v8::Persistent<v8::FunctionTemplate> V8TestEventConstructor::GetTemplate(v8::Iso
 
 bool V8TestEventConstructor::HasInstance(v8::Handle<v8::Value> value, v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     return GetRawTemplate(isolate)->HasInstance(value);
 }
 
@@ -178,11 +176,11 @@ v8::Handle<v8::Object> V8TestEventConstructor::createWrapper(PassRefPtr<TestEven
     checkTypeOrDieTrying(impl.get());
 #endif
 
-    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get());
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get(), isolate);
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
-    installPerContextProperties(wrapper, impl.get());
+    installPerContextProperties(wrapper, impl.get(), isolate);
     v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();

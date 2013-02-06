@@ -251,17 +251,18 @@ public:
 };
 #endif
 
-static inline ScrollGranularity wheelGranularityToScrollGranularity(WheelEvent::DeltaMode deltaMode)
+static inline ScrollGranularity wheelGranularityToScrollGranularity(unsigned deltaMode)
 {
     switch (deltaMode) {
-    case WheelEvent::DOMDeltaPage:
+    case WheelEvent::DOM_DELTA_PAGE:
         return ScrollByPage;
-    case WheelEvent::DOMDeltaLine:
+    case WheelEvent::DOM_DELTA_LINE:
         return ScrollByLine;
-    case WheelEvent::DOMDeltaPixel:
+    case WheelEvent::DOM_DELTA_PIXEL:
+        return ScrollByPixel;
+    default:
         return ScrollByPixel;
     }
-    return ScrollByPixel;
 }
 
 static inline bool scrollNode(float delta, ScrollGranularity granularity, ScrollDirection positiveDirection, ScrollDirection negativeDirection, Node* node, Node** stopNode)
@@ -281,7 +282,7 @@ static inline bool shouldGesturesTriggerActive()
     // If the platform we're on supports GestureTapDown and GestureTapCancel then we'll
     // rely on them to set the active state. Unfortunately there's no generic way to
     // know in advance what event types are supported.
-#if PLATFORM(CHROMIUM) && !OS(ANDROID)
+#if PLATFORM(CHROMIUM)
     return true;
 #else
     return false;

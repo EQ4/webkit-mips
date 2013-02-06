@@ -254,15 +254,15 @@ bool Editor::canDelete() const
 
 bool Editor::canDeleteRange(Range* range) const
 {
-    ExceptionCode ec = 0;
-    Node* startContainer = range->startContainer(ec);
-    Node* endContainer = range->endContainer(ec);
+    Node* startContainer = range->startContainer();
+    Node* endContainer = range->endContainer();
     if (!startContainer || !endContainer)
         return false;
     
     if (!startContainer->rendererIsEditable() || !endContainer->rendererIsEditable())
         return false;
-    
+
+    ExceptionCode ec;
     if (range->collapsed(ec)) {
         VisiblePosition start(range->startPosition(), DOWNSTREAM);
         VisiblePosition previous = start.previous();
@@ -1316,6 +1316,39 @@ void Editor::setBaseWritingDirection(WritingDirection direction)
     applyParagraphStyleToSelection(style.get(), EditActionSetWritingDirection);
 }
 
+WritingDirection Editor::baseWritingDirectionForSelectionStart() const
+{
+    WritingDirection result = LeftToRightWritingDirection;
+
+    Position pos = m_frame->selection()->selection().visibleStart().deepEquivalent();
+    Node* node = pos.deprecatedNode();
+    if (!node)
+        return result;
+
+    RenderObject* renderer = node->renderer();
+    if (!renderer)
+        return result;
+
+    if (!renderer->isBlockFlow()) {
+        renderer = renderer->containingBlock();
+        if (!renderer)
+            return result;
+    }
+
+    RenderStyle* style = renderer->style();
+    if (!style)
+        return result;
+
+    switch (style->direction()) {
+    case LTR:
+        return LeftToRightWritingDirection;
+    case RTL:
+        return RightToLeftWritingDirection;
+    }
+    
+    return result;
+}
+
 void Editor::selectComposition()
 {
     RefPtr<Range> range = compositionRange();
@@ -1584,7 +1617,7 @@ void Editor::advanceToNextMisspelling(bool startBeforeSelection)
             setStart(spellingSearchRange.get(), endOfWord(oneBeforeStart));
         // else we were already at the start of the editable node
     }
-    
+
     if (spellingSearchRange->collapsed(ec))
         return; // nothing to search in
     
@@ -1595,8 +1628,8 @@ void Editor::advanceToNextMisspelling(bool startBeforeSelection)
     // We go to the end of our first range instead of the start of it, just to be sure
     // we don't get foiled by any word boundary problems at the start.  It means we might
     // do a tiny bit more searching.
-    Node* searchEndNodeAfterWrap = spellingSearchRange->endContainer(ec);
-    int searchEndOffsetAfterWrap = spellingSearchRange->endOffset(ec);
+    Node* searchEndNodeAfterWrap = spellingSearchRange->endContainer();
+    int searchEndOffsetAfterWrap = spellingSearchRange->endOffset();
     
     int misspellingOffset = 0;
     GrammarDetail grammarDetail;
@@ -1628,7 +1661,7 @@ void Editor::advanceToNextMisspelling(bool startBeforeSelection)
             // Stop looking at start of next misspelled word
             CharacterIterator chars(grammarSearchRange.get());
             chars.advance(misspellingOffset);
-            grammarSearchRange->setEnd(chars.range()->startContainer(ec), chars.range()->startOffset(ec), ec);
+            grammarSearchRange->setEnd(chars.range()->startContainer(), chars.range()->startOffset(), ec);
         }
     
         if (isGrammarCheckingEnabled())
@@ -1662,7 +1695,7 @@ void Editor::advanceToNextMisspelling(bool startBeforeSelection)
                 // Stop looking at start of next misspelled word
                 CharacterIterator chars(grammarSearchRange.get());
                 chars.advance(misspellingOffset);
-                grammarSearchRange->setEnd(chars.range()->startContainer(ec), chars.range()->startOffset(ec), ec);
+                grammarSearchRange->setEnd(chars.range()->startContainer(), chars.range()->startOffset(), ec);
             }
 
             if (isGrammarCheckingEnabled())

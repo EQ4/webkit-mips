@@ -1114,7 +1114,7 @@ static v8::Handle<v8::Value> addEventListenerCallback(const v8::Arguments& args)
     if (listener) {
         V8TRYCATCH_FOR_V8STRINGRESOURCE(V8StringResource<WithNullCheck>, stringResource, args[0]);
         V8TestObj::toNative(args.Holder())->addEventListener(stringResource, listener, args[2]->BooleanValue());
-        createHiddenDependency(args.Holder(), args[1], V8TestObj::eventListenerCacheIndex);
+        createHiddenDependency(args.Holder(), args[1], V8TestObj::eventListenerCacheIndex, args.GetIsolate());
     }
     return v8Undefined();
 }
@@ -1125,7 +1125,7 @@ static v8::Handle<v8::Value> removeEventListenerCallback(const v8::Arguments& ar
     if (listener) {
         V8TRYCATCH_FOR_V8STRINGRESOURCE(V8StringResource<WithNullCheck>, stringResource, args[0]);
         V8TestObj::toNative(args.Holder())->removeEventListener(stringResource, listener.get(), args[2]->BooleanValue());
-        removeHiddenDependency(args.Holder(), args[1], V8TestObj::eventListenerCacheIndex);
+        removeHiddenDependency(args.Holder(), args[1], V8TestObj::eventListenerCacheIndex, args.GetIsolate());
     }
     return v8Undefined();
 }
@@ -2101,7 +2101,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestObjTemplate(v8::Persi
     v8::Local<v8::Signature> defaultSignature;
     defaultSignature = V8DOMConfiguration::configureTemplate(desc, "TestObject", v8::Persistent<v8::FunctionTemplate>(), V8TestObj::internalFieldCount,
         V8TestObjAttrs, WTF_ARRAY_LENGTH(V8TestObjAttrs),
-        V8TestObjCallbacks, WTF_ARRAY_LENGTH(V8TestObjCallbacks));
+        V8TestObjCallbacks, WTF_ARRAY_LENGTH(V8TestObjCallbacks), isolate);
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
     desc->SetCallHandler(V8TestObj::constructorCallback);
     v8::Local<v8::ObjectTemplate> instance = desc->InstanceTemplate();
@@ -2113,13 +2113,13 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestObjTemplate(v8::Persi
         static const V8DOMConfiguration::BatchedAttribute attrData =\
         // Attribute 'enabledAtRuntimeAttr1' (Type: 'attribute' ExtAttr: 'V8EnabledAtRuntime')
         {"enabledAtRuntimeAttr1", TestObjV8Internal::enabledAtRuntimeAttr1AttrGetter, TestObjV8Internal::enabledAtRuntimeAttr1AttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */};
-        V8DOMConfiguration::configureAttribute(instance, proto, attrData);
+        V8DOMConfiguration::configureAttribute(instance, proto, attrData, isolate);
     }
     if (RuntimeEnabledFeatures::featureNameEnabled()) {
         static const V8DOMConfiguration::BatchedAttribute attrData =\
         // Attribute 'enabledAtRuntimeAttr2' (Type: 'attribute' ExtAttr: 'V8EnabledAtRuntime')
         {"enabledAtRuntimeAttr2", TestObjV8Internal::enabledAtRuntimeAttr2AttrGetter, TestObjV8Internal::enabledAtRuntimeAttr2AttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */};
-        V8DOMConfiguration::configureAttribute(instance, proto, attrData);
+        V8DOMConfiguration::configureAttribute(instance, proto, attrData, isolate);
     }
 
     // Custom Signature 'voidMethodWithArgs'
@@ -2203,7 +2203,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestObjTemplate(v8::Persi
     v8::Handle<v8::FunctionTemplate> variadicNodeMethodArgv[variadicNodeMethodArgc] = { V8Node::GetRawTemplate(isolate), V8Node::GetRawTemplate(isolate) };
     v8::Handle<v8::Signature> variadicNodeMethodSignature = v8::Signature::New(desc, variadicNodeMethodArgc, variadicNodeMethodArgv);
     proto->Set(v8::String::NewSymbol("variadicNodeMethod"), v8::FunctionTemplate::New(TestObjV8Internal::variadicNodeMethodCallback, v8Undefined(), variadicNodeMethodSignature));
-    V8DOMConfiguration::batchConfigureConstants(desc, proto, V8TestObjConsts, WTF_ARRAY_LENGTH(V8TestObjConsts));
+    V8DOMConfiguration::batchConfigureConstants(desc, proto, V8TestObjConsts, WTF_ARRAY_LENGTH(V8TestObjConsts), isolate);
 
     // Custom toString template
     desc->Set(v8::String::NewSymbol("toString"), V8PerIsolateData::current()->toStringTemplate());
@@ -2243,12 +2243,10 @@ v8::Persistent<v8::FunctionTemplate> V8TestObj::GetTemplate(v8::Isolate* isolate
 
 bool V8TestObj::HasInstance(v8::Handle<v8::Value> value, v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     return GetRawTemplate(isolate)->HasInstance(value);
 }
 
-void V8TestObj::installPerContextProperties(v8::Handle<v8::Object> instance, TestObj* impl)
+void V8TestObj::installPerContextProperties(v8::Handle<v8::Object> instance, TestObj* impl, v8::Isolate* isolate)
 {
     v8::Local<v8::Object> proto = v8::Local<v8::Object>::Cast(instance->GetPrototype());
     // When building QtWebkit with V8 this variable is unused when none of the features are enabled.
@@ -2257,13 +2255,13 @@ void V8TestObj::installPerContextProperties(v8::Handle<v8::Object> instance, Tes
         static const V8DOMConfiguration::BatchedAttribute attrData =\
         // Attribute 'enabledPerContextAttr1' (Type: 'attribute' ExtAttr: 'V8EnabledPerContext')
         {"enabledPerContextAttr1", TestObjV8Internal::enabledPerContextAttr1AttrGetter, TestObjV8Internal::enabledPerContextAttr1AttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */};
-        V8DOMConfiguration::configureAttribute(instance, proto, attrData);
+        V8DOMConfiguration::configureAttribute(instance, proto, attrData, isolate);
     }
     if (ContextFeatures::featureNameEnabled(impl->document())) {
         static const V8DOMConfiguration::BatchedAttribute attrData =\
         // Attribute 'enabledPerContextAttr2' (Type: 'attribute' ExtAttr: 'V8EnabledPerContext')
         {"enabledPerContextAttr2", TestObjV8Internal::enabledPerContextAttr2AttrGetter, TestObjV8Internal::enabledPerContextAttr2AttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */};
-        V8DOMConfiguration::configureAttribute(instance, proto, attrData);
+        V8DOMConfiguration::configureAttribute(instance, proto, attrData, isolate);
     }
 }
 
@@ -2292,11 +2290,11 @@ v8::Handle<v8::Object> V8TestObj::createWrapper(PassRefPtr<TestObj> impl, v8::Ha
     checkTypeOrDieTrying(impl.get());
 #endif
 
-    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get());
+    v8::Handle<v8::Object> wrapper = V8DOMWrapper::createWrapper(creationContext, &info, impl.get(), isolate);
     if (UNLIKELY(wrapper.IsEmpty()))
         return wrapper;
 
-    installPerContextProperties(wrapper, impl.get());
+    installPerContextProperties(wrapper, impl.get(), isolate);
     v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
     if (!hasDependentLifetime)
         wrapperHandle.MarkIndependent();

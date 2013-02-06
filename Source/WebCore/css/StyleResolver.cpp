@@ -36,10 +36,7 @@
 #include "CSSDefaultStyleSheets.h"
 #include "CSSFontFaceRule.h"
 #include "CSSFontSelector.h"
-#include "CSSHostRule.h"
-#include "CSSImportRule.h"
 #include "CSSLineBoxContainValue.h"
-#include "CSSMediaRule.h"
 #include "CSSPageRule.h"
 #include "CSSParser.h"
 #include "CSSPrimitiveValueMappings.h"
@@ -48,7 +45,6 @@
 #include "CSSSelector.h"
 #include "CSSSelectorList.h"
 #include "CSSStyleRule.h"
-#include "CSSStyleSheet.h"
 #include "CSSSupportsRule.h"
 #include "CSSTimingFunctionValue.h"
 #include "CSSValueList.h"
@@ -1437,7 +1433,10 @@ PassRefPtr<RenderStyle> StyleResolver::styleForElement(Element* element, RenderS
         state.style->setInsideLink(linkState);
     }
 
-    CSSDefaultStyleSheets::ensureDefaultStyleSheetsForElement(element);
+    bool needsCollection = false;
+    CSSDefaultStyleSheets::ensureDefaultStyleSheetsForElement(element, needsCollection);
+    if (needsCollection)
+        collectFeatures();
 
     MatchResult matchResult;
     if (matchingBehavior == MatchOnlyUserAgentRules)
@@ -2514,97 +2513,6 @@ String StyleResolver::pageName(int /* pageIndex */) const
     return "";
 }
 
-void InspectorCSSOMWrappers::collectFromStyleSheetIfNeeded(CSSStyleSheet* styleSheet)
-{
-    if (!m_styleRuleToCSSOMWrapperMap.isEmpty())
-        collect(styleSheet);
-}
-
-template <class ListType>
-void InspectorCSSOMWrappers::collect(ListType* listType)
-{
-    if (!listType)
-        return;
-    unsigned size = listType->length();
-    for (unsigned i = 0; i < size; ++i) {
-        CSSRule* cssRule = listType->item(i);
-        switch (cssRule->type()) {
-        case CSSRule::IMPORT_RULE:
-            collect(static_cast<CSSImportRule*>(cssRule)->styleSheet());
-            break;
-        case CSSRule::MEDIA_RULE:
-            collect(static_cast<CSSMediaRule*>(cssRule));
-            break;
-#if ENABLE(CSS3_CONDITIONAL_RULES)
-        case CSSRule::SUPPORTS_RULE:
-            collectCSSOMWrappers(static_cast<CSSSupportsRule*>(cssRule));
-            break;
-#endif
-#if ENABLE(CSS_REGIONS)
-        case CSSRule::WEBKIT_REGION_RULE:
-            collect(static_cast<WebKitCSSRegionRule*>(cssRule));
-            break;
-#endif
-#if ENABLE(SHADOW_DOM)
-        case CSSRule::HOST_RULE:
-            collect(static_cast<CSSHostRule*>(cssRule));
-            break;
-#endif
-        case CSSRule::STYLE_RULE:
-            m_styleRuleToCSSOMWrapperMap.add(static_cast<CSSStyleRule*>(cssRule)->styleRule(), static_cast<CSSStyleRule*>(cssRule));
-            break;
-        default:
-            break;
-        }
-    }
-}
-
-void InspectorCSSOMWrappers::collectFromStyleSheetContents(HashSet<RefPtr<CSSStyleSheet> >& sheetWrapperSet, StyleSheetContents* styleSheet)
-{
-    if (!styleSheet)
-        return;
-    RefPtr<CSSStyleSheet> styleSheetWrapper = CSSStyleSheet::create(styleSheet);
-    sheetWrapperSet.add(styleSheetWrapper);
-    collect(styleSheetWrapper.get());
-}
-
-void InspectorCSSOMWrappers::collectFromStyleSheets(const Vector<RefPtr<CSSStyleSheet> >& sheets)
-{
-    for (unsigned i = 0; i < sheets.size(); ++i)
-        collect(sheets[i].get());
-}
-
-void InspectorCSSOMWrappers::collectFromDocumentStyleSheetCollection(DocumentStyleSheetCollection* styleSheetCollection)
-{
-    collectFromStyleSheets(styleSheetCollection->activeAuthorStyleSheets());
-    collect(styleSheetCollection->pageUserSheet());
-    collectFromStyleSheets(styleSheetCollection->injectedUserStyleSheets());
-    collectFromStyleSheets(styleSheetCollection->documentUserStyleSheets());
-}
-
-CSSStyleRule* InspectorCSSOMWrappers::getWrapperForRuleInSheets(StyleRule* rule, DocumentStyleSheetCollection* styleSheetCollection)
-{
-    if (m_styleRuleToCSSOMWrapperMap.isEmpty()) {
-        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, CSSDefaultStyleSheets::simpleDefaultStyleSheet);
-        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, CSSDefaultStyleSheets::defaultStyleSheet);
-        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, CSSDefaultStyleSheets::quirksStyleSheet);
-        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, CSSDefaultStyleSheets::svgStyleSheet);
-        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, CSSDefaultStyleSheets::mathMLStyleSheet);
-        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, CSSDefaultStyleSheets::mediaControlsStyleSheet);
-        collectFromStyleSheetContents(m_styleSheetCSSOMWrapperSet, CSSDefaultStyleSheets::fullscreenStyleSheet);
-
-        collectFromDocumentStyleSheetCollection(styleSheetCollection);
-    }
-    return m_styleRuleToCSSOMWrapperMap.get(rule).get();
-}
-
-void InspectorCSSOMWrappers::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
-{
-    MemoryClassInfo info(memoryObjectInfo, this, WebCoreMemoryTypes::CSS);
-    info.addMember(m_styleRuleToCSSOMWrapperMap);
-    info.addMember(m_styleSheetCSSOMWrapperSet);
-}
-
 void StyleResolver::applyPropertyToStyle(CSSPropertyID id, CSSValue* value, RenderStyle* style)
 {
     initElement(0);
@@ -2808,7 +2716,7 @@ static bool createGridPosition(CSSValue* value, GridPosition& position)
     if (primitiveValue->getIdent() == CSSValueAuto)
         return true;
 
-    ASSERT(primitiveValue->isNumber());
+    ASSERT_WITH_SECURITY_IMPLICATION(primitiveValue->isNumber());
     position.setIntegerPosition(primitiveValue->getIntValue());
     return true;
 }
@@ -2891,7 +2799,7 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
 
 #if ENABLE(CSS_VARIABLES)
     if (id == CSSPropertyVariable) {
-        ASSERT(value->isVariableValue());
+        ASSERT_WITH_SECURITY_IMPLICATION(value->isVariableValue());
         CSSVariableValue* variable = static_cast<CSSVariableValue*>(value);
         ASSERT(!variable->name().isEmpty());
         ASSERT(!variable->value().isEmpty());
@@ -3032,8 +2940,8 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
                 CSSValue* second = list->item(i + 1);
                 if (!second)
                     continue;
-                ASSERT(first->isPrimitiveValue());
-                ASSERT(second->isPrimitiveValue());
+                ASSERT_WITH_SECURITY_IMPLICATION(first->isPrimitiveValue());
+                ASSERT_WITH_SECURITY_IMPLICATION(second->isPrimitiveValue());
                 String startQuote = static_cast<CSSPrimitiveValue*>(first)->getStringValue();
                 String endQuote = static_cast<CSSPrimitiveValue*>(second)->getStringValue();
                 quotes->addPair(std::make_pair(startQuote, endQuote));
@@ -4865,7 +4773,7 @@ PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperationWith
 PassRefPtr<CustomFilterOperation> StyleResolver::createCustomFilterOperationWithInlineSyntax(WebKitCSSFilterValue* filterValue)
 {
     CSSValue* shadersValue = filterValue->itemWithoutBoundsCheck(0);
-    ASSERT(shadersValue->isValueList());
+    ASSERT_WITH_SECURITY_IMPLICATION(shadersValue->isValueList());
     CSSValueList* shadersList = static_cast<CSSValueList*>(shadersValue);
 
     unsigned shadersListLength = shadersList->length();
@@ -5264,8 +5172,10 @@ void StyleResolver::collectFeatures()
     // Collect all ids and rules using sibling selectors (:first-child and similar)
     // in the current set of stylesheets. Style sharing code uses this information to reject
     // sharing candidates.
-    m_features.add(CSSDefaultStyleSheets::defaultStyle->features());
-    m_features.add(m_authorStyle->features());
+    if (CSSDefaultStyleSheets::defaultStyle)
+        m_features.add(CSSDefaultStyleSheets::defaultStyle->features());
+    if (m_authorStyle)
+        m_features.add(m_authorStyle->features());
     if (document()->isViewSource())
         m_features.add(CSSDefaultStyleSheets::viewSourceStyle()->features());
 

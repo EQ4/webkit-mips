@@ -37,6 +37,7 @@
 #include "WebArrayBufferView.h"
 #include "WebDeliveredIntentClient.h"
 #include "WebTask.h"
+#include "WebTestRunner.h"
 #include "WebTextDirection.h"
 #include <public/WebURL.h>
 #include <set>
@@ -54,7 +55,7 @@ namespace WebTestRunner {
 class WebPermissions;
 class WebTestDelegate;
 
-class TestRunner : public CppBoundClass {
+class TestRunner : public WebTestRunner, public CppBoundClass {
 public:
     TestRunner();
     virtual ~TestRunner();
@@ -67,17 +68,27 @@ public:
     WebTaskList* taskList() { return &m_taskList; }
 
     void setTestIsRunning(bool);
+
+    // WebTestRunner implementation.
+    virtual bool shouldDumpAsText() const OVERRIDE;
+    virtual void setShouldDumpAsText(bool) OVERRIDE;
+    virtual bool shouldGeneratePixelResults() const OVERRIDE;
+    virtual void setShouldGeneratePixelResults(bool) OVERRIDE;
+    virtual bool shouldDumpChildFrameScrollPositions() const OVERRIDE;
+    virtual bool shouldDumpChildFramesAsText() const OVERRIDE;
+    virtual bool shouldDumpAsAudio() const OVERRIDE;
+    virtual const WebKit::WebArrayBufferView* audioData() const OVERRIDE;
+    virtual void setShouldDumpFrameLoadCallbacks(bool) OVERRIDE;
+    virtual WebKit::WebPermissionClient* webPermissions() const OVERRIDE;
+    virtual bool shouldDumpBackForwardList() const OVERRIDE;
+    virtual bool shouldDumpSelectionRect() const OVERRIDE;
+    virtual bool testRepaint() const OVERRIDE;
+    virtual bool sweepHorizontally() const OVERRIDE;
+    virtual bool isPrinting() const OVERRIDE;
+
+    // Methods used by WebTestProxyBase.
     bool shouldDumpEditingCallbacks() const;
-    bool shouldDumpAsText() const;
-    void setShouldDumpAsText(bool);
-    bool shouldGeneratePixelResults() const;
-    void setShouldGeneratePixelResults(bool);
-    bool shouldDumpChildFrameScrollPositions() const;
-    bool shouldDumpChildFramesAsText() const;
-    bool shouldDumpAsAudio() const;
-    const WebKit::WebArrayBufferView* audioData() const;
     bool shouldDumpFrameLoadCallbacks() const;
-    void setShouldDumpFrameLoadCallbacks(bool);
     bool shouldDumpUserGestureInFrameLoadCallbacks() const;
     bool stopProvisionalFrameLoads() const;
     bool shouldDumpTitleChanges() const;
@@ -86,15 +97,9 @@ public:
     bool shouldDumpResourceLoadCallbacks() const;
     bool shouldDumpResourceRequestCallbacks() const;
     bool shouldDumpResourceResponseMIMETypes() const;
-    WebKit::WebPermissionClient* webPermissions() const;
     bool shouldDumpStatusCallbacks() const;
     bool shouldDumpProgressFinishedCallback() const;
-    bool shouldDumpBackForwardList() const;
     bool deferMainResourceDataLoad() const;
-    bool shouldDumpSelectionRect() const;
-    bool testRepaint() const;
-    bool sweepHorizontally() const;
-    bool isPrinting() const;
     bool shouldStayOnPageAfterHandlingBeforeUnload() const;
     void setTitleTextDirection(WebKit::WebTextDirection);
     const std::set<std::string>* httpHeadersToClear() const;
@@ -199,7 +204,6 @@ private:
     void pauseAnimationAtTimeOnElementWithId(const CppArgumentList&, CppVariant*);
     void pauseTransitionAtTimeOnElementWithId(const CppArgumentList&, CppVariant*);
     void elementDoesAutoCompleteForElementWithId(const CppArgumentList&, CppVariant*);
-    void numberOfActiveAnimations(const CppArgumentList&, CppVariant*);
     void callShouldCloseOnWebView(const CppArgumentList&, CppVariant*);
     void setDomainRelaxationForbiddenForURLScheme(const CppArgumentList&, CppVariant*);
     void evaluateScriptInIsolatedWorldAndReturnValue(const CppArgumentList&, CppVariant*);
@@ -416,12 +420,14 @@ private:
     ///////////////////////////////////////////////////////////////////////////
     // Methods interacting with the WebTestProxy
 
+#if ENABLE(WEB_INTENTS)
     // Expects one string argument for sending successful result, zero
     // arguments for sending a failure result.
     void sendWebIntentResponse(const CppArgumentList&, CppVariant*);
 
     // Cause the web intent to be delivered to this context.
     void deliverWebIntent(const CppArgumentList&, CppVariant*);
+#endif
 
     ///////////////////////////////////////////////////////////////////////////
     // Methods forwarding to the WebTestDelegate
@@ -512,7 +518,6 @@ private:
     bool pauseAnimationAtTimeOnElementWithId(const WebKit::WebString& animationName, double time, const WebKit::WebString& elementId);
     bool pauseTransitionAtTimeOnElementWithId(const WebKit::WebString& propertyName, double time, const WebKit::WebString& elementId);
     bool elementDoesAutoCompleteForElementWithId(const WebKit::WebString&);
-    int numberOfActiveAnimations();
     bool cppVariantToBool(const CppVariant&);
     int32_t cppVariantToInt32(const CppVariant&);
     WebKit::WebString cppVariantToWebString(const CppVariant&);

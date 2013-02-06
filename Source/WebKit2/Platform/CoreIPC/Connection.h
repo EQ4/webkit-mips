@@ -94,7 +94,8 @@ public:
 
     class QueueClient {
     public:
-        virtual void didReceiveMessageOnConnectionWorkQueue(Connection*, MessageDecoder&, bool& didHandleMessage) = 0;
+        virtual void didReceiveMessageOnConnectionWorkQueue(Connection*, OwnPtr<MessageDecoder>&) = 0;
+        virtual void didCloseOnConnectionWorkQueue(Connection*) = 0;
 
     protected:
         virtual ~QueueClient() { }
@@ -161,7 +162,7 @@ public:
     // In the future we might want a more generic way to handle sync or async messages directly
     // on the work queue, for example if we want to handle them on some other thread we could avoid
     // handling the message on the client thread first.
-    typedef void (*DidCloseOnConnectionWorkQueueCallback)(WorkQueue*, Connection*);
+    typedef void (*DidCloseOnConnectionWorkQueueCallback)(Connection*);
     void setDidCloseOnConnectionWorkQueueCallback(DidCloseOnConnectionWorkQueueCallback callback);
 
     void addQueueClient(QueueClient*);

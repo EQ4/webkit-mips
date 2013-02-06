@@ -34,7 +34,7 @@ namespace WebCore {
 class V8TestActiveDOMObject {
 public:
     static const bool hasDependentLifetime = false;
-    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate* = 0);
+    static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
     static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
     static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
     static TestActiveDOMObject* toNative(v8::Handle<v8::Object> object)
@@ -46,7 +46,7 @@ public:
     static const int internalFieldCount = v8DefaultWrapperInternalFieldCount + 0;
     static bool namedSecurityCheck(v8::Local<v8::Object> host, v8::Local<v8::Value> key, v8::AccessType, v8::Local<v8::Value> data);
     static bool indexedSecurityCheck(v8::Local<v8::Object> host, uint32_t index, v8::AccessType, v8::Local<v8::Value> data);
-    static void installPerContextProperties(v8::Handle<v8::Object>, TestActiveDOMObject*) { }
+    static void installPerContextProperties(v8::Handle<v8::Object>, TestActiveDOMObject*, v8::Isolate*) { }
     static void installPerContextPrototypeProperties(v8::Handle<v8::Object>) { }
 private:
     friend v8::Handle<v8::Object> wrap(TestActiveDOMObject*, v8::Handle<v8::Object> creationContext, v8::Isolate*);
