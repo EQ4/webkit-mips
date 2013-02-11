@@ -142,8 +142,10 @@ def archiveBuiltProduct(configuration, platform, fullPlatform):
         removeDirectoryIfExists(thinDirectory)
         os.mkdir(thinDirectory)
 
-        if platform == 'qt' or platform == 'efl':
+        if platform == 'efl':
             neededDirectories = ["bin", "lib"]
+        elif platform == 'qt':
+            neededDirectories = ["bin", "lib", "Source/WebKit/qt"]
         elif platform == 'gtk':
             neededDirectories = ["Programs", ".libs", "Libraries", "TestNetscapePlugin"]
 
