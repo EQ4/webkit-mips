@@ -42,7 +42,9 @@
 #include "WebKit/chromium/public/WebSecurityOrigin.h"
 #include "WebKit/chromium/public/WebTextAffinity.h"
 #include "WebKit/chromium/public/WebTextDirection.h"
+#include "WebTestCommon.h"
 #include <map>
+#include <memory>
 #include <string>
 
 namespace WebKit {
@@ -65,6 +67,7 @@ class WebURLRequest;
 class WebURLResponse;
 class WebView;
 struct WebConsoleMessage;
+struct WebContextMenuData;
 struct WebPluginParams;
 struct WebPoint;
 struct WebSize;
@@ -79,7 +82,7 @@ class WebTestDelegate;
 class WebTestInterfaces;
 class WebTestRunner;
 
-class WebTestProxyBase {
+class WEBTESTRUNNER_EXPORT WebTestProxyBase {
 public:
     void setInterfaces(WebTestInterfaces*);
     void setDelegate(WebTestDelegate*);
@@ -125,6 +128,7 @@ protected:
     void didStopLoading();
     bool isSmartInsertDeleteEnabled();
     bool isSelectTrailingWhitespaceEnabled();
+    void showContextMenu(WebKit::WebFrame*, const WebKit::WebContextMenuData&);
 
     void willPerformClientRedirect(WebKit::WebFrame*, const WebKit::WebURL& from, const WebKit::WebURL& to, double interval, double fire_time);
     void didCancelClientRedirect(WebKit::WebFrame*);
@@ -165,7 +169,7 @@ private:
     TestInterfaces* m_testInterfaces;
     WebTestDelegate* m_delegate;
 
-    SpellCheckClient* m_spellcheck;
+    std::auto_ptr<SpellCheckClient> m_spellcheck;
 
     WebKit::WebRect m_paintRect;
     std::map<unsigned, std::string> m_resourceIdentifierMap;
@@ -326,6 +330,11 @@ public:
     virtual bool isSelectTrailingWhitespaceEnabled()
     {
         return WebTestProxyBase::isSelectTrailingWhitespaceEnabled();
+    }
+    void showContextMenu(WebKit::WebFrame* frame, const WebKit::WebContextMenuData& contextMenuData)
+    {
+        WebTestProxyBase::showContextMenu(frame, contextMenuData);
+        Base::showContextMenu(frame, contextMenuData);
     }
 
     // WebFrameClient implementation.

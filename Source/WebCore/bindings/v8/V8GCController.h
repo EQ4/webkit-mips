@@ -42,7 +42,7 @@ class V8GCController {
 public:
     static void gcPrologue(v8::GCType, v8::GCCallbackFlags);
     static void gcEpilogue(v8::GCType, v8::GCCallbackFlags);
-    static void minorGCPrologue();
+    static void minorGCPrologue(v8::Isolate*);
     static void minorGCEpilogue();
     static void majorGCPrologue();
     static void majorGCEpilogue();
@@ -52,7 +52,6 @@ public:
     static void collectGarbage();
 
     static Node* opaqueRootForGC(Node*, v8::Isolate*);
-    static void didCreateWrapperForNode(Node*);
 
 private:
     static Vector<Node*>* m_edenNodes;

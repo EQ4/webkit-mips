@@ -35,7 +35,6 @@
 #include "DRTDevToolsClient.h"
 #include "MockWebPrerenderingSupport.h"
 #include "WebArrayBufferView.h"
-#include "WebCache.h"
 #include "WebDataSource.h"
 #include "WebDocument.h"
 #include "WebElement.h"
@@ -263,12 +262,7 @@ void TestShell::runFileTest(const TestParams& params, bool shouldDumpPixels)
     m_testInterfaces->setTestIsRunning(true);
     m_params = params;
     string testUrl = m_params.testUrl.spec();
-
-    m_testInterfaces->testRunner()->setShouldGeneratePixelResults(shouldDumpPixels);
-
-    if (testUrl.find("loading/") != string::npos
-        || testUrl.find("loading\\") != string::npos)
-        m_testInterfaces->testRunner()->setShouldDumpFrameLoadCallbacks(true);
+    m_testInterfaces->configureForTestWithURL(m_params.testUrl, shouldDumpPixels);
 
     if (testUrl.find("compositing/") != string::npos || testUrl.find("compositing\\") != string::npos) {
         if (!m_softwareCompositingEnabled)
@@ -278,16 +272,6 @@ void TestShell::runFileTest(const TestParams& params, bool shouldDumpPixels)
         m_prefs.mockScrollbarsEnabled = true;
         m_prefs.applyTo(m_webView);
     }
-
-    if (testUrl.find("/dumpAsText/") != string::npos
-        || testUrl.find("\\dumpAsText\\") != string::npos) {
-        m_testInterfaces->testRunner()->setShouldDumpAsText(true);
-        m_testInterfaces->testRunner()->setShouldGeneratePixelResults(false);
-    }
-
-    if (testUrl.find("/inspector/") != string::npos
-        || testUrl.find("\\inspector\\") != string::npos)
-        showDevTools();
 
     if (m_dumpWhenFinished)
         m_printer.handleTestHeader(testUrl.c_str());
@@ -338,7 +322,6 @@ void TestShell::resetTestController()
     webView()->setFixedLayoutSize(WebSize(0, 0));
     webView()->mainFrame()->clearOpener();
     WebTestingSupport::resetInternalsObject(webView()->mainFrame());
-    WebCache::clear();
 }
 
 void TestShell::loadURL(const WebURL& url)
@@ -824,9 +807,4 @@ void TestShell::closeRemainingWindows()
 int TestShell::windowCount()
 {
     return m_windowList.size();
-}
-
-string TestShell::normalizeLayoutTestURL(const string& url)
-{
-    return normalizeLayoutTestURLInternal(url);
 }

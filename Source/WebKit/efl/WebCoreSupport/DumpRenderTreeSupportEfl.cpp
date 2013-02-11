@@ -58,7 +58,6 @@
 #include <TextIterator.h>
 #include <bindings/js/GCController.h>
 #include <history/HistoryItem.h>
-#include <workers/WorkerThread.h>
 #include <wtf/HashMap.h>
 #include <wtf/UnusedParam.h>
 
@@ -175,30 +174,6 @@ void DumpRenderTreeSupportEfl::layoutFrame(Evas_Object* ewkFrame)
         return;
 
     frame->view()->layout();
-}
-
-bool DumpRenderTreeSupportEfl::pauseAnimation(Evas_Object* ewkFrame, const char* name, const char* elementId, double time)
-{
-    DRT_SUPPORT_FRAME_GET_OR_RETURN(ewkFrame, frame, false);
-
-    WebCore::Element* element = frame->document()->getElementById(elementId);
-
-    if (!element || !element->renderer())
-        return false;
-
-    return frame->animation()->pauseAnimationAtTime(element->renderer(), name, time);
-}
-
-bool DumpRenderTreeSupportEfl::pauseTransition(Evas_Object* ewkFrame, const char* name, const char* elementId, double time)
-{
-    DRT_SUPPORT_FRAME_GET_OR_RETURN(ewkFrame, frame, false);
-
-    WebCore::Element* element = frame->document()->getElementById(elementId);
-
-    if (!element || !element->renderer())
-        return false;
-
-    return frame->animation()->pauseTransitionAtTime(element->renderer(), name, time);
 }
 
 unsigned DumpRenderTreeSupportEfl::pendingUnloadEventCount(const Evas_Object* ewkFrame)
@@ -461,15 +436,6 @@ void DumpRenderTreeSupportEfl::garbageCollectorCollectOnAlternateThread(bool wai
 size_t DumpRenderTreeSupportEfl::javaScriptObjectsCount()
 {
     return WebCore::JSDOMWindow::commonJSGlobalData()->heap.objectCount();
-}
-
-unsigned DumpRenderTreeSupportEfl::workerThreadCount()
-{
-#if ENABLE(WORKERS)
-    return WebCore::WorkerThread::workerThreadCount();
-#else
-    return 0;
-#endif
 }
 
 void DumpRenderTreeSupportEfl::setDeadDecodedDataDeletionInterval(double interval)

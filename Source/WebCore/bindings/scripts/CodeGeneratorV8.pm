@@ -354,8 +354,8 @@ END
 
     push(@headerContent, <<END);
     static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
-    static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
-    static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
+    static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate*);
+    static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate*);
     static ${nativeType}* toNative(v8::Handle<v8::Object> object)
     {
         return reinterpret_cast<${nativeType}*>(object->GetAlignedPointerFromInternalField(v8DOMWrapperObjectIndex));
@@ -464,11 +464,11 @@ END
 
     if (@enabledPerContextFunctions) {
         push(@headerContent, <<END);
-    static void installPerContextPrototypeProperties(v8::Handle<v8::Object>);
+    static void installPerContextPrototypeProperties(v8::Handle<v8::Object>, v8::Isolate*);
 END
     } else {
         push(@headerContent, <<END);
-    static void installPerContextPrototypeProperties(v8::Handle<v8::Object>) { }
+    static void installPerContextPrototypeProperties(v8::Handle<v8::Object>, v8::Isolate*) { }
 END
     }
 
@@ -798,7 +798,7 @@ sub GenerateDomainSafeFunctionGetter
     push(@implContentDecls, <<END);
 static v8::Handle<v8::Value> ${funcName}AttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
-    static v8::Persistent<v8::FunctionTemplate> privateTemplate = v8::Persistent<v8::FunctionTemplate>::New($newTemplateString);
+    static v8::Persistent<v8::FunctionTemplate> privateTemplate = v8::Persistent<v8::FunctionTemplate>::New(info.GetIsolate(), $newTemplateString);
     v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(${v8InterfaceName}::GetTemplate(info.GetIsolate()));
     if (holder.IsEmpty()) {
         // can only reach here by 'object.__proto__.func', and it should passed
@@ -807,7 +807,7 @@ static v8::Handle<v8::Value> ${funcName}AttrGetter(v8::Local<v8::String> name, c
     }
     ${interfaceName}* imp = ${v8InterfaceName}::toNative(holder);
     if (!BindingSecurity::shouldAllowAccessToFrame(BindingState::instance(), imp->frame(), DoNotReportSecurityError)) {
-        static v8::Persistent<v8::FunctionTemplate> sharedTemplate = v8::Persistent<v8::FunctionTemplate>::New($newTemplateString);
+        static v8::Persistent<v8::FunctionTemplate> sharedTemplate = v8::Persistent<v8::FunctionTemplate>::New(info.GetIsolate(), $newTemplateString);
         return sharedTemplate->GetFunction();
     }
 
@@ -1049,7 +1049,7 @@ END
         push(@implContentDecls, "    if (wrapper.IsEmpty()) {\n");
         push(@implContentDecls, "        wrapper = toV8(result.get(), info.Holder(), info.GetIsolate());\n"); # FIXME: Could use wrap here since the wrapper is empty.
         push(@implContentDecls, "        if (!wrapper.IsEmpty())\n");
-        push(@implContentDecls, "            V8DOMWrapper::setNamedHiddenReference(info.Holder(), \"${attrName}\", wrapper);\n");
+        push(@implContentDecls, "            V8HiddenPropertyName::setNamedHiddenReference(info.Holder(), \"${attrName}\", wrapper);\n");
         push(@implContentDecls, "    }\n");
         push(@implContentDecls, "    return wrapper;\n");
         push(@implContentDecls, "}\n\n");
@@ -1964,7 +1964,7 @@ END
 
     push(@implContent, <<END);
 
-    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &info, wrapper, args.GetIsolate());
+    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
     return wrapper;
 END
 
@@ -2039,7 +2039,7 @@ END
     RefPtr<${interfaceName}> event = ${interfaceName}::create(type, eventInit);
 
     v8::Handle<v8::Object> wrapper = args.Holder();
-    V8DOMWrapper::associateObjectWithWrapper(event.release(), &info, wrapper, args.GetIsolate());
+    V8DOMWrapper::associateObjectWithWrapper(event.release(), &info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
     return wrapper;
 }
 
@@ -2180,7 +2180,7 @@ END
 
     push(@implContent, <<END);
 
-    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &${v8InterfaceName}Constructor::info, wrapper, args.GetIsolate());
+    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &${v8InterfaceName}Constructor::info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
     return wrapper;
 END
 
@@ -2195,8 +2195,6 @@ END
 
 v8::Persistent<v8::FunctionTemplate> ${v8InterfaceName}Constructor::GetTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     static v8::Persistent<v8::FunctionTemplate> cachedTemplate;
     if (!cachedTemplate.IsEmpty())
         return cachedTemplate;
@@ -2209,7 +2207,7 @@ v8::Persistent<v8::FunctionTemplate> ${v8InterfaceName}Constructor::GetTemplate(
     result->SetClassName(v8::String::NewSymbol("${interfaceName}"));
     result->Inherit(${v8InterfaceName}::GetTemplate(isolate));
 
-    cachedTemplate = v8::Persistent<v8::FunctionTemplate>::New(result);
+    cachedTemplate = v8::Persistent<v8::FunctionTemplate>::New(isolate, result);
     return cachedTemplate;
 }
 
@@ -3100,23 +3098,19 @@ END
 
 v8::Persistent<v8::FunctionTemplate> ${v8InterfaceName}::GetRawTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->rawTemplateMap().find(&info);
     if (result != data->rawTemplateMap().end())
         return result->value;
 
     v8::HandleScope handleScope;
-    v8::Persistent<v8::FunctionTemplate> templ = createRawTemplate();
+    v8::Persistent<v8::FunctionTemplate> templ = createRawTemplate(isolate);
     data->rawTemplateMap().add(&info, templ);
     return templ;
 }
 
 v8::Persistent<v8::FunctionTemplate> ${v8InterfaceName}::GetTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->templateMap().find(&info);
     if (result != data->templateMap().end())
@@ -3167,13 +3161,13 @@ END
 
     if (@enabledPerContextFunctions) {
         push(@implContent, <<END);
-void ${v8InterfaceName}::installPerContextPrototypeProperties(v8::Handle<v8::Object> proto)
+void ${v8InterfaceName}::installPerContextPrototypeProperties(v8::Handle<v8::Object> proto, v8::Isolate* isolate)
 {
     UNUSED_PARAM(proto);
 END
         # Setup the enable-by-settings functions if we have them
         push(@implContent,  <<END);
-    v8::Local<v8::Signature> defaultSignature = v8::Signature::New(GetTemplate());
+    v8::Local<v8::Signature> defaultSignature = v8::Signature::New(GetTemplate(isolate));
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
 
     ScriptExecutionContext* context = toScriptExecutionContext(proto->CreationContext());
@@ -3228,7 +3222,7 @@ v8::Persistent<v8::ObjectTemplate> V8DOMWindow::GetShadowObjectTemplate(v8::Isol
 {
     static v8::Persistent<v8::ObjectTemplate> V8DOMWindowShadowObjectCache;
     if (V8DOMWindowShadowObjectCache.IsEmpty()) {
-        V8DOMWindowShadowObjectCache = v8::Persistent<v8::ObjectTemplate>::New(v8::ObjectTemplate::New());
+        V8DOMWindowShadowObjectCache = v8::Persistent<v8::ObjectTemplate>::New(isolate, v8::ObjectTemplate::New());
         ConfigureShadowObjectTemplate(V8DOMWindowShadowObjectCache, isolate);
     }
     return V8DOMWindowShadowObjectCache;
@@ -3264,9 +3258,9 @@ sub GenerateHeaderContentHeader
 
     my @headerContentHeader = split("\r", $headerTemplate);
 
-    push(@headerContentHeader, "\n#if ${conditionalString}\n") if $conditionalString;
-    push(@headerContentHeader, "\n#ifndef ${v8InterfaceName}" . "_h");
-    push(@headerContentHeader, "\n#define ${v8InterfaceName}" . "_h\n\n");
+    push(@headerContentHeader, "\n#ifndef ${v8InterfaceName}" . "_h\n");
+    push(@headerContentHeader, "#define ${v8InterfaceName}" . "_h\n\n");
+    push(@headerContentHeader, "#if ${conditionalString}\n") if $conditionalString;
     return @headerContentHeader;
 }
 
@@ -3279,8 +3273,8 @@ sub GenerateImplementationContentHeader
     my @implContentHeader = split("\r", $headerTemplate);
 
     push(@implContentHeader, "\n#include \"config.h\"\n");
+    push(@implContentHeader, "#if ${conditionalString}\n") if $conditionalString;
     push(@implContentHeader, "#include \"${v8InterfaceName}.h\"\n\n");
-    push(@implContentHeader, "#if ${conditionalString}\n\n") if $conditionalString;
     return @implContentHeader;
 }
 
@@ -3542,9 +3536,7 @@ END
         return wrapper;
 
     installPerContextProperties(wrapper, impl.get(), isolate);
-    v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
-    if (!hasDependentLifetime)
-        wrapperHandle.MarkIndependent();
+    V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate, hasDependentLifetime ? WrapperConfiguration::Dependent : WrapperConfiguration::Independent);
     return wrapper;
 }
 END

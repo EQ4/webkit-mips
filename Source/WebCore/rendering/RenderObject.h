@@ -226,13 +226,11 @@ public:
 #ifndef NDEBUG
     void setHasAXObject(bool flag) { m_hasAXObject = flag; }
     bool hasAXObject() const { return m_hasAXObject; }
-    bool isSetNeedsLayoutForbidden() const { return m_setNeedsLayoutForbidden; }
-    void setNeedsLayoutIsForbidden(bool flag) { m_setNeedsLayoutForbidden = flag; }
 
     // Helper class forbidding calls to setNeedsLayout() during its lifetime.
     class SetLayoutNeededForbiddenScope {
     public:
-        explicit SetLayoutNeededForbiddenScope(RenderObject*);
+        explicit SetLayoutNeededForbiddenScope(RenderObject*, bool isForbidden = true);
         ~SetLayoutNeededForbiddenScope();
     private:
         RenderObject* m_renderObject;
@@ -244,11 +242,6 @@ public:
     // children.
     virtual RenderBlock* firstLineBlock() const;
 
-    // Called when an object that was floating or positioned becomes a normal flow object
-    // again.  We have to make sure the render tree updates as needed to accommodate the new
-    // normal flow object.
-    void handleDynamicFloatPositionChange();
-    
     // RenderObject tree manipulation
     //////////////////////////////////////////
     virtual bool canHaveChildren() const { return virtualChildren(); }
@@ -277,6 +270,11 @@ protected:
     }
     //////////////////////////////////////////
 private:
+#ifndef NDEBUG
+    bool isSetNeedsLayoutForbidden() const { return m_setNeedsLayoutForbidden; }
+    void setNeedsLayoutIsForbidden(bool flag) { m_setNeedsLayoutForbidden = flag; }
+#endif
+
     void addAbsoluteRectForLayer(LayoutRect& result);
     void setLayerNeedsFullRepaint();
     void setLayerNeedsFullRepaintForPositionedMovementLayout();
@@ -1140,10 +1138,6 @@ private:
     void setPaintBackground(bool b) { m_bitfields.setPaintBackground(b); }
     void setIsDragging(bool b) { m_bitfields.setIsDragging(b); }
     void setEverHadLayout(bool b) { m_bitfields.setEverHadLayout(b); }
-
-private:
-    // Store state between styleWillChange and styleDidChange
-    static bool s_affectsParentBlock;
 };
 
 inline bool RenderObject::documentBeingDestroyed() const

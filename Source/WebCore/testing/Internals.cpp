@@ -87,6 +87,7 @@
 #include "TreeScope.h"
 #include "TypeConversions.h"
 #include "ViewportArguments.h"
+#include "WorkerThread.h"
 #include <wtf/text/StringBuffer.h>
 
 #if ENABLE(INPUT_TYPE_COLOR)
@@ -124,6 +125,11 @@
 #include "GraphicsLayer.h"
 #include "GraphicsLayerChromium.h"
 #include "RenderLayerBacking.h"
+#endif
+
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+#include "CDM.h"
+#include "MockCDM.h"
 #endif
 
 namespace WebCore {
@@ -276,6 +282,15 @@ InternalSettings* Internals::settings() const
     if (!page)
         return 0;
     return InternalSettings::from(page);
+}
+
+unsigned Internals::workerThreadCount() const
+{
+#if ENABLE(WORKERS)
+    return WorkerThread::workerThreadCount();
+#else
+    return 0;
+#endif
 }
 
 String Internals::address(Node* node)
@@ -442,6 +457,16 @@ void Internals::resumeAnimations(Document* document, ExceptionCode& ec) const
     controller->resumeAnimations();
 }
 
+bool Internals::pauseAnimationAtTimeOnElement(const String& animationName, double pauseTime, Element* element, ExceptionCode& ec)
+{
+    if (!element || pauseTime < 0) {
+        ec = INVALID_ACCESS_ERR;
+        return false;
+    }
+    AnimationController* controller = frame()->animation();
+    return controller->pauseAnimationAtTime(element->renderer(), AtomicString(animationName), pauseTime);
+}
+
 bool Internals::pauseAnimationAtTimeOnPseudoElement(const String& animationName, double pauseTime, Element* element, const String& pseudoId, ExceptionCode& ec)
 {
     if (!element || pauseTime < 0) {
@@ -461,6 +486,16 @@ bool Internals::pauseAnimationAtTimeOnPseudoElement(const String& animationName,
     }
 
     return frame()->animation()->pauseAnimationAtTime(pseudoElement->renderer(), AtomicString(animationName), pauseTime);
+}
+
+bool Internals::pauseTransitionAtTimeOnElement(const String& propertyName, double pauseTime, Element* element, ExceptionCode& ec)
+{
+    if (!element || pauseTime < 0) {
+        ec = INVALID_ACCESS_ERR;
+        return false;
+    }
+    AnimationController* controller = frame()->animation();
+    return controller->pauseTransitionAtTime(element->renderer(), propertyName, pauseTime);
 }
 
 bool Internals::pauseTransitionAtTimeOnPseudoElement(const String& property, double pauseTime, Element* element, const String& pseudoId, ExceptionCode& ec)
@@ -1911,5 +1946,12 @@ void Internals::setUsesOverlayScrollbars(bool enabled)
 {
     WebCore::Settings::setUsesOverlayScrollbars(enabled);
 }
+
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+void Internals::initializeMockCDM()
+{
+    CDM::registerCDMFactory(MockCDM::create, MockCDM::supportsKeySytem);
+}
+#endif
 
 }

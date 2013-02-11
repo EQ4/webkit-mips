@@ -94,11 +94,11 @@ using namespace HTMLNames;
 #ifndef NDEBUG
 static void* baseOfRenderObjectBeingDeleted;
 
-RenderObject::SetLayoutNeededForbiddenScope::SetLayoutNeededForbiddenScope(RenderObject* renderObject)
+RenderObject::SetLayoutNeededForbiddenScope::SetLayoutNeededForbiddenScope(RenderObject* renderObject, bool isForbidden)
     : m_renderObject(renderObject)
     , m_preexistingForbidden(m_renderObject->isSetNeedsLayoutForbidden())
 {
-    m_renderObject->setNeedsLayoutIsForbidden(true);
+    m_renderObject->setNeedsLayoutIsForbidden(isForbidden);
 }
 
 RenderObject::SetLayoutNeededForbiddenScope::~SetLayoutNeededForbiddenScope()
@@ -117,8 +117,6 @@ struct SameSizeAsRenderObject {
 };
 
 COMPILE_ASSERT(sizeof(RenderObject) == sizeof(SameSizeAsRenderObject), RenderObject_should_stay_small);
-
-bool RenderObject::s_affectsParentBlock = false;
 
 RenderObjectAncestorLineboxDirtySet* RenderObject::s_ancestorLineboxDirtySet = 0;
 
@@ -656,6 +654,7 @@ static inline bool objectIsRelayoutBoundary(const RenderObject* object)
 void RenderObject::markContainingBlocksForLayout(bool scheduleRelayout, RenderObject* newRoot)
 {
     ASSERT(!scheduleRelayout || !newRoot);
+    ASSERT(!isSetNeedsLayoutForbidden());
 
     RenderObject* object = container();
     RenderObject* last = this;
@@ -663,6 +662,11 @@ void RenderObject::markContainingBlocksForLayout(bool scheduleRelayout, RenderOb
     bool simplifiedNormalFlowLayout = needsSimplifiedNormalFlowLayout() && !selfNeedsLayout() && !normalChildNeedsLayout();
 
     while (object) {
+#ifndef NDEBUG
+        // FIXME: Remove this once we remove the special cases for counters, quotes and mathml
+        // calling setNeedsLayout during preferred width computation.
+        SetLayoutNeededForbiddenScope layoutForbiddenScope(object, isSetNeedsLayoutForbidden());
+#endif
         // Don't mark the outermost object of an unrooted subtree. That object will be
         // marked when the subtree is added to the document.
         RenderObject* container = object->container();
@@ -1671,25 +1675,6 @@ void RenderObject::selectionStartEnd(int& spos, int& epos) const
     view()->selectionStartEnd(spos, epos);
 }
 
-void RenderObject::handleDynamicFloatPositionChange()
-{
-    // We have gone from not affecting the inline status of the parent flow to suddenly
-    // having an impact.  See if there is a mismatch between the parent flow's
-    // childrenInline() state and our state.
-    setInline(style()->isDisplayInlineType());
-    if (isInline() != parent()->childrenInline()) {
-        if (!isInline())
-            toRenderBoxModelObject(parent())->childBecameNonInline(this);
-        else {
-            // An anonymous block must be made to wrap this inline.
-            RenderBlock* block = toRenderBlock(parent())->createAnonymousBlock();
-            RenderObjectChildList* childlist = parent()->virtualChildren();
-            childlist->insertChildNode(parent(), block, this);
-            block->children()->appendChildNode(block, childlist->removeChildNode(parent(), this));
-        }
-    }
-}
-
 void RenderObject::setAnimatableStyle(PassRefPtr<RenderStyle> style)
 {
     if (!isText() && style)
@@ -1887,10 +1872,6 @@ void RenderObject::styleWillChange(StyleDifference diff, const RenderStyle* newS
             // from the positioned objects list.
             toRenderBox(this)->removeFloatingOrPositionedChildFromBlockLists();
 
-        s_affectsParentBlock = isFloatingOrOutOfFlowPositioned()
-            && (!newStyle->isFloating() && !newStyle->hasOutOfFlowPosition())
-            && parent() && (parent()->isBlockFlow() || parent()->isRenderInline());
-
         // reset style flags
         if (diff == StyleDifferenceLayout || diff == StyleDifferenceLayoutPositionedMovementOnly) {
             setFloating(false);
@@ -1901,8 +1882,7 @@ void RenderObject::styleWillChange(StyleDifference diff, const RenderStyle* newS
         setHasOverflowClip(false);
         setHasTransform(false);
         setHasReflection(false);
-    } else
-        s_affectsParentBlock = false;
+    }
 
     if (view()->frameView()) {
         bool shouldBlitOnFixedBackgroundImage = false;
@@ -1954,8 +1934,6 @@ static inline bool areCursorsEqual(const RenderStyle* a, const RenderStyle* b)
 
 void RenderObject::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle)
 {
-    if (s_affectsParentBlock)
-        handleDynamicFloatPositionChange();
 
 #if ENABLE(SVG)
     SVGRenderSupport::styleChanged(this);

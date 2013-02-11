@@ -60,6 +60,7 @@ var Capabilities = {
     timelineCanMonitorMainThread: false,
     canOverrideGeolocation: false,
     canOverrideDeviceOrientation: false,
+    canShowDebugBorders: false,
     canShowFPSCounter: false,
     canContinuouslyPaint: false
 }
@@ -100,6 +101,7 @@ WebInspector.Settings = function()
     this.emulateTouchEvents = this.createSetting("emulateTouchEvents", false);
     this.showPaintRects = this.createSetting("showPaintRects", false);
     this.continuousPainting = this.createSetting("continuousPainting", false);
+    this.showDebugBorders = this.createSetting("showDebugBorders", false);
     this.showFPSCounter = this.createSetting("showFPSCounter", false);
     this.showShadowDOM = this.createSetting("showShadowDOM", false);
     this.zoomLevel = this.createSetting("zoomLevel", 0);
@@ -109,6 +111,7 @@ WebInspector.Settings = function()
     this.deviceOrientationOverride = this.createSetting("deviceOrientationOverride", "");
     this.showHeapSnapshotObjectsHiddenProperties = this.createSetting("showHeaSnapshotObjectsHiddenProperties", false);
     this.showNativeSnapshotUninstrumentedSize = this.createSetting("showNativeSnapshotUninstrumentedSize", false);
+    this.showWhitespaceInEditor = this.createSetting("showWhitespaceInEditor", false);
     this.searchInContentScripts = this.createSetting("searchInContentScripts", false);
     this.textEditorIndent = this.createSetting("textEditorIndent", "    ");
     this.lastDockState = this.createSetting("lastDockState", "");
@@ -214,7 +217,7 @@ WebInspector.ExperimentsSettings = function()
     this.cssRegions = this._createExperiment("cssRegions", "CSS Regions Support");
     this.showOverridesInDrawer = this._createExperiment("showOverridesInDrawer", "Show Overrides in drawer");
     this.fileSystemProject = this._createExperiment("fileSystemProject", "File system folders in Sources Panel");
-    this.elementsPanelSingleColumn = this._createExperiment("elementsPanelSingleColumn", "Split Elements sidebar horizontally when it is too narrow");
+    this.horizontalPanelSplit = this._createExperiment("horizontalPanelSplit", "Allow horizontal split in Elements and Sources panels");
 
     this._cleanUpSetting();
 }

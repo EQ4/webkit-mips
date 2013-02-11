@@ -36,22 +36,24 @@
 #include "GamepadController.h"
 #include "TestRunner.h"
 #include "TextInputController.h"
+#include "WebCache.h"
 #include <public/WebString.h>
+#include <public/WebURL.h>
+#include <string>
 
-using WebKit::WebFrame;
-using WebKit::WebString;
-using WebKit::WebView;
+using namespace WebKit;
+using namespace std;
 
 namespace WebTestRunner {
 
 TestInterfaces::TestInterfaces()
-    : m_webView(0)
+    : m_accessibilityController(new AccessibilityController())
+    , m_eventSender(new EventSender())
+    , m_gamepadController(new GamepadController())
+    , m_textInputController(new TextInputController())
+    , m_testRunner(new TestRunner())
+    , m_webView(0)
 {
-    m_accessibilityController = adoptPtr(new AccessibilityController());
-    m_eventSender = adoptPtr(new EventSender());
-    m_gamepadController = adoptPtr(new GamepadController());
-    m_textInputController = adoptPtr(new TextInputController());
-    m_testRunner = adoptPtr(new TestRunner());
 }
 
 TestInterfaces::~TestInterfaces()
@@ -105,11 +107,26 @@ void TestInterfaces::resetAll()
     m_gamepadController->reset();
     // m_textInputController doesn't have any state to reset.
     m_testRunner->reset();
+    WebCache::clear();
 }
 
 void TestInterfaces::setTestIsRunning(bool running)
 {
     m_testRunner->setTestIsRunning(running);
+}
+
+void TestInterfaces::configureForTestWithURL(const WebURL& testURL, bool generatePixels)
+{
+    string spec = GURL(testURL).spec();
+    m_testRunner->setShouldGeneratePixelResults(generatePixels);
+    if (spec.find("loading/") != string::npos)
+        m_testRunner->setShouldDumpFrameLoadCallbacks(true);
+    if (spec.find("/dumpAsText/") != string::npos) {
+        m_testRunner->setShouldDumpAsText(true);
+        m_testRunner->setShouldGeneratePixelResults(false);
+    }
+    if (spec.find("/inspector/") != string::npos)
+        m_testRunner->showDevTools();
 }
 
 AccessibilityController* TestInterfaces::accessibilityController()

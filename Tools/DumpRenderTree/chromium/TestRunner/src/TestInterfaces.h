@@ -31,10 +31,11 @@
 #ifndef TestInterfaces_h
 #define TestInterfaces_h
 
-#include <wtf/OwnPtr.h>
+#include <memory>
 
 namespace WebKit {
 class WebFrame;
+class WebURL;
 class WebView;
 }
 
@@ -57,6 +58,7 @@ public:
     void bindTo(WebKit::WebFrame*);
     void resetAll();
     void setTestIsRunning(bool);
+    void configureForTestWithURL(const WebKit::WebURL&, bool generatePixels);
 
     AccessibilityController* accessibilityController();
     EventSender* eventSender();
@@ -65,11 +67,11 @@ public:
 
 
 private:
-    OwnPtr<AccessibilityController> m_accessibilityController;
-    OwnPtr<EventSender> m_eventSender;
-    OwnPtr<GamepadController> m_gamepadController;
-    OwnPtr<TextInputController> m_textInputController;
-    OwnPtr<TestRunner> m_testRunner;
+    std::auto_ptr<AccessibilityController> m_accessibilityController;
+    std::auto_ptr<EventSender> m_eventSender;
+    std::auto_ptr<GamepadController> m_gamepadController;
+    std::auto_ptr<TextInputController> m_textInputController;
+    std::auto_ptr<TestRunner> m_testRunner;
     WebKit::WebView* m_webView;
 };
 

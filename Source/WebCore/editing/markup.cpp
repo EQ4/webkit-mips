@@ -44,6 +44,7 @@
 #include "DocumentType.h"
 #include "Editor.h"
 #include "ExceptionCode.h"
+#include "ExceptionCodePlaceholder.h"
 #include "Frame.h"
 #include "HTMLBodyElement.h"
 #include "HTMLElement.h"
@@ -504,8 +505,7 @@ static bool isElementPresentational(const Node* node)
 
 static Node* highestAncestorToWrapMarkup(const Range* range, EAnnotateForInterchange shouldAnnotate)
 {
-    ExceptionCode ec;
-    Node* commonAncestor = range->commonAncestorContainer(ec);
+    Node* commonAncestor = range->commonAncestorContainer(IGNORE_EXCEPTION);
     ASSERT(commonAncestor);
     Node* specialCommonAncestor = 0;
     if (shouldAnnotate == AnnotateForInterchange) {
@@ -564,13 +564,10 @@ String createMarkup(const Range* range, Vector<Node*>* nodes, EAnnotateForInterc
     if (deleteButton)
         deleteButton->disable();
 
-    ExceptionCode ec = 0;
-    bool collapsed = updatedRange->collapsed(ec);
-    ASSERT(!ec);
+    bool collapsed = updatedRange->collapsed(ASSERT_NO_EXCEPTION);
     if (collapsed)
         return "";
-    Node* commonAncestor = updatedRange->commonAncestorContainer(ec);
-    ASSERT(!ec);
+    Node* commonAncestor = updatedRange->commonAncestorContainer(ASSERT_NO_EXCEPTION);
     if (!commonAncestor)
         return "";
 
@@ -598,14 +595,11 @@ String createMarkup(const Range* range, Vector<Node*>* nodes, EAnnotateForInterc
         accumulator.appendString(interchangeNewlineString);
         startNode = visibleStart.next().deepEquivalent().deprecatedNode();
 
-        ExceptionCode ec = 0;
-        if (pastEnd && Range::compareBoundaryPoints(startNode, 0, pastEnd, 0, ec) >= 0) {
-            ASSERT(!ec);
+        if (pastEnd && Range::compareBoundaryPoints(startNode, 0, pastEnd, 0, ASSERT_NO_EXCEPTION) >= 0) {
             if (deleteButton)
                 deleteButton->enable();
             return interchangeNewlineString;
         }
-        ASSERT(!ec);
     }
 
     Node* lastClosed = accumulator.serializeNodes(startNode, pastEnd);
@@ -693,7 +687,6 @@ static bool findNodesSurroundingContext(Document* document, RefPtr<Node>& nodeBe
 
 static void trimFragment(DocumentFragment* fragment, Node* nodeBeforeContext, Node* nodeAfterContext)
 {
-    ExceptionCode ec = 0;
     RefPtr<Node> next;
     for (RefPtr<Node> node = fragment->firstChild(); node; node = next) {
         if (nodeBeforeContext->isDescendantOf(node.get())) {
@@ -702,7 +695,7 @@ static void trimFragment(DocumentFragment* fragment, Node* nodeBeforeContext, No
         }
         next = NodeTraversal::nextSkippingChildren(node.get());
         ASSERT(!node->contains(nodeAfterContext));
-        node->parentNode()->removeChild(node.get(), ec);
+        node->parentNode()->removeChild(node.get(), ASSERT_NO_EXCEPTION);
         if (nodeBeforeContext == node)
             break;
     }
@@ -710,8 +703,7 @@ static void trimFragment(DocumentFragment* fragment, Node* nodeBeforeContext, No
     ASSERT(nodeAfterContext->parentNode());
     for (RefPtr<Node> node = nodeAfterContext; node; node = next) {
         next = NodeTraversal::nextSkippingChildren(node.get());
-        node->parentNode()->removeChild(node.get(), ec);
-        ASSERT(!ec);
+        node->parentNode()->removeChild(node.get(), ASSERT_NO_EXCEPTION);
     }
 }
 
@@ -741,19 +733,16 @@ PassRefPtr<DocumentFragment> createFragmentFromMarkupWithContext(Document* docum
         positionAfterNode(nodeBeforeContext.get()).parentAnchoredEquivalent(),
         positionBeforeNode(nodeAfterContext.get()).parentAnchoredEquivalent());
 
-    ExceptionCode ec = 0;
-    Node* commonAncestor = range->commonAncestorContainer(ec);
-    ASSERT(!ec);
+    Node* commonAncestor = range->commonAncestorContainer(ASSERT_NO_EXCEPTION);
     Node* specialCommonAncestor = ancestorToRetainStructureAndAppearanceWithNoRenderer(commonAncestor);
 
     // When there's a special common ancestor outside of the fragment, we must include it as well to
     // preserve the structure and appearance of the fragment. For example, if the fragment contains
     // TD, we need to include the enclosing TABLE tag as well.
     RefPtr<DocumentFragment> fragment = DocumentFragment::create(document);
-    if (specialCommonAncestor) {
-        fragment->appendChild(specialCommonAncestor, ec);
-        ASSERT(!ec);
-    } else
+    if (specialCommonAncestor)
+        fragment->appendChild(specialCommonAncestor, ASSERT_NO_EXCEPTION);
+    else
         fragment->takeAllChildrenFrom(static_cast<ContainerNode*>(commonAncestor));
 
     trimFragment(fragment.get(), nodeBeforeContext.get(), nodeAfterContext.get());
@@ -781,10 +770,8 @@ static void fillContainerFromString(ContainerNode* paragraph, const String& stri
 {
     Document* document = paragraph->document();
 
-    ExceptionCode ec = 0;
     if (string.isEmpty()) {
-        paragraph->appendChild(createBlockPlaceholderElement(document), ec);
-        ASSERT(!ec);
+        paragraph->appendChild(createBlockPlaceholderElement(document), ASSERT_NO_EXCEPTION);
         return;
     }
 
@@ -801,24 +788,20 @@ static void fillContainerFromString(ContainerNode* paragraph, const String& stri
         // append the non-tab textual part
         if (!s.isEmpty()) {
             if (!tabText.isEmpty()) {
-                paragraph->appendChild(createTabSpanElement(document, tabText), ec);
-                ASSERT(!ec);
+                paragraph->appendChild(createTabSpanElement(document, tabText), ASSERT_NO_EXCEPTION);
                 tabText = emptyString();
             }
             RefPtr<Node> textNode = document->createTextNode(stringWithRebalancedWhitespace(s, first, i + 1 == numEntries));
-            paragraph->appendChild(textNode.release(), ec);
-            ASSERT(!ec);
+            paragraph->appendChild(textNode.release(), ASSERT_NO_EXCEPTION);
         }
 
         // there is a tab after every entry, except the last entry
         // (if the last character is a tab, the list gets an extra empty entry)
         if (i + 1 != numEntries)
             tabText.append('\t');
-        else if (!tabText.isEmpty()) {
-            paragraph->appendChild(createTabSpanElement(document, tabText), ec);
-            ASSERT(!ec);
-        }
-        
+        else if (!tabText.isEmpty())
+            paragraph->appendChild(createTabSpanElement(document, tabText), ASSERT_NO_EXCEPTION);
+
         first = false;
     }
 }
@@ -856,16 +839,13 @@ PassRefPtr<DocumentFragment> createFragmentFromText(Range* context, const String
     string.replace("\r\n", "\n");
     string.replace('\r', '\n');
 
-    ExceptionCode ec = 0;
     RenderObject* renderer = styleNode->renderer();
     if (renderer && renderer->style()->preserveNewline()) {
-        fragment->appendChild(document->createTextNode(string), ec);
-        ASSERT(!ec);
+        fragment->appendChild(document->createTextNode(string), ASSERT_NO_EXCEPTION);
         if (string.endsWith('\n')) {
             RefPtr<Element> element = createBreakElement(document);
             element->setAttribute(classAttr, AppleInterchangeNewline);            
-            fragment->appendChild(element.release(), ec);
-            ASSERT(!ec);
+            fragment->appendChild(element.release(), ASSERT_NO_EXCEPTION);
         }
         return fragment.release();
     }
@@ -907,8 +887,7 @@ PassRefPtr<DocumentFragment> createFragmentFromText(Range* context, const String
                 element = createDefaultParagraphElement(document);
             fillContainerFromString(element.get(), s);
         }
-        fragment->appendChild(element.release(), ec);
-        ASSERT(!ec);
+        fragment->appendChild(element.release(), ASSERT_NO_EXCEPTION);
     }
     return fragment.release();
 }
@@ -924,14 +903,11 @@ PassRefPtr<DocumentFragment> createFragmentFromNodes(Document *document, const V
 
     RefPtr<DocumentFragment> fragment = document->createDocumentFragment();
 
-    ExceptionCode ec = 0;
     size_t size = nodes.size();
     for (size_t i = 0; i < size; ++i) {
         RefPtr<Element> element = createDefaultParagraphElement(document);
-        element->appendChild(nodes[i], ec);
-        ASSERT(!ec);
-        fragment->appendChild(element.release(), ec);
-        ASSERT(!ec);
+        element->appendChild(nodes[i], ASSERT_NO_EXCEPTION);
+        fragment->appendChild(element.release(), ASSERT_NO_EXCEPTION);
     }
 
     if (document->frame())
@@ -1042,18 +1018,13 @@ PassRefPtr<DocumentFragment> createFragmentForTransformToFragment(const String& 
 
 static inline void removeElementPreservingChildren(PassRefPtr<DocumentFragment> fragment, HTMLElement* element)
 {
-    ExceptionCode ignoredExceptionCode;
-
     RefPtr<Node> nextChild;
     for (RefPtr<Node> child = element->firstChild(); child; child = nextChild) {
         nextChild = child->nextSibling();
-        element->removeChild(child.get(), ignoredExceptionCode);
-        ASSERT(!ignoredExceptionCode);
-        fragment->insertBefore(child, element, ignoredExceptionCode);
-        ASSERT(!ignoredExceptionCode);
+        element->removeChild(child.get(), ASSERT_NO_EXCEPTION);
+        fragment->insertBefore(child, element, ASSERT_NO_EXCEPTION);
     }
-    fragment->removeChild(element, ignoredExceptionCode);
-    ASSERT(!ignoredExceptionCode);
+    fragment->removeChild(element, ASSERT_NO_EXCEPTION);
 }
 
 PassRefPtr<DocumentFragment> createContextualFragment(const String& markup, HTMLElement* element, FragmentScriptingPermission scriptingPermission, ExceptionCode& ec)

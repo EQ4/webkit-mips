@@ -29,6 +29,8 @@
 #include "PageLoadClientEfl.h"
 #include "PagePolicyClientEfl.h"
 #include "PageUIClientEfl.h"
+#include "PageViewportController.h"
+#include "PageViewportControllerClientEfl.h"
 #include "WKAPICast.h"
 #include "WKEinaSharedString.h"
 #include "WKFindOptions.h"
@@ -36,6 +38,7 @@
 #include "WKRetainPtr.h"
 #include "WKString.h"
 #include "WKURL.h"
+#include "WKView.h"
 #include "WebContext.h"
 #include "WebData.h"
 #include "WebFullScreenManagerProxy.h"
@@ -54,11 +57,6 @@
 
 #if ENABLE(INSPECTOR)
 #include "WebInspectorProxy.h"
-#endif
-
-#if USE(TILED_BACKING_STORE)
-#include "PageViewportController.h"
-#include "PageViewportControllerClientEfl.h"
 #endif
 
 using namespace WebKit;
@@ -479,7 +477,7 @@ void ewk_view_draws_page_background_set(Evas_Object *ewkView, Eina_Bool enabled)
 {
     EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl);
 
-    impl->setDrawsBackground(enabled);
+    WKViewSetDrawsBackground(impl->wkView(), enabled);
 }
 
 /// Creates a type name for Ewk_Page_Contents_Context.

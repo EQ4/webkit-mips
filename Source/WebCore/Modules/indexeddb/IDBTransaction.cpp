@@ -30,6 +30,7 @@
 
 #include "EventException.h"
 #include "EventQueue.h"
+#include "ExceptionCodePlaceholder.h"
 #include "IDBDatabase.h"
 #include "IDBDatabaseException.h"
 #include "IDBEventDispatcher.h"
@@ -121,10 +122,7 @@ IDBTransaction::~IDBTransaction()
 
 const String& IDBTransaction::mode() const
 {
-    ExceptionCode ec = 0;
-    const AtomicString& mode = modeToString(m_mode, ec);
-    ASSERT(!ec);
-    return mode;
+    return modeToString(m_mode);
 }
 
 void IDBTransaction::setError(PassRefPtr<DOMError> error, const String& errorMessage)
@@ -349,7 +347,7 @@ IDBTransaction::Mode IDBTransaction::stringToMode(const String& modeString, Scri
     return IDBTransaction::READ_ONLY;
 }
 
-const AtomicString& IDBTransaction::modeToString(IDBTransaction::Mode mode, ExceptionCode& ec)
+const AtomicString& IDBTransaction::modeToString(IDBTransaction::Mode mode)
 {
     switch (mode) {
     case IDBTransaction::READ_ONLY:
@@ -365,7 +363,7 @@ const AtomicString& IDBTransaction::modeToString(IDBTransaction::Mode mode, Exce
         break;
 
     default:
-        ec = TypeError;
+        ASSERT_NOT_REACHED();
         return IDBTransaction::modeReadOnly();
     }
 }
@@ -426,8 +424,7 @@ void IDBTransaction::stop()
     ActiveDOMObject::stop();
     m_contextStopped = true;
 
-    ExceptionCode unused;
-    abort(unused);
+    abort(IGNORE_EXCEPTION);
 }
 
 void IDBTransaction::enqueueEvent(PassRefPtr<Event> event)

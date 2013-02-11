@@ -44,6 +44,7 @@
 #include "Console.h"
 #include "DOMPath.h"
 #include "ExceptionCode.h"
+#include "ExceptionCodePlaceholder.h"
 #include "FloatConversion.h"
 #include "FloatQuad.h"
 #include "FontCache.h"
@@ -867,6 +868,8 @@ PassRefPtr<DOMPath> CanvasRenderingContext2D::currentPath()
 
 void CanvasRenderingContext2D::setCurrentPath(DOMPath* path)
 {
+    if (!path)
+        return;
     m_path = path->path();
 }
 #endif
@@ -1511,8 +1514,7 @@ void CanvasRenderingContext2D::drawImageFromRect(HTMLImageElement* image,
     if (!parseCompositeAndBlendOperator(compositeOperation, op, blendOp) || blendOp != BlendModeNormal)
         op = CompositeSourceOver;
 
-    ExceptionCode ec;
-    drawImage(image, FloatRect(sx, sy, sw, sh), FloatRect(dx, dy, dw, dh), op, BlendModeNormal, ec);
+    drawImage(image, FloatRect(sx, sy, sw, sh), FloatRect(dx, dy, dw, dh), op, BlendModeNormal, IGNORE_EXCEPTION);
 }
 
 void CanvasRenderingContext2D::setAlpha(float alpha)

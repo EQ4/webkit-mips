@@ -29,27 +29,25 @@
 #include "HTMLToken.h"
 #include "HTTPParsers.h"
 #include "SuffixTree.h"
+#include "TextEncoding.h"
 #include <wtf/PassOwnPtr.h>
 
 namespace WebCore {
 
-class DidBlockScriptRequest;
 class Document;
 class HTMLDocumentParser;
 class HTMLSourceTracker;
-class TextResourceDecoder;
+class XSSInfo;
 
 struct FilterTokenRequest {
-    FilterTokenRequest(HTMLToken& token, HTMLSourceTracker& sourceTracker, const TextResourceDecoder* decoder, bool shouldAllowCDATA)
+    FilterTokenRequest(HTMLToken& token, HTMLSourceTracker& sourceTracker, bool shouldAllowCDATA)
         : token(token)
         , sourceTracker(sourceTracker)
-        , decoder(decoder)
         , shouldAllowCDATA(shouldAllowCDATA)
     { }
 
     HTMLToken& token;
     HTMLSourceTracker& sourceTracker;
-    const TextResourceDecoder* decoder;
     bool shouldAllowCDATA;
 };
 
@@ -59,7 +57,8 @@ public:
     XSSAuditor();
 
     void init(Document*);
-    PassOwnPtr<DidBlockScriptRequest> filterToken(const FilterTokenRequest&);
+    PassOwnPtr<XSSInfo> filterToken(const FilterTokenRequest&);
+    bool isSafeToSendToAnotherThread() const;
 
 private:
     static const size_t kMaximumFragmentLengthTarget = 100;
@@ -113,6 +112,7 @@ private:
     String m_cachedDecodedSnippet;
     unsigned m_scriptTagNestingLevel;
     KURL m_reportURL;
+    TextEncoding m_encoding;
 };
 
 }

@@ -421,7 +421,7 @@ namespace WebCore {
         return isfinite(value) ? v8::Date::New(value) : v8NullWithCheck(isolate);
     }
 
-    v8::Persistent<v8::FunctionTemplate> createRawTemplate();
+    v8::Persistent<v8::FunctionTemplate> createRawTemplate(v8::Isolate*);
 
     PassRefPtr<DOMStringList> toDOMStringList(v8::Handle<v8::Value>, v8::Isolate*);
     PassRefPtr<XPathNSResolver> toXPathNSResolver(v8::Handle<v8::Value>, v8::Isolate*);
@@ -437,11 +437,28 @@ namespace WebCore {
     // a context, if the window is currently being displayed in the Frame.
     Frame* toFrameIfNotDetached(v8::Handle<v8::Context>);
 
-    inline DOMWrapperWorld* worldForEnteredContextIfIsolated()
+    inline DOMWrapperWorld* worldForEnteredContext()
     {
-        if (!v8::Context::InContext())
+        v8::Handle<v8::Context> context = v8::Context::GetEntered();
+        if (context.IsEmpty())
             return 0;
-        return DOMWrapperWorld::isolated(v8::Context::GetEntered());
+        return DOMWrapperWorld::getWorld(context);
+    }
+
+    // This is a slightly different version of worldForEnteredContext().
+    // The difference is just that worldForEnteredContextWithoutContextCheck()
+    // does not call assertContextHasCorrectPrototype() (which is enabled on
+    // Debug builds only). Because assertContextHasCorrectPrototype() crashes
+    // if it is called when a current context is not completely initialized,
+    // you have to use worldForEnteredContextWithoutContextCheck() if you need
+    // to get a DOMWrapperWorld while a current context is being initialized.
+    // See https://bugs.webkit.org/show_bug.cgi?id=108579#c15 for more details.
+    inline DOMWrapperWorld* worldForEnteredContextWithoutContextCheck()
+    {
+        v8::Handle<v8::Context> context = v8::Context::GetEntered();
+        if (context.IsEmpty())
+            return 0;
+        return DOMWrapperWorld::getWorldWithoutContextCheck(context);
     }
 
     // If the current context causes out of memory, JavaScript setting

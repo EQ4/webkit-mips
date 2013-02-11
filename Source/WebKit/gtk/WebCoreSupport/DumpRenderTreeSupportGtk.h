@@ -63,8 +63,6 @@ public:
     static void addUserScript(WebKitWebFrame*, const char*, bool, bool);
     static void addUserStyleSheet(WebKitWebFrame*, const char* sourceCode, bool allFrames);
     static guint getPendingUnloadEventCount(WebKitWebFrame*);
-    static bool pauseAnimation(WebKitWebFrame*, const char* name, double time, const char* element);
-    static bool pauseTransition(WebKitWebFrame*, const char* name, double time, const char* element);
     static WTF::CString markerTextForListItem(WebKitWebFrame*, JSContextRef, JSValueRef nodeObject);
     static void clearMainFrameName(WebKitWebFrame*);
     static AtkObject* getFocusedAccessibleElement(WebKitWebFrame*);
@@ -107,7 +105,6 @@ public:
     static void whiteListAccessFromOrigin(const gchar* sourceOrigin, const gchar* destinationProtocol, const gchar* destinationHost, bool allowDestinationSubdomains);
     static void removeWhiteListAccessFromOrigin(const char* sourceOrigin, const char* destinationProtocol, const char* destinationHost, bool allowDestinationSubdomains);
     static void resetOriginAccessWhiteLists();
-    static unsigned int workerThreadCount();
 
     static void resetGeolocationClientMock(WebKitWebView*);
     static void setMockGeolocationPermission(WebKitWebView*, bool allowed);

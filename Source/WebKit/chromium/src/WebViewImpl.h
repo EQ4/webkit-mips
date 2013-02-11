@@ -172,6 +172,7 @@ public:
     virtual WebColor backgroundColor() const;
     virtual bool selectionBounds(WebRect& anchor, WebRect& focus) const;
     virtual bool selectionTextDirection(WebTextDirection& start, WebTextDirection& end) const;
+    virtual bool isSelectionAnchorFirst() const;
     virtual bool caretOrSelectionRange(size_t* location, size_t* length);
     virtual void setTextDirection(WebTextDirection direction);
     virtual bool isAcceleratedCompositingActive() const;
@@ -310,6 +311,7 @@ public:
     virtual void transferActiveWheelFlingAnimation(const WebActiveWheelFlingParameters&);
     virtual WebViewBenchmarkSupport* benchmarkSupport();
     virtual void setShowPaintRects(bool);
+    virtual void setShowDebugBorders(bool);
     virtual void setShowFPSCounter(bool);
     virtual void setContinuousPaintingEnabled(bool);
 
@@ -895,6 +897,7 @@ private:
 
     bool m_showFPSCounter;
     bool m_showPaintRects;
+    bool m_showDebugBorders;
     bool m_continuousPaintingEnabled;
 };
 

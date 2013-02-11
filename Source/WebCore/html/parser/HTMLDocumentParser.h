@@ -46,6 +46,7 @@
 
 namespace WebCore {
 
+class BackgroundHTMLParser;
 class CompactHTMLToken;
 class Document;
 class DocumentFragment;
@@ -55,6 +56,7 @@ class HTMLTokenizer;
 class HTMLScriptRunner;
 class HTMLTreeBuilder;
 class HTMLPreloadScanner;
+class HTMLResourcePreloader;
 class ScriptController;
 class ScriptSourceCode;
 
@@ -100,6 +102,8 @@ protected:
 
     HTMLTreeBuilder* treeBuilder() const { return m_treeBuilder.get(); }
 
+    void forcePlaintextForTextDocument();
+
 private:
     static PassRefPtr<HTMLDocumentParser> create(DocumentFragment* fragment, Element* contextElement, FragmentScriptingPermission permission)
     {
@@ -129,9 +133,12 @@ private:
 #if ENABLE(THREADED_HTML_PARSER)
     void startBackgroundParser();
     void stopBackgroundParser();
+    void checkForSpeculationFailure();
     void didFailSpeculation(PassOwnPtr<HTMLToken>, PassOwnPtr<HTMLTokenizer>);
     void processParsedChunkFromBackgroundParser(PassOwnPtr<ParsedChunk>);
 #endif
+
+    Document* contextForParsingSession();
 
     enum SynchronousMode {
         AllowYield,
@@ -181,7 +188,9 @@ private:
     OwnPtr<ParsedChunk> m_currentChunk;
     Deque<OwnPtr<ParsedChunk> > m_speculations;
     WeakPtrFactory<HTMLDocumentParser> m_weakFactory;
+    WeakPtr<BackgroundHTMLParser> m_backgroundParser;
 #endif
+    OwnPtr<HTMLResourcePreloader> m_preloader;
 
     bool m_endWasDelayed;
     bool m_haveBackgroundParser;

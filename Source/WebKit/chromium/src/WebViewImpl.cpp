@@ -451,6 +451,7 @@ WebViewImpl::WebViewImpl(WebViewClient* client)
     , m_suppressInvalidations(false)
     , m_showFPSCounter(false)
     , m_showPaintRects(false)
+    , m_showDebugBorders(false)
     , m_continuousPaintingEnabled(false)
 {
     // WebKit/win/WebView.cpp does the same thing, except they call the
@@ -466,7 +467,8 @@ WebViewImpl::WebViewImpl(WebViewClient* client)
     pageClients.dragClient = &m_dragClientImpl;
     pageClients.inspectorClient = &m_inspectorClientImpl;
     pageClients.backForwardClient = BackForwardListChromium::create(this);
-    // FIXME: Set pageClients.validationMessageClient when Chromium-side implementation is done.
+    if (WebRuntimeFeatures::isNativeValidationMessageEnabled())
+        pageClients.validationMessageClient = m_validationMessage.get();
 
     m_page = adoptPtr(new Page(pageClients));
 #if ENABLE(MEDIA_STREAM)
@@ -674,7 +676,7 @@ void WebViewImpl::scrollBy(const WebPoint& delta)
     } else {
         WebGestureEvent syntheticGestureEvent;
 
-        syntheticGestureEvent.type = WebInputEvent::GestureScrollUpdate;
+        syntheticGestureEvent.type = WebInputEvent::GestureScrollUpdateWithoutPropagation;
         syntheticGestureEvent.data.scrollUpdate.deltaX = delta.x;
         syntheticGestureEvent.data.scrollUpdate.deltaY = delta.y;
         syntheticGestureEvent.x = m_positionOnFlingStart.x;
@@ -811,6 +813,7 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
         m_client->cancelScheduledContentIntents();
     case WebInputEvent::GestureScrollEnd:
     case WebInputEvent::GestureScrollUpdate:
+    case WebInputEvent::GestureScrollUpdateWithoutPropagation:
     case WebInputEvent::GestureTapCancel:
     case WebInputEvent::GesturePinchEnd:
     case WebInputEvent::GesturePinchUpdate: {
@@ -874,6 +877,13 @@ void WebViewImpl::setShowPaintRects(bool show)
         m_layerTreeView->setShowPaintRects(show);
     }
     m_showPaintRects = show;
+}
+
+void WebViewImpl::setShowDebugBorders(bool show)
+{
+    if (isAcceleratedCompositingActive())
+        m_layerTreeView->setShowDebugBorders(show);
+    m_showDebugBorders = show;
 }
 
 void WebViewImpl::setContinuousPaintingEnabled(bool enabled)
@@ -2416,6 +2426,17 @@ bool WebViewImpl::selectionTextDirection(WebTextDirection& start, WebTextDirecti
     start = selection->start().primaryDirection() == RTL ? WebTextDirectionRightToLeft : WebTextDirectionLeftToRight;
     end = selection->end().primaryDirection() == RTL ? WebTextDirectionRightToLeft : WebTextDirectionLeftToRight;
     return true;
+}
+
+bool WebViewImpl::isSelectionAnchorFirst() const
+{
+    const Frame* frame = focusedWebCoreFrame();
+    if (!frame)
+        return false;
+    FrameSelection* selection = frame->selection();
+    if (!selection)
+        return false;
+    return selection->selection().isBaseFirst();
 }
 
 bool WebViewImpl::setEditableSelectionOffsets(int start, int end)
@@ -4139,6 +4160,7 @@ void WebViewImpl::setIsAcceleratedCompositingActive(bool active)
                 m_pageOverlays->update();
             m_layerTreeView->setShowFPSCounter(m_showFPSCounter);
             m_layerTreeView->setShowPaintRects(m_showPaintRects);
+            m_layerTreeView->setShowDebugBorders(m_showDebugBorders);
             m_layerTreeView->setContinuousPaintingEnabled(m_continuousPaintingEnabled);
         } else {
             m_nonCompositedContentHost.clear();

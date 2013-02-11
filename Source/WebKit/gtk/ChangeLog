@@ -1,3 +1,83 @@
+2013-02-10  Jae Hyun Park  <jae.park08@gmail.com>
+
+        Rename ENABLE(GLIB_SUPPORT) to USE(GLIB)
+        https://bugs.webkit.org/show_bug.cgi?id=104266
+
+        Reviewed by Philippe Normand.
+
+        Using USE(GLIB) instead of ENABLE(GLIB_SUPPORT) is more consistent with
+        the existing macro naming conventions.
+
+        From Platform.h
+        USE() - use a particular third-party library or optional OS service
+        ENABLE() - turn on a specific feature of WebKit
+
+        * gyp/Configuration.gypi:
+
+2013-02-08  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move workerThreadCount from TestRunner to WebCore Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109239
+
+        Reviewed by Darin Adler.
+
+        * WebCoreSupport/DumpRenderTreeSupportGtk.cpp:
+        * WebCoreSupport/DumpRenderTreeSupportGtk.h:
+        (DumpRenderTreeSupportGtk):
+
+2013-02-08  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Add an experimental gyp build
+        https://bugs.webkit.org/show_bug.cgi?id=109003
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Add an experimental gyp build for WebKitGTK+. Currently only libjavascriptcoregtk,
+        jsc, and minidom build (and only on platforms for that support bash). To use the
+        build simply run:
+
+        $ gyp --generator-output=build --depth=. Source/WebKit/gtk/gyp/JavaScriptCore.gyp
+
+        Then enter the build directory and run make.
+
+        * gyp/Configuration.gypi: Added.
+        * gyp/JavaScriptCore.gyp: Added.
+        * gyp/WTF.gyp: Added.
+        * gyp/generate-derived-sources.sh: Added.
+
+2013-02-07  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Cleanup command-line defines
+        https://bugs.webkit.org/show_bug.cgi?id=109213
+
+        Reviewed by Xan Lopez.
+
+        * GNUmakefile.am: Remove references to flags that are now provided
+        by autotoolsconfig.h
+
+2013-02-07  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move pauseAnimation/pauseTransition from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109107
+
+        Reviewed by Anders Carlsson.
+
+        * WebCoreSupport/DumpRenderTreeSupportGtk.cpp:
+        * WebCoreSupport/DumpRenderTreeSupportGtk.h:
+        (DumpRenderTreeSupportGtk):
+
+2013-02-07  ChangSeok Oh  <shivamidow@gmail.com>
+
+        [GTK][AC] Implement opacity animation with clutter ac backend
+        https://bugs.webkit.org/show_bug.cgi?id=108961
+
+        Reviewed by Gustavo Noronha Silva.
+
+        Add AnimationTrigger for ac compositing.
+
+        * WebCoreSupport/ChromeClientGtk.cpp:
+        (WebKit::ChromeClient::allowedCompositingTriggers):
+
 2013-02-05  Martin Robinson  <mrobinson@igalia.com>
 
         Update the NEWS and configuration in preparation for 1.11.5.

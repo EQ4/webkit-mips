@@ -24,7 +24,6 @@
  */
 
 #include "config.h"
-
 #if ENABLE(VIDEO)
 #include "HTMLMediaElement.h"
 
@@ -45,6 +44,7 @@
 #include "Event.h"
 #include "EventNames.h"
 #include "ExceptionCode.h"
+#include "ExceptionCodePlaceholder.h"
 #include "Frame.h"
 #include "FrameLoader.h"
 #include "FrameLoaderClient.h"
@@ -123,6 +123,11 @@
 
 #if ENABLE(MEDIA_STREAM)
 #include "MediaStreamRegistry.h"
+#endif
+
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+#include "MediaKeyNeededEvent.h"
+#include "MediaKeys.h"
 #endif
 
 using namespace std;
@@ -1966,6 +1971,25 @@ bool HTMLMediaElement::mediaPlayerKeyNeeded(MediaPlayer*, const String& keySyste
 }
 #endif
 
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+void HTMLMediaElement::mediaPlayerKeyNeeded(MediaPlayer*, Uint8Array* initData)
+{
+    MediaKeyNeededEventInit initializer;
+    initializer.initData = initData;
+    initializer.bubbles = false;
+    initializer.cancelable = false;
+
+    RefPtr<Event> event = MediaKeyNeededEvent::create(eventNames().webkitneedkeyEvent, initializer);
+    event->setTarget(this);
+    m_asyncEventQueue->enqueueEvent(event.release());
+}
+
+void HTMLMediaElement::setMediaKeys(MediaKeys* mediaKeys)
+{
+    m_mediaKeys = mediaKeys;
+}
+#endif
+
 void HTMLMediaElement::progressEventTimerFired(Timer<HTMLMediaElement>*)
 {
     ASSERT(m_player);
@@ -1993,17 +2017,14 @@ void HTMLMediaElement::progressEventTimerFired(Timer<HTMLMediaElement>*)
 void HTMLMediaElement::rewind(float timeDelta)
 {
     LOG(Media, "HTMLMediaElement::rewind(%f)", timeDelta);
-
-    ExceptionCode e;
-    setCurrentTime(max(currentTime() - timeDelta, minTimeSeekable()), e);
+    setCurrentTime(max(currentTime() - timeDelta, minTimeSeekable()), IGNORE_EXCEPTION);
 }
 
 void HTMLMediaElement::returnToRealtime()
 {
     LOG(Media, "HTMLMediaElement::returnToRealtime");
-    ExceptionCode e;
-    setCurrentTime(maxTimeSeekable(), e);
-}  
+    setCurrentTime(maxTimeSeekable(), IGNORE_EXCEPTION);
+}
 
 void HTMLMediaElement::addPlayedRange(float start, float end)
 {
@@ -2407,10 +2428,8 @@ void HTMLMediaElement::playInternal()
     if (!m_player || m_networkState == NETWORK_EMPTY)
         scheduleLoad(MediaResource);
 
-    if (endedPlayback()) {
-        ExceptionCode unused;
-        seek(0, unused);
-    }
+    if (endedPlayback())
+        seek(0, IGNORE_EXCEPTION);
 
     if (m_mediaController)
         m_mediaController->bringElementUpToSpeed(this);
@@ -2476,6 +2495,14 @@ void HTMLMediaElement::setSourceState(const String& state)
 #if ENABLE(ENCRYPTED_MEDIA)
 void HTMLMediaElement::webkitGenerateKeyRequest(const String& keySystem, PassRefPtr<Uint8Array> initData, ExceptionCode& ec)
 {
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+    static bool firstTime = true;
+    if (firstTime && context() && context()->scriptExecutionContext()) {
+        context()->scriptExecutionContext()->addConsoleMessage(JSMessageSource, WarningMessageLevel, "'HTMLMediaElement.webkitGenerateKeyRequest()' is deprecated.  Use 'MediaKeys.createSession()' instead.");
+        firstTime = false;
+    }
+#endif
+
     if (keySystem.isEmpty()) {
         ec = SYNTAX_ERR;
         return;
@@ -2504,6 +2531,14 @@ void HTMLMediaElement::webkitGenerateKeyRequest(const String& keySystem, Excepti
 
 void HTMLMediaElement::webkitAddKey(const String& keySystem, PassRefPtr<Uint8Array> key, PassRefPtr<Uint8Array> initData, const String& sessionId, ExceptionCode& ec)
 {
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+    static bool firstTime = true;
+    if (firstTime && context() && context()->scriptExecutionContext()) {
+        context()->scriptExecutionContext()->addConsoleMessage(JSMessageSource, WarningMessageLevel, "'HTMLMediaElement.webkitAddKey()' is deprecated.  Use 'MediaKeySession.addKey()' instead.");
+        firstTime = false;
+    }
+#endif
+
     if (keySystem.isEmpty()) {
         ec = SYNTAX_ERR;
         return;
@@ -2753,9 +2788,8 @@ float HTMLMediaElement::percentLoaded() const
     float buffered = 0;
     RefPtr<TimeRanges> timeRanges = m_player->buffered();
     for (unsigned i = 0; i < timeRanges->length(); ++i) {
-        ExceptionCode ignoredException;
-        float start = timeRanges->start(i, ignoredException);
-        float end = timeRanges->end(i, ignoredException);
+        float start = timeRanges->start(i, IGNORE_EXCEPTION);
+        float end = timeRanges->end(i, IGNORE_EXCEPTION);
         buffered += end - start;
     }
     return buffered / duration;
@@ -3359,10 +3393,9 @@ void HTMLMediaElement::mediaPlayerTimeChanged(MediaPlayer*)
     if (!isnan(dur) && dur && now >= dur && m_playbackRate > 0) {
         // If the media element has a loop attribute specified and does not have a current media controller,
         if (loop() && !m_mediaController) {
-            ExceptionCode ignoredException;
             m_sentEndEvent = false;
             //  then seek to the earliest possible position of the media resource and abort these steps.
-            seek(startTime(), ignoredException);
+            seek(startTime(), IGNORE_EXCEPTION);
         } else {
             // If the media element does not have a current media controller, and the media element
             // has still ended playback, and the direction of playback is still forwards, and paused
@@ -3426,9 +3459,8 @@ void HTMLMediaElement::mediaPlayerDurationChanged(MediaPlayer* player)
 
     float now = currentTime();
     float dur = duration();
-    ExceptionCode ignoredException;
     if (now > dur)
-        seek(dur, ignoredException);
+        seek(dur, IGNORE_EXCEPTION);
 
     endProcessingMediaPlayerCallback();
 }
@@ -4612,9 +4644,8 @@ void HTMLMediaElement::prepareMediaFragmentURI()
 void HTMLMediaElement::applyMediaFragmentURI()
 {
     if (m_fragmentStartTime != MediaPlayer::invalidTime()) {
-        ExceptionCode ignoredException;
         m_sentEndEvent = false;
-        seek(m_fragmentStartTime, ignoredException);
+        seek(m_fragmentStartTime, IGNORE_EXCEPTION);
     }
 }
 

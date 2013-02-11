@@ -286,6 +286,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSFloat32Array.h \
 	DerivedSources/WebCore/JSFloat64Array.cpp \
 	DerivedSources/WebCore/JSFloat64Array.h \
+	DerivedSources/WebCore/JSFocusEvent.cpp \
+	DerivedSources/WebCore/JSFocusEvent.h \
 	DerivedSources/WebCore/JSGamepad.cpp \
 	DerivedSources/WebCore/JSGamepad.h \
 	DerivedSources/WebCore/JSGamepadList.cpp \
@@ -1383,6 +1385,7 @@ dom_binding_idls += \
 	$(WebCore)/dom/Event.idl \
 	$(WebCore)/dom/EventTarget.idl \
 	$(WebCore)/dom/EventException.idl \
+	$(WebCore)/dom/FocusEvent.idl \
 	$(WebCore)/dom/HashChangeEvent.idl \
 	$(WebCore)/dom/KeyboardEvent.idl \
 	$(WebCore)/dom/MessageChannel.idl \
@@ -2149,14 +2152,18 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webdatabase/SQLStatement.h \
 	Source/WebCore/Modules/webdatabase/SQLStatementSync.cpp \
 	Source/WebCore/Modules/webdatabase/SQLStatementSync.h \
+	Source/WebCore/Modules/webdatabase/SQLTransaction.cpp \
+	Source/WebCore/Modules/webdatabase/SQLTransaction.h \
+	Source/WebCore/Modules/webdatabase/SQLTransactionBackend.cpp \
+	Source/WebCore/Modules/webdatabase/SQLTransactionBackend.h \
+	Source/WebCore/Modules/webdatabase/SQLTransactionBackendSync.cpp \
+	Source/WebCore/Modules/webdatabase/SQLTransactionBackendSync.h \
 	Source/WebCore/Modules/webdatabase/SQLTransactionCallback.h \
 	Source/WebCore/Modules/webdatabase/SQLTransactionClient.cpp \
 	Source/WebCore/Modules/webdatabase/SQLTransactionClient.h \
 	Source/WebCore/Modules/webdatabase/SQLTransactionCoordinator.cpp \
 	Source/WebCore/Modules/webdatabase/SQLTransactionCoordinator.h \
-	Source/WebCore/Modules/webdatabase/SQLTransaction.cpp \
 	Source/WebCore/Modules/webdatabase/SQLTransactionErrorCallback.h \
-	Source/WebCore/Modules/webdatabase/SQLTransaction.h \
 	Source/WebCore/Modules/webdatabase/SQLTransactionSyncCallback.h \
 	Source/WebCore/Modules/webdatabase/SQLTransactionSync.cpp \
 	Source/WebCore/Modules/webdatabase/SQLTransactionSync.h \
@@ -2865,6 +2872,8 @@ webcore_sources += \
 	Source/WebCore/dom/ExceptionCode.h \
 	Source/WebCore/dom/ExceptionCodePlaceholder.cpp \
 	Source/WebCore/dom/ExceptionCodePlaceholder.h \
+	Source/WebCore/dom/FocusEvent.cpp \
+	Source/WebCore/dom/FocusEvent.h \
 	Source/WebCore/dom/FragmentScriptingPermission.h \
 	Source/WebCore/dom/GestureEvent.cpp \
 	Source/WebCore/dom/GestureEvent.h \
@@ -3593,6 +3602,8 @@ webcore_sources += \
 	Source/WebCore/html/parser/HTMLParserThread.h \
 	Source/WebCore/html/parser/HTMLPreloadScanner.cpp \
 	Source/WebCore/html/parser/HTMLPreloadScanner.h \
+	Source/WebCore/html/parser/HTMLResourcePreloader.cpp \
+	Source/WebCore/html/parser/HTMLResourcePreloader.h \
 	Source/WebCore/html/parser/HTMLScriptRunner.cpp \
 	Source/WebCore/html/parser/HTMLScriptRunner.h \
 	Source/WebCore/html/parser/HTMLScriptRunnerHost.h \
@@ -6092,6 +6103,8 @@ webcoregtk_sources += \
 	Source/WebCore/platform/graphics/gstreamer/GStreamerGWorld.h \
 	Source/WebCore/platform/graphics/gstreamer/ImageGStreamerCairo.cpp \
 	Source/WebCore/platform/graphics/gstreamer/ImageGStreamer.h \
+	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp \
+	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.h \
 	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp \
 	Source/WebCore/platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.h \
 	Source/WebCore/platform/graphics/gstreamer/PlatformVideoWindowGtk.cpp \
@@ -6447,6 +6460,8 @@ webcore_sources += \
 	Source/WebCore/platform/graphics/clutter/GraphicsLayerActor.h \
 	Source/WebCore/platform/graphics/clutter/GraphicsLayerClutter.cpp \
 	Source/WebCore/platform/graphics/clutter/GraphicsLayerClutter.h \
+	Source/WebCore/platform/graphics/clutter/PlatformClutterAnimation.cpp \
+	Source/WebCore/platform/graphics/clutter/PlatformClutterAnimation.h \
 	Source/WebCore/platform/graphics/clutter/TransformationMatrixClutter.cpp
 endif  # END USE_CLUTTER
 
@@ -6470,7 +6485,13 @@ webcore_sources += \
 	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperPlatformLayer.h
+	Source/WebCore/platform/graphics/texmap/TextureMapperPlatformLayer.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperSurfaceBackingStore.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperSurfaceBackingStore.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTile.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTile.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTiledBackingStore.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTiledBackingStore.h
 endif  # END USE_TEXTURE_MAPPER_CAIRO
 
 if USE_TEXTURE_MAPPER_GL
@@ -6495,7 +6516,13 @@ webcore_sources += \
 	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.h \
-	Source/WebCore/platform/graphics/texmap/TextureMapperPlatformLayer.h
+	Source/WebCore/platform/graphics/texmap/TextureMapperPlatformLayer.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperSurfaceBackingStore.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperSurfaceBackingStore.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTile.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTile.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTiledBackingStore.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperTiledBackingStore.h
 endif  # END USE_TEXTURE_MAPPER_GL
 endif  # USE_ACCELERATED_COMPOSITING
 

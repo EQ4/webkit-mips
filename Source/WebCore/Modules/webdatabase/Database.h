@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007, 2008 Apple Inc. All rights reserved.
+ * Copyright (C) 2007, 2008, 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -44,6 +44,7 @@ namespace WebCore {
 class DatabaseCallback;
 class SecurityOrigin;
 class SQLTransaction;
+class SQLTransactionBackend;
 class SQLTransactionCallback;
 class SQLTransactionClient;
 class SQLTransactionCoordinator;
@@ -79,7 +80,7 @@ public:
     unsigned long long maximumSize() const;
 
     void scheduleTransactionCallback(SQLTransaction*);
-    void scheduleTransactionStep(SQLTransaction*, bool immediately = false);
+    void scheduleTransactionStep(SQLTransactionBackend*, bool immediately = false);
 
     SQLTransactionClient* transactionClient() const;
     SQLTransactionCoordinator* transactionCoordinator() const;
@@ -88,12 +89,10 @@ private:
     Database(PassRefPtr<DatabaseBackendContext>, const String& name,
         const String& expectedVersion, const String& displayName, unsigned long estimatedSize);
     PassRefPtr<DatabaseBackendAsync> backend();
+    static PassRefPtr<Database> create(ScriptExecutionContext*, PassRefPtr<DatabaseBackend>);
 
     void runTransaction(PassRefPtr<SQLTransactionCallback>, PassRefPtr<SQLTransactionErrorCallback>,
                         PassRefPtr<VoidCallback> successCallback, PassRefPtr<SQLTransactionWrapper>, bool readOnly);
-
-    bool openAndVerifyVersion(bool setVersionInNewDatabase, DatabaseError&, String& errorMessage);
-    virtual bool performOpenAndVerify(bool setVersionInNewDatabase, DatabaseError&, String& errorMessage);
 
     void inProgressTransactionCompleted();
     void scheduleTransaction();
@@ -110,6 +109,7 @@ private:
     bool m_deleted;
 
     friend class DatabaseManager;
+    friend class DatabaseServer; // FIXME: remove this when the backend has been split out.
     friend class DatabaseBackendAsync; // FIXME: remove this when the backend has been split out.
 };
 

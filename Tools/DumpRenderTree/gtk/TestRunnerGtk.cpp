@@ -127,11 +127,6 @@ size_t TestRunner::webHistoryItemCount()
             webkit_web_back_forward_list_get_forward_length(list);
 }
 
-unsigned TestRunner::workerThreadCount() const
-{
-    return DumpRenderTreeSupportGtk::workerThreadCount();
-}
-
 JSRetainPtr<JSStringRef> TestRunner::platformName() const
 {
     JSRetainPtr<JSStringRef> platformName(Adopt, JSStringCreateWithUTF8CString("gtk"));
@@ -718,26 +713,6 @@ void TestRunner::setDefersLoading(bool defers)
 void TestRunner::setAppCacheMaximumSize(unsigned long long size)
 {
     webkit_application_cache_set_maximum_size(size);
-}
-
-bool TestRunner::pauseAnimationAtTimeOnElementWithId(JSStringRef animationName, double time, JSStringRef elementId)
-{    
-    gchar* name = JSStringCopyUTF8CString(animationName);
-    gchar* element = JSStringCopyUTF8CString(elementId);
-    bool returnValue = DumpRenderTreeSupportGtk::pauseAnimation(mainFrame, name, time, element);
-    g_free(name);
-    g_free(element);
-    return returnValue;
-}
-
-bool TestRunner::pauseTransitionAtTimeOnElementWithId(JSStringRef propertyName, double time, JSStringRef elementId)
-{    
-    gchar* name = JSStringCopyUTF8CString(propertyName);
-    gchar* element = JSStringCopyUTF8CString(elementId);
-    bool returnValue = DumpRenderTreeSupportGtk::pauseTransition(mainFrame, name, time, element);
-    g_free(name);
-    g_free(element);
-    return returnValue;
 }
 
 static gboolean booleanFromValue(gchar* value)

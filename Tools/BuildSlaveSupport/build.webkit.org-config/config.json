@@ -74,6 +74,7 @@
                     { "name": "efl-linux-slave-2", "platform": "efl" },
                     { "name": "efl-linux-slave-3", "platform": "efl" },
                     { "name": "efl-linux-slave-4", "platform": "efl" },
+                    { "name": "efl-linux-perf-1", "platform": "efl" },
 
                     { "name": "mips-1", "platform": "qt-mipsel"},
 
@@ -343,6 +344,11 @@
                       "name": "EFL Linux 32-bit Release (Build)", "type": "Build", "builddir": "efl-linux-32-release",
                       "platform": "efl", "configuration": "release", "architectures": ["i386"],
                       "slavenames": ["efl-linux-slave-3"]
+                    },
+                    {
+                      "name": "EFL Linux 64-bit Release WK2 (Perf)", "type": "BuildAndPerfTestWebKit2", "builddir": "efl-linux-64-release-wk2-perf",
+                      "platform": "efl", "configuration": "release", "architectures": ["x86_64"],
+                      "slavenames": ["efl-linux-perf-1"]
                     }
                   ],
 
@@ -355,6 +361,7 @@
                                        "Chromium Win Release", "Chromium Mac Release", "Chromium Linux Release",
                                        "Chromium Android Release",
                                        "EFL Linux 64-bit Release", "EFL Linux 64-bit Release WK2", "EFL Linux 32-bit Release (Build)", "EFL Linux 64-bit Debug WK2",
+                                       "EFL Linux 64-bit Release WK2 (Perf)",
                                        "WinCairo Release", "WinCE Release (Build)"]
                     },
                     { "type": "PlatformSpecificScheduler", "platform": "mac-lion", "branch": "trunk", "treeStableTimer": 45.0,

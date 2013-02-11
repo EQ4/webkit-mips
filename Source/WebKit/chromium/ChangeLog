@@ -1,3 +1,338 @@
+2013-02-11  Abhishek Arya  <inferno@chromium.org>
+
+        Add ASSERT_WITH_SECURITY_IMPLICATION to detect out of bounds access
+        https://bugs.webkit.org/show_bug.cgi?id=108981
+
+        Reviewed by Eric Seidel.
+
+        * src/AutofillPopupMenuClient.cpp:
+        (WebKit::AutofillPopupMenuClient::getSuggestion):
+        (WebKit::AutofillPopupMenuClient::getLabel):
+        (WebKit::AutofillPopupMenuClient::getIcon):
+        (WebKit::AutofillPopupMenuClient::removeSuggestionAtIndex):
+        (WebKit::AutofillPopupMenuClient::valueChanged):
+        (WebKit::AutofillPopupMenuClient::selectionChanged):
+        * src/ChromeClientImpl.cpp:
+        (WebKit::ChromeClientImpl::shouldRunModalDialogDuringPageDismissal):
+
+2013-02-10  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Enable more of webkit_unit_tests in component builds
+        https://bugs.webkit.org/show_bug.cgi?id=109369
+
+        Reviewed by Darin Fisher.
+
+        Updates all webkit_unit_tests (except for LevelDBTest) to go through the Platform API instead of directly
+        calling into webkit_support so they work in component builds.
+
+        * WebKit.gyp:
+        * tests/AssociatedURLLoaderTest.cpp:
+        * tests/EventListenerTest.cpp:
+        * tests/FrameTestHelpers.cpp:
+        (WebKit::FrameTestHelpers::createWebViewAndLoad):
+        (QuitTask):
+        (WebKit::FrameTestHelpers::QuitTask::run):
+        (FrameTestHelpers):
+        (WebKit::FrameTestHelpers::runPendingTasks):
+        * tests/FrameTestHelpers.h:
+        (FrameTestHelpers):
+        * tests/ListenerLeakTest.cpp:
+        * tests/PopupMenuTest.cpp:
+        * tests/PrerenderingTest.cpp:
+        * tests/ScrollingCoordinatorChromiumTest.cpp:
+        (WebKit::ScrollingCoordinatorChromiumTest::~ScrollingCoordinatorChromiumTest):
+        (WebKit::ScrollingCoordinatorChromiumTest::navigateTo):
+        * tests/URLTestHelpers.cpp:
+        (WebKit::URLTestHelpers::registerMockedURLLoad):
+        * tests/WebFrameTest.cpp:
+        * tests/WebImageTest.cpp:
+        (WebKit::readFile):
+        * tests/WebPageNewSerializerTest.cpp:
+        * tests/WebPageSerializerTest.cpp:
+        * tests/WebPluginContainerTest.cpp:
+        (WebKit::WebPluginContainerTest::TearDown):
+        (WebKit::TEST_F):
+        * tests/WebViewTest.cpp:
+
+2013-02-10  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r181645.  Requested by
+        "James Robinson" <jamesr@chromium.org> via sheriffbot.
+
+        * DEPS:
+
+2013-02-09  Stephen Chenney  <schenney@chromium.org>
+
+        Unreviewed.  Rolled Chromium DEPS to last-known good revision. Really this time.
+
+        * DEPS: 181594
+
+2013-02-09  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to last-known good revision.
+        Requested by "Stephen Chenney" <schenney@chromium.org> via
+        sheriffbot.
+
+        * DEPS:
+
+2013-02-08  Kent Tamura  <tkent@chromium.org>
+
+        [Chromium] Disable ENABLE_INPUT_TYPE_DATETIME
+        https://bugs.webkit.org/show_bug.cgi?id=109272
+
+        Reviewed by Kentaro Hara.
+
+        We enabled this flag for desktop Chromium, but disabled the feature by a
+        runtime flag. We disables the compile flag too because we have no plan
+        to ship it in near future.
+
+        * features.gypi: Remove ENABLE_INPUT_TYPE_DATETIME.
+
+2013-02-08  Stephen Chenney  <schenney@chromium.org>
+
+        Remove Skia code suppressions
+
+        Unreviewed enabling of existing optimizations
+
+        Removing all skia_webkit.gyp code suppressions and adding expectations
+        for the failures.
+
+        * skia_webkit.gyp:
+
+2013-02-08  Dan Carney  <dcarney@google.com>
+
+        [v8] isolate parameter added to all v8::peristent calls
+        https://bugs.webkit.org/show_bug.cgi?id=109268
+
+        Reviewed by Kentaro Hara.
+
+        * tests/WebFrameTest.cpp:
+
+2013-02-07  Kent Tamura  <tkent@chromium.org>
+
+        [Chromium-Android] Disable input[type=datetime]
+        https://bugs.webkit.org/show_bug.cgi?id=107614
+
+        Reviewed by Kentaro Hara.
+
+        Reason:
+        http://lists.webkit.org/pipermail/webkit-dev/2013-January/023404.html
+
+        * features.gypi:
+        Disable ENABLE_INPUT_TYPE_DATETIME because of a wrong UI.
+        We enable it for non-Android ports but the runtime flag for it is
+        disabled by default. The runtime flag is enabled only in DumpRenderTree.
+
+2013-02-07  Terry Anderson  <tdanderson@chromium.org>
+
+        [chromium] Flings should not bubble up to enclosing scrollables when main-thread touch scrolling
+        https://bugs.webkit.org/show_bug.cgi?id=108719
+
+        Reviewed by Eric Seidel.
+
+        In the event of a main-thread touch fling, dispatch a series of
+        GestureScrollUpdateWithoutPropagation events defined in
+        https://bugs.webkit.org/show_bug.cgi?id=108849 (instead of
+        GestureScrollUpdate events) so that the fling does not
+        propagate to enclosing scrollables.
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::scrollBy):
+
+2013-02-07  Kent Tamura  <tkent@chromium.org>
+
+        [Chromium] Add a flag to enable native form validation message
+        https://bugs.webkit.org/show_bug.cgi?id=109134
+
+        Reviewed by Adam Barth.
+
+        * public/WebRuntimeFeatures.h:
+        (WebRuntimeFeatures): Add enableNativeValidationMessage and
+        isNativeValidationMessageEnabled.
+        * src/WebRuntimeFeatures.cpp:
+        (WebKit): Add nativeValidationMessageEnabled.
+        (WebKit::WebRuntimeFeatures::enableNativeValidationMessage): Added.
+        (WebKit::WebRuntimeFeatures::isNativeValidationMessageEnabled): Addedd.
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::WebViewImpl):
+        Fill Page::PageClients::validationMessageClient if the flag is true.
+
+2013-02-07  Eberhard Graether  <egraether@google.com>
+
+        Web Inspector: Add settings checkbox for composited layer borders
+        https://bugs.webkit.org/show_bug.cgi?id=109096
+
+        Reviewed by Pavel Feldman.
+
+        This change adds a checkbox to show composited layer borders to the WebInspector's
+        rendering settings and plumbs the setting to Chromium's WebLayerTreeView. The setting
+        is visible if InspectorClient::canShowDebugBorders() returns true.
+
+        * src/InspectorClientImpl.cpp:
+        (WebKit::InspectorClientImpl::canShowDebugBorders):
+        (WebKit):
+        (WebKit::InspectorClientImpl::setShowDebugBorders):
+        * src/InspectorClientImpl.h:
+        (InspectorClientImpl):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::WebViewImpl):
+        (WebKit::WebViewImpl::setShowDebugBorders):
+        (WebKit):
+        (WebKit::WebViewImpl::setIsAcceleratedCompositingActive):
+        * src/WebViewImpl.h:
+
+2013-02-07  Stephen White  <senorblanco@chromium.org>
+
+        Unreviewed.  Rolled DEPS.
+
+        * DEPS:
+
+2013-02-07  David Trainor  <dtrainor@chromium.org>
+
+        Add null check to editable in moveCaretSelectionTowardsWindowPoint
+        https://bugs.webkit.org/show_bug.cgi?id=108962
+
+        Reviewed by Eric Seidel.
+
+        * src/WebFrameImpl.cpp:
+        (WebKit::WebFrameImpl::moveCaretSelectionTowardsWindowPoint):
+        * tests/WebFrameTest.cpp:
+
+2013-02-07  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r180752.  Requested by
+        thakis_ via sheriffbot.
+
+        * DEPS:
+
+2013-02-06  Terry Anderson  <tdanderson@chromium.org>
+
+        Add support for gesture scroll events that do not propagate to enclosing scrollables
+        https://bugs.webkit.org/show_bug.cgi?id=108849
+
+        Reviewed by Antonio Gomes.
+
+        Define the new event type GestureScrollUpdateWithoutPropagation.
+
+        * public/WebInputEvent.h:
+        (WebKit::WebInputEvent::isGestureEventType):
+        * src/PageWidgetDelegate.cpp:
+        (WebKit::PageWidgetDelegate::handleInputEvent):
+        * src/WebInputEventConversion.cpp:
+        (WebKit::PlatformGestureEventBuilder::PlatformGestureEventBuilder):
+        * src/WebPluginContainerImpl.cpp:
+        * src/WebPopupMenuImpl.cpp:
+        (WebKit::WebPopupMenuImpl::handleInputEvent):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::handleGestureEvent):
+
+2013-02-06  Alexandre Elias  <aelias@chromium.org>
+
+        Make ScrollView::paint() clip by visibleContentRect
+        https://bugs.webkit.org/show_bug.cgi?id=108888
+
+        Reviewed by Levi Weintraub.
+
+        When applyPageScaleFactorInCompositor or fixedVisibleContentRect
+        are used, frameRect() and visibleContentRect(true).size() are
+        no longer synonyms, and the latter is the one that should be
+        used for clipping paints.
+
+        New WebFrameTest: pageScaleFactorScalesPaintClip.
+
+        * tests/WebFrameTest.cpp:
+
+2013-02-06  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r142025.
+        http://trac.webkit.org/changeset/142025
+        https://bugs.webkit.org/show_bug.cgi?id=109091
+
+        broke the build (Requested by tdanderson on #webkit).
+
+        * public/WebInputEvent.h:
+        (WebKit::WebInputEvent::isGestureEventType):
+        * src/PageWidgetDelegate.cpp:
+        (WebKit::PageWidgetDelegate::handleInputEvent):
+        * src/WebInputEventConversion.cpp:
+        (WebKit::PlatformGestureEventBuilder::PlatformGestureEventBuilder):
+        * src/WebPluginContainerImpl.cpp:
+        * src/WebPopupMenuImpl.cpp:
+        (WebKit::WebPopupMenuImpl::handleInputEvent):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::handleGestureEvent):
+
+2013-02-06  Daniel Cheng  <dcheng@google.com>
+
+        [chromium] Remove "config.h" header from WebUnitTests.cpp
+        https://bugs.webkit.org/show_bug.cgi?id=108966
+
+        Reviewed by Tony Chang.
+
+        This file includes headers from base/ in Chromium, and config.h
+        conflicts with base/logging.h. Rather than teaching certain files in
+        base/ not to #include base/logging.h, remove the config.h include
+        here. The ASSERT isn't really necessary, as attempting to run a null
+        test suite won't go very far anyway.
+
+        * tests/WebUnitTests.cpp:
+        (WebKit::RunAllUnitTests):
+
+2013-02-06  Terry Anderson  <tdanderson@chromium.org>
+
+        Add support for gesture scroll events that do not propagate to enclosing scrollables
+        https://bugs.webkit.org/show_bug.cgi?id=108849
+
+        Reviewed by Antonio Gomes.
+
+        Define the new event type GestureScrollUpdateWithoutPropagation.
+
+        * public/WebInputEvent.h:
+        (WebKit::WebInputEvent::isGestureEventType):
+        * src/PageWidgetDelegate.cpp:
+        (WebKit::PageWidgetDelegate::handleInputEvent):
+        * src/WebInputEventConversion.cpp:
+        (WebKit::PlatformGestureEventBuilder::PlatformGestureEventBuilder):
+        * src/WebPluginContainerImpl.cpp:
+        * src/WebPopupMenuImpl.cpp:
+        (WebKit::WebPopupMenuImpl::handleInputEvent):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::handleGestureEvent):
+
+2013-02-06  Chris Hopman  <cjhopman@chromium.org>
+
+        [Chromium] WebWidget should expose a way to determine the start/end of the selection bounds
+        https://bugs.webkit.org/show_bug.cgi?id=108667
+
+        Reviewed by Darin Fisher.
+
+        WebWidget::selectionBounds() returns the anchor and focus of the
+        selection. This matches the arguments to WebFrame::selectRange().
+        Add WebWidget::isSelectionAnchorFirst so that a caller can convert the
+        anchor/focus to start/end.
+
+        * public/WebWidget.h:
+        (WebWidget):
+        (WebKit::WebWidget::isSelectionAnchorFirst):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::isSelectionAnchorFirst):
+        (WebKit):
+        * src/WebViewImpl.h:
+        * tests/WebViewTest.cpp:
+
+2013-02-06  Alec Flett  <alecflett@chromium.org>
+
+        IndexedDB: Stub out SharedBuffer version of put()
+        https://bugs.webkit.org/show_bug.cgi?id=108986
+
+        Reviewed by Darin Fisher.
+
+        This is part 1 of 3 to replace Vector<uint8_t> with SharedBuffer.
+
+        * public/WebIDBDatabase.h:
+        (WebKit):
+        (WebKit::WebIDBDatabase::put):
+
 2013-02-06  Stephen Chenney  <schenney@chromium.org>
 
         Add Skia code suppression flags to WebKit skia.gyp

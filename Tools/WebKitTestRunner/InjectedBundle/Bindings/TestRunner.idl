@@ -84,7 +84,6 @@ interface TestRunner {
 
     // Special DOM variables.
     attribute boolean globalFlag;
-    readonly attribute unsigned long workerThreadCount;
 
     // Repaint testing.
     void testRepaint();
@@ -95,10 +94,6 @@ interface TestRunner {
     boolean isPageBoxVisible(in int pageIndex);
 
     [PassContext] void setValueForUser(in object element, in DOMString value);
-
-    // Animation testing.
-    boolean pauseAnimationAtTimeOnElementWithId(in DOMString animationName, in double time, in DOMString elementId);
-    boolean pauseTransitionAtTimeOnElementWithId(in DOMString propertyName, in double time, in DOMString elementId);
 
     // UserContent testing.
     void addUserScript(in DOMString source, in boolean runAtStart, in boolean allFrames);

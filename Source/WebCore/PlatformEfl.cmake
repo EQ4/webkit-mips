@@ -121,6 +121,7 @@ list(APPEND WebCore_SOURCES
     platform/graphics/gstreamer/GStreamerUtilities.cpp
     platform/graphics/gstreamer/GStreamerVersioning.cpp
     platform/graphics/gstreamer/ImageGStreamerCairo.cpp
+    platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp
     platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp
     platform/graphics/gstreamer/PlatformVideoWindowEfl.cpp
     platform/graphics/gstreamer/VideoSinkGStreamer.cpp
@@ -130,9 +131,6 @@ list(APPEND WebCore_SOURCES
     platform/graphics/harfbuzz/HarfBuzzFaceCairo.cpp
     platform/graphics/harfbuzz/HarfBuzzFace.cpp
     platform/graphics/harfbuzz/HarfBuzzShaper.cpp
-
-    platform/graphics/surfaces/glx/GLXContext.cpp
-    platform/graphics/surfaces/glx/GLXSurface.cpp
 
     platform/graphics/WOFFFileFormat.cpp
 
@@ -315,8 +313,7 @@ if (WTF_USE_3D_GRAPHICS)
         platform/graphics/opengl/GLPlatformSurface.cpp
         platform/graphics/opengl/GraphicsContext3DOpenGLCommon.cpp
         platform/graphics/surfaces/GraphicsSurface.cpp
-        platform/graphics/surfaces/glx/GraphicsSurfaceGLX.cpp
-        platform/graphics/surfaces/glx/X11WindowResources.cpp
+        platform/graphics/surfaces/glx/X11Helper.cpp
         platform/graphics/texmap/TextureMapperGL.cpp
         platform/graphics/texmap/TextureMapperShaderProgram.cpp
     )
@@ -326,6 +323,12 @@ if (WTF_USE_3D_GRAPHICS)
             platform/graphics/surfaces/egl/EGLConfigSelector.cpp
             platform/graphics/surfaces/egl/EGLContext.cpp
             platform/graphics/surfaces/egl/EGLSurface.cpp
+        )
+    else ()
+        list(APPEND WebCore_SOURCES
+            platform/graphics/surfaces/glx/GLXContext.cpp
+            platform/graphics/surfaces/glx/GLXSurface.cpp
+            platform/graphics/surfaces/glx/GraphicsSurfaceGLX.cpp
         )
     endif ()
 

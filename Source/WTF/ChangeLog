@@ -1,3 +1,239 @@
+2013-02-11  Abhishek Arya  <inferno@chromium.org>
+
+        Add ASSERT_WITH_SECURITY_IMPLICATION to detect out of bounds access
+        https://bugs.webkit.org/show_bug.cgi?id=108981
+
+        Reviewed by Eric Seidel.
+
+        * wtf/BitVector.h:
+        (WTF::BitVector::quickGet):
+        (WTF::BitVector::quickSet):
+        (WTF::BitVector::quickClear):
+        * wtf/DecimalNumber.h:
+        (WTF::DecimalNumber::DecimalNumber):
+        * wtf/SegmentedVector.h:
+        (WTF::SegmentedVector::ensureSegment):
+        * wtf/StringPrintStream.cpp:
+        (WTF::StringPrintStream::vprintf):
+        * wtf/Vector.h:
+        (WTF::::insert):
+        (WTF::::remove):
+        * wtf/dtoa/utils.h:
+        (WTF::double_conversion::StringBuilder::SetPosition):
+        (WTF::double_conversion::StringBuilder::AddSubstring):
+
+2013-02-10  Laszlo Gombos  <l.gombos@samsung.com>
+
+        Consolidate the way WTF_USE_PTHREADS is enabled
+        https://bugs.webkit.org/show_bug.cgi?id=108191
+
+        Reviewed by Benjamin Poulain.
+
+        Define WTF_USE_PTHREADS to 1 on all OS(UNIX) environments.
+
+        * WTF.gyp/WTF.gyp: Remove duplicated definition of WTF_USE_PTHREADS.
+        * wtf/Platform.h:
+
+2013-02-10  Laszlo Gombos  <l.gombos@samsung.com>
+
+        Refactor the way HAVE_XXX macros are set
+        https://bugs.webkit.org/show_bug.cgi?id=108132
+
+        Reviewed by Benjamin Poulain.
+
+        OS(WINDOWS) and OS(UNIX) are so broadly defined that for each
+        builds exactly one of them is enabled. Use this assumption to
+        cleanup Platform.h.
+
+        * wtf/Platform.h:
+
+2013-02-10  Jae Hyun Park  <jae.park08@gmail.com>
+
+        Rename ENABLE(GLIB_SUPPORT) to USE(GLIB)
+        https://bugs.webkit.org/show_bug.cgi?id=104266
+
+        Reviewed by Philippe Normand.
+
+        Using USE(GLIB) instead of ENABLE(GLIB_SUPPORT) is more consistent with
+        the existing macro naming conventions.
+
+        From Platform.h
+        USE() - use a particular third-party library or optional OS service
+        ENABLE() - turn on a specific feature of WebKit
+
+        * WTF.pri:
+        * wtf/Platform.h:
+        * wtf/gobject/GOwnPtr.cpp:
+        * wtf/gobject/GOwnPtr.h:
+        * wtf/gobject/GRefPtr.cpp:
+        * wtf/gobject/GRefPtr.h:
+
+2013-02-08  Michael Saboff  <msaboff@apple.com>
+
+        ARM_NEON Inline Assembly for copyLCharsFromUCharSource() inefficient for aligned destinations
+        https://bugs.webkit.org/show_bug.cgi?id=109335
+
+        Reviewed by Filip Pizlo.
+
+        Change a "do while" to a "while" so that we don't copy single characters to align the 
+        destination when it is already aligned.
+
+        * wtf/text/ASCIIFastPath.h:
+        (WTF::copyLCharsFromUCharSource):
+
+2013-02-08  Jer Noble  <jer.noble@apple.com>
+
+        Bring WebKit up to speed with latest Encrypted Media spec.
+        https://bugs.webkit.org/show_bug.cgi?id=97037
+
+        Reviewed by Eric Carlson.
+
+        Define the ENABLE_ENCRYPTED_MEDIA_V2 setting.
+
+        * wtf/Platform.h:
+
+2013-02-08  Adam Barth  <abarth@webkit.org>
+
+        Use WeakPtrs to communicate between the HTMLDocumentParser and the BackgroundHTMLParser
+        https://bugs.webkit.org/show_bug.cgi?id=107190
+
+        Reviewed by Eric Seidel.
+
+        Add the ability to create an unbound weak reference. This facility lets
+        you start sending messages to a WeakPtr on another thread before the
+        object backing the WeakPtr has actually been created.
+
+        * wtf/WeakPtr.h:
+        (WTF::WeakReference::createUnbound):
+        (WTF::WeakReference::bindTo):
+        (WeakReference):
+        (WTF::WeakReference::WeakReference):
+        (WTF::WeakPtr::WeakPtr):
+        (WeakPtr):
+        (WTF::WeakPtrFactory::WeakPtrFactory):
+        (WeakPtrFactory):
+        (WTF::WeakPtrFactory::revokeAll):
+
+2013-02-08  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Add an experimental gyp build
+        https://bugs.webkit.org/show_bug.cgi?id=109003
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * WTF.gyp/WTF.gyp: Filter out MetaAllocator.(cpp/h) from the Chromium
+        build. It's only necessary for GTK+.
+        * WTF.gypi: Add MetaAllocator to the build for WebKitGTK+.
+
+2013-02-06  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Web Inspector: Native Memory Instrumentation: reportBaseAddress needs to be called after the reportNode. So it may reuse the node index for the real address.
+        https://bugs.webkit.org/show_bug.cgi?id=109051
+
+        Reviewed by Yury Semikhatsky.
+
+        * wtf/MemoryInstrumentation.cpp:
+        (WTF::MemoryInstrumentation::WrapperBase::processPointer):
+
+2013-02-07  David Kilzer  <ddkilzer@apple.com>
+
+        Fix #endif comment from r142163 and r142183
+
+        * wtf/MainThread.h:
+        (WTF): s/PLATFORM/USE/
+
+2013-02-07  Benjamin Poulain  <bpoulain@apple.com>
+
+        Fix an incorrect comment from r142163
+
+        Unreviewed.
+
+        * wtf/MainThread.h:
+        I accidentally copied PLATFORM(IOS) instead of USE(WEB_THREAD) for the #ifdef closing.
+
+2013-02-07  Benjamin Poulain  <bpoulain@apple.com>
+
+        Upstream iOS isWebThread() and isUIThread()
+        https://bugs.webkit.org/show_bug.cgi?id=109130
+
+        Reviewed by Sam Weinig.
+
+        On iOS, it is sometimes necessary to differenciate the thread running WebCore,
+        and the thread running the UI. This patch upstream those functions.
+
+        * wtf/MainThread.cpp:
+        * wtf/MainThread.h:
+        Disable the legacy initializer as it is incorrect when using the WebThread to run WebCore.
+        (WTF::isWebThread):
+        (WTF::isUIThread):
+        Return true when the current thread is the Web/UI thread.
+
+        * wtf/mac/MainThreadMac.mm:
+        (WTF::isUIThread):
+        (WTF::isWebThread):
+
+        * wtf/text/AtomicString.cpp:
+        (WTF::AtomicStringTable::create):
+        Use the newly added methods.
+
+2013-02-07  Caio Marcelo de Oliveira Filho  <caio.oliveira@openbossa.org>
+
+        [Qt] Fix build without 3D_GRAPHICS
+        https://bugs.webkit.org/show_bug.cgi?id=109194
+
+        Reviewed by Noam Rosenthal.
+
+        Now that Coordinated Graphics was moved to WebCore, we need to explicitly enable
+        it when we have 3D_GRAPHICS. This dependency was implicitly by the fact that
+        3D_GRAPHICS is a dependency of WebKit2 and Coordinated Graphics was only
+        available there. This should fix build for Qt SH4 Linux.
+
+        * wtf/Platform.h:
+
+2013-02-06  Zan Dobersek  <zdobersek@igalia.com>
+
+        [WTFURL] Fix erroneous header inclusions in WTFURL code
+        https://bugs.webkit.org/show_bug.cgi?id=109040
+
+        Reviewed by Benjamin Poulain.
+
+        Include WTFURL API headers from files in Source/WTF/wtf/url/src
+        by specifying their relative path to Source/WTF. 
+
+        * GNUmakefile.am: The changes make it possible to compile the WTF library
+        without specifying both Source/WTF/wtf/url/api and Source/WTF/wtf/url/src
+        as inclusion directories in CPPFLAGS, so remove these two entries.
+        * wtf/url/src/RawURLBuffer.h:
+        * wtf/url/src/URLCanon.h: Include the URLParse.h header by specifying
+        only the base name as it's located in the same directory.
+        * wtf/url/src/URLCanonQuery.cpp:
+        * wtf/url/src/URLUtil.h:
+
+2013-02-06  Tony Gentilcore  <tonyg@chromium.org>
+
+        Call XSSAuditor's didBlockScript() for the threaded HTML parser
+        https://bugs.webkit.org/show_bug.cgi?id=108726
+
+        Reviewed by Adam Barth.
+
+        This patch adds isSafeToSendToAnotherThread() methods to CString, String, ParsedURL and URLString.
+        These methods check to ensure there are 0 or 1 references.
+
+        * wtf/text/CString.cpp:
+        (WTF::CString::isSafeToSendToAnotherThread): Added.
+        (WTF):
+        * wtf/text/CString.h:
+        (CString):
+        * wtf/text/WTFString.cpp:
+        (WTF::String::isSafeToSendToAnotherThread): Added.
+        (WTF):
+        * wtf/text/WTFString.h:
+        (String):
+        * wtf/url/api/ParsedURL.h:
+        (WTF::ParsedURL::isSafeToSendToAnotherThread): Added.
+        * wtf/url/api/URLString.h:
+        (WTF::URLString::isSafeToSendToAnotherThread): Added.
+
 2013-02-06  Ilya Tikhonovsky  <loislo@chromium.org>
 
         Web Inspector: Native Memory Instrumentation: assign class name to the heap graph node automatically

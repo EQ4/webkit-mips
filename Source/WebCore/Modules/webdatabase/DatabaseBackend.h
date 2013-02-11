@@ -95,14 +95,15 @@ protected:
     friend class ChangeVersionWrapper;
     friend class SQLStatement;
     friend class SQLStatementSync;
-    friend class SQLTransactionSync;
-    friend class SQLTransaction;
+    friend class SQLTransactionBackend;
+    friend class SQLTransactionBackendSync;
 
     DatabaseBackend(PassRefPtr<DatabaseBackendContext>, const String& name, const String& expectedVersion,
         const String& displayName, unsigned long estimatedSize, DatabaseType);
 
     void closeDatabase();
 
+    virtual bool openAndVerifyVersion(bool setVersionInNewDatabase, DatabaseError&, String& errorMessage) = 0;
     virtual bool performOpenAndVerify(bool shouldSetVersionInNewDatabase, DatabaseError&, String& errorMessage);
 
     bool getVersionFromDatabase(String& version, bool shouldCacheVersion = true);

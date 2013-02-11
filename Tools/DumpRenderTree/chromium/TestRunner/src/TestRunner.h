@@ -34,15 +34,17 @@
 #define TestRunner_h
 
 #include "CppBoundClass.h"
+#include "TestCommon.h"
 #include "WebArrayBufferView.h"
 #include "WebDeliveredIntentClient.h"
 #include "WebTask.h"
 #include "WebTestRunner.h"
 #include "WebTextDirection.h"
+#include <deque>
+#include <memory>
 #include <public/WebURL.h>
 #include <set>
 #include <string>
-#include <wtf/Deque.h>
 
 namespace WebKit {
 class WebArrayBufferView;
@@ -71,14 +73,11 @@ public:
 
     // WebTestRunner implementation.
     virtual bool shouldDumpAsText() const OVERRIDE;
-    virtual void setShouldDumpAsText(bool) OVERRIDE;
     virtual bool shouldGeneratePixelResults() const OVERRIDE;
-    virtual void setShouldGeneratePixelResults(bool) OVERRIDE;
     virtual bool shouldDumpChildFrameScrollPositions() const OVERRIDE;
     virtual bool shouldDumpChildFramesAsText() const OVERRIDE;
     virtual bool shouldDumpAsAudio() const OVERRIDE;
     virtual const WebKit::WebArrayBufferView* audioData() const OVERRIDE;
-    virtual void setShouldDumpFrameLoadCallbacks(bool) OVERRIDE;
     virtual WebKit::WebPermissionClient* webPermissions() const OVERRIDE;
     virtual bool shouldDumpBackForwardList() const OVERRIDE;
     virtual bool shouldDumpSelectionRect() const OVERRIDE;
@@ -87,6 +86,10 @@ public:
     virtual bool isPrinting() const OVERRIDE;
 
     // Methods used by WebTestProxyBase.
+    void showDevTools();
+    void setShouldDumpAsText(bool);
+    void setShouldGeneratePixelResults(bool);
+    void setShouldDumpFrameLoadCallbacks(bool);
     bool shouldDumpEditingCallbacks() const;
     bool shouldDumpFrameLoadCallbacks() const;
     bool shouldDumpUserGestureInFrameLoadCallbacks() const;
@@ -141,7 +144,7 @@ private:
         void addWork(WorkItem*);
 
         void setFrozen(bool frozen) { m_frozen = frozen; }
-        bool isEmpty() { return m_queue.isEmpty(); }
+        bool isEmpty() { return m_queue.empty(); }
         WebTaskList* taskList() { return &m_taskList; }
 
     private:
@@ -153,7 +156,7 @@ private:
         };
 
         WebTaskList m_taskList;
-        Deque<WorkItem*> m_queue;
+        std::deque<WorkItem*> m_queue;
         bool m_frozen;
         TestRunner* m_controller;
     };
@@ -201,8 +204,6 @@ private:
     // Checks if an internal command is currently available.
     void isCommandEnabled(const CppArgumentList&, CppVariant*);
 
-    void pauseAnimationAtTimeOnElementWithId(const CppArgumentList&, CppVariant*);
-    void pauseTransitionAtTimeOnElementWithId(const CppArgumentList&, CppVariant*);
     void elementDoesAutoCompleteForElementWithId(const CppArgumentList&, CppVariant*);
     void callShouldCloseOnWebView(const CppArgumentList&, CppVariant*);
     void setDomainRelaxationForbiddenForURLScheme(const CppArgumentList&, CppVariant*);
@@ -275,13 +276,11 @@ private:
     // DeviceOrientation related functions
     void setMockDeviceOrientation(const CppArgumentList&, CppVariant*);
 
-#if ENABLE(POINTER_LOCK)
     void didAcquirePointerLock(const CppArgumentList&, CppVariant*);
     void didNotAcquirePointerLock(const CppArgumentList&, CppVariant*);
     void didLosePointerLock(const CppArgumentList&, CppVariant*);
     void setPointerLockWillFailSynchronously(const CppArgumentList&, CppVariant*);
     void setPointerLockWillRespondAsynchronously(const CppArgumentList&, CppVariant*);
-#endif
 
     ///////////////////////////////////////////////////////////////////////////
     // Methods modifying WebPreferences.
@@ -420,7 +419,7 @@ private:
     ///////////////////////////////////////////////////////////////////////////
     // Methods interacting with the WebTestProxy
 
-#if ENABLE(WEB_INTENTS)
+#if ENABLE_WEB_INTENTS
     // Expects one string argument for sending successful result, zero
     // arguments for sending a failure result.
     void sendWebIntentResponse(const CppArgumentList&, CppVariant*);
@@ -468,30 +467,20 @@ private:
     void setMockGeolocationPosition(const CppArgumentList&, CppVariant*);
     void setMockGeolocationPositionUnavailableError(const CppArgumentList&, CppVariant*);
 
-#if ENABLE(NOTIFICATIONS)
     // Grants permission for desktop notifications to an origin
     void grantWebNotificationPermission(const CppArgumentList&, CppVariant*);
     // Simulates a click on a desktop notification.
     void simulateLegacyWebNotificationClick(const CppArgumentList&, CppVariant*);
-#endif
 
     // Speech input related functions.
-#if ENABLE(INPUT_SPEECH)
     void addMockSpeechInputResult(const CppArgumentList&, CppVariant*);
     void setMockSpeechInputDumpRect(const CppArgumentList&, CppVariant*);
-#endif
-#if ENABLE(SCRIPTED_SPEECH)
     void addMockSpeechRecognitionResult(const CppArgumentList&, CppVariant*);
     void setMockSpeechRecognitionError(const CppArgumentList&, CppVariant*);
     void wasMockSpeechRecognitionAborted(const CppArgumentList&, CppVariant*);
-#endif
 
     void display(const CppArgumentList&, CppVariant*);
     void displayInvalidatedRegion(const CppArgumentList&, CppVariant*);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Properties
-    void workerThreadCount(CppVariant*);
 
     //////////////////////////////////////////////////////////////////////////
     // Fallback and stub methods
@@ -515,8 +504,6 @@ private:
         virtual void runIfValid() { m_object->completeNotifyDone(true); }
     };
 
-    bool pauseAnimationAtTimeOnElementWithId(const WebKit::WebString& animationName, double time, const WebKit::WebString& elementId);
-    bool pauseTransitionAtTimeOnElementWithId(const WebKit::WebString& propertyName, double time, const WebKit::WebString& elementId);
     bool elementDoesAutoCompleteForElementWithId(const WebKit::WebString&);
     bool cppVariantToBool(const CppVariant&);
     int32_t cppVariantToInt32(const CppVariant&);
@@ -682,10 +669,10 @@ private:
     WebKit::WebFrame* m_topLoadingFrame;
 
     // Mock object for testing delivering web intents.
-    OwnPtr<WebKit::WebDeliveredIntentClient> m_intentClient;
+    std::auto_ptr<WebKit::WebDeliveredIntentClient> m_intentClient;
 
     // WebPermissionClient mock object.
-    OwnPtr<WebPermissions> m_webPermissions;
+    std::auto_ptr<WebPermissions> m_webPermissions;
 };
 
 }

@@ -54,14 +54,14 @@ v8::Handle<v8::Value> V8XMLHttpRequest::constructorCallbackCustom(const v8::Argu
 
     RefPtr<SecurityOrigin> securityOrigin;
     if (context->isDocument()) {
-        if (DOMWrapperWorld* world = worldForEnteredContextIfIsolated())
+        if (DOMWrapperWorld* world = worldForEnteredContext())
             securityOrigin = world->isolatedWorldSecurityOrigin();
     }
 
     RefPtr<XMLHttpRequest> xmlHttpRequest = XMLHttpRequest::create(context, securityOrigin);
 
     v8::Handle<v8::Object> wrapper = args.Holder();
-    V8DOMWrapper::associateObjectWithWrapper(xmlHttpRequest.release(), &info, wrapper, args.GetIsolate());
+    V8DOMWrapper::associateObjectWithWrapper(xmlHttpRequest.release(), &info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
     return wrapper;
 }
 

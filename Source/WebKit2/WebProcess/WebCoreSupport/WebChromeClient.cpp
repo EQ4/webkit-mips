@@ -446,7 +446,7 @@ void WebChromeClient::contentsSizeChanged(Frame* frame, const IntSize& size) con
     if (frame->page()->mainFrame() != frame)
         return;
 
-#if PLATFORM(QT) || (PLATFORM(EFL) && USE(TILED_BACKING_STORE))
+#if PLATFORM(QT) || PLATFORM(EFL)
     if (m_page->useFixedLayout()) {
         // The below method updates the size().
         m_page->resizeToContentsIfNeeded();
@@ -454,8 +454,6 @@ void WebChromeClient::contentsSizeChanged(Frame* frame, const IntSize& size) con
     }
 
     m_page->send(Messages::WebPageProxy::DidChangeContentsSize(m_page->size()));
-#elif PLATFORM(EFL)
-    m_page->send(Messages::WebPageProxy::DidChangeContentsSize(size));
 #endif
 
     m_page->drawingArea()->mainFrameContentSizeChanged(size);

@@ -770,6 +770,11 @@ bool WebProcess::isPlugInAutoStartOrigin(unsigned plugInOriginHash)
 
 void WebProcess::addPlugInAutoStartOrigin(const String& pageOrigin, unsigned plugInOriginHash)
 {
+    if (pageOrigin.isEmpty()) {
+        LOG(Plugins, "Not adding empty page origin");
+        return;
+    }
+
     if (isPlugInAutoStartOrigin(plugInOriginHash)) {
         LOG(Plugins, "Hash %x already exists as auto-start origin (request for %s)", plugInOriginHash, pageOrigin.utf8().data());
         return;
@@ -1044,16 +1049,6 @@ void WebProcess::setTextCheckerState(const TextCheckerState& textCheckerState)
             page->unmarkAllBadGrammar();
     }
 }
-
-#if ENABLE(NETSCAPE_PLUGIN_API)
-void WebProcess::didGetPlugins(CoreIPC::Connection*, uint64_t requestID, const Vector<WebCore::PluginInfo>& plugins)
-{
-#if USE(PLATFORM_STRATEGIES)
-    // Pass this to WebPlatformStrategies.cpp.
-    handleDidGetPlugins(requestID, plugins);
-#endif
-}
-#endif // ENABLE(PLUGIN_PROCESS)
 
 #if !PLATFORM(MAC)
 void WebProcess::initializeProcessName(const ChildProcessInitializationParameters&)

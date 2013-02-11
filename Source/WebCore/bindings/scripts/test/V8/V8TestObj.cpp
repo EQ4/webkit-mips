@@ -123,7 +123,7 @@ static v8::Handle<v8::Value> readOnlyTestObjAttrAttrGetter(v8::Local<v8::String>
     if (wrapper.IsEmpty()) {
         wrapper = toV8(result.get(), info.Holder(), info.GetIsolate());
         if (!wrapper.IsEmpty())
-            V8DOMWrapper::setNamedHiddenReference(info.Holder(), "readOnlyTestObjAttr", wrapper);
+            V8HiddenPropertyName::setNamedHiddenReference(info.Holder(), "readOnlyTestObjAttr", wrapper);
     }
     return wrapper;
 }
@@ -2090,7 +2090,7 @@ v8::Handle<v8::Value> V8TestObj::constructorCallback(const v8::Arguments& args)
     RefPtr<TestObj> impl = TestObj::create(testCallback);
     v8::Handle<v8::Object> wrapper = args.Holder();
 
-    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &info, wrapper, args.GetIsolate());
+    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
     return wrapper;
 }
 
@@ -2212,23 +2212,19 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestObjTemplate(v8::Persi
 
 v8::Persistent<v8::FunctionTemplate> V8TestObj::GetRawTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->rawTemplateMap().find(&info);
     if (result != data->rawTemplateMap().end())
         return result->value;
 
     v8::HandleScope handleScope;
-    v8::Persistent<v8::FunctionTemplate> templ = createRawTemplate();
+    v8::Persistent<v8::FunctionTemplate> templ = createRawTemplate(isolate);
     data->rawTemplateMap().add(&info, templ);
     return templ;
 }
 
 v8::Persistent<v8::FunctionTemplate> V8TestObj::GetTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->templateMap().find(&info);
     if (result != data->templateMap().end())
@@ -2265,10 +2261,10 @@ void V8TestObj::installPerContextProperties(v8::Handle<v8::Object> instance, Tes
     }
 }
 
-void V8TestObj::installPerContextPrototypeProperties(v8::Handle<v8::Object> proto)
+void V8TestObj::installPerContextPrototypeProperties(v8::Handle<v8::Object> proto, v8::Isolate* isolate)
 {
     UNUSED_PARAM(proto);
-    v8::Local<v8::Signature> defaultSignature = v8::Signature::New(GetTemplate());
+    v8::Local<v8::Signature> defaultSignature = v8::Signature::New(GetTemplate(isolate));
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
 
     ScriptExecutionContext* context = toScriptExecutionContext(proto->CreationContext());
@@ -2295,9 +2291,7 @@ v8::Handle<v8::Object> V8TestObj::createWrapper(PassRefPtr<TestObj> impl, v8::Ha
         return wrapper;
 
     installPerContextProperties(wrapper, impl.get(), isolate);
-    v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
-    if (!hasDependentLifetime)
-        wrapperHandle.MarkIndependent();
+    V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate, hasDependentLifetime ? WrapperConfiguration::Dependent : WrapperConfiguration::Independent);
     return wrapper;
 }
 void V8TestObj::derefObject(void* object)

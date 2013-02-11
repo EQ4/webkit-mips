@@ -126,11 +126,6 @@ size_t TestRunner::webHistoryItemCount()
     return ewk_history_back_list_length(history) + ewk_history_forward_list_length(history);
 }
 
-unsigned TestRunner::workerThreadCount() const
-{
-    return DumpRenderTreeSupportEfl::workerThreadCount();
-}
-
 void TestRunner::notifyDone()
 {
     if (m_waitToDump && !topLoadingFrame && !WorkQueue::shared()->count())
@@ -653,16 +648,6 @@ void TestRunner::setDefersLoading(bool defers)
 void TestRunner::setAppCacheMaximumSize(unsigned long long size)
 {
     ewk_settings_application_cache_max_quota_set(size);
-}
-
-bool TestRunner::pauseAnimationAtTimeOnElementWithId(JSStringRef animationName, double time, JSStringRef elementId)
-{
-    return DumpRenderTreeSupportEfl::pauseAnimation(browser->mainFrame(), animationName->string().utf8().data(), elementId->string().utf8().data(), time);
-}
-
-bool TestRunner::pauseTransitionAtTimeOnElementWithId(JSStringRef propertyName, double time, JSStringRef elementId)
-{
-    return DumpRenderTreeSupportEfl::pauseTransition(browser->mainFrame(), propertyName->string().utf8().data(), elementId->string().utf8().data(), time);
 }
 
 static inline bool toBool(JSStringRef value)

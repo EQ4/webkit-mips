@@ -68,6 +68,7 @@
 #include "EventListener.h"
 #include "EventNames.h"
 #include "ExceptionCode.h"
+#include "ExceptionCodePlaceholder.h"
 #include "FlowThreadController.h"
 #include "FocusController.h"
 #include "FormController.h"
@@ -411,6 +412,7 @@ Document::Document(Frame* frame, const KURL& url, bool isXHTML, bool isHTML)
     , m_guardRefCount(0)
     , m_styleResolverThrowawayTimer(this, &Document::styleResolverThrowawayTimerFired)
     , m_lastStyleResolverAccessTime(0)
+    , m_activeParserCount(0)
     , m_contextFeatures(ContextFeatures::defaultSwitch())
     , m_compatibilityMode(NoQuirksMode)
     , m_compatibilityModeLocked(false)
@@ -620,9 +622,6 @@ Document::~Document()
         m_styleSheetList->detachFromDocument();
 
     m_styleSheetCollection.clear();
-
-    if (m_namedFlows)
-        m_namedFlows->documentDestroyed();
 
     if (m_elemSheet)
         m_elemSheet->clearOwnerNode();
@@ -1529,9 +1528,7 @@ void Document::setTitle(const String& title)
     else if (!m_titleElement) {
         if (HTMLElement* headElement = head()) {
             m_titleElement = createElement(titleTag, false);
-            ExceptionCode ec = 0;
-            headElement->appendChild(m_titleElement, ec);
-            ASSERT(!ec);
+            headElement->appendChild(m_titleElement, ASSERT_NO_EXCEPTION);
         }
     }
 
@@ -2851,8 +2848,8 @@ void Document::processHttpEquiv(const String& equiv, const String& content)
     } else if (equalIgnoringCase(equiv, "set-cookie")) {
         // FIXME: make setCookie work on XML documents too; e.g. in case of <html:meta .....>
         if (isHTMLDocument()) {
-            ExceptionCode ec; // Exception (for sandboxed documents) ignored.
-            static_cast<HTMLDocument*>(this)->setCookie(content, ec);
+            // Exception (for sandboxed documents) ignored.
+            static_cast<HTMLDocument*>(this)->setCookie(content, IGNORE_EXCEPTION);
         }
     } else if (equalIgnoringCase(equiv, "content-language"))
         setContentLanguage(content);
@@ -3354,7 +3351,7 @@ bool Document::setFocusedNode(PassRefPtr<Node> prpNewFocusedNode, FocusDirection
         }
     }
 
-    if (newFocusedNode) {
+    if (newFocusedNode && (newFocusedNode->isPluginElement() || newFocusedNode->isFocusable())) {
         if (newFocusedNode->isRootEditableElement() && !acceptsEditingFocus(newFocusedNode.get())) {
             // delegate blocks focus change
             focusChangeBlocked = true;
@@ -5770,6 +5767,19 @@ void Document::adjustFloatRectForScrollAndAbsoluteZoomAndFrameScale(FloatRect& r
     adjustFloatRectForAbsoluteZoom(rect, renderer);
     if (inverseFrameScale != 1)
         rect.scale(inverseFrameScale);
+}
+
+bool Document::hasActiveParser()
+{
+    return m_activeParserCount || (m_parser && m_parser->processingData());
+}
+
+void Document::decrementActiveParserCount()
+{
+    --m_activeParserCount;
+    if (!frame())
+        return;
+    frame()->loader()->checkLoadComplete();
 }
 
 void Document::setContextFeatures(PassRefPtr<ContextFeatures> features)

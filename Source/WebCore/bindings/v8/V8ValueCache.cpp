@@ -66,7 +66,7 @@ static void cachedStringCallback(v8::Isolate* isolate, v8::Persistent<v8::Value>
 {
     StringImpl* stringImpl = static_cast<StringImpl*>(parameter);
     V8PerIsolateData::current()->stringCache()->remove(stringImpl);
-    wrapper.Dispose();
+    wrapper.Dispose(isolate);
     wrapper.Clear();
     stringImpl->deref();
 }
@@ -85,30 +85,27 @@ v8::Handle<v8::String> StringCache::v8ExternalStringSlow(StringImpl* stringImpl,
     if (!stringImpl->length())
         return v8::String::Empty(isolate);
 
-    v8::String* cachedV8String = m_stringCache.get(stringImpl);
-    if (cachedV8String) {
-        v8::Persistent<v8::String> handle(cachedV8String);
-        if (handle.IsWeak()) {
-            m_lastStringImpl = stringImpl;
-            m_lastV8String = handle;
-            if (handleType == ReturnUnsafeHandle)
-                return handle;
-            return v8::Local<v8::String>::New(handle);
-        }
+    v8::Persistent<v8::String> cachedV8String = m_stringCache.get(stringImpl);
+    if (cachedV8String.IsWeak(isolate)) {
+        m_lastStringImpl = stringImpl;
+        m_lastV8String = cachedV8String;
+        if (handleType == ReturnUnsafeHandle)
+            return cachedV8String;
+        return v8::Local<v8::String>::New(cachedV8String);
     }
 
     v8::Local<v8::String> newString = makeExternalString(String(stringImpl));
     if (newString.IsEmpty())
         return newString;
 
-    v8::Persistent<v8::String> wrapper = v8::Persistent<v8::String>::New(newString);
+    v8::Persistent<v8::String> wrapper = v8::Persistent<v8::String>::New(isolate, newString);
     if (wrapper.IsEmpty())
         return newString;
 
     stringImpl->ref();
-    wrapper.MarkIndependent();
+    wrapper.MarkIndependent(isolate);
     wrapper.MakeWeak(isolate, stringImpl, cachedStringCallback);
-    m_stringCache.set(stringImpl, *wrapper);
+    m_stringCache.set(stringImpl, wrapper);
 
     m_lastStringImpl = stringImpl;
     m_lastV8String = wrapper;

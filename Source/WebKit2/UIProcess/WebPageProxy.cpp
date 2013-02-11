@@ -72,6 +72,7 @@
 #include "WebPageGroup.h"
 #include "WebPageGroupData.h"
 #include "WebPageMessages.h"
+#include "WebPageProxyMessages.h"
 #include "WebPopupItem.h"
 #include "WebPopupMenuProxy.h"
 #include "WebPreferences.h"
@@ -250,9 +251,17 @@ WebPageProxy::WebPageProxy(PageClient* pageClient, PassRefPtr<WebProcessProxy> p
 
     m_pageGroup->addPage(this);
 
+#if ENABLE(INSPECTOR)
+    m_inspector = WebInspectorProxy::create(this);
+#endif
+#if ENABLE(FULLSCREEN_API)
+    m_fullScreenManager = WebFullScreenManagerProxy::create(this);
+#endif
 #if ENABLE(VIBRATION)
     m_vibration = WebVibrationProxy::create(this);
 #endif
+
+    m_process->addMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID, this);
 }
 
 WebPageProxy::~WebPageProxy()
@@ -385,11 +394,19 @@ void WebPageProxy::reattachToWebProcess()
     else
         m_process = m_process->context()->createNewWebProcessRespectingProcessCountLimit();
     m_process->addExistingWebPage(this, m_pageID);
+    m_process->addMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID, this);
 
     initializeWebPage();
 
     m_pageClient->didRelaunchProcess();
     m_drawingArea->waitForBackingStoreUpdateOnNextPaint();
+
+#if ENABLE(INSPECTOR)
+    m_inspector = WebInspectorProxy::create(this);
+#endif
+#if ENABLE(FULLSCREEN_API)
+    m_fullScreenManager = WebFullScreenManagerProxy::create(this);
+#endif
 }
 
 void WebPageProxy::reattachToWebProcessWithItem(WebBackForwardListItem* item)
@@ -526,6 +543,7 @@ void WebPageProxy::close()
 
     m_process->send(Messages::WebPage::Close(), m_pageID);
     m_process->removeWebPage(m_pageID);
+    m_process->removeMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID);
 }
 
 bool WebPageProxy::tryClose()
@@ -1221,7 +1239,7 @@ void WebPageProxy::handleKeyboardEvent(const NativeWebKeyboardEvent& event)
 }
 
 #if ENABLE(NETSCAPE_PLUGIN_API)
-void WebPageProxy::getPluginPath(const String& mimeType, const String& urlString, String& pluginPath, uint32_t& pluginLoadPolicy)
+void WebPageProxy::getPluginPath(const String& mimeType, const String& urlString, const String& documentURLString, String& pluginPath, uint32_t& pluginLoadPolicy)
 {
     MESSAGE_CHECK_URL(urlString);
 
@@ -1236,7 +1254,9 @@ void WebPageProxy::getPluginPath(const String& mimeType, const String& urlString
 
 #if PLATFORM(MAC)
     PluginModuleLoadPolicy currentPluginLoadPolicy = static_cast<PluginModuleLoadPolicy>(pluginLoadPolicy);
-    pluginLoadPolicy = m_uiClient.pluginLoadPolicy(this, plugin.bundleIdentifier, plugin.info.name, currentPluginLoadPolicy);
+    pluginLoadPolicy = m_uiClient.pluginLoadPolicy(this, plugin.bundleIdentifier, plugin.info.name, documentURLString, currentPluginLoadPolicy);
+#else
+    UNUSED_PARAM(documentURLString);
 #endif
 
     if (pluginLoadPolicy != PluginModuleLoadNormally)
@@ -1931,59 +1951,6 @@ void WebPageProxy::preferencesDidChange()
 
     // Preferences need to be updated during synchronous printing to make "print backgrounds" preference work when toggled from a print dialog checkbox.
     m_process->send(Messages::WebPage::PreferencesDidChange(pageGroup()->preferences()->store()), m_pageID, m_isPerformingDOMPrintOperation ? CoreIPC::DispatchMessageEvenWhenWaitingForSyncReply : 0);
-}
-
-void WebPageProxy::didReceiveMessage(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder)
-{
-    if (decoder.messageReceiverName() == Messages::DrawingAreaProxy::messageReceiverName()) {
-        m_drawingArea->didReceiveDrawingAreaProxyMessage(connection, decoder);
-        return;
-    }
-
-#if USE(COORDINATED_GRAPHICS)
-    if (decoder.messageReceiverName() == Messages::CoordinatedLayerTreeHostProxy::messageReceiverName()) {
-        m_drawingArea->didReceiveCoordinatedLayerTreeHostProxyMessage(connection, decoder);
-        return;
-    }
-#endif
-
-#if ENABLE(INSPECTOR)
-    if (decoder.messageReceiverName() == Messages::WebInspectorProxy::messageReceiverName()) {
-        if (WebInspectorProxy* inspector = this->inspector())
-            inspector->didReceiveWebInspectorProxyMessage(connection, decoder);
-        return;
-    }
-#endif
-
-#if ENABLE(FULLSCREEN_API)
-    if (decoder.messageReceiverName() == Messages::WebFullScreenManagerProxy::messageReceiverName()) {
-        fullScreenManager()->didReceiveMessage(connection, decoder);
-        return;
-    }
-#endif
-
-    didReceiveWebPageProxyMessage(connection, decoder);
-}
-
-void WebPageProxy::didReceiveSyncMessage(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, OwnPtr<CoreIPC::MessageEncoder>& replyEncoder)
-{
-#if ENABLE(INSPECTOR)
-    if (decoder.messageReceiverName() == Messages::WebInspectorProxy::messageReceiverName()) {
-        if (WebInspectorProxy* inspector = this->inspector())
-            inspector->didReceiveSyncWebInspectorProxyMessage(connection, decoder, replyEncoder);
-        return;
-    }
-#endif
-
-#if ENABLE(FULLSCREEN_API)
-    if (decoder.messageReceiverName() == Messages::WebFullScreenManagerProxy::messageReceiverName()) {
-        fullScreenManager()->didReceiveSyncMessage(connection, decoder, replyEncoder);
-        return;
-    }
-#endif
-
-    // FIXME: Do something with reply.
-    didReceiveSyncWebPageProxyMessage(connection, decoder, replyEncoder);
 }
 
 void WebPageProxy::didCreateMainFrame(uint64_t frameID)
@@ -2846,8 +2813,6 @@ WebInspectorProxy* WebPageProxy::inspector()
 {
     if (isClosed() || !isValid())
         return 0;
-    if (!m_inspector)
-        m_inspector = WebInspectorProxy::create(this);
     return m_inspector.get();
 }
 
@@ -2856,8 +2821,6 @@ WebInspectorProxy* WebPageProxy::inspector()
 #if ENABLE(FULLSCREEN_API)
 WebFullScreenManagerProxy* WebPageProxy::fullScreenManager()
 {
-    if (!m_fullScreenManager)
-        m_fullScreenManager = WebFullScreenManagerProxy::create(this);
     return m_fullScreenManager.get();
 }
 #endif
@@ -3600,6 +3563,8 @@ void WebPageProxy::processDidCrash()
 {
     ASSERT(m_pageClient);
 
+    m_process->removeMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID);
+
     m_isValid = false;
     m_isPageSuspended = false;
 
@@ -3612,17 +3577,13 @@ void WebPageProxy::processDidCrash()
     m_drawingArea = nullptr;
 
 #if ENABLE(INSPECTOR)
-    if (m_inspector) {
-        m_inspector->invalidate();
-        m_inspector = nullptr;
-    }
+    m_inspector->invalidate();
+    m_inspector = nullptr;
 #endif
 
 #if ENABLE(FULLSCREEN_API)
-    if (m_fullScreenManager) {
-        m_fullScreenManager->invalidate();
-        m_fullScreenManager = nullptr;
-    }
+    m_fullScreenManager->invalidate();
+    m_fullScreenManager = nullptr;
 #endif
 
 #if ENABLE(VIBRATION)

@@ -1,3 +1,836 @@
+2013-02-10  Sam Weinig  <sam@webkit.org>
+
+        Make the Plug-in XPCService build work even when building in Xcode
+        <rdar://problem/13011186>
+        https://bugs.webkit.org/show_bug.cgi?id=109392
+
+        Reviewed by Anders Carlsson.
+
+        * Configurations/DebugRelease.xcconfig:
+        Add a DEBUG_OR_RELEASE variable to test against.
+        * Configurations/PluginService.32.xcconfig:
+        * Configurations/PluginService.64.xcconfig:
+        In non-production builds, don't link against WebKit2, so that we don't get warnings about WebKit2.framework
+        not containing the right architectures. This is ok, as these services are not used in non-production builds.
+
+        * NetworkProcess/EntryPoint/mac/XPCService/NetworkService.Development/Info.plist:
+        * NetworkProcess/EntryPoint/mac/XPCService/NetworkService.Development/NetworkServiceMain.Development.mm:
+        * NetworkProcess/EntryPoint/mac/XPCService/NetworkService/Info.plist:
+        * NetworkProcess/EntryPoint/mac/XPCService/NetworkService/NetworkServiceMain.mm:
+        * PluginProcess/EntryPoint/mac/XPCService/PluginService.32/Info.plist:
+        * PluginProcess/EntryPoint/mac/XPCService/PluginService.32/PluginService.32.Main.mm:
+        * PluginProcess/EntryPoint/mac/XPCService/PluginService.64/Info.plist:
+        * PluginProcess/EntryPoint/mac/XPCService/PluginService.64/PluginService.64.Main.mm:
+        * PluginProcess/EntryPoint/mac/XPCService/PluginService.Development/Info.plist:
+        * PluginProcess/EntryPoint/mac/XPCService/PluginService.Development/PluginService.Development.Main.mm:
+        * WebProcess/EntryPoint/mac/XPCService/WebContentService.Development/Info.plist:
+        * WebProcess/EntryPoint/mac/XPCService/WebContentService.Development/WebContentServiceMain.Development.mm:
+        * WebProcess/EntryPoint/mac/XPCService/WebContentService/Info.plist:
+        * WebProcess/EntryPoint/mac/XPCService/WebContentService/WebContentServiceMain.mm:
+        Switch off the the old idiom of defining a macro for the initializer function, and instead set
+        it in the Info.plist, so the XPCServiceBootstrapper can grab it.
+
+        * Shared/EntryPointUtilities/mac/XPCService/XPCServiceBootstrapper.Development.h:
+        (WebKit::XPCServiceEventHandler):
+        * Shared/EntryPointUtilities/mac/XPCService/XPCServiceBootstrapper.h:
+        (WebKit::XPCServiceEventHandler):
+        Get the entry point from the bundle, rather than the macro. This is not only a bit less gross,
+        but also allows us to build without having linked against WebKit2.framework.
+
+        * UIProcess/Plugins/mac/PluginProcessProxyMac.mm:
+        (WebKit::shouldUseXPC):
+        Re-enable using XPC for plug-ins.
+
+        * WebKit2.xcodeproj/project.pbxproj:
+        Update project.
+
+2013-02-10  Anders Carlsson  <andersca@apple.com>
+
+        Add back code that was accidentally removed when moving plug-in enumeration back to the main thread
+        https://bugs.webkit.org/show_bug.cgi?id=109379
+
+        Reviewed by Andreas Kling.
+
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::getPlugins):
+
+2013-02-10  Kent Tamura  <tkent@chromium.org>
+
+        Unreviewed, rolling out r142347.
+        http://trac.webkit.org/changeset/142347
+        https://bugs.webkit.org/show_bug.cgi?id=108273
+
+        Because a depending change r142343 was rolled out.
+
+        * WebProcess/InjectedBundle/API/c/WKBundlePage.h:
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.cpp:
+        (WebKit::InjectedBundlePageUIClient::plugInStartLabelTitle):
+        (WebKit::InjectedBundlePageUIClient::plugInStartLabelSubtitle):
+
+2013-02-10  Kent Tamura  <tkent@chromium.org>
+
+        Unreviewed, rolling out r142343.
+        http://trac.webkit.org/changeset/142343
+        https://bugs.webkit.org/show_bug.cgi?id=108284
+
+        It might make inspector/profiler/selector-profiler-url.html
+        crashy.
+
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.cpp:
+        (WebKit::InjectedBundlePageUIClient::plugInStartLabelImage):
+        (WebKit):
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.h:
+        (InjectedBundlePageUIClient):
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::WebChromeClient::plugInStartLabelImage):
+        (WebKit):
+        * WebProcess/WebCoreSupport/WebChromeClient.h:
+        (WebChromeClient):
+
+2013-02-10  Zan Dobersek  <zdobersek@igalia.com>
+
+        [WebKit2][Gtk] Remove the fullscreen manager proxy message receiver upon invalidating
+        https://bugs.webkit.org/show_bug.cgi?id=109352
+
+        Reviewed by Sam Weinig.
+
+        As added for the Mac port in r142160 due to the changes in the same revision, remove
+        the fullscreen manager proxy as a message receiver. Also fixes a failing unit test.
+
+        * UIProcess/gtk/WebFullScreenManagerProxyGtk.cpp:
+        (WebKit::WebFullScreenManagerProxy::invalidate):
+
+2013-02-10  Zoltan Arvai  <zarvai@inf.u-szeged.hu>
+
+        [WK2] Fix build on PLUGIN_ARCHITECTURE(UNSUPPORTED) after r142314
+        https://bugs.webkit.org/show_bug.cgi?id=109364
+
+        Reviewed by Simon Hausmann.
+
+        void NetscapePlugin::platformPreInitialize() is need to be added to NetscapePluginNone.cpp.
+
+        * WebProcess/Plugins/Netscape/NetscapePluginNone.cpp:
+        (WebKit::NetscapePlugin::platformPreInitialize):
+        (WebKit):
+
+2013-02-09  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r137328.
+        http://trac.webkit.org/changeset/137328
+        https://bugs.webkit.org/show_bug.cgi?id=109367
+
+        causes memory usage to balloon if connection queue is filling
+        faster than sending (Requested by kling on #webkit).
+
+        * Platform/CoreIPC/ArgumentEncoder.cpp:
+        (CoreIPC::ArgumentEncoder::ArgumentEncoder):
+        (CoreIPC::ArgumentEncoder::grow):
+        * Platform/CoreIPC/ArgumentEncoder.h:
+        (CoreIPC::ArgumentEncoder::buffer):
+        (ArgumentEncoder):
+
+2013-02-08  Sam Weinig  <sam@webkit.org>
+
+        Fix ASSERT when the Web Content Process crashes
+        https://bugs.webkit.org/show_bug.cgi?id=109346
+
+        Reviewed by Simon Fraser.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::processDidCrash):
+        We need to remove ourselves as a message receiver before calling out to the client, as
+        the client might want to re-add us (as Safari does).
+
+2013-02-08  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move workerThreadCount from TestRunner to WebCore Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109239
+
+        Reviewed by Darin Adler.
+
+        * WebProcess/InjectedBundle/API/c/WKBundle.cpp:
+        * WebProcess/InjectedBundle/API/c/WKBundlePrivate.h:
+        * WebProcess/InjectedBundle/InjectedBundle.cpp:
+        * WebProcess/InjectedBundle/InjectedBundle.h:
+        (InjectedBundle):
+        * WebProcess/WebPage/WebFrame.cpp: Remove a useless #include.
+
+2013-02-08  Dean Jackson  <dino@apple.com>
+
+        Remove use of plugInStartLabelImage
+        https://bugs.webkit.org/show_bug.cgi?id=108273
+
+        Reviewed by Simon Fraser.
+
+        Remove any use of plugInStartLabelImage. While there, implement plugInStartLabelTitle
+        and plugInStartLabelSubtitle to return the values from the client.
+        implement them.
+
+        * WebProcess/InjectedBundle/API/c/WKBundlePage.h: Remove callback and entry from client structure.
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.cpp: Remove plugInStartLabelImage.
+        (WebKit::InjectedBundlePageUIClient::plugInStartLabelTitle): Ask the client bundle for value.
+        (WebKit::InjectedBundlePageUIClient::plugInStartLabelSubtitle): Ditto.
+
+2013-02-08  Dean Jackson  <dino@apple.com>
+
+        Snapshotted plug-in should use shadow root
+        https://bugs.webkit.org/show_bug.cgi?id=108284
+
+        Reviewed by Simon Fraser.
+
+        Take two of this commit! We no longer have any need for plugInStartLabelImage.
+
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.cpp: Remove plugInStartLabelImage.
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.h: Ditto.
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp: Ditto.
+        * WebProcess/WebCoreSupport/WebChromeClient.h: Ditto.
+
+2013-02-08  Dean Jackson  <dino@apple.com>
+
+        Rolling out r142333 and r142337 which broke Mac Release builds.
+
+2013-02-08  Anders Carlsson  <andersca@apple.com>
+
+        Move plug-in enumeration back to the main thread
+        https://bugs.webkit.org/show_bug.cgi?id=109337
+        <rdar://problem/12015046>
+
+        Reviewed by Andreas Kling.
+
+        Plug-in enumeration was moved to a separate work queue to improve responsiveness, but
+        doing so lead to crashes when WebKit1 would enumerate plug-ins on the main thread at the same time.
+        Bug <rdar://problem/13185819> tracks fixing the responsiveness issue by spawning a plug-in process
+        and have it do the enumeration.
+
+        * Shared/Plugins/Netscape/mac/NetscapePluginModuleMac.mm:
+        (WebKit::getPluginInfoFromCarbonResources):
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::connectionWillOpen):
+        (WebKit::WebProcessProxy::connectionWillClose):
+        (WebKit::WebProcessProxy::getPlugins):
+        * UIProcess/WebProcessProxy.h:
+        (WebCore):
+        (WebProcessProxy):
+        * UIProcess/WebProcessProxy.messages.in:
+        * WebProcess/WebCoreSupport/WebPlatformStrategies.cpp:
+        (WebKit):
+        (WebKit::WebPlatformStrategies::populatePluginCache):
+        * WebProcess/WebProcess.cpp:
+        * WebProcess/WebProcess.h:
+        (WebProcess):
+        * WebProcess/WebProcess.messages.in:
+
+2013-02-08  Dean Jackson  <dino@apple.com>
+
+        Snapshotted plug-in should use shadow root
+        https://bugs.webkit.org/show_bug.cgi?id=108284
+
+        Reviewed by Simon Fraser.
+
+        We no longer have any need for plugInStartLabelImage.
+
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.cpp: Remove plugInStartLabelImage.
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.h: Ditto.
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp: Ditto.
+        * WebProcess/WebCoreSupport/WebChromeClient.h: Ditto.
+
+2013-02-08  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        [WK2] Fix the build on !Mac after r142314.
+        https://bugs.webkit.org/show_bug.cgi?id=109327
+
+        Reviewed by Benjamin Poulain.
+
+        * WebProcess/Plugins/Netscape/x11/NetscapePluginX11.cpp:
+        (WebKit::NetscapePlugin::platformPreInitialize): Add a stub for
+        the newly-added function.
+
+        * WebProcess/Plugins/Netscape/x11/NetscapePluginX11.cpp:
+        (WebKit::NetscapePlugin::platformPreInitialize):
+        (WebKit):
+
+2013-02-07  Anders Carlsson  <andersca@apple.com>
+
+        Work around a bug in Flash where NSException objects can be released too early
+        https://bugs.webkit.org/show_bug.cgi?id=109242
+        <rdar://problem/13003470>
+
+        Reviewed by Darin Adler.
+
+        * Shared/Plugins/Netscape/mac/NetscapePluginModuleMac.mm:
+        (WebKit::NetscapePluginModule::determineQuirks):
+        Set the new plug-in quirk.
+
+        * Shared/Plugins/PluginQuirks.h:
+        Add a new plug-in quirk.
+
+        * WebProcess/Plugins/Netscape/NetscapePlugin.cpp:
+        (WebKit::NetscapePlugin::initialize):
+        Call platformPreInitialize.
+
+        * WebProcess/Plugins/Netscape/NetscapePlugin.h:
+        (NetscapePlugin):
+        Add platformPreInitialize.
+
+        * WebProcess/Plugins/Netscape/mac/NetscapePluginMac.mm:
+        (WebKit::NSException_release):
+        Add new empty function.
+
+        (WebKit::NetscapePlugin::platformPreInitialize):
+        Patch -[NSException release] to be a no-op.
+
+2013-02-08  Dean Jackson  <dino@apple.com>
+
+        Do not register autostart for plugins from file:// (or nowhere)
+        https://bugs.webkit.org/show_bug.cgi?id=108271
+
+        Reviewed by Tim Horton.
+
+        If the pageOrigin is the empty string don't add
+        it to the auto-start origin list for snapshotting.
+
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::addPlugInAutoStartOrigin):
+
+2013-02-07  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r142212.
+        http://trac.webkit.org/changeset/142212
+        https://bugs.webkit.org/show_bug.cgi?id=109255
+
+        Causes ASSERT(!m_installed) on launch (Requested by smfr on
+        #webkit).
+
+        * PluginProcess/PluginProcess.cpp:
+        (WebKit::PluginProcess::initializeProcess):
+        (WebKit::PluginProcess::shouldTerminate):
+        * PluginProcess/PluginProcess.h:
+        (PluginProcess):
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::initializeWebProcess):
+
+2013-02-07  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        [EFL][WK2] Remove dead code after r142169
+        https://bugs.webkit.org/show_bug.cgi?id=109251
+
+        Reviewed by Benjamin Poulain.
+
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::WebChromeClient::contentsSizeChanged):
+
+2013-02-06  Gavin Barraclough  <barraclough@apple.com>
+
+        PluginProcess should quit immediately if idle in response to low-memory notifications
+        https://bugs.webkit.org/show_bug.cgi?id=109103
+        <rdar://problem/12679827>
+
+        Reviewed by Darin Adler.
+
+        PluginProcess now initializes a MemoryPressureHandler for the process, providing
+        a custom callback which will call terminate if appropriate (if the plugin is not
+        currently in use).
+
+        * PluginProcess/PluginProcess.cpp:
+        (WebKit::PluginProcess::lowMemoryHandler):
+            - Custom callback to terminate if appropriate.
+        (WebKit::PluginProcess::initializeProcess):
+            - Initialize the MemoryPressureHandler.
+        (WebKit::PluginProcess::shouldTerminate):
+            - This method now also needs to be callable in situations where it might return false.
+        * PluginProcess/PluginProcess.h:
+        (PluginProcess):
+            - Added declaration for lowMemoryHandler.
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::initializeWebProcess):
+            - MemoryPressureHandler::install is now called via MemoryPressureHandler::initialize.
+
+2013-02-07  KwangYong Choi  <ky0.choi@samsung.com>
+
+        Fix build warning after r142017
+        https://bugs.webkit.org/show_bug.cgi?id=109119
+
+        Reviewed by Alexey Proskuryakov.
+
+        Use UNUSED_PARAM macro to fix -Wunused-parameter build warning.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::getPluginPath):
+
+2013-02-07  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Cleanup command-line defines
+        https://bugs.webkit.org/show_bug.cgi?id=109213
+
+        Reviewed by Xan Lopez.
+
+        * GNUmakefile.am:  Remove references to flags that are now
+        provided by autotoolsconfig.h.
+
+2013-02-07  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move pauseAnimation/pauseTransition from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109107
+
+        Reviewed by Anders Carlsson.
+
+        * WebProcess/InjectedBundle/API/c/WKBundleFrame.cpp:
+        * WebProcess/InjectedBundle/API/c/WKBundleFramePrivate.h:
+        * WebProcess/WebPage/WebFrame.cpp:
+        * WebProcess/WebPage/WebFrame.h:
+        (WebFrame):
+
+2013-02-07  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
+
+        [WK2][EFL] Removal of non coordinated graphics code path from WK2 EFL
+        https://bugs.webkit.org/show_bug.cgi?id=109165
+
+        Reviewed by Anders Carlsson.
+
+        Removed non coordinated graphics code path from WK2 EFL as it was not used by
+        anyone and caused a lot of preprocessor macros in the code making it less readable.
+
+        * UIProcess/API/efl/EvasGLContext.cpp:
+        * UIProcess/API/efl/EvasGLContext.h:
+        (WebKit::EvasGLContext::context):
+        * UIProcess/API/efl/EvasGLSurface.cpp:
+        * UIProcess/API/efl/EvasGLSurface.h:
+        (WebKit::EvasGLSurface::surface):
+
+            Removed also 'inline' and 'const' keywords from functions declaration,
+            as both EvasGLContext::context() and EvasGLSurface::surface()
+            are defined inside their classes and return mutable pointer.
+
+        * UIProcess/API/efl/EwkView.cpp:
+        (EwkView::EwkView):
+        (EwkView::transformFromScene):
+        (EwkView::transformToScreen):
+        (EwkView::coordinatedGraphicsScene):
+        (EwkView::displayTimerFired):
+        (EwkView::scheduleUpdateDisplay): Renamed from EwkView::update().
+        (EwkView::exitAcceleratedCompositingMode):
+        (EwkView::handleEvasObjectCalculate):
+        (EwkView::takeSnapshot):
+        * UIProcess/API/efl/EwkView.h:
+        (WebCore):
+        (EwkView):
+        * UIProcess/API/efl/SnapshotImageGL.cpp:
+        (getImageSurfaceFromFrameBuffer):
+        * UIProcess/API/efl/SnapshotImageGL.h:
+        * UIProcess/API/efl/ewk_view.cpp:
+        * UIProcess/efl/PageClientBase.cpp:
+        (WebKit::PageClientBase::setViewNeedsDisplay):
+        (WebKit::PageClientBase::updateAcceleratedCompositingMode):
+        * UIProcess/efl/PageClientBase.h:
+        (PageClientBase):
+        * UIProcess/efl/PageClientDefaultImpl.cpp:
+        (WebKit::PageClientDefaultImpl::didCommitLoad):
+        (WebKit::PageClientDefaultImpl::updateViewportSize):
+        (WebKit::PageClientDefaultImpl::didChangeViewportProperties):
+        (WebKit::PageClientDefaultImpl::didChangeContentsSize):
+        (WebKit::PageClientDefaultImpl::pageTransitionViewportReady):
+        * UIProcess/efl/PageClientDefaultImpl.h:
+        (PageClientDefaultImpl):
+        * UIProcess/efl/PageClientLegacyImpl.cpp:
+        (WebKit::PageClientLegacyImpl::didCommitLoad):
+        (WebKit::PageClientLegacyImpl::updateViewportSize):
+        (WebKit::PageClientLegacyImpl::didChangeViewportProperties):
+        (WebKit::PageClientLegacyImpl::didChangeContentsSize):
+        (WebKit::PageClientLegacyImpl::pageDidRequestScroll):
+        (WebKit::PageClientLegacyImpl::didRenderFrame):
+        (WebKit::PageClientLegacyImpl::pageTransitionViewportReady):
+        * UIProcess/efl/PageClientLegacyImpl.h:
+        (PageClientLegacyImpl):
+        * UIProcess/efl/PageLoadClientEfl.cpp:
+        (WebKit::PageLoadClientEfl::didCommitLoadForFrame):
+        (WebKit::PageLoadClientEfl::PageLoadClientEfl):
+        * UIProcess/efl/PageLoadClientEfl.h:
+        (PageLoadClientEfl):
+        * UIProcess/efl/PageViewportControllerClientEfl.cpp:
+        (WebKit::PageViewportControllerClientEfl::didChangeContentsSize):
+        (WebKit::PageViewportControllerClientEfl::didChangeVisibleContents):
+        * UIProcess/efl/PageViewportControllerClientEfl.h:
+        * UIProcess/efl/WebInspectorProxyEfl.cpp:
+        (WebKit::WebInspectorProxy::platformCreateInspectorPage):
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp:
+        (WebKit::WebChromeClient::contentsSizeChanged):
+
+2013-02-06  Sam Weinig  <sam@webkit.org>
+
+        Make WebPageProxy and sub-objects MessageReceivers
+        https://bugs.webkit.org/show_bug.cgi?id=108785
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.cpp:
+        (WebKit::CoordinatedLayerTreeHostProxy::CoordinatedLayerTreeHostProxy):
+        (WebKit::CoordinatedLayerTreeHostProxy::~CoordinatedLayerTreeHostProxy):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.h:
+        (CoordinatedLayerTreeHostProxy):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.messages.in:
+        * UIProcess/DrawingAreaProxy.cpp:
+        (WebKit::DrawingAreaProxy::DrawingAreaProxy):
+        (WebKit::DrawingAreaProxy::~DrawingAreaProxy):
+        (WebKit::DrawingAreaProxy::contentsRect):
+        * UIProcess/DrawingAreaProxy.h:
+        (WebKit::DrawingAreaProxy::setVisibleContentsRect):
+        * UIProcess/DrawingAreaProxy.messages.in:
+        * UIProcess/DrawingAreaProxyImpl.cpp:
+        (WebKit::DrawingAreaProxyImpl::setVisibleContentsRect):
+        * UIProcess/DrawingAreaProxyImpl.h:
+        * UIProcess/WebFullScreenManagerProxy.cpp:
+        (WebKit::WebFullScreenManagerProxy::WebFullScreenManagerProxy):
+        * UIProcess/WebFullScreenManagerProxy.h:
+        (WebFullScreenManagerProxy):
+        * UIProcess/WebFullScreenManagerProxy.messages.in:
+        * UIProcess/WebInspectorProxy.cpp:
+        (WebKit::WebInspectorProxy::WebInspectorProxy):
+        (WebKit::WebInspectorProxy::invalidate):
+        * UIProcess/WebInspectorProxy.h:
+        * UIProcess/WebInspectorProxy.messages.in:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::reattachToWebProcess):
+        (WebKit::WebPageProxy::close):
+        (WebKit::WebPageProxy::inspector):
+        (WebKit::WebPageProxy::fullScreenManager):
+        (WebKit::WebPageProxy::processDidCrash):
+        * UIProcess/WebPageProxy.h:
+        * UIProcess/WebPageProxy.messages.in:
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::didReceiveMessage):
+        (WebKit::WebProcessProxy::didReceiveSyncMessage):
+        * UIProcess/mac/WebFullScreenManagerProxyMac.mm:
+        (WebKit::WebFullScreenManagerProxy::invalidate):
+
+2013-02-07  Zan Dobersek  <zdobersek@igalia.com>
+
+        [Autotools] Remove uses of Automake FARSTREAM_(CFLAGS|LIBS) variables, USE_FARSTREAM conditional
+        https://bugs.webkit.org/show_bug.cgi?id=109198
+
+        Reviewed by Martin Robinson.
+
+        * GNUmakefile.am: Remove the FARSTREAM_(CFLAGS|LIBS) variables, they're
+        not set to anything.
+
+2013-02-07  Kenneth Rohde Christiansen  <kenneth@webkit.org>
+
+        [WK2][EFL] Add WKView methods related to background drawing
+        https://bugs.webkit.org/show_bug.cgi?id=109159
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/API/C/efl/WKView.cpp:
+        (WKViewSetDrawsBackground):
+        (WKViewGetDrawsBackground):
+        (WKViewSetDrawsTransparentBackground):
+        (WKViewGetDrawsTransparentBackground):
+         * UIProcess/efl/WebView.cpp:
+        (WebKit::WebView::setDrawsBackground):
+        (WebKit):
+        (WebKit::WebView::drawsBackground):
+        (WebKit::WebView::setDrawsTransparentBackground):
+        (WebKit::WebView::drawsTransparentBackground):
+        * UIProcess/efl/WebView.h:
+        (WebView):
+       * UIProcess/API/C/efl/WKView.h:
+
+            New methods added
+
+        * UIProcess/API/efl/EwkView.cpp:
+        (EwkView::EwkView):
+        (EwkView::displayTimerFired):
+        (EwkView::handleEvasObjectColorSet):
+        * UIProcess/API/efl/EwkView.h:
+        (EwkView):
+        * UIProcess/API/efl/ewk_view.cpp:
+        (ewk_view_draws_page_background_set):
+
+            Remove the unneeded m_setDrawsBackground and replace
+            it with the WKView setting.
+
+2013-02-07  Christophe Dumez  <dchris@gmail.com>
+
+        [EFL][WK2] EWK2UnitTestBase.ewk_view_page_contents_get API test is sometimes failing
+        https://bugs.webkit.org/show_bug.cgi?id=108634
+
+        Reviewed by Alexey Proskuryakov.
+
+        Use more robust data validation in EWK2UnitTestBase.ewk_view_page_contents_get
+        so that the test passes consistently. The issue was that the header before the
+        data includes the current date. Depending on the date, the data may start at a
+        different index in the returned string. Instead of hardcoding the data start
+        index in the test, we now use String::contains().
+
+        * UIProcess/API/efl/tests/test_ewk2_view.cpp:
+        (PageContentsCallback):
+        (TEST_F):
+
+2013-02-07  Gavin Peters  <gavinp@chromium.org>
+
+        Unreviewed, rolling out r142141.
+        http://trac.webkit.org/changeset/142141
+        https://bugs.webkit.org/show_bug.cgi?id=108990
+
+        Reland r142112, will update Chromium expectations and create a
+        Chromium bug instead for the crash.
+
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp:
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.h:
+        * WebProcess/WebPage/DrawingAreaImpl.cpp:
+        (WebKit::DrawingAreaImpl::DrawingAreaImpl):
+
+2013-02-07  Gavin Peters  <gavinp@chromium.org>
+
+        Unreviewed, rolling out r142112.
+        http://trac.webkit.org/changeset/142112
+        https://bugs.webkit.org/show_bug.cgi?id=108990
+
+        The new test scrollingcoordinator/non-fast-scrollable-region-transformed- iframe.html crashes on Lion.
+
+        See http://test-results.appspot.com/dashboards/flakiness_dashboard.html#tests=scrollingcoordinator%2Fnon-fast-scrollable-region-transformed-iframe.html
+
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp:
+        (WebKit::updateOffsetFromViewportForSelf):
+        (WebKit):
+        (WebKit::updateOffsetFromViewportForLayer):
+        (WebKit::CoordinatedLayerTreeHost::syncFixedLayers):
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.h:
+        * WebProcess/WebPage/DrawingAreaImpl.cpp:
+        (WebKit::DrawingAreaImpl::DrawingAreaImpl):
+
+2013-02-07  Caio Marcelo de Oliveira Filho  <caio.oliveira@openbossa.org>
+
+        [CoordinatedGraphics] Use ScrollingCoordinator to track fixed layers
+        https://bugs.webkit.org/show_bug.cgi?id=108990
+
+        Reviewed by Noam Rosenthal.
+        Signed off for WebKit2 by Simon Fraser.
+
+        WebCore keeps ScrollingCoordinator up-to-date about whether layers are fixed or not, so we
+        don't need to traverse the tree every frame to get this information.
+
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp: remove
+        syncFixedLayers() and its helper functions. Those were used to identify the fixed layers
+        and are not needed anymore.
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.h:
+        * WebProcess/WebPage/DrawingAreaImpl.cpp:
+        (WebKit::DrawingAreaImpl::DrawingAreaImpl): enable the scrolling coordinator usage for
+        Coordinated Graphics.
+
+2013-02-07  Michael Brüning  <michael.bruning@digia.com>
+
+        [Qt][WK2] Fold QtWebPageLoadClient into QQuickWebViewPrivate and move to C API.
+        https://bugs.webkit.org/show_bug.cgi?id=108473
+
+        Reviewed by Simon Hausmann.
+        Signed off for WebKit2 by Benjamin Poulain.
+
+        This patch removes the QtWebPageLoadClient and moves the functionality into the
+        QQuickWebViewPrivate as most callback methods are calling the private webview
+        indirectly anyway.
+
+        The patch also moves as much of the functionality to the C API as is possible with
+        the current C API.
+
+        * Target.pri:
+        * UIProcess/API/qt/qquickwebview.cpp:
+        (QQuickWebViewPrivate::initialize):
+        (QQuickWebViewPrivate::didStartProvisionalLoadForFrame):
+        (QQuickWebViewPrivate::didReceiveServerRedirectForProvisionalLoadForFrame):
+        (QQuickWebViewPrivate::didFailLoad):
+        (QQuickWebViewPrivate::didCommitLoadForFrame):
+        (QQuickWebViewPrivate::didFinishLoadForFrame):
+        (QQuickWebViewPrivate::didSameDocumentNavigationForFrame):
+        (QQuickWebViewPrivate::didReceiveTitleForFrame):
+        (QQuickWebViewPrivate::didStartProgress):
+        (QQuickWebViewPrivate::didChangeProgress):
+        (QQuickWebViewPrivate::didFinishProgress):
+        (QQuickWebViewPrivate::didChangeBackForwardList):
+        (QQuickWebViewPrivate::setTransparentBackground):
+        (QQuickWebViewPrivate::transparentBackground):
+        (QQuickWebViewPrivate::loadProgressDidChange):
+        * UIProcess/API/qt/qquickwebview_p.h:
+        (WebKit):
+        * UIProcess/API/qt/qquickwebview_p_p.h:
+        (WebKit):
+        (QQuickWebViewPrivate):
+        * UIProcess/qt/QtWebError.cpp:
+        (WebKit::QtWebError::url):
+        * UIProcess/qt/QtWebPageLoadClient.cpp: Removed.
+        * UIProcess/qt/QtWebPageLoadClient.h: Removed.
+
+2013-02-05  Eunmi Lee  <eunmi15.lee@samsung.com> and Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        [EFL][WK2] Refactoring initialization and shutdown codes of EFL libraries.
+        https://bugs.webkit.org/show_bug.cgi?id=97173
+
+        Reviewed by Kenneth Rohde Christiansen, signed-off by Benjamin Poulain.
+
+        Initialize and shutdown the EFL libraries in the ewk_main.cpp for
+        UIProcess and WebProcessMainEfl.cpp for WebProcess.
+
+        This allows us to shut down the libraries in a proper way, since
+        RunLoop persist until the process exits.
+
+        * UIProcess/API/efl/ewk_main.cpp:
+        (ewk_init):
+        (ewk_shutdown):
+        * WebProcess/efl/WebProcessMainEfl.cpp:
+        (WebKit::WebProcessMainEfl):
+
+2013-02-07  Gyuyoung Kim  <gyuyoung.kim@samsung.com>
+
+        Unreviewed build fix.
+
+        * UIProcess/Downloads/DownloadProxyMap.cpp:
+        (WebKit::DownloadProxyMap::processDidClose):
+        m_process can't be initialized nullptr yet. Use 0 instead of nullptr.
+
+2013-02-07  Simon Hausmann  <simon.hausmann@digia.com>
+
+        [Qt][WK2] Fold QtWebPageFindClient into QQuickWebViewPrivate
+        https://bugs.webkit.org/show_bug.cgi?id=108920
+
+        Reviewed by Jocelyn Turcotte, signed off for WK2 by Benjamin.
+
+        Employ the pattern suggested by Jocelyn to simply implement the C
+        callbacks directly using static functions.
+
+        * Target.pri:
+        * UIProcess/API/qt/qquickwebview.cpp:
+        (toQQuickWebViewPrivate):
+        (QQuickWebViewPrivate::initialize):
+        (QQuickWebViewPrivate::didFindString):
+        (QQuickWebViewPrivate::didFailToFindString):
+        * UIProcess/API/qt/qquickwebview_p_p.h:
+        (QQuickWebViewPrivate):
+        * UIProcess/qt/QtWebPageFindClient.cpp: Removed.
+        * UIProcess/qt/QtWebPageFindClient.h: Removed.
+
+2013-02-03  Sam Weinig  <sam@webkit.org>
+
+        Make CustomProtocolManagerProxy a MessageReceiver
+        https://bugs.webkit.org/show_bug.cgi?id=108787
+
+        Reviewed by Anders Carlsson.
+
+        * Shared/ChildProcessProxy.cpp:
+        (WebKit::ChildProcessProxy::addMessageReceiver):
+        (WebKit::ChildProcessProxy::removeMessageReceiver):
+        (WebKit::ChildProcessProxy::dispatchMessage):
+        (WebKit::ChildProcessProxy::dispatchSyncMessage):
+        * Shared/ChildProcessProxy.h:
+        Sink the MessageReceiverMap down into the ChildProcessProxy.
+
+        * UIProcess/Downloads/DownloadProxyMap.cpp:
+        (WebKit::DownloadProxyMap::DownloadProxyMap):
+        (WebKit::DownloadProxyMap::createDownloadProxy):
+        (WebKit::DownloadProxyMap::downloadFinished):
+        (WebKit::DownloadProxyMap::processDidClose):
+        * UIProcess/Downloads/DownloadProxyMap.h:
+        Pass the ChildProcessProxy rather than the MessageReceiverMap to the constructor.
+
+        * UIProcess/Network/CustomProtocols/CustomProtocolManagerProxy.h:
+        * UIProcess/Network/CustomProtocols/CustomProtocolManagerProxy.messages.in:
+        * UIProcess/Network/CustomProtocols/mac/CustomProtocolManagerProxyMac.mm:
+        (WebKit::CustomProtocolManagerProxy::CustomProtocolManagerProxy):
+        Convert to a MessageReceiver.
+
+        * UIProcess/Network/NetworkProcessProxy.cpp:
+        (WebKit::NetworkProcessProxy::createDownloadProxy):
+        (WebKit::NetworkProcessProxy::didReceiveMessage):
+        (WebKit::NetworkProcessProxy::didReceiveSyncMessage):
+        * UIProcess/Network/NetworkProcessProxy.h:
+        * UIProcess/WebProcessProxy.cpp:
+        (WebKit::WebProcessProxy::didReceiveMessage):
+        (WebKit::WebProcessProxy::didReceiveSyncMessage):
+        (WebKit::WebProcessProxy::createDownloadProxy):
+        * UIProcess/WebProcessProxy.h:
+        (WebProcessProxy):
+        Remove direct chaining to CustomProtocolManagerProxy.
+
+2013-02-06  Enrica Casucci  <enrica@apple.com>
+
+        ASSERT(!m_findPageOverlay) in FindController.cpp after r140769.
+        https://bugs.webkit.org/show_bug.cgi?id=109105.
+
+        Reviewed by Tim Horton.
+
+        In r140769 we changed the way the overlay is destroyed,
+        therefore the assert is no longer valid and should be removed.
+
+        * WebProcess/WebPage/FindController.cpp:
+        (WebKit::FindController::updateFindUIAfterPageScroll):
+
+2013-02-06  Anders Carlsson  <andersca@apple.com>
+
+        Dispatch storage manager messages to the storage work queue
+        https://bugs.webkit.org/show_bug.cgi?id=109099
+
+        Reviewed by Andreas Kling.
+
+        * UIProcess/Storage/StorageManager.cpp:
+        (WebKit::StorageManager::didReceiveMessageOnConnectionWorkQueue):
+        (WebKit::StorageManager::dispatchMessageOnStorageManagerQueue):
+        (WebKit):
+        * UIProcess/Storage/StorageManager.h:
+        (StorageManager):
+
+2013-02-06  Anders Carlsson  <andersca@apple.com>
+
+        Pass the document source URL to the pluginLoadPolicy callback
+        https://bugs.webkit.org/show_bug.cgi?id=109084
+        <rdar://problem/13154516>
+
+        Reviewed by Andreas Kling.
+
+        * UIProcess/API/C/WKPage.h:
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::getPluginPath):
+        * UIProcess/WebPageProxy.h:
+        (WebPageProxy):
+        * UIProcess/WebPageProxy.messages.in:
+        * UIProcess/WebUIClient.cpp:
+        (WebKit::WebUIClient::pluginLoadPolicy):
+        * UIProcess/WebUIClient.h:
+        (WebUIClient):
+        * WebProcess/WebPage/WebPage.cpp:
+        (WebKit::WebPage::createPlugin):
+        (WebKit::WebPage::canPluginHandleResponse):
+
+2013-02-06  Alexey Proskuryakov  <ap@apple.com>
+
+        Get rid of unneeded writeable preferences.
+
+        Reviewed by Anders Carlsson.
+
+        com.apple.HIToolbox.plist and com.apple.WebProcess.plist were made writeable very
+        early in WebKit2 development, before we moved a lot of functionality to UI process.
+        They don't appear to be needed any more.
+
+        Note that we do not even need to allow reading for com.apple.WebProcess.plist -
+        it's read at process initialization before we enter the sandbox, and services
+        have a different plist anyway.
+
+        * WebProcess/com.apple.WebProcess.sb.in:
+
+2013-02-06  Sudarsana Nagineni  <sudarsana.nagineni@intel.com>
+
+        [EFL][WK2] Assertion failure on MiniBrowser exit
+        https://bugs.webkit.org/show_bug.cgi?id=108932
+
+        Reviewed by Anders Carlsson.
+
+        WorkQueue is now refcounted after r141497, so increase ref
+        count when a new job is scheduled and unref it when it finishes.
+
+        * Platform/efl/WorkQueueEfl.cpp:
+        (WorkQueue::performWork):
+        (WorkQueue::performTimerWork):
+        (WorkQueue::dispatch):
+        (WorkQueue::dispatchAfterDelay):
+
 2013-02-06  Simon Hausmann  <simon.hausmann@digia.com>, Zoltan Arvai  <zarvai@inf.u-szeged.hu>
 
         [WK2][Win] Fix build after MessageID.h related changes and after r141619.

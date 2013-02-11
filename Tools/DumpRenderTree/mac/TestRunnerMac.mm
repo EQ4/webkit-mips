@@ -73,7 +73,6 @@
 #import <WebKit/WebTypesInternal.h>
 #import <WebKit/WebView.h>
 #import <WebKit/WebViewPrivate.h>
-#import <WebKit/WebWorkersPrivate.h>
 #import <wtf/CurrentTime.h>
 #import <wtf/HashMap.h>
 #import <wtf/RetainPtr.h>
@@ -297,11 +296,6 @@ int TestRunner::numberOfPendingGeolocationPermissionRequests()
 size_t TestRunner::webHistoryItemCount()
 {
     return [[[WebHistory optionalSharedHistory] allItems] count];
-}
-
-unsigned TestRunner::workerThreadCount() const
-{
-    return [WebWorkersPrivate workerThreadCount];
 }
 
 JSRetainPtr<JSStringRef> TestRunner::platformName() const
@@ -785,26 +779,6 @@ bool TestRunner::isCommandEnabled(JSStringRef name)
     if (![validator respondsToSelector:@selector(validateUserInterfaceItem:)])
         return true;
     return [validator validateUserInterfaceItem:target.get()];
-}
-
-bool TestRunner::pauseAnimationAtTimeOnElementWithId(JSStringRef animationName, double time, JSStringRef elementId)
-{
-    RetainPtr<CFStringRef> idCF(AdoptCF, JSStringCopyCFString(kCFAllocatorDefault, elementId));
-    NSString *idNS = (NSString *)idCF.get();
-    RetainPtr<CFStringRef> nameCF(AdoptCF, JSStringCopyCFString(kCFAllocatorDefault, animationName));
-    NSString *nameNS = (NSString *)nameCF.get();
-    
-    return [mainFrame _pauseAnimation:nameNS onNode:[[mainFrame DOMDocument] getElementById:idNS] atTime:time];
-}
-
-bool TestRunner::pauseTransitionAtTimeOnElementWithId(JSStringRef propertyName, double time, JSStringRef elementId)
-{
-    RetainPtr<CFStringRef> idCF(AdoptCF, JSStringCopyCFString(kCFAllocatorDefault, elementId));
-    NSString *idNS = (NSString *)idCF.get();
-    RetainPtr<CFStringRef> nameCF(AdoptCF, JSStringCopyCFString(kCFAllocatorDefault, propertyName));
-    NSString *nameNS = (NSString *)nameCF.get();
-    
-    return [mainFrame _pauseTransitionOfProperty:nameNS onNode:[[mainFrame DOMDocument] getElementById:idNS] atTime:time];
 }
 
 void TestRunner::waitForPolicyDelegate()

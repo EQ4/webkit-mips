@@ -61,8 +61,6 @@ public:
     static Eina_List* frameChildren(const Evas_Object* ewkFrame);
     static WebCore::Frame* frameParent(const Evas_Object* ewkFrame);
     static void layoutFrame(Evas_Object* ewkFrame);
-    static bool pauseAnimation(Evas_Object* ewkFrame, const char* name, const char* elementId, double time);
-    static bool pauseTransition(Evas_Object* ewkFrame, const char* name, const char* elementId, double time);
     static unsigned pendingUnloadEventCount(const Evas_Object* ewkFrame);
     static String renderTreeDump(Evas_Object* ewkFrame);
     static String responseMimeType(const Evas_Object* ewkFrame);
@@ -97,7 +95,6 @@ public:
     static void garbageCollectorCollect();
     static void garbageCollectorCollectOnAlternateThread(bool waitUntilDone);
     static size_t javaScriptObjectsCount();
-    static unsigned workerThreadCount();
 
     static void setDeadDecodedDataDeletionInterval(double);
 

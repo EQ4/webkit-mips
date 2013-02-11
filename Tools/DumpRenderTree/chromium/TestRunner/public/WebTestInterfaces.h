@@ -31,8 +31,12 @@
 #ifndef WebTestInterfaces_h
 #define WebTestInterfaces_h
 
+#include "WebTestCommon.h"
+#include <memory>
+
 namespace WebKit {
 class WebFrame;
+class WebURL;
 class WebView;
 }
 
@@ -42,7 +46,7 @@ class TestInterfaces;
 class WebTestDelegate;
 class WebTestRunner;
 
-class WebTestInterfaces {
+class WEBTESTRUNNER_EXPORT WebTestInterfaces {
 public:
     WebTestInterfaces();
     ~WebTestInterfaces();
@@ -52,8 +56,8 @@ public:
     void bindTo(WebKit::WebFrame*);
     void resetAll();
     void setTestIsRunning(bool);
+    void configureForTestWithURL(const WebKit::WebURL&, bool generatePixels);
 
-    WebKit::WebView* webView() const;
     WebTestRunner* testRunner();
 
 #if WEBTESTRUNNER_IMPLEMENTATION
@@ -61,7 +65,7 @@ public:
 #endif
 
 private:
-    TestInterfaces* m_interfaces;
+    std::auto_ptr<TestInterfaces> m_interfaces;
 };
 
 }

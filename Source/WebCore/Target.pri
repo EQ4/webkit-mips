@@ -30,7 +30,6 @@ SOURCES += \
     Modules/geolocation/Geolocation.cpp \
     Modules/geolocation/GeolocationController.cpp \
     Modules/geolocation/NavigatorGeolocation.cpp \
-    \
     Modules/webdatabase/DOMWindowWebDatabase.cpp \
     Modules/webdatabase/Database.cpp \
     Modules/webdatabase/DatabaseAuthorizer.cpp \
@@ -39,7 +38,6 @@ SOURCES += \
     Modules/webdatabase/DatabaseServer.cpp \
     Modules/webdatabase/DatabaseSync.cpp \
     Modules/webdatabase/WorkerContextWebDatabase.cpp \
-    \
     accessibility/AccessibilityImageMapLink.cpp \
     accessibility/AccessibilityMediaControls.cpp \
     accessibility/AccessibilityMenuList.cpp \
@@ -414,6 +412,7 @@ SOURCES += \
     dom/EventTarget.cpp \
     dom/ExceptionBase.cpp \
     dom/ExceptionCodePlaceholder.cpp \
+    dom/FocusEvent.cpp \
     dom/GenericEventQueue.cpp \
     dom/GestureEvent.cpp \
     dom/IconURL.cpp \
@@ -741,6 +740,7 @@ SOURCES += \
     html/parser/HTMLParserScheduler.cpp \
     html/parser/HTMLParserThread.cpp \
     html/parser/HTMLPreloadScanner.cpp \
+    html/parser/HTMLResourcePreloader.cpp \
     html/parser/HTMLScriptRunner.cpp \
     html/parser/HTMLSourceTracker.cpp \
     html/parser/HTMLTokenizer.cpp \
@@ -1478,6 +1478,8 @@ HEADERS += \
     Modules/webdatabase/SQLStatement.h \
     Modules/webdatabase/SQLStatementSync.h \
     Modules/webdatabase/SQLTransaction.h \
+    Modules/webdatabase/SQLTransactionBackend.h \
+    Modules/webdatabase/SQLTransactionBackendSync.h \
     Modules/webdatabase/SQLTransactionClient.h \
     Modules/webdatabase/SQLTransactionCoordinator.h \
     Modules/webdatabase/SQLTransactionSync.h \
@@ -1632,6 +1634,7 @@ HEADERS += \
     dom/EventTarget.h \
     dom/ExceptionBase.h \
     dom/ExceptionCode.h \
+    dom/FocusEvent.h \
     dom/FragmentScriptingPermission.h \
     dom/GestureEvent.h \
     dom/IdTargetObserver.h \
@@ -1923,6 +1926,7 @@ HEADERS += \
     html/parser/HTMLFormattingElementList.h \
     html/parser/HTMLParserScheduler.h \
     html/parser/HTMLPreloadScanner.h \
+    html/parser/HTMLResourcePreloader.h \
     html/parser/HTMLScriptRunner.h \
     html/parser/HTMLScriptRunnerHost.h \
     html/parser/HTMLToken.h \
@@ -2266,6 +2270,9 @@ HEADERS += \
     platform/graphics/texmap/TextureMapperImageBuffer.h \
     platform/graphics/texmap/TextureMapperLayer.h \
     platform/graphics/texmap/TextureMapperPlatformLayer.h \
+    platform/graphics/texmap/TextureMapperSurfaceBackingStore.h \
+    platform/graphics/texmap/TextureMapperTile.h \
+    platform/graphics/texmap/TextureMapperTiledBackingStore.h \
     platform/graphics/Tile.h \
     platform/graphics/TiledBackingStore.h \
     platform/graphics/TiledBackingStoreClient.h \
@@ -2900,6 +2907,9 @@ SOURCES += \
     platform/graphics/texmap/TextureMapperBackingStore.cpp \
     platform/graphics/texmap/TextureMapperImageBuffer.cpp \
     platform/graphics/texmap/TextureMapperLayer.cpp \
+    platform/graphics/texmap/TextureMapperSurfaceBackingStore.cpp \
+    platform/graphics/texmap/TextureMapperTile.cpp \
+    platform/graphics/texmap/TextureMapperTiledBackingStore.cpp \
     platform/network/DNSResolveQueue.cpp \
     platform/network/MIMESniffing.cpp \
     platform/network/qt/CookieJarQt.cpp \
@@ -3052,6 +3062,8 @@ enable?(SQL_DATABASE) {
         Modules/webdatabase/SQLStatement.cpp \
         Modules/webdatabase/SQLStatementSync.cpp \
         Modules/webdatabase/SQLTransaction.cpp \
+        Modules/webdatabase/SQLTransactionBackend.cpp \
+        Modules/webdatabase/SQLTransactionBackendSync.cpp \
         Modules/webdatabase/SQLTransactionClient.cpp \
         Modules/webdatabase/SQLTransactionCoordinator.cpp \
         Modules/webdatabase/SQLTransactionSync.cpp \
@@ -3351,6 +3363,7 @@ enable?(VIDEO) {
     } else: use?(GSTREAMER) {
         HEADERS += \
             platform/graphics/gstreamer/GStreamerGWorld.h \
+            platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.h \
             platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.h \
             platform/graphics/gstreamer/VideoSinkGStreamer.h \
             platform/graphics/gstreamer/WebKitWebSourceGStreamer.h \
@@ -3359,6 +3372,7 @@ enable?(VIDEO) {
             platform/graphics/gstreamer/ImageGStreamer.h
         SOURCES += \
             platform/graphics/gstreamer/GStreamerGWorld.cpp \
+            platform/graphics/gstreamer/MediaPlayerPrivateGStreamerBase.cpp \
             platform/graphics/gstreamer/MediaPlayerPrivateGStreamer.cpp \
             platform/graphics/gstreamer/VideoSinkGStreamer.cpp \
             platform/graphics/gstreamer/WebKitWebSourceGStreamer.cpp \
@@ -4062,6 +4076,7 @@ enable?(CANVAS_PROXY) {
 
 use?(3D_GRAPHICS) {
     HEADERS += \
+        page/scrolling/coordinatedgraphics/ScrollingCoordinatorCoordinatedGraphics.h \
         platform/graphics/cpu/arm/GraphicsContext3DNEON.h \
         platform/graphics/ANGLEWebKitBridge.h \
         platform/graphics/Extensions3D.h \
@@ -4086,6 +4101,7 @@ use?(3D_GRAPHICS) {
         platform/graphics/texmap/coordinated/UpdateAtlas.h
 
     SOURCES += \
+        page/scrolling/coordinatedgraphics/ScrollingCoordinatorCoordinatedGraphics.cpp \
         platform/graphics/ANGLEWebKitBridge.cpp \
         platform/graphics/GraphicsContext3D.cpp \
         platform/graphics/gpu/DrawingBuffer.cpp \
@@ -4215,7 +4231,12 @@ use?(GRAPHICS_SURFACE) {
         SOURCES += platform/graphics/surfaces/win/GraphicsSurfaceWin.cpp
     }
     have?(XCOMPOSITE) {
-        SOURCES += platform/graphics/surfaces/glx/GraphicsSurfaceGLX.cpp
+        HEADERS += \
+            platform/graphics/surfaces/glx/X11Helper.h \
+            platform/graphics/surfaces/glx/GLXConfigSelector.h
+        SOURCES += \
+            platform/graphics/surfaces/glx/X11Helper.cpp \
+            platform/graphics/surfaces/glx/GraphicsSurfaceGLX.cpp
     }
 }
 

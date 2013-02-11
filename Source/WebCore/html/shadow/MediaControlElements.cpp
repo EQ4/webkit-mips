@@ -36,6 +36,7 @@
 #include "DOMTokenList.h"
 #include "EventNames.h"
 #include "EventTarget.h"
+#include "ExceptionCodePlaceholder.h"
 #include "FloatConversion.h"
 #include "Frame.h"
 #include "GraphicsContext.h"
@@ -172,8 +173,7 @@ void MediaControlPanelElement::setPosition(const LayoutPoint& position)
     setInlineStyleProperty(CSSPropertyMarginLeft, 0.0, CSSPrimitiveValue::CSS_PX);
     setInlineStyleProperty(CSSPropertyMarginTop, 0.0, CSSPrimitiveValue::CSS_PX);
 
-    ExceptionCode ignored;
-    classList()->add("dragged", ignored);
+    classList()->add("dragged", IGNORE_EXCEPTION);
 }
 
 void MediaControlPanelElement::resetPosition()
@@ -183,8 +183,7 @@ void MediaControlPanelElement::resetPosition()
     removeInlineStyleProperty(CSSPropertyMarginLeft);
     removeInlineStyleProperty(CSSPropertyMarginTop);
 
-    ExceptionCode ignored;
-    classList()->remove("dragged", ignored);
+    classList()->remove("dragged", IGNORE_EXCEPTION);
 
     m_cumulativeDragOffset.setX(0);
     m_cumulativeDragOffset.setY(0);
@@ -384,8 +383,6 @@ void MediaControlStatusDisplayElement::update()
     if (newStateToDisplay == m_stateBeingDisplayed)
         return;
 
-    ExceptionCode e;
-
     if (m_stateBeingDisplayed == Nothing)
         show();
     else if (newStateToDisplay == Nothing)
@@ -395,13 +392,13 @@ void MediaControlStatusDisplayElement::update()
 
     switch (m_stateBeingDisplayed) {
     case Nothing:
-        setInnerText("", e);
+        setInnerText("", IGNORE_EXCEPTION);
         break;
     case Loading:
-        setInnerText(mediaElementLoadingStateText(), e);
+        setInnerText(mediaElementLoadingStateText(), IGNORE_EXCEPTION);
         break;
     case LiveBroadcast:
-        setInnerText(mediaElementLiveBroadcastStateText(), e);
+        setInnerText(mediaElementLiveBroadcastStateText(), IGNORE_EXCEPTION);
         break;
     }
 }
@@ -605,8 +602,7 @@ PassRefPtr<MediaControlRewindButtonElement> MediaControlRewindButtonElement::cre
 void MediaControlRewindButtonElement::defaultEventHandler(Event* event)
 {
     if (event->type() == eventNames().clickEvent) {
-        ExceptionCode ignoredCode;
-        mediaController()->setCurrentTime(max(0.0f, mediaController()->currentTime() - 30), ignoredCode);
+        mediaController()->setCurrentTime(max(0.0f, mediaController()->currentTime() - 30), IGNORE_EXCEPTION);
         event->setDefaultHandled();
     }
     HTMLInputElement::defaultEventHandler(event);
@@ -874,10 +870,9 @@ void MediaControlClosedCaptionsTrackListElement::rebuildTrackListMenu()
     Document* doc = document();
     CaptionUserPreferences* captionsUserPreferences = doc->page()->group().captionPreferences();
 
-    RefPtr<Element> captionsSection = doc->createElement(sectionTag, ASSERT_NO_EXCEPTION);
     RefPtr<Element> captionsHeader = doc->createElement(h3Tag, ASSERT_NO_EXCEPTION);
     captionsHeader->appendChild(doc->createTextNode(textTrackSubtitlesText()));
-    captionsSection->appendChild(captionsHeader);
+    appendChild(captionsHeader);
     RefPtr<Element> captionsMenuList = doc->createElement(ulTag, ASSERT_NO_EXCEPTION);
 
     RefPtr<Element> trackItem;
@@ -907,8 +902,7 @@ void MediaControlClosedCaptionsTrackListElement::rebuildTrackListMenu()
         m_menuItems.append(trackItem);
     }
 
-    captionsSection->appendChild(captionsMenuList);
-    appendChild(captionsSection);
+    appendChild(captionsMenuList);
 
     updateDisplay();
 #endif
@@ -954,10 +948,8 @@ void MediaControlTimelineElement::defaultEventHandler(Event* event)
         return;
 
     float time = narrowPrecisionToFloat(value().toDouble());
-    if (event->type() == eventNames().inputEvent && time != mediaController()->currentTime()) {
-        ExceptionCode ec;
-        mediaController()->setCurrentTime(time, ec);
-    }
+    if (event->type() == eventNames().inputEvent && time != mediaController()->currentTime())
+        mediaController()->setCurrentTime(time, IGNORE_EXCEPTION);
 
     RenderSlider* slider = toRenderSlider(renderer());
     if (slider && slider->inDragMode())

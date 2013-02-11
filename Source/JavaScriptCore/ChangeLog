@@ -1,3 +1,370 @@
+2013-02-10  Martin Robinson  <mrobinson@igalia.com>
+
+        Fix the GTK+ gyp build
+
+        * JavaScriptCore.gypi: Update the source list to accurately
+        reflect what's in the repository and remove the offsets extractor
+        from the list of JavaScriptCore files. It's only used to build
+        the extractor binary.
+
+2013-02-09  Andreas Kling  <akling@apple.com>
+
+        Shrink-wrap UnlinkedCodeBlock members.
+        <http://webkit.org/b/109368>
+
+        Reviewed by Oliver Hunt.
+
+        Rearrange the members of UnlinkedCodeBlock to avoid unnecessary padding on 64-bit.
+        Knocks ~600 KB off of the Membuster3 peak.
+
+        * bytecode/UnlinkedCodeBlock.cpp:
+        (JSC::UnlinkedCodeBlock::UnlinkedCodeBlock):
+        * bytecode/UnlinkedCodeBlock.h:
+        (UnlinkedCodeBlock):
+
+2013-02-08  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG should allow phases to break Phi's and then have one phase to rebuild them
+        https://bugs.webkit.org/show_bug.cgi?id=108414
+
+        Reviewed by Mark Hahnenberg.
+        
+        Introduces two new DFG forms: LoadStore and ThreadedCPS. These are described in
+        detail in DFGCommon.h.
+        
+        Consequently, DFG phases no longer have to worry about preserving data flow
+        links between basic blocks. It is generally always safe to request that the
+        graph be dethreaded (Graph::dethread), which brings it into LoadStore form, where
+        the data flow is implicit. In this form, only liveness-at-head needs to be
+        preserved.
+        
+        All of the machinery for "threading" the graph to introduce data flow between
+        blocks is now moved out of the bytecode parser and into the CPSRethreadingPhase.
+        All phases that previously did this maintenance themselves now just rely on
+        being able to dethread the graph. The one exception is the structure check
+        hoising phase, which operates over a threaded graph and preserves it, for the
+        sake of performance.
+        
+        Also moved two other things into their own phases: unification (previously found
+        in the parser) and prediction injection (previously found in various places).
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * Target.pri:
+        * bytecode/Operands.h:
+        (Operands):
+        (JSC::Operands::sizeFor):
+        (JSC::Operands::atFor):
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        (JSC::DFG::AbstractState::mergeStateAtTail):
+        * dfg/DFGAllocator.h:
+        (JSC::DFG::::allocateSlow):
+        * dfg/DFGArgumentsSimplificationPhase.cpp:
+        (JSC::DFG::ArgumentsSimplificationPhase::run):
+        * dfg/DFGBasicBlockInlines.h:
+        (DFG):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::getLocal):
+        (JSC::DFG::ByteCodeParser::getArgument):
+        (JSC::DFG::ByteCodeParser::flushDirect):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        (DFG):
+        (JSC::DFG::ByteCodeParser::parse):
+        * dfg/DFGCFGSimplificationPhase.cpp:
+        (JSC::DFG::CFGSimplificationPhase::run):
+        (JSC::DFG::CFGSimplificationPhase::killUnreachable):
+        (JSC::DFG::CFGSimplificationPhase::keepOperandAlive):
+        (CFGSimplificationPhase):
+        (JSC::DFG::CFGSimplificationPhase::fixJettisonedPredecessors):
+        (JSC::DFG::CFGSimplificationPhase::mergeBlocks):
+        * dfg/DFGCPSRethreadingPhase.cpp: Added.
+        (DFG):
+        (CPSRethreadingPhase):
+        (JSC::DFG::CPSRethreadingPhase::CPSRethreadingPhase):
+        (JSC::DFG::CPSRethreadingPhase::run):
+        (JSC::DFG::CPSRethreadingPhase::freeUnnecessaryNodes):
+        (JSC::DFG::CPSRethreadingPhase::clearVariablesAtHeadAndTail):
+        (JSC::DFG::CPSRethreadingPhase::addPhiSilently):
+        (JSC::DFG::CPSRethreadingPhase::addPhi):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeGetLocalFor):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeGetLocal):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeSetLocal):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeFlushOrPhantomLocalFor):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeFlushOrPhantomLocal):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeSetArgument):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeLocalsInBlock):
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeLocalsInBlocks):
+        (JSC::DFG::CPSRethreadingPhase::propagatePhis):
+        (JSC::DFG::CPSRethreadingPhase::PhiStackEntry::PhiStackEntry):
+        (PhiStackEntry):
+        (JSC::DFG::CPSRethreadingPhase::phiStackFor):
+        (JSC::DFG::performCPSRethreading):
+        * dfg/DFGCPSRethreadingPhase.h: Added.
+        (DFG):
+        * dfg/DFGCSEPhase.cpp:
+        (CSEPhase):
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGCommon.cpp:
+        (WTF):
+        (WTF::printInternal):
+        * dfg/DFGCommon.h:
+        (JSC::DFG::logCompilationChanges):
+        (DFG):
+        (WTF):
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+        * dfg/DFGDriver.cpp:
+        (JSC::DFG::compile):
+        * dfg/DFGGraph.cpp:
+        (JSC::DFG::Graph::Graph):
+        (JSC::DFG::Graph::dump):
+        (JSC::DFG::Graph::dethread):
+        (JSC::DFG::Graph::collectGarbage):
+        * dfg/DFGGraph.h:
+        (JSC::DFG::Graph::performSubstitution):
+        (Graph):
+        (JSC::DFG::Graph::performSubstitutionForEdge):
+        (JSC::DFG::Graph::convertToConstant):
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::convertToPhantomLocal):
+        (Node):
+        (JSC::DFG::Node::convertToGetLocal):
+        (JSC::DFG::Node::hasVariableAccessData):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGPhase.cpp:
+        (JSC::DFG::Phase::beginPhase):
+        * dfg/DFGPhase.h:
+        (JSC::DFG::runAndLog):
+        * dfg/DFGPredictionInjectionPhase.cpp: Added.
+        (DFG):
+        (PredictionInjectionPhase):
+        (JSC::DFG::PredictionInjectionPhase::PredictionInjectionPhase):
+        (JSC::DFG::PredictionInjectionPhase::run):
+        (JSC::DFG::performPredictionInjection):
+        * dfg/DFGPredictionInjectionPhase.h: Added.
+        (DFG):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::run):
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGStructureCheckHoistingPhase.cpp:
+        (JSC::DFG::StructureCheckHoistingPhase::run):
+        * dfg/DFGUnificationPhase.cpp: Added.
+        (DFG):
+        (UnificationPhase):
+        (JSC::DFG::UnificationPhase::UnificationPhase):
+        (JSC::DFG::UnificationPhase::run):
+        (JSC::DFG::performUnification):
+        * dfg/DFGUnificationPhase.h: Added.
+        (DFG):
+        * dfg/DFGValidate.cpp:
+        (JSC::DFG::Validate::validate):
+        (JSC::DFG::Validate::dumpGraphIfAppropriate):
+        * dfg/DFGVirtualRegisterAllocationPhase.cpp:
+        (JSC::DFG::VirtualRegisterAllocationPhase::run):
+        * llint/LLIntSlowPaths.cpp:
+        (JSC::LLInt::setUpCall):
+        * runtime/JSCJSValue.cpp:
+        (JSC::JSValue::dump):
+        * runtime/JSString.h:
+        (JSString):
+        * runtime/Options.h:
+        (JSC):
+
+2013-02-08  Jer Noble  <jer.noble@apple.com>
+
+        Bring WebKit up to speed with latest Encrypted Media spec.
+        https://bugs.webkit.org/show_bug.cgi?id=97037
+
+        Reviewed by Eric Carlson.
+
+        Define the ENABLE_ENCRYPTED_MEDIA_V2 setting.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-08  Gavin Barraclough  <barraclough@apple.com>
+
+        Objective-C API for JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=105889
+
+        Reviewed by Joseph Pecoraro
+
+        Following up on review comments, mostly typos.
+
+        * API/JSBlockAdaptor.h:
+        * API/JSBlockAdaptor.mm:
+        (-[JSBlockAdaptor blockFromValue:inContext:withException:]):
+        * API/JSContext.h:
+        * API/JSExport.h:
+        * API/JSValue.h:
+        * API/JSValue.mm:
+        * API/JSWrapperMap.mm:
+        (selectorToPropertyName):
+        (-[JSWrapperMap classInfoForClass:]):
+        (-[JSWrapperMap wrapperForObject:]):
+
+2013-02-08  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Add an experimental gyp build
+        https://bugs.webkit.org/show_bug.cgi?id=109003
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * JavaScriptCore.gypi: Update the list of source files to include those
+        necessary for the GTK+ build.
+
+2013-02-08  Andreas Kling  <akling@apple.com>
+
+        JSC: Lower minimum PropertyTable size.
+        <http://webkit.org/b/109247>
+
+        Reviewed by Darin Adler.
+
+        Lower the minimum table size for PropertyTable from 16 to 8.
+        3.32 MB progression on Membuster3 (a ~13% reduction in memory used by PropertyTables.)
+
+        * runtime/PropertyMapHashTable.h:
+        (PropertyTable):
+        (JSC::PropertyTable::sizeForCapacity):
+
+2013-02-07  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. More VS2010 WebKit solution touchups.
+        Make JavaScriptCoreExports.def.in be treated as a custom build file so that changes to it cause the exports to be rebuilt.
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGenerator.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGenerator.vcxproj.filters:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExports.def.in:
+
+2013-02-07  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: testapi.mm should use ARC
+        https://bugs.webkit.org/show_bug.cgi?id=107838
+
+        Reviewed by Mark Rowe.
+
+        Removing the changes to the Xcode project file and moving the equivalent flags into 
+        the ToolExecutable xcconfig file.
+
+        * Configurations/ToolExecutable.xcconfig:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+
+2013-02-07  Brent Fulgham  <bfulgham@webkit.org>
+
+        [Windows] Unreviewed Visual Studio 2010 build fixes after r142179.
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExports.def.in: Correct changed symbols
+        * JavaScriptCore.vcxproj/JavaScriptCoreExports.def: Removed autogenerated file.
+
+2013-02-05  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG::ByteCodeParser should do surgical constant folding to reduce load on the optimization fixpoint
+        https://bugs.webkit.org/show_bug.cgi?id=109000
+
+        Reviewed by Oliver Hunt.
+        
+        Previously our source parser's ASTBuilder did some surgical constant folding, but it
+        didn't cover some cases.  It was particularly incapable of doing constant folding for
+        cases where we do some minimal loop peeling in the bytecode generator - since it
+        didn't "see" those constants prior to the peeling.  Example:
+
+        for (var i = 0; i < 4; ++i)
+            things;
+
+        This will get peeled just a bit by the bytecode generator, so that the "i < 4" is
+        duplicated both at the top of the loop and the bottom.  This means that we have a
+        constant comparison: "0 < 4", which the bytecode generator emits without any further
+        thought.
+
+        The DFG optimization fixpoint of course folds this and simplifies the CFG 
+        accordingly, but this incurs a compile-time cost.  The purpose of this change is to
+        do some surgical constant folding in the DFG's bytecode parser, so that such
+        constructs reduce load on the CFG simplifier and the optimization fixpoint.  The goal
+        is not to cover all cases, since the DFG CFA and CFG simplifier have a powerful
+        sparse conditional constant propagation that we can always fall back on. Instead the
+        goal is to cover enough cases that for common small functions we don't have to
+        perform such transformations, thereby reducing compile times.
+        
+        This also refactors m_inlineStackEntry->m_inlineCallFrame to be a handy method call
+        and also adds the notion of a TriState-based JSValue::pureToBoolean(). Both of these
+        things are used by the folder.
+        
+        As well, care has been taken to make sure that the bytecode parser only does folding
+        that is statically provable, and that doesn't arise out of speculation. This means
+        we cannot fold on data flow that crosses inlining boundaries. On the other hand, the
+        folding that the bytecode parser uses doesn't require phantoming anything. Such is
+        the trade-off: for anything that we do need phantoming, we defer it to the
+        optimization fixpoint.
+        
+        Slight SunSpider speed-up.
+
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::get):
+        (JSC::DFG::ByteCodeParser::getLocal):
+        (JSC::DFG::ByteCodeParser::setLocal):
+        (JSC::DFG::ByteCodeParser::flushDirect):
+        (JSC::DFG::ByteCodeParser::flushArgumentsAndCapturedVariables):
+        (JSC::DFG::ByteCodeParser::toInt32):
+        (ByteCodeParser):
+        (JSC::DFG::ByteCodeParser::inlineCallFrame):
+        (JSC::DFG::ByteCodeParser::currentCodeOrigin):
+        (JSC::DFG::ByteCodeParser::canFold):
+        (JSC::DFG::ByteCodeParser::handleInlining):
+        (JSC::DFG::ByteCodeParser::getScope):
+        (JSC::DFG::ByteCodeParser::parseResolveOperations):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        (JSC::DFG::ByteCodeParser::parseCodeBlock):
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::isStronglyProvedConstantIn):
+        (Node):
+        * runtime/JSCJSValue.h:
+        * runtime/JSCJSValueInlines.h:
+        (JSC::JSValue::pureToBoolean):
+        (JSC):
+
+2013-02-07  Zoltan Herczeg  <zherczeg@webkit.org>
+
+        Invalid code is generated for storing constants with baseindex addressing modes on ARM traditional.
+        https://bugs.webkit.org/show_bug.cgi?id=109050
+
+        Reviewed by Oliver Hunt.
+
+        The S! scratch register is reused, but it should contain the constant value.
+
+        * assembler/ARMAssembler.cpp:
+        (JSC::ARMAssembler::baseIndexTransfer32):
+        (JSC::ARMAssembler::baseIndexTransfer16):
+
+2013-02-07  Andras Becsi  <andras.becsi@digia.com>
+
+        [Qt] Use GNU ar's thin archive format for intermediate static libs
+        https://bugs.webkit.org/show_bug.cgi?id=109052
+
+        Reviewed by Jocelyn Turcotte.
+
+        Adjust project files that used activeBuildConfig()
+        to use targetSubDir().
+
+        * JavaScriptCore.pri:
+        * LLIntOffsetsExtractor.pro:
+        * Target.pri:
+
+2013-02-06  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Touchups to VS2010 WebKit solution.
+        Fix an export generator script, modify some property sheets, add resouce file.
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorDebug.props:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorPostBuild.cmd:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorRelease.props:
+        * JavaScriptCore.vcxproj/resource.h: Added.
+
 2013-02-06  Ilya Tikhonovsky  <loislo@chromium.org>
 
         Web Inspector: Native Memory Instrumentation: assign class name to the heap graph node automatically

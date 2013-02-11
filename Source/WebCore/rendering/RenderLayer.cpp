@@ -1988,7 +1988,12 @@ void RenderLayer::panScrollFromPoint(const IntPoint& sourcePoint)
     scrollByRecursively(adjustedScrollDelta(delta), ScrollOffsetClamped);
 }
 
-bool RenderLayer::scrollByRecursively(const IntSize& delta, ScrollOffsetClamping clamp)
+void RenderLayer::scrollByRecursively(const IntSize& delta, ScrollOffsetClamping clamp)
+{
+    scrollBy(delta, clamp, ShouldPropagateScroll);
+}
+
+bool RenderLayer::scrollBy(const IntSize& delta, ScrollOffsetClamping clamp, ScrollPropagation shouldPropagate)
 {
     if (delta.isZero())
         return false;
@@ -2001,12 +2006,15 @@ bool RenderLayer::scrollByRecursively(const IntSize& delta, ScrollOffsetClamping
         IntSize newScrollOffset = scrollOffset() + delta;
         scrollToOffset(newScrollOffset, clamp);
 
+        if (shouldPropagate == DontPropagateScroll)
+            return true;
+
         // If this layer can't do the scroll we ask the next layer up that can scroll to try
         IntSize remainingScrollOffset = newScrollOffset - scrollOffset();
         bool didScroll = true;
         if (!remainingScrollOffset.isZero() && renderer()->parent()) {
             if (RenderLayer* scrollableLayer = enclosingScrollableLayer())
-                didScroll = scrollableLayer->scrollByRecursively(remainingScrollOffset, clamp);
+                didScroll = scrollableLayer->scrollBy(remainingScrollOffset, clamp, shouldPropagate);
 
             Frame* frame = renderer()->frame();
             if (frame)
@@ -2018,7 +2026,8 @@ bool RenderLayer::scrollByRecursively(const IntSize& delta, ScrollOffsetClamping
         // have an overflow clip. Which means that it is a document node that can be scrolled.
         FrameView* view = renderer()->view()->frameView();
         IntPoint scrollPositionBefore = view->scrollPosition();
-        view->scrollBy(delta);
+        if (view->isScrollable())
+            view->scrollBy(delta);
         IntPoint scrollPositionAfter = view->scrollPosition();
         return scrollPositionBefore != scrollPositionAfter;
 

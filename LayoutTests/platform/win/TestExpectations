@@ -1225,6 +1225,7 @@ fast/events/constructors/mouse-event-constructor.html
 fast/events/constructors/composition-event-constructor.html
 fast/events/constructors/wheel-event-constructor.html
 fast/events/constructors/keyboard-event-constructor.html
+fast/events/constructors/focus-event-constructor.html
 
 # Disable until the windows WebKit API supports injecting in the top frame only.
 # https://bugs.webkit.org/show_bug.cgi?id=41800
@@ -1526,30 +1527,7 @@ http/tests/security/webgl-remote-read-remote-image-allowed-with-credentials.html
 http/tests/security/webgl-remote-read-remote-image-blocked-no-crossorigin.html
 inspector/profiler/webgl
 fast/images/webgl-teximage2d.html
-webgl/conformance/buffers/buffer-bind-test.html
-webgl/conformance/buffers/buffer-data-array-buffer.html
-webgl/conformance/buffers/element-array-buffer-delete-recreate.html
-webgl/conformance/buffers/index-validation-copies-indices.html
-webgl/conformance/buffers/index-validation-crash-with-buffer-sub-data.html
-webgl/conformance/buffers/index-validation-large-buffer.html
-webgl/conformance/buffers/index-validation-verifies-too-many-indices.html
-webgl/conformance/buffers/index-validation-with-resized-buffer.html
-webgl/conformance/buffers/index-validation.html
-webgl/conformance/misc/bad-arguments-test.html
-webgl/conformance/misc/boolean-argument-conversion.html
-webgl/conformance/misc/delayed-drawing.html
-webgl/conformance/misc/error-reporting.html
-webgl/conformance/misc/functions-returning-strings.html
-webgl/conformance/misc/instanceof-test.html
-webgl/conformance/misc/invalid-passed-params.html
-webgl/conformance/misc/is-object.html
-webgl/conformance/misc/null-object-behaviour.html
-webgl/conformance/misc/object-deletion-behaviour.html
-webgl/conformance/misc/shader-precision-format.html
-webgl/conformance/misc/type-conversion-test.html
-webgl/conformance/misc/uninitialized-test.html
-webgl/conformance/misc/webgl-specific.html
-
+webgl
 
 # Tests that require ENABLE(DOWNLOAD_ATTRIBUTE).
 fast/dom/HTMLAnchorElement/anchor-nodownload.html
@@ -2522,6 +2500,7 @@ fast/js/kde/Array.html
 # No support for exposing in-band text tracks
 webkit.org/b/103770 media/track/track-in-band.html [ Skip ]
 webkit.org/b/103770 media/track/track-in-band-cues-added-once.html [ Skip ]
+webkit.org/b/103770 media/track/track-in-band-style.html [ Skip ]
 
 # https://bugs.webkit.org/show_bug.cgi?id=97026
 fast/events/keydown-leftright-keys.html

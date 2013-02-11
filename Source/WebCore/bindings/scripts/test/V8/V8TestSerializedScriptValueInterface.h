@@ -18,11 +18,10 @@
     Boston, MA 02111-1307, USA.
 */
 
-#if ENABLE(Condition1) || ENABLE(Condition2)
-
 #ifndef V8TestSerializedScriptValueInterface_h
 #define V8TestSerializedScriptValueInterface_h
 
+#if ENABLE(Condition1) || ENABLE(Condition2)
 #include "TestSerializedScriptValueInterface.h"
 #include "V8Binding.h"
 #include "V8DOMWrapper.h"
@@ -37,8 +36,8 @@ class V8TestSerializedScriptValueInterface {
 public:
     static const bool hasDependentLifetime = false;
     static bool HasInstance(v8::Handle<v8::Value>, v8::Isolate*);
-    static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate* = 0);
-    static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate* = 0);
+    static v8::Persistent<v8::FunctionTemplate> GetRawTemplate(v8::Isolate*);
+    static v8::Persistent<v8::FunctionTemplate> GetTemplate(v8::Isolate*);
     static TestSerializedScriptValueInterface* toNative(v8::Handle<v8::Object> object)
     {
         return reinterpret_cast<TestSerializedScriptValueInterface*>(object->GetAlignedPointerFromInternalField(v8DOMWrapperObjectIndex));
@@ -48,7 +47,7 @@ public:
     static v8::Handle<v8::Value> constructorCallback(const v8::Arguments&);
     static const int internalFieldCount = v8DefaultWrapperInternalFieldCount + 0;
     static void installPerContextProperties(v8::Handle<v8::Object>, TestSerializedScriptValueInterface*, v8::Isolate*) { }
-    static void installPerContextPrototypeProperties(v8::Handle<v8::Object>) { }
+    static void installPerContextPrototypeProperties(v8::Handle<v8::Object>, v8::Isolate*) { }
 private:
     friend v8::Handle<v8::Object> wrap(TestSerializedScriptValueInterface*, v8::Handle<v8::Object> creationContext, v8::Isolate*);
     static v8::Handle<v8::Object> createWrapper(PassRefPtr<TestSerializedScriptValueInterface>, v8::Handle<v8::Object> creationContext, v8::Isolate*);

@@ -44,6 +44,7 @@ set(WebCore_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/page"
     "${WEBCORE_DIR}/page/animation"
     "${WEBCORE_DIR}/page/scrolling"
+    "${WEBCORE_DIR}/page/scrolling/coordinatedgraphics"
     "${WEBCORE_DIR}/platform"
     "${WEBCORE_DIR}/platform/animation"
     "${WEBCORE_DIR}/platform/audio"
@@ -371,6 +372,7 @@ set(WebCore_IDL_FILES
     dom/EventException.idl
     dom/Event.idl
     dom/EventTarget.idl
+    dom/FocusEvent.idl
     dom/HashChangeEvent.idl
     dom/KeyboardEvent.idl
     dom/MessageChannel.idl
@@ -971,6 +973,8 @@ set(WebCore_SOURCES
     Modules/webdatabase/SQLStatement.cpp
     Modules/webdatabase/SQLStatementSync.cpp
     Modules/webdatabase/SQLTransaction.cpp
+    Modules/webdatabase/SQLTransactionBackend.cpp
+    Modules/webdatabase/SQLTransactionBackendSync.cpp
     Modules/webdatabase/SQLTransactionClient.cpp
     Modules/webdatabase/SQLTransactionCoordinator.cpp
     Modules/webdatabase/SQLTransactionSync.cpp
@@ -1186,6 +1190,7 @@ set(WebCore_SOURCES
     dom/EventTarget.cpp
     dom/ExceptionBase.cpp
     dom/ExceptionCodePlaceholder.cpp
+    dom/FocusEvent.cpp
     dom/GenericEventQueue.cpp
     dom/GestureEvent.cpp
     dom/IconURL.cpp
@@ -1558,6 +1563,7 @@ set(WebCore_SOURCES
     html/parser/HTMLFormattingElementList.cpp
     html/parser/HTMLMetaCharsetParser.cpp
     html/parser/HTMLPreloadScanner.cpp
+    html/parser/HTMLResourcePreloader.cpp
     html/parser/HTMLScriptRunner.cpp
     html/parser/HTMLSourceTracker.cpp
     html/parser/HTMLTokenizer.cpp
@@ -1818,6 +1824,7 @@ set(WebCore_SOURCES
 
     page/scrolling/ScrollingConstraints.cpp
     page/scrolling/ScrollingCoordinator.cpp
+    page/scrolling/coordinatedgraphics/ScrollingCoordinatorCoordinatedGraphics.cpp
 
     platform/Arena.cpp
     platform/AsyncFileSystem.cpp
@@ -2010,6 +2017,9 @@ set(WebCore_SOURCES
     platform/graphics/texmap/TextureMapperBackingStore.cpp
     platform/graphics/texmap/TextureMapperImageBuffer.cpp
     platform/graphics/texmap/TextureMapperLayer.cpp
+    platform/graphics/texmap/TextureMapperSurfaceBackingStore.cpp
+    platform/graphics/texmap/TextureMapperTile.cpp
+    platform/graphics/texmap/TextureMapperTiledBackingStore.cpp
 
     platform/graphics/transforms/AffineTransform.cpp
     platform/graphics/transforms/Matrix3DTransformOperation.cpp

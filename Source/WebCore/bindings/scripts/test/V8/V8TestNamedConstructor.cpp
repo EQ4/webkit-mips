@@ -92,7 +92,7 @@ static v8::Handle<v8::Value> V8TestNamedConstructorConstructorCallback(const v8:
     if (ec)
         goto fail;
 
-    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &V8TestNamedConstructorConstructor::info, wrapper, args.GetIsolate());
+    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &V8TestNamedConstructorConstructor::info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
     return wrapper;
   fail:
     return setDOMException(ec, args.GetIsolate());
@@ -100,8 +100,6 @@ static v8::Handle<v8::Value> V8TestNamedConstructorConstructorCallback(const v8:
 
 v8::Persistent<v8::FunctionTemplate> V8TestNamedConstructorConstructor::GetTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     static v8::Persistent<v8::FunctionTemplate> cachedTemplate;
     if (!cachedTemplate.IsEmpty())
         return cachedTemplate;
@@ -114,7 +112,7 @@ v8::Persistent<v8::FunctionTemplate> V8TestNamedConstructorConstructor::GetTempl
     result->SetClassName(v8::String::NewSymbol("TestNamedConstructor"));
     result->Inherit(V8TestNamedConstructor::GetTemplate(isolate));
 
-    cachedTemplate = v8::Persistent<v8::FunctionTemplate>::New(result);
+    cachedTemplate = v8::Persistent<v8::FunctionTemplate>::New(isolate, result);
     return cachedTemplate;
 }
 
@@ -136,23 +134,19 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestNamedConstructorTempl
 
 v8::Persistent<v8::FunctionTemplate> V8TestNamedConstructor::GetRawTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->rawTemplateMap().find(&info);
     if (result != data->rawTemplateMap().end())
         return result->value;
 
     v8::HandleScope handleScope;
-    v8::Persistent<v8::FunctionTemplate> templ = createRawTemplate();
+    v8::Persistent<v8::FunctionTemplate> templ = createRawTemplate(isolate);
     data->rawTemplateMap().add(&info, templ);
     return templ;
 }
 
 v8::Persistent<v8::FunctionTemplate> V8TestNamedConstructor::GetTemplate(v8::Isolate* isolate)
 {
-    if (!isolate)
-        isolate = v8::Isolate::GetCurrent();
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->templateMap().find(&info);
     if (result != data->templateMap().end())
@@ -190,9 +184,7 @@ v8::Handle<v8::Object> V8TestNamedConstructor::createWrapper(PassRefPtr<TestName
         return wrapper;
 
     installPerContextProperties(wrapper, impl.get(), isolate);
-    v8::Persistent<v8::Object> wrapperHandle = V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate);
-    if (!hasDependentLifetime)
-        wrapperHandle.MarkIndependent();
+    V8DOMWrapper::associateObjectWithWrapper(impl, &info, wrapper, isolate, hasDependentLifetime ? WrapperConfiguration::Dependent : WrapperConfiguration::Independent);
     return wrapper;
 }
 void V8TestNamedConstructor::derefObject(void* object)

@@ -26,8 +26,8 @@
 #ifndef RenderSnapshottedPlugIn_h
 #define RenderSnapshottedPlugIn_h
 
+#include "RenderBlock.h"
 #include "RenderEmbeddedObject.h"
-
 #include "RenderImageResource.h"
 #include "Timer.h"
 

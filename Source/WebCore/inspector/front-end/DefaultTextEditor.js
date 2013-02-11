@@ -1364,16 +1364,29 @@ WebInspector.TextEditorMainPanel = function(delegate, textModel, url, syncScroll
     this.element.addEventListener("textInput", this._handleTextInput.bind(this), false);
     this.element.addEventListener("cut", this._handleCut.bind(this), false);
 
+    this._showWhitespace = WebInspector.settings.showWhitespaceInEditor.get();
+    this._handleShowWhitespaceInEditorChange = this._handleShowWhitespaceInEditorChange.bind(this);
+
     this._container.addEventListener("focus", this._handleFocused.bind(this), false);
 
     this._highlightDescriptors = [];
 
     this._tokenHighlighter = new WebInspector.TextEditorMainPanel.TokenHighlighter(this, textModel);
+    this._braceMatcher = new WebInspector.TextEditorModel.BraceMatcher(textModel);
+    this._braceHighlighter = new WebInspector.TextEditorMainPanel.BraceHighlightController(this, textModel, this._braceMatcher);
 
     this._freeCachedElements();
     this.buildChunks();
     this._registerShortcuts();
 }
+
+WebInspector.TextEditorMainPanel._ConsecutiveWhitespaceChars = {
+    1: " ",
+    2: "  ",
+    4: "    ",
+    8: "        ",
+    16: "                "
+};
 
 WebInspector.TextEditorMainPanel.prototype = {
     _registerShortcuts: function()
@@ -1395,6 +1408,52 @@ WebInspector.TextEditorMainPanel.prototype = {
         var handleShiftTabKey = this._handleTabKeyPress.bind(this, true);
         this._shortcuts[WebInspector.KeyboardShortcut.makeKey(keys.Tab.code)] = handleTabKey;
         this._shortcuts[WebInspector.KeyboardShortcut.makeKey(keys.Tab.code, modifiers.Shift)] = handleShiftTabKey;
+
+        var homeKey = WebInspector.isMac() ? keys.Right : keys.Home;
+        var homeModifier = WebInspector.isMac() ? modifiers.Meta : modifiers.None;
+        this._shortcuts[WebInspector.KeyboardShortcut.makeKey(homeKey.code, homeModifier)] = this._handleHomeKey.bind(this, false);
+        this._shortcuts[WebInspector.KeyboardShortcut.makeKey(homeKey.code, homeModifier | modifiers.Shift)] = this._handleHomeKey.bind(this, true);
+    },
+
+    /**
+     * @param {boolean} shift
+     */
+    _handleHomeKey: function(shift)
+    {
+        var selection = this.selection();
+
+        var line = this._textModel.line(selection.endLine);
+        var firstNonBlankCharacter = 0;
+        while (firstNonBlankCharacter < line.length) {
+            var char = line.charAt(firstNonBlankCharacter);
+            if (char === " " || char === "\t")
+                ++firstNonBlankCharacter;
+            else
+                break;
+        }
+        if (firstNonBlankCharacter >= line.length || selection.endColumn === firstNonBlankCharacter)
+            return false;
+
+        selection.endColumn = firstNonBlankCharacter;
+        if (!shift)
+            selection = selection.collapseToEnd();
+        this._restoreSelection(selection);
+        return true;
+    },
+
+    _handleShowWhitespaceInEditorChange: function()
+    {
+        this._showWhitespace = WebInspector.settings.showWhitespaceInEditor.get();
+        var visibleFrom = this.scrollTop();
+        var visibleTo = visibleFrom + this.clientHeight();
+
+        if (!visibleTo)
+            return;
+
+        var result = this.findVisibleChunks(visibleFrom, visibleTo);
+        var startLine = this._textChunks[result.start].startLine;
+        var endLine = this._textChunks[result.end - 1].startLine + this._textChunks[result.end - 1].linesCount;
+        this._paintLines(startLine, endLine + 1);
     },
 
     /**
@@ -1472,6 +1531,8 @@ WebInspector.TextEditorMainPanel.prototype = {
 
     wasShown: function()
     {
+        WebInspector.settings.showWhitespaceInEditor.addChangeListener(this._handleShowWhitespaceInEditorChange);
+
         this._boundSelectionChangeListener = this._handleSelectionChange.bind(this);
         document.addEventListener("selectionchange", this._boundSelectionChangeListener, false);
 
@@ -1481,6 +1542,8 @@ WebInspector.TextEditorMainPanel.prototype = {
 
     willHide: function()
     {
+        WebInspector.settings.showWhitespaceInEditor.removeChangeListener(this._handleShowWhitespaceInEditorChange);
+
         document.removeEventListener("selectionchange", this._boundSelectionChangeListener, false);
         delete this._boundSelectionChangeListener;
 
@@ -1968,8 +2031,9 @@ WebInspector.TextEditorMainPanel.prototype = {
      * @param {Element} lineRow
      * @param {string} line
      * @param {Array.<{startColumn: number, endColumn: number, token: ?string}>} ranges
+     * @param {boolean=} splitWhitespaceSequences
      */
-    _renderRanges: function(lineRow, line, ranges)
+    _renderRanges: function(lineRow, line, ranges, splitWhitespaceSequences)
     {
         var decorationsElement = lineRow.decorationsElement;
 
@@ -1991,16 +2055,33 @@ WebInspector.TextEditorMainPanel.prototype = {
         for(var i = 0; i < ranges.length; i++) {
             var rangeStart = ranges[i].startColumn;
             var rangeEnd = ranges[i].endColumn;
-            var cssClass = ranges[i].token ? "webkit-" + ranges[i].token : "";
 
             if (plainTextStart < rangeStart) {
                 this._insertTextNodeBefore(lineRow, decorationsElement, line.substring(plainTextStart, rangeStart));
             }
-            this._insertSpanBefore(lineRow, decorationsElement, line.substring(rangeStart, rangeEnd + 1), cssClass);
+
+            if (splitWhitespaceSequences && ranges[i].token === "whitespace")
+                this._renderWhitespaceCharsWithFixedSizeSpans(lineRow, decorationsElement, rangeEnd - rangeStart + 1);
+            else
+                this._insertSpanBefore(lineRow, decorationsElement, line.substring(rangeStart, rangeEnd + 1), ranges[i].token ? "webkit-" + ranges[i].token : "");
             plainTextStart = rangeEnd + 1;
         }
         if (plainTextStart < line.length) {
             this._insertTextNodeBefore(lineRow, decorationsElement, line.substring(plainTextStart, line.length));
+        }
+    },
+
+    /**
+     * @param {Element} lineRow
+     * @param {Element} decorationsElement
+     * @param {number} length
+     */
+    _renderWhitespaceCharsWithFixedSizeSpans: function(lineRow, decorationsElement, length)
+    {
+        for (var whitespaceLength = 16; whitespaceLength > 0; whitespaceLength >>= 1) {
+            var cssClass = "webkit-whitespace webkit-whitespace-" + whitespaceLength;
+            for (; length >= whitespaceLength; length -= whitespaceLength)
+                this._insertSpanBefore(lineRow, decorationsElement, WebInspector.TextEditorMainPanel._ConsecutiveWhitespaceChars[whitespaceLength], cssClass);
         }
     },
 
@@ -2020,7 +2101,7 @@ WebInspector.TextEditorMainPanel.prototype = {
 
             var line = this._textModel.line(lineNumber);
             var ranges = syntaxHighlight.ranges;
-            this._renderRanges(lineRow, line, ranges);
+            this._renderRanges(lineRow, line, ranges, this._showWhitespace);
 
             if (overlayHighlight)
                 for(var i = 0; i < overlayHighlight.length; ++i)
@@ -2065,6 +2146,9 @@ WebInspector.TextEditorMainPanel.prototype = {
             return null;
         // Selection may be outside of the editor.
         if (!this._container.isAncestor(selection.anchorNode) || !this._container.isAncestor(selection.focusNode))
+            return null;
+        // Selection may be inside one of decorations.
+        if (selection.focusNode.enclosingNodeOrSelfWithClass("webkit-line-decorations", this._container))
             return null;
         var start = this._selectionToPosition(selection.anchorNode, selection.anchorOffset, lastUndamagedLineRow);
         var end = selection.isCollapsed ? start : this._selectionToPosition(selection.focusNode, selection.focusOffset, lastUndamagedLineRow);
@@ -2401,7 +2485,7 @@ WebInspector.TextEditorMainPanel.prototype = {
 
         // Unindent after block
         if (editInfo.text === "}" && editInfo.range.isEmpty() && selection.isEmpty() && !this._textModel.line(editInfo.range.endLine).trim()) {
-            var offset = this._closingBlockOffset(editInfo.range, selection);
+            var offset = this._closingBlockOffset(editInfo.range);
             if (offset >= 0) {
                 editInfo.range.startColumn = offset;
                 selection.startColumn = offset + 1;
@@ -2491,30 +2575,15 @@ WebInspector.TextEditorMainPanel.prototype = {
 
     /**
      * @param {WebInspector.TextRange} oldRange
-     * @param {WebInspector.TextRange} selection
      * @return {number}
      */
-    _closingBlockOffset: function(oldRange, selection)
+    _closingBlockOffset: function(oldRange)
     {
-        var nestingLevel = 1;
-        for (var i = oldRange.endLine; i >= 0; --i) {
-            var attribute = this._textModel.getAttribute(i, "highlight");
-            if (!attribute)
-                continue;
-            var ranges = attribute.ranges;
-            for (var j = ranges.length - 1; j >= 0; j--) {
-                var token = ranges[j].token;
-                if (token === "block-start") {
-                    if (!(--nestingLevel)) {
-                        var lineContent = this._textModel.line(i);
-                        return lineContent.length - lineContent.trimLeft().length;
-                    }
-                }
-                if (token === "block-end")
-                    ++nestingLevel;
-            }
-        }
-        return -1;
+        var leftBrace = this._braceMatcher.findLeftCandidate(oldRange.startLine, oldRange.startColumn);
+        if (!leftBrace || leftBrace.token !== "block-start")
+            return -1;
+        var lineContent = this._textModel.line(leftBrace.lineNumber);
+        return lineContent.length - lineContent.trimLeft().length;
     },
 
     /**
@@ -2680,6 +2749,7 @@ WebInspector.TextEditorMainPanel.prototype = {
             this._lastSelection = textRange;
 
         this._tokenHighlighter.handleSelectionChange(textRange);
+        this._braceHighlighter.handleSelectionChange(textRange);
         this._delegate.selectionChanged(textRange);
     },
 
@@ -3356,6 +3426,63 @@ WebInspector.DefaultTextEditor.WordMovementController.prototype = {
 
         this._textEditor.setSelection(newSelection.collapseToEnd());
         return true;
+    }
+}
+
+/**
+ * @constructor
+ * @param {WebInspector.TextEditorMainPanel} textEditor
+ * @param {WebInspector.TextEditorModel} textModel
+ * @param {WebInspector.TextEditorModel.BraceMatcher} braceMatcher
+ */
+WebInspector.TextEditorMainPanel.BraceHighlightController = function(textEditor, textModel, braceMatcher)
+{
+    this._textEditor = textEditor;
+    this._textModel = textModel;
+    this._braceMatcher = braceMatcher;
+    this._highlightDescriptors = [];
+}
+
+WebInspector.TextEditorMainPanel.BraceHighlightController.prototype = {
+    /**
+     * @param {WebInspector.TextRange} selectionRange
+     */
+    handleSelectionChange: function(selectionRange)
+    {
+        if (!selectionRange || !selectionRange.isEmpty()) {
+            this._removeHighlight();
+            return;
+        }
+
+        if (this._highlightedRange && this._highlightedRange.compareTo(selectionRange) === 0)
+            return;
+
+        this._removeHighlight();
+        var lineNumber = selectionRange.startLine;
+        var column = selectionRange.startColumn;
+        var line = this._textModel.line(lineNumber);
+        if (column > 0 && /[)}]/.test(line.charAt(column - 1)))
+            --column;
+
+        var enclosingBraces = this._braceMatcher.enclosingBraces(lineNumber, column);
+        if (!enclosingBraces)
+            return;
+
+        this._highlightedRange = selectionRange;
+        this._highlightDescriptors.push(this._textEditor.highlightRange(WebInspector.TextRange.createFromLocation(enclosingBraces.leftBrace.lineNumber, enclosingBraces.leftBrace.column), "text-editor-brace-match"));
+        this._highlightDescriptors.push(this._textEditor.highlightRange(WebInspector.TextRange.createFromLocation(enclosingBraces.rightBrace.lineNumber, enclosingBraces.rightBrace.column), "text-editor-brace-match"));
+    },
+
+    _removeHighlight: function()
+    {
+        if (!this._highlightDescriptors.length)
+            return;
+
+        for(var i = 0; i < this._highlightDescriptors.length; ++i)
+            this._textEditor.removeHighlight(this._highlightDescriptors[i]);
+
+        this._highlightDescriptors = [];
+        delete this._highlightedRange;
     }
 }
 

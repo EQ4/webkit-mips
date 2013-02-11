@@ -30,6 +30,7 @@
 #include "CompactHTMLToken.h"
 
 #include "HTMLToken.h"
+#include "XSSAuditorDelegate.h"
 
 namespace WebCore {
 
@@ -38,6 +39,7 @@ struct SameSizeAsCompactHTMLToken  {
     String name;
     Vector<CompactAttribute> vector;
     TextPosition textPosition;
+    OwnPtr<XSSInfo> xssInfo;
 };
 
 COMPILE_ASSERT(sizeof(CompactHTMLToken) == sizeof(SameSizeAsCompactHTMLToken), CompactHTMLToken_should_stay_small);
@@ -86,27 +88,40 @@ CompactHTMLToken::CompactHTMLToken(const HTMLToken* token, const TextPosition& t
     }
 }
 
-static bool isStringSafeToSendToAnotherThread(const String& string)
+CompactHTMLToken::CompactHTMLToken(const CompactHTMLToken& other)
+    : m_type(other.m_type)
+    , m_selfClosing(other.m_selfClosing)
+    , m_isAll8BitData(other.m_isAll8BitData)
+    , m_doctypeForcesQuirks(other.m_doctypeForcesQuirks)
+    , m_data(other.m_data)
+    , m_attributes(other.m_attributes)
+    , m_textPosition(other.m_textPosition)
 {
-    StringImpl* impl = string.impl();
-    if (!impl)
-        return true;
-    if (impl->hasOneRef())
-        return true;
-    if (string.isEmpty())
-        return true;
-    return false;
+    if (other.m_xssInfo)
+        m_xssInfo = adoptPtr(new XSSInfo(*other.m_xssInfo));
 }
 
 bool CompactHTMLToken::isSafeToSendToAnotherThread() const
 {
     for (Vector<CompactAttribute>::const_iterator it = m_attributes.begin(); it != m_attributes.end(); ++it) {
-        if (!isStringSafeToSendToAnotherThread(it->name()))
+        if (!it->name().isSafeToSendToAnotherThread())
             return false;
-        if (!isStringSafeToSendToAnotherThread(it->value()))
+        if (!it->value().isSafeToSendToAnotherThread())
             return false;
     }
-    return isStringSafeToSendToAnotherThread(m_data);
+    if (m_xssInfo && !m_xssInfo->isSafeToSendToAnotherThread())
+        return false;
+    return m_data.isSafeToSendToAnotherThread();
+}
+
+XSSInfo* CompactHTMLToken::xssInfo() const
+{
+    return m_xssInfo.get();
+}
+
+void CompactHTMLToken::setXSSInfo(PassOwnPtr<XSSInfo> xssInfo)
+{
+    m_xssInfo = xssInfo;
 }
 
 }

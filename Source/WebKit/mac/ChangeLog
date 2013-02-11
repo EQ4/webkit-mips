@@ -1,3 +1,81 @@
+2013-02-10  Dan Bernstein  <mitz@apple.com>
+
+        Added *.pdf to EXCLUDED_SOURCE_FILE_NAMES_iphoneos.
+
+        Rubber-stamped by Anders Carlsson.
+
+        * Configurations/WebKit.xcconfig:
+
+2013-02-10  Jae Hyun Park  <jae.park08@gmail.com>
+
+        Rename ENABLE(GLIB_SUPPORT) to USE(GLIB)
+        https://bugs.webkit.org/show_bug.cgi?id=104266
+
+        Reviewed by Philippe Normand.
+
+        Using USE(GLIB) instead of ENABLE(GLIB_SUPPORT) is more consistent with
+        the existing macro naming conventions.
+
+        From Platform.h
+        USE() - use a particular third-party library or optional OS service
+        ENABLE() - turn on a specific feature of WebKit
+
+        * WebView/WebView.mm:
+        (-[WebView _commonInitializationWithFrameName:groupName:]):
+        (-[WebView _close]):
+        * WebView/WebViewData.h:
+        * WebView/WebViewInternal.h:
+
+2013-02-08  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move workerThreadCount from TestRunner to WebCore Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109239
+
+        Reviewed by Darin Adler.
+
+        Get rid of WebWorkersPrivate, which was only needed for DRT.
+
+        * WebKit.exp:
+        * Workers/WebWorkersPrivate.h: Removed.
+        * Workers/WebWorkersPrivate.mm: Removed.
+
+2013-02-07  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r142212.
+        http://trac.webkit.org/changeset/142212
+        https://bugs.webkit.org/show_bug.cgi?id=109255
+
+        Causes ASSERT(!m_installed) on launch (Requested by smfr on
+        #webkit).
+
+        * WebView/WebView.mm:
+        (-[WebView _commonInitializationWithFrameName:groupName:]):
+        (WebInstallMemoryPressureHandler):
+
+2013-02-06  Gavin Barraclough  <barraclough@apple.com>
+
+        PluginProcess should quit immediately if idle in response to low-memory notifications
+        https://bugs.webkit.org/show_bug.cgi?id=109103
+        <rdar://problem/12679827>
+
+        Reviewed by Darin Adler.
+
+        * WebView/WebView.mm:
+        (-[WebView _commonInitializationWithFrameName:groupName:]):
+            - MemoryPressureHandler::install is now called via MemoryPressureHandler::initialize.
+        (WebInstallMemoryPressureHandler):
+            - MemoryPressureHandler::install is now called via MemoryPressureHandler::initialize.
+
+2013-02-07  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move pauseAnimation/pauseTransition from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109107
+
+        Reviewed by Anders Carlsson.
+
+        * WebView/WebFrame.mm:
+        * WebView/WebFramePrivate.h:
+
 2013-02-06  Mike West  <mkwst@chromium.org>
 
         Add an ENABLE_NOSNIFF feature flag.

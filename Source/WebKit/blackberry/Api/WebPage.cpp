@@ -422,7 +422,7 @@ WebPagePrivate::WebPagePrivate(WebPage* webPage, WebPageClient* client, const In
     , m_suspendRootLayerCommit(false)
 #endif
     , m_pendingOrientation(-1)
-    , m_fullscreenVideoNode(0)
+    , m_fullscreenNode(0)
     , m_hasInRegionScrollableAreas(false)
     , m_updateDelegatedOverlaysDispatched(false)
     , m_enableQnxJavaScriptObject(false)
@@ -2416,6 +2416,9 @@ void WebPagePrivate::updateCursor()
         m_lastMouseEvent.altKey() ? 0 : KEYMOD_ALT;
 
     BlackBerry::Platform::MouseEvent event(buttonMask, buttonMask, mapToTransformed(m_lastMouseEvent.position()), mapToTransformed(m_lastMouseEvent.globalPosition()), 0, modifiers,  0);
+
+    // We have added document viewport position and document content position as members of the mouse event, when we create the event, we should initial them as well.
+    event.populateDocumentPosition(m_lastMouseEvent.position(), mapFromTransformedViewportToTransformedContents(m_lastMouseEvent.position()));
     m_webPage->mouseEvent(event);
 }
 
@@ -2503,7 +2506,7 @@ void WebPagePrivate::clearDocumentData(const Document* documentGoingAway)
     if (nodeUnderFatFinger && nodeUnderFatFinger->document() == documentGoingAway)
         m_touchEventHandler->resetLastFatFingersResult();
 
-    // NOTE: m_fullscreenVideoNode, m_fullScreenPluginView and m_pluginViews
+    // NOTE: m_fullscreenNode, m_fullScreenPluginView and m_pluginViews
     // are cleared in other methods already.
 }
 
@@ -3221,6 +3224,7 @@ void WebPagePrivate::setVisible(bool visible)
         }
 
         m_visible = visible;
+        m_backingStore->d->updateSuspendScreenUpdateState();
     }
 
 #if ENABLE(PAGE_VISIBILITY_API)
@@ -3837,7 +3841,7 @@ void WebPagePrivate::setViewportSize(const IntSize& transformedActualVisibleSize
 #if ENABLE(FULLSCREEN_API) && ENABLE(VIDEO)
     // When leaving fullscreen mode, restore the scale and scroll position if needed.
     // We also need to make sure the scale and scroll position won't cause over scale or over scroll.
-    if (m_scaleBeforeFullScreen > 0 && !m_fullscreenVideoNode) {
+    if (m_scaleBeforeFullScreen > 0 && !m_fullscreenNode) {
         // Restore the scale when leaving fullscreen. We can't use TransformationMatrix::scale(double) here,
         // as it will multiply the scale rather than set the scale.
         // FIXME: We can refactor this into setCurrentScale(double) if it is useful in the future.
@@ -4272,7 +4276,7 @@ void WebPage::setForcedTextEncoding(const BlackBerry::Platform::String& encoding
         return d->focusedOrMainFrame()->loader()->reloadWithOverrideEncoding(encoding);
 }
 
-static void handleScrolling(unsigned short character, WebPagePrivate* scroller)
+static void handleScrolling(unsigned character, WebPagePrivate* scroller)
 {
     const int scrollFactor = 20;
     int dx = 0, dy = 0;
@@ -5156,15 +5160,15 @@ void WebPage::notifyFullScreenVideoExited(bool done)
 {
     UNUSED_PARAM(done);
 #if ENABLE(VIDEO)
-    if (d->m_webSettings->fullScreenVideoCapable()) {
-        if (HTMLMediaElement* mediaElement = static_cast<HTMLMediaElement*>(d->m_fullscreenVideoNode.get()))
-            mediaElement->exitFullscreen();
-    } else {
+    Element* element = toElement(d->m_fullscreenNode.get());
+    if (!element)
+        return;
+    if (d->m_webSettings->fullScreenVideoCapable() && element->hasTagName(HTMLNames::videoTag))
+        static_cast<HTMLMediaElement*>(element)->exitFullscreen();
 #if ENABLE(FULLSCREEN_API)
-        if (Element* element = static_cast<Element*>(d->m_fullscreenVideoNode.get()))
-            element->document()->webkitCancelFullScreen();
+    else
+        element->document()->webkitCancelFullScreen();
 #endif
-    }
 #endif
 }
 
@@ -5343,6 +5347,7 @@ void WebPagePrivate::setCompositorDrawsRootLayer(bool compositorDrawsRootLayer)
     // When the BlackBerry port forces compositing mode, the root layer stops
     // painting to window and starts painting to layer instead.
     m_page->settings()->setForceCompositingMode(compositorDrawsRootLayer);
+    m_backingStore->d->updateSuspendScreenUpdateState();
 
     if (!m_mainFrame)
         return;
@@ -5779,7 +5784,7 @@ void WebPagePrivate::enterFullscreenForNode(Node* node)
         return;
 
     mmrPlayer->setFullscreenWebPageClient(m_client);
-    m_fullscreenVideoNode = node;
+    m_fullscreenNode = node;
     m_client->fullscreenStart(contextName, window, mmrPlayer->getWindowScreenRect());
 #endif
 }
@@ -5787,9 +5792,9 @@ void WebPagePrivate::enterFullscreenForNode(Node* node)
 void WebPagePrivate::exitFullscreenForNode(Node* node)
 {
 #if ENABLE(VIDEO)
-    if (m_fullscreenVideoNode.get()) {
+    if (m_fullscreenNode.get()) {
         m_client->fullscreenStop();
-        m_fullscreenVideoNode = 0;
+        m_fullscreenNode = 0;
     }
 
     if (!node || !node->hasTagName(HTMLNames::videoTag))
@@ -5809,23 +5814,12 @@ void WebPagePrivate::exitFullscreenForNode(Node* node)
 }
 
 #if ENABLE(FULLSCREEN_API)
-// TODO: We should remove this helper class when we decide to support all elements.
-static bool containsVideoTags(Element* element)
-{
-    for (Node* node = element->firstChild(); node; node = NodeTraversal::next(node, element)) {
-        if (node->hasTagName(HTMLNames::videoTag))
-            return true;
-    }
-    return false;
-}
-
 void WebPagePrivate::enterFullScreenForElement(Element* element)
 {
 #if ENABLE(VIDEO)
-    // TODO: We should not check video tag when we decide to support all elements.
-    if (!element || (!element->hasTagName(HTMLNames::videoTag) && !containsVideoTags(element)))
+    if (!element)
         return;
-    if (m_webSettings->fullScreenVideoCapable()) {
+    if (m_webSettings->fullScreenVideoCapable() && element->hasTagName(HTMLNames::videoTag)) {
         // The Browser chrome has its own fullscreen video widget it wants to
         // use, and this is a video element. The only reason that
         // webkitWillEnterFullScreenForElement() and
@@ -5857,7 +5851,7 @@ void WebPagePrivate::enterFullScreenForElement(Element* element)
         // Javascript call is often made on a div element.
         // This is where we would hide the browser's chrome if we wanted to.
         client()->fullscreenStart();
-        m_fullscreenVideoNode = element;
+        m_fullscreenNode = element;
     }
 #endif
 }
@@ -5865,17 +5859,16 @@ void WebPagePrivate::enterFullScreenForElement(Element* element)
 void WebPagePrivate::exitFullScreenForElement(Element* element)
 {
 #if ENABLE(VIDEO)
-    // TODO: We should not check video tag when we decide to support all elements.
-    if (!element || (!element->hasTagName(HTMLNames::videoTag) && !containsVideoTags(element)))
+    if (!element)
         return;
-    if (m_webSettings->fullScreenVideoCapable()) {
+    if (m_webSettings->fullScreenVideoCapable() && element->hasTagName(HTMLNames::videoTag)) {
         // The Browser chrome has its own fullscreen video widget.
         exitFullscreenForNode(element);
     } else {
         // This is where we would restore the browser's chrome
         // if hidden above.
         client()->fullscreenStop();
-        m_fullscreenVideoNode = 0;
+        m_fullscreenNode = 0;
     }
 #endif
 }
@@ -5885,14 +5878,14 @@ void WebPagePrivate::adjustFullScreenElementDimensionsIfNeeded()
 {
     // If we are in fullscreen video mode, and we change the FrameView::viewportRect,
     // we need to adjust the media container to the new size.
-    if (!m_fullscreenVideoNode || !m_fullscreenVideoNode->renderer()
-        || !m_fullscreenVideoNode->document() || !m_fullscreenVideoNode->document()->fullScreenRenderer())
+    if (!m_fullscreenNode || !m_fullscreenNode->renderer()
+        || !m_fullscreenNode->document() || !m_fullscreenNode->document()->fullScreenRenderer())
         return;
 
-    ASSERT(m_fullscreenVideoNode->isElementNode());
-    ASSERT(static_cast<Element*>(m_fullscreenVideoNode.get())->isMediaElement());
+    ASSERT(m_fullscreenNode->isElementNode());
+    ASSERT(static_cast<Element*>(m_fullscreenNode.get())->isMediaElement());
 
-    Document* document = m_fullscreenVideoNode->document();
+    Document* document = m_fullscreenNode->document();
     RenderStyle* fullScreenStyle = document->fullScreenRenderer()->style();
     ASSERT(fullScreenStyle);
 

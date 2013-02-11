@@ -88,14 +88,6 @@ static WebProcessProxy::WebPageProxyMap& globalPageMap()
     return pageMap;
 }
 
-#if ENABLE(NETSCAPE_PLUGIN_API)
-static WorkQueue* pluginWorkQueue()
-{
-    static WorkQueue* pluginWorkQueue = WorkQueue::create("com.apple.WebKit.PluginQueue").leakRef();
-    return pluginWorkQueue;
-}
-#endif // ENABLE(NETSCAPE_PLUGIN_API)
-
 PassRefPtr<WebProcessProxy> WebProcessProxy::create(PassRefPtr<WebContext> context)
 {
     return adoptRef(new WebProcessProxy(context));
@@ -132,7 +124,6 @@ void WebProcessProxy::connectionWillOpen(CoreIPC::Connection* connection)
     ASSERT(this->connection() == connection);
 
     m_context->processWillOpenConnection(this);
-    connection->addQueueClient(this);
 }
 
 void WebProcessProxy::connectionWillClose(CoreIPC::Connection* connection)
@@ -140,7 +131,6 @@ void WebProcessProxy::connectionWillClose(CoreIPC::Connection* connection)
     ASSERT(this->connection() == connection);
 
     m_context->processWillCloseConnection(this);
-    connection->removeQueueClient(this);
 }
 
 void WebProcessProxy::disconnect()
@@ -165,21 +155,6 @@ void WebProcessProxy::disconnect()
         m_downloadProxyMap->processDidClose();
 
     m_context->disconnectProcess(this);
-}
-
-void WebProcessProxy::addMessageReceiver(CoreIPC::StringReference messageReceiverName, CoreIPC::MessageReceiver* messageReceiver)
-{
-    m_messageReceiverMap.addMessageReceiver(messageReceiverName, messageReceiver);
-}
-
-void WebProcessProxy::addMessageReceiver(CoreIPC::StringReference messageReceiverName, uint64_t destinationID, CoreIPC::MessageReceiver* messageReceiver)
-{
-    m_messageReceiverMap.addMessageReceiver(messageReceiverName, destinationID, messageReceiver);
-}
-
-void WebProcessProxy::removeMessageReceiver(CoreIPC::StringReference messageReceiverName, uint64_t destinationID)
-{
-    m_messageReceiverMap.removeMessageReceiver(messageReceiverName, destinationID);
 }
 
 WebPageProxy* WebProcessProxy::webPage(uint64_t pageID)
@@ -323,53 +298,28 @@ void WebProcessProxy::addBackForwardItem(uint64_t itemID, const String& original
 }
 
 #if ENABLE(NETSCAPE_PLUGIN_API)
-void WebProcessProxy::sendDidGetPlugins(uint64_t requestID, PassOwnPtr<Vector<PluginInfo> > pluginInfos)
-{
-    ASSERT(isMainThread());
-
-    OwnPtr<Vector<PluginInfo> > plugins(pluginInfos);
-
-#if PLATFORM(MAC)
-    // Add built-in PDF last, so that it's not used when a real plug-in is installed.
-    // NOTE: This has to be done on the main thread as it calls localizedString().
-    if (!m_context->omitPDFSupport()) {
-#if ENABLE(PDFKIT_PLUGIN)
-        plugins->append(PDFPlugin::pluginInfo());
-#endif
-        plugins->append(SimplePDFPlugin::pluginInfo());
-    }
-#endif
-
-    send(Messages::WebProcess::DidGetPlugins(requestID, *plugins), 0);
-}
-
-void WebProcessProxy::handleGetPlugins(uint64_t requestID, bool refresh)
+void WebProcessProxy::getPlugins(bool refresh, Vector<PluginInfo>& plugins)
 {
     if (refresh)
         m_context->pluginInfoStore().refresh();
 
-    OwnPtr<Vector<PluginInfo> > pluginInfos = adoptPtr(new Vector<PluginInfo>);
+    Vector<PluginModuleInfo> pluginModules = m_context->pluginInfoStore().plugins();
+    for (size_t i = 0; i < pluginModules.size(); ++i)
+        plugins.append(pluginModules[i].info);
 
-    {
-        Vector<PluginModuleInfo> plugins = m_context->pluginInfoStore().plugins();
-        for (size_t i = 0; i < plugins.size(); ++i)
-            pluginInfos->append(plugins[i].info);
+#if PLATFORM(MAC)
+    // Add built-in PDF last, so that it's not used when a real plug-in is installed.
+    if (!m_context->omitPDFSupport()) {
+#if ENABLE(PDFKIT_PLUGIN)
+        plugins.append(PDFPlugin::pluginInfo());
+#endif
+        plugins.append(SimplePDFPlugin::pluginInfo());
     }
-
-    // NOTE: We have to pass the PluginInfo vector to the secondary thread via a pointer as otherwise
-    //       we'd end up with a deref() race on all the WTF::Strings it contains.
-    RunLoop::main()->dispatch(bind(&WebProcessProxy::sendDidGetPlugins, this, requestID, pluginInfos.release()));
+#endif
 }
-
-void WebProcessProxy::getPlugins(CoreIPC::Connection*, uint64_t requestID, bool refresh)
-{
-    pluginWorkQueue()->dispatch(bind(&WebProcessProxy::handleGetPlugins, this, requestID, refresh));
-}
-
 #endif // ENABLE(NETSCAPE_PLUGIN_API)
 
 #if ENABLE(PLUGIN_PROCESS)
-
 void WebProcessProxy::getPluginProcessConnection(const String& pluginPath, uint32_t processType, PassRefPtr<Messages::WebProcessProxy::GetPluginProcessConnection::DelayedReply> reply)
 {
     PluginProcessManager::shared().getPluginProcessConnection(m_context->pluginInfoStore(), pluginPath, static_cast<PluginProcess::Type>(processType), reply);
@@ -405,7 +355,7 @@ void WebProcessProxy::getNetworkProcessConnection(PassRefPtr<Messages::WebProces
 
 void WebProcessProxy::didReceiveMessage(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder)
 {
-    if (m_messageReceiverMap.dispatchMessage(connection, decoder))
+    if (dispatchMessage(connection, decoder))
         return;
 
     if (m_context->dispatchMessage(connection, decoder))
@@ -416,30 +366,12 @@ void WebProcessProxy::didReceiveMessage(CoreIPC::Connection* connection, CoreIPC
         return;
     }
 
-#if ENABLE(CUSTOM_PROTOCOLS)
-    if (decoder.messageReceiverName() == Messages::CustomProtocolManagerProxy::messageReceiverName()) {
-#if ENABLE(NETWORK_PROCESS)
-        ASSERT(!context()->usesNetworkProcess());
-#endif
-        m_customProtocolManagerProxy.didReceiveMessage(connection, decoder);
-        return;
-    }
-#endif
-
-    uint64_t pageID = decoder.destinationID();
-    if (!pageID)
-        return;
-
-    WebPageProxy* pageProxy = webPage(pageID);
-    if (!pageProxy)
-        return;
-    
-    pageProxy->didReceiveMessage(connection, decoder);
+    // FIXME: Add unhandled message logging.
 }
 
 void WebProcessProxy::didReceiveSyncMessage(CoreIPC::Connection* connection, CoreIPC::MessageDecoder& decoder, OwnPtr<CoreIPC::MessageEncoder>& replyEncoder)
 {
-    if (m_messageReceiverMap.dispatchSyncMessage(connection, decoder, replyEncoder))
+    if (dispatchSyncMessage(connection, decoder, replyEncoder))
         return;
 
     if (m_context->dispatchSyncMessage(connection, decoder, replyEncoder))
@@ -450,27 +382,7 @@ void WebProcessProxy::didReceiveSyncMessage(CoreIPC::Connection* connection, Cor
         return;
     }
 
-    uint64_t pageID = decoder.destinationID();
-    if (!pageID)
-        return;
-    
-    WebPageProxy* pageProxy = webPage(pageID);
-    if (!pageProxy)
-        return;
-    
-    pageProxy->didReceiveSyncMessage(connection, decoder, replyEncoder);
-}
-
-void WebProcessProxy::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, OwnPtr<CoreIPC::MessageDecoder>& decoder)
-{
-    if (decoder->messageReceiverName() == Messages::WebProcessProxy::messageReceiverName()) {
-        didReceiveWebProcessProxyMessageOnConnectionWorkQueue(connection, decoder);
-        return;
-    }
-}
-
-void WebProcessProxy::didCloseOnConnectionWorkQueue(CoreIPC::Connection*)
-{
+    // FIXME: Add unhandled message logging.
 }
 
 void WebProcessProxy::didClose(CoreIPC::Connection*)
@@ -608,7 +520,6 @@ void WebProcessProxy::updateTextCheckerState()
         send(Messages::WebProcess::SetTextCheckerState(TextChecker::state()), 0);
 }
 
-
 DownloadProxy* WebProcessProxy::createDownloadProxy()
 {
 #if ENABLE(NETWORK_PROCESS)
@@ -616,7 +527,7 @@ DownloadProxy* WebProcessProxy::createDownloadProxy()
 #endif
 
     if (!m_downloadProxyMap)
-        m_downloadProxyMap = adoptPtr(new DownloadProxyMap(m_messageReceiverMap));
+        m_downloadProxyMap = adoptPtr(new DownloadProxyMap(this));
 
     return m_downloadProxyMap->createDownloadProxy(m_context.get());
 }

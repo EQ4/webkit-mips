@@ -99,9 +99,6 @@ public:
     static QVariantList firstRectForCharacterRange(QWebPageAdapter*, int location, int length);
     static void confirmComposition(QWebPageAdapter*, const char* text);
 
-    static bool pauseAnimation(QWebFrameAdapter*, const QString& name, double time, const QString& elementId);
-    static bool pauseTransitionOfProperty(QWebFrameAdapter*, const QString& name, double time, const QString& elementId);
-
     static void setDomainRelaxationForbiddenForURLScheme(bool forbidden, const QString& scheme);
     static void setFrameFlatteningEnabled(QWebPageAdapter*, bool);
     static void setCaretBrowsingEnabled(QWebPageAdapter*, bool value);
@@ -141,8 +138,6 @@ public:
     static void setMockGeolocationPosition(QWebPageAdapter*, double latitude, double longitude, double accuracy);
     static void setMockGeolocationPositionUnavailableError(QWebPageAdapter*, const QString& message);
     static int numberOfPendingGeolocationPermissionRequests(QWebPageAdapter*);
-
-    static int workerThreadCount();
 
     static QString markerTextForListItem(const QWebElement& listItem);
     static QVariantMap computedStyleIncludingVisitedInfo(const QWebElement&);
