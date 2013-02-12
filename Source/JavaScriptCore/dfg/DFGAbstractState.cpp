@@ -436,7 +436,8 @@ bool AbstractState::execute(unsigned indexInBlock)
         break;
     }
         
-    case Int32ToDouble: {
+    case Int32ToDouble:
+    case ForwardInt32ToDouble: {
         JSValue child = forNode(node->child1()).value();
         if (child && child.isNumber()
             && trySetConstant(node, JSValue(JSValue::EncodeAsDouble, child.asNumber()))) {
@@ -655,7 +656,7 @@ bool AbstractState::execute(unsigned indexInBlock)
         Node* child = node->child1().node();
         if (isBooleanSpeculation(child->prediction()))
             speculateBooleanUnary(node);
-        else if (child->shouldSpeculateNonStringCellOrOther()) {
+        else if (child->shouldSpeculateObjectOrOther()) {
             node->setCanExit(true);
             forNode(child).filter((SpecCell & ~SpecString) | SpecOther);
         } else if (child->shouldSpeculateInteger())
@@ -760,15 +761,15 @@ bool AbstractState::execute(unsigned indexInBlock)
                 m_foundConstants = true;
                 break;
             }
-        } else {
-            Node* childNode = node->child1().node();
-            if (isCellSpeculation(childNode->prediction())) {
-                if (isStringSpeculation(childNode->prediction()))
-                    forNode(childNode).filter(SpecString);
-                else
-                    forNode(childNode).filter(SpecCell);
-                node->setCanExit(true);
-            }
+        }
+        
+        Node* childNode = node->child1().node();
+        if (isCellSpeculation(childNode->prediction())) {
+            if (isStringSpeculation(childNode->prediction()))
+                forNode(childNode).filter(SpecString);
+            else
+                forNode(childNode).filter(SpecCell);
+            node->setCanExit(true);
         }
         forNode(node).set(SpecString);
         break;
@@ -778,7 +779,8 @@ bool AbstractState::execute(unsigned indexInBlock)
     case CompareLessEq:
     case CompareGreater:
     case CompareGreaterEq:
-    case CompareEq: {
+    case CompareEq:
+    case CompareEqConstant: {
         bool constantWasSet = false;
 
         JSValue leftConst = forNode(node->child1()).value();
@@ -809,7 +811,7 @@ bool AbstractState::execute(unsigned indexInBlock)
             }
         }
         
-        if (!constantWasSet && node->op() == CompareEq) {
+        if (!constantWasSet && (node->op() == CompareEqConstant || node->op() == CompareEq)) {
             SpeculatedType leftType = forNode(node->child1()).m_type;
             SpeculatedType rightType = forNode(node->child2()).m_type;
             if ((isInt32Speculation(leftType) && isOtherSpeculation(rightType))
@@ -825,6 +827,12 @@ bool AbstractState::execute(unsigned indexInBlock)
         
         forNode(node).set(SpecBoolean);
         
+        if (node->op() == CompareEqConstant) {
+            // We can exit if we haven't fired the MasqueradesAsUndefind watchpoint yet.
+            node->setCanExit(m_codeBlock->globalObjectFor(node->codeOrigin)->masqueradesAsUndefinedWatchpoint()->isStillValid());
+            break;
+        }
+        
         Node* left = node->child1().node();
         Node* right = node->child2().node();
         SpeculatedType filter;
@@ -836,30 +844,23 @@ bool AbstractState::execute(unsigned indexInBlock)
             filter = SpecNumber;
             checker = isNumberSpeculation;
         } else if (node->op() == CompareEq) {
-            if ((m_graph.isConstant(left) && m_graph.valueOfJSConstant(left).isNull())
-                || (m_graph.isConstant(right) && m_graph.valueOfJSConstant(right).isNull())) {
-                // We can exit if we haven't fired the MasqueradesAsUndefind watchpoint yet.
-                node->setCanExit(m_codeBlock->globalObjectFor(node->codeOrigin)->masqueradesAsUndefinedWatchpoint()->isStillValid());
-                break;
-            }
-            
             if (left->shouldSpeculateString() || right->shouldSpeculateString()) {
                 node->setCanExit(false);
                 break;
             } 
-            if (left->shouldSpeculateNonStringCell() && right->shouldSpeculateNonStringCellOrOther()) {
+            if (left->shouldSpeculateObject() && right->shouldSpeculateObjectOrOther()) {
                 node->setCanExit(true);
                 forNode(left).filter(SpecCell & ~SpecString);
                 forNode(right).filter((SpecCell & ~SpecString) | SpecOther);
                 break;
             }
-            if (left->shouldSpeculateNonStringCellOrOther() && right->shouldSpeculateNonStringCell()) {
+            if (left->shouldSpeculateObjectOrOther() && right->shouldSpeculateObject()) {
                 node->setCanExit(true);
                 forNode(left).filter((SpecCell & ~SpecString) | SpecOther);
                 forNode(right).filter(SpecCell & ~SpecString);
                 break;
             }
-            if (left->shouldSpeculateNonStringCell() && right->shouldSpeculateNonStringCell()) {
+            if (left->shouldSpeculateObject() && right->shouldSpeculateObject()) {
                 node->setCanExit(true);
                 forNode(left).filter(SpecCell & ~SpecString);
                 forNode(right).filter(SpecCell & ~SpecString);
@@ -882,7 +883,8 @@ bool AbstractState::execute(unsigned indexInBlock)
         break;
     }
             
-    case CompareStrictEq: {
+    case CompareStrictEq:
+    case CompareStrictEqConstant: {
         Node* leftNode = node->child1().node();
         Node* rightNode = node->child2().node();
         JSValue left = forNode(leftNode).value();
@@ -894,19 +896,9 @@ bool AbstractState::execute(unsigned indexInBlock)
             break;
         }
         forNode(node).set(SpecBoolean);
-        if (m_graph.isJSConstant(leftNode)) {
-            JSValue value = m_graph.valueOfJSConstant(leftNode);
-            if (!value.isNumber() && !value.isString()) {
-                node->setCanExit(false);
-                break;
-            }
-        }
-        if (m_graph.isJSConstant(rightNode)) {
-            JSValue value = m_graph.valueOfJSConstant(rightNode);
-            if (!value.isNumber() && !value.isString()) {
-                node->setCanExit(false);
-                break;
-            }
+        if (node->op() == CompareStrictEqConstant) {
+            node->setCanExit(false);
+            break;
         }
         if (Node::shouldSpeculateInteger(leftNode, rightNode)) {
             speculateInt32Binary(node);
@@ -920,7 +912,7 @@ bool AbstractState::execute(unsigned indexInBlock)
             node->setCanExit(false);
             break;
         }
-        if (leftNode->shouldSpeculateNonStringCell() && rightNode->shouldSpeculateNonStringCell()) {
+        if (leftNode->shouldSpeculateObject() && rightNode->shouldSpeculateObject()) {
             node->setCanExit(true);
             forNode(leftNode).filter((SpecCell & ~SpecString) | SpecOther);
             forNode(rightNode).filter((SpecCell & ~SpecString) | SpecOther);
@@ -1211,7 +1203,7 @@ bool AbstractState::execute(unsigned indexInBlock)
         // the branch.
         if (child->shouldSpeculateBoolean())
             speculateBooleanUnary(node);
-        else if (child->shouldSpeculateNonStringCellOrOther()) {
+        else if (child->shouldSpeculateObjectOrOther()) {
             node->setCanExit(true);
             forNode(child).filter((SpecCell & ~SpecString) | SpecOther);
         } else if (child->shouldSpeculateInteger())
@@ -2010,7 +2002,7 @@ inline bool AbstractState::mergeToSuccessors(Graph& graph, BasicBlock* basicBloc
     case Jump: {
         ASSERT(basicBlock->cfaBranchDirection == InvalidBranchDirection);
 #if DFG_ENABLE(DEBUG_PROPAGATION_VERBOSE)
-        dataLogF("        Merging to block #%u.\n", terminal.takenBlockIndex());
+        dataLogF("        Merging to block #%u.\n", terminal->takenBlockIndex());
 #endif
         return merge(basicBlock, graph.m_blocks[terminal->takenBlockIndex()].get());
     }
@@ -2024,7 +2016,7 @@ inline bool AbstractState::mergeToSuccessors(Graph& graph, BasicBlock* basicBloc
         if (basicBlock->cfaBranchDirection != TakeFalse)
             changed |= merge(basicBlock, graph.m_blocks[terminal->takenBlockIndex()].get());
 #if DFG_ENABLE(DEBUG_PROPAGATION_VERBOSE)
-        dataLogF("        Merging to block #%u.\n", terminal.notTakenBlockIndex());
+        dataLogF("        Merging to block #%u.\n", terminal->notTakenBlockIndex());
 #endif
         if (basicBlock->cfaBranchDirection != TakeTrue)
             changed |= merge(basicBlock, graph.m_blocks[terminal->notTakenBlockIndex()].get());

@@ -93,6 +93,7 @@ namespace JSC { namespace DFG {
     /* Used to cast known integers to doubles, so as to separate the double form */\
     /* of the value from the integer form. */\
     macro(Int32ToDouble, NodeResultNumber) \
+    macro(ForwardInt32ToDouble, NodeResultNumber) \
     /* Used to speculate that a double value is actually an integer. */\
     macro(DoubleAsInt32, NodeResultInt32) \
     /* Used to record places where we must check if a value is a number. */\
@@ -186,7 +187,9 @@ namespace JSC { namespace DFG {
     macro(CompareGreater, NodeResultBoolean | NodeMustGenerate | NodeMightClobber) \
     macro(CompareGreaterEq, NodeResultBoolean | NodeMustGenerate | NodeMightClobber) \
     macro(CompareEq, NodeResultBoolean | NodeMustGenerate | NodeMightClobber) \
+    macro(CompareEqConstant, NodeResultBoolean | NodeMustGenerate) \
     macro(CompareStrictEq, NodeResultBoolean) \
+    macro(CompareStrictEqConstant, NodeResultBoolean) \
     \
     /* Calls. */\
     macro(Call, NodeResultJS | NodeMustGenerate | NodeHasVarArgs | NodeClobbersWorld) \

@@ -162,9 +162,6 @@ WebProcess::WebProcess()
     , m_usesNetworkProcess(false)
     , m_webResourceLoadScheduler(new WebResourceLoadScheduler)
 #endif
-#if ENABLE(PLUGIN_PROCESS)
-    , m_pluginProcessConnectionManager(new PluginProcessConnectionManager)
-#endif
 #if USE(SOUP)
     , m_soupRequestManager(this)
 #endif
@@ -209,7 +206,10 @@ void WebProcess::initializeConnection(CoreIPC::Connection* connection)
 
     connection->setShouldExitOnSyncMessageSendFailure(true);
     connection->addQueueClient(&m_eventDispatcher);
-    connection->addQueueClient(this);
+
+#if ENABLE(PLUGIN_PROCESS)
+    connection->addQueueClient(&m_pluginProcessConnectionManager);
+#endif
 
 #if USE(SECURITY_FRAMEWORK)
     connection->addQueueClient(&SecItemShim::shared());
@@ -445,7 +445,7 @@ DownloadManager& WebProcess::downloadManager()
 #if ENABLE(PLUGIN_PROCESS)
 PluginProcessConnectionManager& WebProcess::pluginProcessConnectionManager()
 {
-    return *m_pluginProcessConnectionManager;
+    return m_pluginProcessConnectionManager;
 }
 #endif
 
@@ -632,18 +632,6 @@ void WebProcess::didReceiveInvalidMessage(CoreIPC::Connection*, CoreIPC::StringR
 {
     // We received an invalid message, but since this is from the UI process (which we trust),
     // we'll let it slide.
-}
-
-void WebProcess::didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection* connection, OwnPtr<CoreIPC::MessageDecoder>& decoder)
-{
-    if (decoder->messageReceiverName() == Messages::WebProcess::messageReceiverName()) {
-        didReceiveWebProcessMessageOnConnectionWorkQueue(connection, decoder);
-        return;
-    }
-}
-
-void WebProcess::didCloseOnConnectionWorkQueue(CoreIPC::Connection*)
-{
 }
 
 WebFrame* WebProcess::webFrame(uint64_t frameID) const
@@ -977,14 +965,6 @@ void WebProcess::networkProcessConnectionClosed(NetworkProcessConnection* connec
 WebResourceLoadScheduler& WebProcess::webResourceLoadScheduler()
 {
     return *m_webResourceLoadScheduler;
-}
-
-#endif
-
-#if ENABLE(PLUGIN_PROCESS)
-void WebProcess::pluginProcessCrashed(CoreIPC::Connection*, const String& pluginPath, uint32_t processType)
-{
-    m_pluginProcessConnectionManager->pluginProcessCrashed(pluginPath, static_cast<PluginProcess::Type>(processType));
 }
 #endif
 

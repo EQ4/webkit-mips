@@ -1,3 +1,26 @@
+2013-02-11  Eric Carlson  <eric.carlson@apple.com>
+
+        [Mac] Track language selection should be sticky
+        https://bugs.webkit.org/show_bug.cgi?id=109466
+
+        Reviewed by Dean Jackson.
+
+        * Source/autotools/symbols.filter: Export PageGroup::captionPreferences and Page::initGroup.
+
+2013-02-11  Benjamin Poulain  <benjamin@webkit.org>
+
+        Kill TestRunner::setMinimumTimerInterval; implement the feature with InternalSettings
+        https://bugs.webkit.org/show_bug.cgi?id=109349
+
+        Reviewed by Sam Weinig.
+
+        * Source/autotools/symbols.filter:
+
+2013-02-11  Zan Dobersek  <zdobersek@igalia.com>
+
+        * Source/WebCore: Modified property svn:ignore, adding GNUmakefile.features.am
+        to the list of paths to be ignored.
+
 2013-02-10  Laszlo Gombos  <l.gombos@samsung.com>
 
         Consolidate the way WTF_USE_PTHREADS is enabled

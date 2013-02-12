@@ -1,3 +1,570 @@
+2013-02-12  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move webrtc mocks to testrunner library
+        https://bugs.webkit.org/show_bug.cgi?id=109041
+
+        Reviewed by Adam Barth.
+
+        * DumpRenderTree/DumpRenderTree.gypi:
+        * DumpRenderTree/chromium/DumpRenderTree.cpp:
+        (WebKitSupportTestEnvironment):
+        (WebKitSupportTestEnvironment::mockPlatform):
+        (main):
+        * DumpRenderTree/chromium/MockWebKitPlatformSupport.cpp:
+        (MockWebKitPlatformSupport::setInterfaces):
+        (MockWebKitPlatformSupport::createMediaStreamCenter):
+        (MockWebKitPlatformSupport::createRTCPeerConnectionHandler):
+        * DumpRenderTree/chromium/MockWebKitPlatformSupport.h:
+        (WebTestRunner):
+        (MockWebKitPlatformSupport):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestInterfaces.h:
+        (WebKit):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestProxy.h:
+        (WebKit):
+        (WebTestRunner):
+        (WebTestRunner::WebTestProxy::showContextMenu):
+        (WebTestRunner::WebTestProxy::userMediaClient):
+        * DumpRenderTree/chromium/TestRunner/src/MockConstraints.cpp: Renamed from Tools/DumpRenderTree/chromium/MockConstraints.cpp.
+        (WebTestRunner::MockConstraints::verifyConstraints):
+        (WebTestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/MockConstraints.h: Renamed from Tools/DumpRenderTree/chromium/MockConstraints.h.
+        (WebKit):
+        (WebTestRunner):
+        (MockConstraints):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebMediaStreamCenter.cpp: Renamed from Tools/DumpRenderTree/chromium/MockWebMediaStreamCenter.cpp.
+        (WebTestRunner):
+        (WebTestRunner::MockWebMediaStreamCenter::MockWebMediaStreamCenter):
+        (WebTestRunner::MockWebMediaStreamCenter::queryMediaStreamSources):
+        (WebTestRunner::MockWebMediaStreamCenter::didEnableMediaStreamTrack):
+        (WebTestRunner::MockWebMediaStreamCenter::didDisableMediaStreamTrack):
+        (WebTestRunner::MockWebMediaStreamCenter::didAddMediaStreamTrack):
+        (WebTestRunner::MockWebMediaStreamCenter::didRemoveMediaStreamTrack):
+        (WebTestRunner::MockWebMediaStreamCenter::didStopLocalMediaStream):
+        (MockWebAudioDestinationConsumer):
+        (WebTestRunner::MockWebAudioDestinationConsumer::~MockWebAudioDestinationConsumer):
+        (WebTestRunner::MockWebMediaStreamCenter::didCreateMediaStream):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebMediaStreamCenter.h: Renamed from Tools/DumpRenderTree/chromium/MockWebMediaStreamCenter.h.
+        (WebKit):
+        (WebTestRunner):
+        (MockWebMediaStreamCenter):
+        (WebTestRunner::MockWebMediaStreamCenter::MockWebMediaStreamCenter):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebRTCDTMFSenderHandler.cpp: Renamed from Tools/DumpRenderTree/chromium/MockWebRTCDTMFSenderHandler.cpp.
+        (WebTestRunner):
+        (DTMFSenderToneTask):
+        (WebTestRunner::DTMFSenderToneTask::DTMFSenderToneTask):
+        (WebTestRunner::MockWebRTCDTMFSenderHandler::MockWebRTCDTMFSenderHandler):
+        (WebTestRunner::MockWebRTCDTMFSenderHandler::setClient):
+        (WebTestRunner::MockWebRTCDTMFSenderHandler::currentToneBuffer):
+        (WebTestRunner::MockWebRTCDTMFSenderHandler::canInsertDTMF):
+        (WebTestRunner::MockWebRTCDTMFSenderHandler::insertDTMF):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebRTCDTMFSenderHandler.h: Renamed from Tools/DumpRenderTree/chromium/MockWebRTCDTMFSenderHandler.h.
+        (WebTestRunner):
+        (MockWebRTCDTMFSenderHandler):
+        (WebTestRunner::MockWebRTCDTMFSenderHandler::taskList):
+        (WebTestRunner::MockWebRTCDTMFSenderHandler::clearToneBuffer):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebRTCDataChannelHandler.cpp: Renamed from Tools/DumpRenderTree/chromium/MockWebRTCDataChannelHandler.cpp.
+        (WebTestRunner):
+        (DataChannelReadyStateTask):
+        (WebTestRunner::DataChannelReadyStateTask::DataChannelReadyStateTask):
+        (WebTestRunner::MockWebRTCDataChannelHandler::MockWebRTCDataChannelHandler):
+        (WebTestRunner::MockWebRTCDataChannelHandler::setClient):
+        (WebTestRunner::MockWebRTCDataChannelHandler::bufferedAmount):
+        (WebTestRunner::MockWebRTCDataChannelHandler::sendStringData):
+        (WebTestRunner::MockWebRTCDataChannelHandler::sendRawData):
+        (WebTestRunner::MockWebRTCDataChannelHandler::close):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebRTCDataChannelHandler.h: Renamed from Tools/DumpRenderTree/chromium/MockWebRTCDataChannelHandler.h.
+        (WebTestRunner):
+        (MockWebRTCDataChannelHandler):
+        (WebTestRunner::MockWebRTCDataChannelHandler::taskList):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebRTCPeerConnectionHandler.cpp: Renamed from Tools/DumpRenderTree/chromium/MockWebRTCPeerConnectionHandler.cpp.
+        (WebTestRunner):
+        (RTCSessionDescriptionRequestSuccededTask):
+        (WebTestRunner::RTCSessionDescriptionRequestSuccededTask::RTCSessionDescriptionRequestSuccededTask):
+        (RTCSessionDescriptionRequestFailedTask):
+        (WebTestRunner::RTCSessionDescriptionRequestFailedTask::RTCSessionDescriptionRequestFailedTask):
+        (RTCStatsRequestSucceededTask):
+        (WebTestRunner::RTCStatsRequestSucceededTask::RTCStatsRequestSucceededTask):
+        (RTCVoidRequestTask):
+        (WebTestRunner::RTCVoidRequestTask::RTCVoidRequestTask):
+        (RTCPeerConnectionStateTask):
+        (WebTestRunner::RTCPeerConnectionStateTask::RTCPeerConnectionStateTask):
+        (RemoteDataChannelTask):
+        (WebTestRunner::RemoteDataChannelTask::RemoteDataChannelTask):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::MockWebRTCPeerConnectionHandler):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::initialize):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::createOffer):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::createAnswer):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::setLocalDescription):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::setRemoteDescription):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::localDescription):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::remoteDescription):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::updateICE):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::addICECandidate):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::addStream):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::removeStream):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::getStats):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::createDataChannel):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::createDTMFSender):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::stop):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebRTCPeerConnectionHandler.h: Renamed from Tools/DumpRenderTree/chromium/MockWebRTCPeerConnectionHandler.h.
+        (WebKit):
+        (WebTestRunner):
+        (MockWebRTCPeerConnectionHandler):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::taskList):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::MockWebRTCPeerConnectionHandler):
+        * DumpRenderTree/chromium/TestRunner/src/TestInterfaces.cpp:
+        (WebTestRunner::TestInterfaces::TestInterfaces):
+        (WebTestRunner::TestInterfaces::setDelegate):
+        (WebTestRunner::TestInterfaces::delegate):
+        (WebTestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/TestInterfaces.h:
+        (TestInterfaces):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestInterfaces.cpp:
+        (WebTestRunner::WebTestInterfaces::createMediaStreamCenter):
+        (WebTestRunner):
+        (WebTestRunner::WebTestInterfaces::createWebRTCPeerConnectionHandler):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner::WebTestProxyBase::userMediaClient):
+        (WebTestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/WebUserMediaClientMock.cpp: Renamed from Tools/DumpRenderTree/chromium/WebUserMediaClientMock.cpp.
+        (WebTestRunner):
+        (UserMediaRequestTask):
+        (WebTestRunner::UserMediaRequestTask::UserMediaRequestTask):
+        (MockExtraData):
+        (WebTestRunner::WebUserMediaClientMock::WebUserMediaClientMock):
+        (WebTestRunner::WebUserMediaClientMock::requestUserMedia):
+        (WebTestRunner::WebUserMediaClientMock::cancelUserMediaRequest):
+        * DumpRenderTree/chromium/TestRunner/src/WebUserMediaClientMock.h: Renamed from Tools/DumpRenderTree/chromium/WebUserMediaClientMock.h.
+        (WebTestRunner):
+        (WebUserMediaClientMock):
+        (WebTestRunner::WebUserMediaClientMock::~WebUserMediaClientMock):
+        (WebTestRunner::WebUserMediaClientMock::taskList):
+        * DumpRenderTree/chromium/TestShell.cpp:
+        (TestShell::initialize):
+        * DumpRenderTree/chromium/TestShell.h:
+        (TestShell):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebViewHost):
+
+2013-02-11  Timothy Loh  <timloh@chromium.com>
+
+        webkit-patch upload regenerates the WebCore ChangeLog every time it's called
+        https://bugs.webkit.org/show_bug.cgi?id=108983
+
+        Reviewed by Ryosuke Niwa.
+
+        This patch puts the behaviour from Bug 74358 behind the flag (default=OFF)
+        `--update-changelogs', and removes the flag `--no-prepare-changelogs'.
+        The flag name change from prepare to update is since we still want to
+        prepare changelogs in the default case when none currently exist.
+
+        * Scripts/webkitpy/tool/commands/commandtest.py:
+        (CommandsTest.assert_execute_outputs):
+        * Scripts/webkitpy/tool/steps/options.py:
+        (Options):
+        * Scripts/webkitpy/tool/steps/preparechangelog.py:
+        (PrepareChangeLog.options):
+        (PrepareChangeLog.run):
+
+2013-02-11  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move printPage() implementation to testRunner library
+        https://bugs.webkit.org/show_bug.cgi?id=109436
+
+        Reviewed by Adam Barth.
+
+        * DumpRenderTree/chromium/TestRunner/public/WebTestProxy.h:
+        (WebTestRunner::WebTestProxy::showContextMenu):
+        (WebTestRunner::WebTestProxy::printPage):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner):
+        (WebTestRunner::WebTestProxyBase::printPage):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        * DumpRenderTree/chromium/WebViewHost.h:
+
+2013-02-11  James Robinson  <jamesr@chromium.org>
+
+        [Chromium] Get rid of WebAnimationController
+        https://bugs.webkit.org/show_bug.cgi?id=109235
+
+        Reviewed by Benjamin Poulain.
+
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+
+2013-02-11  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Disable delete button controller on non-Mac ports and delete EditorClient::shouldShowDeleteInterface
+        https://bugs.webkit.org/show_bug.cgi?id=109534
+
+        Reviewed by Anders Carlsson.
+
+        * DumpRenderTree/gtk/EditingCallbacks.cpp:
+        (shouldShowDeleteInterfaceForElement):
+
+2013-02-11  Nico Weber  <thakis@chromium.org>
+
+        Remove web intents code
+        https://bugs.webkit.org/show_bug.cgi?id=109501
+
+        Reviewed by Eric Seidel.
+
+        See thread "Removing ENABLE(WEB_INTENTS) code" on webkit-dev.
+
+        * DumpRenderTree/TestRunner.cpp:
+        (TestRunner::staticFunctions):
+        * DumpRenderTree/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebKit):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestProxy.h:
+        (WebKit):
+        (WebTestRunner::WebTestProxy::didEndEditing):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebViewHost):
+        * DumpRenderTree/efl/TestRunnerEfl.cpp:
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp:
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        * DumpRenderTree/win/TestRunnerWin.cpp:
+        * DumpRenderTree/wx/TestRunnerWx.cpp:
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-02-11  Benjamin Poulain  <benjamin@webkit.org>
+
+        Kill TestRunner::setMinimumTimerInterval; implement the feature with InternalSettings
+        https://bugs.webkit.org/show_bug.cgi?id=109349
+
+        Reviewed by Sam Weinig.
+
+        Get rid of TestRunner's setMinimumTimerInterval and all the related functions.
+
+        This also fixes an oddity:
+        TestRunners were initialized with a minimum timer interval of 10 milliseconds instead
+        of using the default value. All with the same copy of an outdated comment.
+
+        * DumpRenderTree/TestRunner.cpp:
+        (TestRunner::staticFunctions):
+        * DumpRenderTree/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+        * DumpRenderTree/chromium/TestRunner/public/WebPreferences.h:
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/WebPreferences.cpp:
+        (WebTestRunner::WebPreferences::reset):
+        (WebTestRunner::WebPreferences::applyTo):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::reset):
+        * DumpRenderTree/efl/DumpRenderTreeChrome.cpp:
+        (DumpRenderTreeChrome::resetDefaultsToConsistentValues):
+        * DumpRenderTree/efl/TestRunnerEfl.cpp:
+        * DumpRenderTree/gtk/DumpRenderTree.cpp:
+        (resetDefaultsToConsistentValues):
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp:
+        * DumpRenderTree/mac/DumpRenderTree.mm:
+        (resetWebViewToConsistentStateBeforeTesting):
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        * DumpRenderTree/qt/DumpRenderTreeQt.cpp:
+        (WebCore::WebPage::resetSettings):
+        * DumpRenderTree/qt/TestRunnerQt.cpp:
+        * DumpRenderTree/qt/TestRunnerQt.h:
+        (TestRunner):
+        * DumpRenderTree/win/DumpRenderTree.cpp:
+        (resetWebViewToConsistentStateBeforeTesting):
+        * DumpRenderTree/win/TestRunnerWin.cpp:
+        * DumpRenderTree/wx/TestRunnerWx.cpp:
+        * WebKitTestRunner/InjectedBundle/Bindings/TestRunner.idl:
+        * WebKitTestRunner/InjectedBundle/InjectedBundle.cpp:
+        (WTR::InjectedBundle::beginTesting):
+        * WebKitTestRunner/InjectedBundle/TestRunner.cpp:
+        * WebKitTestRunner/InjectedBundle/TestRunner.h:
+        (TestRunner):
+
+2013-02-11  Dean Jackson  <dino@apple.com>
+
+        Remove use of plugInStartLabelImage
+        https://bugs.webkit.org/show_bug.cgi?id=108273
+
+        Reviewed by Simon Fraser.
+
+        Take two - after rollout in r142405.
+        Removed plugInStartLabelImage entry from client structure.
+
+        * WebKitTestRunner/InjectedBundle/InjectedBundlePage.cpp:
+        (WTR::InjectedBundlePage::InjectedBundlePage):
+
+2013-02-11  Tony Chang  <tony@chromium.org>
+
+        Move setFrameFlatteningEnabled from layoutTestController to window.internals.settings
+        https://bugs.webkit.org/show_bug.cgi?id=87149
+
+        Reviewed by Simon Fraser.
+
+        Remove testRunner.setFrameFlatteningEnabled from DRT and WTR. WebKit API
+        methods are left because there may be users of it. Add a test for Apple Mac
+        to ensure that the API for the preference still works using overridePreference.
+
+        * DumpRenderTree/TestRunner.cpp:
+        (TestRunner::staticFunctions):
+        * DumpRenderTree/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/blackberry/DumpRenderTree.cpp:
+        (BlackBerry::WebKit::DumpRenderTree::resetToConsistentStateBeforeTesting):
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+        * DumpRenderTree/efl/TestRunnerEfl.cpp:
+        * DumpRenderTree/gtk/DumpRenderTree.cpp:
+        (resetDefaultsToConsistentValues):
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp:
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        * DumpRenderTree/qt/DumpRenderTreeQt.cpp:
+        (WebCore::WebPage::resetSettings):
+        * DumpRenderTree/qt/TestRunnerQt.cpp:
+        * DumpRenderTree/qt/TestRunnerQt.h:
+        (TestRunner):
+        * DumpRenderTree/win/DumpRenderTree.cpp:
+        (resetDefaultsToConsistentValues):
+        * DumpRenderTree/win/TestRunnerWin.cpp:
+        * DumpRenderTree/wx/TestRunnerWx.cpp:
+        * WebKitTestRunner/InjectedBundle/Bindings/TestRunner.idl:
+        * WebKitTestRunner/InjectedBundle/TestRunner.cpp:
+        * WebKitTestRunner/InjectedBundle/TestRunner.h:
+        (TestRunner):
+
+2013-02-11  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Windows 7 Debug mode build fix.
+
+        * DumpRenderTree/TestNetscapePlugIn/win/TestNetscapePlugin.vcproj:
+
+2013-02-11  Tiancheng Jiang  <tijiang@rim.com>
+
+        [BlackBerry] Set mouse document position for mouse event in DRT.
+        https://bugs.webkit.org/show_bug.cgi?id=109094.
+
+        Reviewed by Rob Buis.
+
+        RIM PR 246976.
+        Internally Reviewed by Nima Ghanavatian & Genevieve Mak.
+
+        Set mouse document position when we create mouse event in DRT.
+
+        * DumpRenderTree/blackberry/EventSender.cpp:
+        (setMouseEventDocumentPos):
+        (mouseDownCallback):
+        (mouseUpCallback):
+        (mouseMoveToCallback):
+
+2013-02-11  Mike Lattanzio  <mlattanzio@rim.com>
+
+        [BlackBerry] Add graphics subdirectory to include path.
+        https://bugs.webkit.org/show_bug.cgi?id=109437
+
+        Reviewed by Rob Buis.
+
+        Add browser/platform/graphics to include path.
+
+        Internal review by Jeff Rogers.
+
+        * Scripts/webkitdirs.pm:
+        (blackberryCMakeArguments):
+
+2013-02-11  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        [EFL][WKTR] Regression(r141836) fast/dom/Window/mozilla-focus-blur.html started failing
+        https://bugs.webkit.org/show_bug.cgi?id=109438
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Some refactoring in r141836 caused the view not to get focus if the focused
+        frame is not the main one. The idea of the code was to remove focus from the
+        view if the focused frame was not the main one, and then focus the view again.
+        However, after the refactoring, the second step never happened: Focus was
+        removed but not given again.
+
+        * WebKitTestRunner/efl/PlatformWebViewEfl.cpp:
+        (WTR::PlatformWebView::focus):
+
+2013-02-11  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Don't generate documentation if building neither WebKit1 nor WebKit2
+        https://bugs.webkit.org/show_bug.cgi?id=109420
+
+        Reviewed by Philippe Normand.
+
+        Don't generate the GTK documentation if neither of the WebKit1 and WebKit2
+        layers was built. This just results in unnecessary errors being spewed out
+        by the gtkdoc utilities.
+
+        * Scripts/webkitdirs.pm:
+        (buildAutotoolsProject):
+
+2013-02-11  Antoine Quint  <graouts@apple.com>
+
+        Unreviewed change to add myself to the Inspector IDLs watchlist.
+
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-02-11  Krzysztof Czech  <k.czech@samsung.com>
+
+        [GTK][EFL] Shares WebKit-GTK's DumpRenderTree accessibility implementation with other Webkit ports
+        https://bugs.webkit.org/show_bug.cgi?id=105007
+
+        Reviewed by Martin Robinson.
+
+        Shares specific ATK's accessibility implementation.
+        Keeps platform specific methods in EFL and GTK's directories.
+
+        * DumpRenderTree/atk/AccessibilityCallbacks.h: Renamed from Tools/DumpRenderTree/gtk/AccessibilityCallbacks.h.
+        * DumpRenderTree/atk/AccessibilityCallbacksAtk.cpp: Renamed from Tools/DumpRenderTree/gtk/AccessibilityCallbacks.cpp.
+        (printAccessibilityEvent):
+        (axObjectEventListener):
+        (connectAccessibilityCallbacks):
+        (disconnectAccessibilityCallbacks):
+        * DumpRenderTree/atk/AccessibilityControllerAtk.cpp: Copied from Tools/DumpRenderTree/gtk/AccessibilityControllerGtk.cpp.
+        (AccessibilityController::AccessibilityController):
+        (AccessibilityController::~AccessibilityController):
+        (AccessibilityController::elementAtPoint):
+        (AccessibilityController::setLogFocusEvents):
+        (AccessibilityController::setLogScrollingStartEvents):
+        (AccessibilityController::setLogValueChangeEvents):
+        (AccessibilityController::setLogAccessibilityEvents):
+        (AccessibilityController::addNotificationListener):
+        (AccessibilityController::removeNotificationListener):
+        * DumpRenderTree/atk/AccessibilityUIElementAtk.cpp: Copied from Tools/DumpRenderTree/gtk/AccessibilityUIElementGtk.cpp.
+        (coreAttributeToAtkAttribute):
+        (roleToString):
+        (replaceCharactersForResults):
+        (AccessibilityUIElement::AccessibilityUIElement):
+        (AccessibilityUIElement::~AccessibilityUIElement):
+        (AccessibilityUIElement::getLinkedUIElements):
+        (AccessibilityUIElement::getDocumentLinks):
+        (AccessibilityUIElement::getChildren):
+        (AccessibilityUIElement::getChildrenWithRange):
+        (AccessibilityUIElement::rowCount):
+        (AccessibilityUIElement::columnCount):
+        (AccessibilityUIElement::childrenCount):
+        (AccessibilityUIElement::elementAtPoint):
+        (AccessibilityUIElement::linkedUIElementAtIndex):
+        (AccessibilityUIElement::getChildAtIndex):
+        (AccessibilityUIElement::indexOfChild):
+        (attributeSetToString):
+        (AccessibilityUIElement::allAttributes):
+        (AccessibilityUIElement::attributesOfLinkedUIElements):
+        (AccessibilityUIElement::attributesOfDocumentLinks):
+        (AccessibilityUIElement::titleUIElement):
+        (AccessibilityUIElement::parentElement):
+        (AccessibilityUIElement::attributesOfChildren):
+        (AccessibilityUIElement::parameterizedAttributeNames):
+        (AccessibilityUIElement::role):
+        (AccessibilityUIElement::subrole):
+        (AccessibilityUIElement::roleDescription):
+        (AccessibilityUIElement::title):
+        (AccessibilityUIElement::description):
+        (AccessibilityUIElement::stringValue):
+        (AccessibilityUIElement::language):
+        (AccessibilityUIElement::x):
+        (AccessibilityUIElement::y):
+        (AccessibilityUIElement::width):
+        (AccessibilityUIElement::height):
+        (AccessibilityUIElement::clickPointX):
+        (AccessibilityUIElement::clickPointY):
+        (AccessibilityUIElement::orientation):
+        (AccessibilityUIElement::intValue):
+        (AccessibilityUIElement::minValue):
+        (AccessibilityUIElement::maxValue):
+        (AccessibilityUIElement::valueDescription):
+        (checkElementState):
+        (AccessibilityUIElement::isEnabled):
+        (AccessibilityUIElement::insertionPointLineNumber):
+        (AccessibilityUIElement::isPressActionSupported):
+        (AccessibilityUIElement::isIncrementActionSupported):
+        (AccessibilityUIElement::isDecrementActionSupported):
+        (AccessibilityUIElement::isRequired):
+        (AccessibilityUIElement::isFocused):
+        (AccessibilityUIElement::isSelected):
+        (AccessibilityUIElement::hierarchicalLevel):
+        (AccessibilityUIElement::ariaIsGrabbed):
+        (AccessibilityUIElement::ariaDropEffects):
+        (AccessibilityUIElement::isExpanded):
+        (AccessibilityUIElement::isChecked):
+        (AccessibilityUIElement::attributesOfColumnHeaders):
+        (AccessibilityUIElement::attributesOfRowHeaders):
+        (AccessibilityUIElement::attributesOfColumns):
+        (AccessibilityUIElement::attributesOfRows):
+        (AccessibilityUIElement::attributesOfVisibleCells):
+        (AccessibilityUIElement::attributesOfHeader):
+        (AccessibilityUIElement::indexInTable):
+        (indexRangeInTable):
+        (AccessibilityUIElement::rowIndexRange):
+        (AccessibilityUIElement::columnIndexRange):
+        (AccessibilityUIElement::lineForIndex):
+        (AccessibilityUIElement::boundsForRange):
+        (AccessibilityUIElement::stringForRange):
+        (AccessibilityUIElement::attributedStringForRange):
+        (AccessibilityUIElement::attributedStringRangeIsMisspelled):
+        (AccessibilityUIElement::uiElementForSearchPredicate):
+        (AccessibilityUIElement::cellForColumnAndRow):
+        (AccessibilityUIElement::selectedTextRange):
+        (AccessibilityUIElement::setSelectedTextRange):
+        (AccessibilityUIElement::stringAttributeValue):
+        (AccessibilityUIElement::numberAttributeValue):
+        (AccessibilityUIElement::boolAttributeValue):
+        (AccessibilityUIElement::isAttributeSettable):
+        (AccessibilityUIElement::isAttributeSupported):
+        (alterCurrentValue):
+        (AccessibilityUIElement::increment):
+        (AccessibilityUIElement::decrement):
+        (AccessibilityUIElement::press):
+        (AccessibilityUIElement::showMenu):
+        (AccessibilityUIElement::disclosedRowAtIndex):
+        (AccessibilityUIElement::ariaOwnsElementAtIndex):
+        (AccessibilityUIElement::ariaFlowToElementAtIndex):
+        (AccessibilityUIElement::selectedRowAtIndex):
+        (AccessibilityUIElement::rowAtIndex):
+        (AccessibilityUIElement::disclosedByRow):
+        (AccessibilityUIElement::accessibilityValue):
+        (AccessibilityUIElement::documentEncoding):
+        (AccessibilityUIElement::documentURI):
+        (AccessibilityUIElement::url):
+        (AccessibilityUIElement::addNotificationListener):
+        (AccessibilityUIElement::removeNotificationListener):
+        (AccessibilityUIElement::isFocusable):
+        (AccessibilityUIElement::isSelectable):
+        (AccessibilityUIElement::isMultiSelectable):
+        (AccessibilityUIElement::isSelectedOptionActive):
+        (AccessibilityUIElement::isVisible):
+        (AccessibilityUIElement::isOffScreen):
+        (AccessibilityUIElement::isCollapsed):
+        (AccessibilityUIElement::isIgnored):
+        (AccessibilityUIElement::hasPopup):
+        (AccessibilityUIElement::takeFocus):
+        (AccessibilityUIElement::takeSelection):
+        (AccessibilityUIElement::addSelection):
+        (AccessibilityUIElement::removeSelection):
+        (AccessibilityUIElement::scrollToMakeVisible):
+        (AccessibilityUIElement::scrollToMakeVisibleWithSubFocus):
+        (AccessibilityUIElement::scrollToGlobalPoint):
+        * DumpRenderTree/efl/CMakeLists.txt: Adds ATK headers, libraries, new sources.
+        * DumpRenderTree/gtk/AccessibilityControllerGtk.cpp:
+        (AccessibilityController::focusedElement):
+        (AccessibilityController::rootElement):
+        (AccessibilityController::accessibleElementById):
+        * DumpRenderTree/gtk/AccessibilityUIElementGtk.cpp:
+        (AccessibilityUIElement::helpText):
+        * GNUmakefile.am: Adds renamed sources.
+
 2013-02-11  Jochen Eisinger  <jochen@chromium.org>
 
         [chromium] clear the webcache from within the TestRunner library

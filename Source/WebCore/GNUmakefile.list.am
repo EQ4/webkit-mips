@@ -2637,6 +2637,8 @@ webcore_sources += \
 	Source/WebCore/css/CSSValuePool.h \
 	Source/WebCore/css/CSSVariableValue.h \
 	Source/WebCore/css/DashboardRegion.h \
+	Source/WebCore/css/DocumentRuleSets.cpp \
+	Source/WebCore/css/DocumentRuleSets.h \
 	Source/WebCore/css/FontFeatureValue.cpp \
 	Source/WebCore/css/FontFeatureValue.h \
 	Source/WebCore/css/FontValue.cpp \
@@ -3618,6 +3620,7 @@ webcore_sources += \
 	Source/WebCore/html/parser/HTMLTreeBuilder.h \
 	Source/WebCore/html/parser/HTMLViewSourceParser.cpp \
 	Source/WebCore/html/parser/HTMLViewSourceParser.h \
+	Source/WebCore/html/parser/InputStreamPreprocessor.h \
 	Source/WebCore/html/parser/NestingLevelIncrementer.h \
 	Source/WebCore/html/parser/TextDocumentParser.cpp \
 	Source/WebCore/html/parser/TextDocumentParser.h \
@@ -3833,6 +3836,8 @@ webcore_sources += \
 	Source/WebCore/inspector/InspectorFrontendClientLocal.h \
 	Source/WebCore/inspector/InspectorFrontendHost.cpp \
 	Source/WebCore/inspector/InspectorFrontendHost.h \
+	Source/WebCore/inspector/InspectorHeapProfilerAgent.cpp \
+	Source/WebCore/inspector/InspectorHeapProfilerAgent.h \
 	Source/WebCore/inspector/InspectorHistory.cpp \
 	Source/WebCore/inspector/InspectorHistory.h \
 	Source/WebCore/inspector/InspectorIndexedDBAgent.h \
@@ -4706,8 +4711,6 @@ webcore_sources += \
 	Source/WebCore/workers/WorkerThread.cpp \
 	Source/WebCore/workers/WorkerThread.h \
 	Source/WebCore/xml/parser/CharacterReferenceParserInlines.h \
-	Source/WebCore/xml/parser/MarkupTokenBase.h \
-	Source/WebCore/xml/parser/MarkupTokenizerBase.h \
 	Source/WebCore/xml/parser/MarkupTokenizerInlines.h \
 	Source/WebCore/xml/parser/XMLDocumentParser.cpp \
 	Source/WebCore/xml/parser/XMLDocumentParser.h \
@@ -6481,6 +6484,8 @@ webcore_sources += \
 	Source/WebCore/platform/graphics/texmap/TextureMapperBackingStore.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapper.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapper.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperFPSCounter.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperFPSCounter.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.cpp \

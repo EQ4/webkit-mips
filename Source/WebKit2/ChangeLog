@@ -1,3 +1,260 @@
+2013-02-11  Huang Dongsung  <luxtella@company100.net>
+
+        Coordinated Graphics: Make CoordinatedGraphicsScene not know contents size.
+        https://bugs.webkit.org/show_bug.cgi?id=108922
+
+        Reviewed by Noam Rosenthal.
+        Signed off for WebKit2 by Benjamin Poulain.
+
+        Currently, CoordinatedGraphicsScene has two methods to know contents
+        size: setContentsSize() and setVisibleContentsRect(). Contents size is
+        used when adjusting a scroll position, but adjustment is not needed
+        because EFL and Qt platform code (currently PageViewportController)
+        already adjusts a scroll position, and it is natural for each platform
+        to be in charge of adjusting. So this patch makes CoordinatedGraphicsScene
+        not know contents size.
+
+        In addition, now DrawingAreaProxy::coordinatedLayerTreeHostProxy() is only used
+        to get CoordinatedGraphicsScene.
+
+        * UIProcess/API/qt/qquickwebpage.cpp:
+        (QQuickWebPagePrivate::updateSize):
+        * UIProcess/API/qt/raw/qrawwebview.cpp:
+        (QRawWebView::setSize):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.cpp:
+        (WebKit::CoordinatedLayerTreeHostProxy::setVisibleContentsRect):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.h:
+        (CoordinatedLayerTreeHostProxy):
+        * UIProcess/efl/PageClientLegacyImpl.cpp:
+        (WebKit::PageClientLegacyImpl::didChangeContentsSize):
+        * UIProcess/efl/PageViewportControllerClientEfl.cpp:
+        (WebKit::PageViewportControllerClientEfl::didChangeContentsSize):
+
+2013-02-11  Huang Dongsung  <luxtella@company100.net>
+
+        Coordinated Graphics: remove the DidChangeScrollPosition message.
+        https://bugs.webkit.org/show_bug.cgi?id=108051
+
+        Reviewed by Noam Rosenthal.
+        Signed off for WebKit2 by Benjamin Poulain.
+
+        Currently, we use the DidChangeScrollPosition message to send the scroll
+        position that WebCore used in this frame to UI Process. We had to have
+        some member variables for the DidChangeScrollPosition message.
+        However, we can send a scroll position via the DidRenderFrame message,
+        because CoordinatedGraphicsScene::m_renderedContentsScrollPosition is
+        updated at the moment of flushing. So we can remove the
+        DidChangeScrollPosition message and some redundant member variables.
+
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.cpp:
+        (WebKit::CoordinatedLayerTreeHostProxy::didRenderFrame):
+        (WebKit):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.h:
+        (CoordinatedLayerTreeHostProxy):
+        * UIProcess/CoordinatedGraphics/CoordinatedLayerTreeHostProxy.messages.in:
+          Remove the DidChangeScrollPosition message.
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.cpp:
+        (WebKit::CoordinatedLayerTreeHost::CoordinatedLayerTreeHost):
+        (WebKit::CoordinatedLayerTreeHost::flushPendingLayerChanges):
+          Send a scroll position via the DidChangeScrollPosition message.
+        (WebKit::CoordinatedLayerTreeHost::syncLayerState):
+          Don't send a scroll position because flushPendingLayerChanges() does
+          that. In addition, it is weird to check if we must send a scroll
+          position at the moment of sending the SyncLayerState message of every
+          layers.
+        (WebKit::CoordinatedLayerTreeHost::setVisibleContentsRect):
+        * WebProcess/WebPage/CoordinatedGraphics/CoordinatedLayerTreeHost.h:
+
+2013-02-11  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Disable delete button controller on non-Mac ports and delete EditorClient::shouldShowDeleteInterface
+        https://bugs.webkit.org/show_bug.cgi?id=109534
+
+        Reviewed by Anders Carlsson.
+
+        * WebProcess/WebCoreSupport/WebEditorClient.cpp:
+        (WebKit):
+        * WebProcess/WebCoreSupport/WebEditorClient.h:
+
+2013-02-11  Jae Hyun Park  <jae.park@company100.net>
+
+        [EFL] Build fix
+        https://bugs.webkit.org/show_bug.cgi?id=109518
+
+        Reviewed by Laszlo Gombos.
+
+        Fix EFL build by including PluginProcessConnectionManager.messages.in in
+        CMakeLists.txt
+
+        * CMakeLists.txt:
+
+2013-02-11  Anders Carlsson  <andersca@apple.com>
+
+        Fix build.
+
+        * WebProcess/Plugins/PluginProcessConnectionManager.cpp:
+        (WebKit::PluginProcessConnectionManager::didReceiveMessageOnConnectionWorkQueue):
+        * WebProcess/WebProcess.cpp:
+
+2013-02-11  Seulgi Kim  <seulgikim@company100.net>
+
+        [GTK] Build fix.
+        https://bugs.webkit.org/show_bug.cgi?id=109516
+
+        Reviewed by Csaba Osztrogonác.
+
+        PluginProcessConnectionManagerMessages are omitted from messages list.
+
+        * GNUmakefile.list.am:
+
+2013-02-11  Tim Horton  <timothy_horton@apple.com>
+
+        [WK2] setMinimumLayoutWidth should bail if there's no WebProcess
+        https://bugs.webkit.org/show_bug.cgi?id=109512
+        <rdar://problem/13093627>
+
+        Reviewed by Anders Carlsson.
+
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::setMinimumLayoutWidth):
+
+2013-02-11  Anders Carlsson  <andersca@apple.com>
+
+        PluginProcessConnectionManager should be a QueueClient
+        https://bugs.webkit.org/show_bug.cgi?id=109496
+
+        Reviewed by Andreas Kling.
+
+        * WebProcess/Plugins/PluginProcessConnectionManager.cpp:
+        (WebKit::PluginProcessConnectionManager::didReceiveMessageOnConnectionWorkQueue):
+        (WebKit):
+        (WebKit::PluginProcessConnectionManager::didCloseOnConnectionWorkQueue):
+        * WebProcess/Plugins/PluginProcessConnectionManager.h:
+        (PluginProcessConnectionManager):
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::initializeConnection):
+        * WebProcess/WebProcess.h:
+        (WebProcess):
+
+2013-02-11  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Unreviewed WK2 buildfix after r142518.
+
+        * DerivedSources.pri:
+
+2013-02-11  Gavin Barraclough  <barraclough@apple.com>
+
+        PluginProcess should quit immediately if idle in response to low-memory notifications
+        https://bugs.webkit.org/show_bug.cgi?id=109103
+        <rdar://problem/12679827>
+
+        Reviewed by Brady Eidson.
+
+        PluginProcess now installs a MemoryPressureHandler for the process, providing
+        a custom callback which will call terminate if appropriate (if the plugin is not
+        currently in use).
+
+        * PluginProcess/PluginProcess.cpp:
+        (WebKit::PluginProcess::lowMemoryHandler):
+            - Custom callback to terminate if appropriate.
+        (WebKit::PluginProcess::initializeProcess):
+            - Install the MemoryPressureHandler.
+        (WebKit::PluginProcess::shouldTerminate):
+            - This method now also needs to be callable in situations where it might return false.
+        * PluginProcess/PluginProcess.h:
+        (PluginProcess):
+            - Added declaration for lowMemoryHandler.
+
+2013-02-11  Anders Carlsson  <andersca@apple.com>
+
+        Move the PluginProcessCrashed message to PluginProcessConnectionManager
+        https://bugs.webkit.org/show_bug.cgi?id=109493
+
+        Reviewed by Andreas Kling.
+
+        This is in preparation for making PluginProcessConnectionManager a connection queue client.
+
+        * DerivedSources.make:
+        * UIProcess/Plugins/PluginProcessProxy.cpp:
+        (WebKit::PluginProcessProxy::didClose):
+        * WebKit2.xcodeproj/project.pbxproj:
+        * WebProcess/Plugins/PluginProcessConnectionManager.cpp:
+        (WebKit::PluginProcessConnectionManager::pluginProcessCrashed):
+        * WebProcess/Plugins/PluginProcessConnectionManager.h:
+        (PluginProcessConnectionManager):
+        * WebProcess/Plugins/PluginProcessConnectionManager.messages.in: Added.
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::didReceiveMessageOnConnectionWorkQueue):
+        (WebKit::WebProcess::webResourceLoadScheduler):
+        * WebProcess/WebProcess.h:
+        (WebProcess):
+        * WebProcess/WebProcess.messages.in:
+
+2013-02-11  Benjamin Poulain  <benjamin@webkit.org>
+
+        Kill TestRunner::setMinimumTimerInterval; implement the feature with InternalSettings
+        https://bugs.webkit.org/show_bug.cgi?id=109349
+
+        Reviewed by Sam Weinig.
+
+        * WebProcess/InjectedBundle/API/c/WKBundle.cpp:
+        * WebProcess/InjectedBundle/API/c/WKBundlePrivate.h:
+        * WebProcess/InjectedBundle/InjectedBundle.cpp:
+        * WebProcess/InjectedBundle/InjectedBundle.h:
+        (InjectedBundle):
+
+2013-02-11  Dean Jackson  <dino@apple.com>
+
+        Snapshotted plug-in should use shadow root
+        https://bugs.webkit.org/show_bug.cgi?id=108284
+
+        Reviewed by Simon Fraser.
+
+        Take three of this commit - after rollout in r142400 and r142405.
+        We no longer have any need for plugInStartLabelImage.
+
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.cpp: Remove plugInStartLabelImage.
+        * WebProcess/InjectedBundle/InjectedBundlePageUIClient.h: Ditto.
+        * WebProcess/WebCoreSupport/WebChromeClient.cpp: Ditto.
+        * WebProcess/WebCoreSupport/WebChromeClient.h: Ditto.
+
+2013-02-11  Anders Carlsson  <andersca@apple.com>
+
+        The plug-in process connection manager doesn't need to be heap allocated
+        https://bugs.webkit.org/show_bug.cgi?id=109479
+
+        Reviewed by Andreas Kling.
+
+        * WebProcess/WebProcess.cpp:
+        (WebKit::WebProcess::WebProcess):
+        (WebKit::WebProcess::pluginProcessConnectionManager):
+        (WebKit::WebProcess::pluginProcessCrashed):
+        * WebProcess/WebProcess.h:
+        (WebKit):
+        (WebProcess):
+
+2013-02-11  Tony Chang  <tony@chromium.org>
+
+        Move setFrameFlatteningEnabled from layoutTestController to window.internals.settings
+        https://bugs.webkit.org/show_bug.cgi?id=87149
+
+        Reviewed by Simon Fraser.
+
+        * WebProcess/InjectedBundle/InjectedBundle.cpp:
+        (WebKit::InjectedBundle::overrideBoolPreferenceForTestRunner): Add setFrameFlatteningEnabled to the list of overridable values.
+
+2013-02-11  Claudio Saavedra  <csaavedra@igalia.com>
+
+        [WK2][Notifications] Missing early return in populateCopyOfNotificationPermissions
+        https://bugs.webkit.org/show_bug.cgi?id=108459
+
+        Reviewed by Alexey Proskuryakov.
+
+        * UIProcess/Notifications/WebNotificationManagerProxy.cpp:
+        (WebKit::WebNotificationManagerProxy::populateCopyOfNotificationPermissions):
+        Providers might return 0 and we will end up with a null-pointer dereference.
+        Early check against this.
+
 2013-02-10  Sam Weinig  <sam@webkit.org>
 
         Make the Plug-in XPCService build work even when building in Xcode

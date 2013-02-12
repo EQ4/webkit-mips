@@ -54,8 +54,6 @@ class WebDataSource;
 class WebDragData;
 class WebFrame;
 class WebImage;
-class WebIntentRequest;
-class WebIntentServiceInfo;
 class WebNode;
 class WebPlugin;
 class WebRange;
@@ -65,6 +63,7 @@ class WebString;
 class WebURL;
 class WebURLRequest;
 class WebURLResponse;
+class WebUserMediaClient;
 class WebView;
 struct WebConsoleMessage;
 struct WebContextMenuData;
@@ -81,6 +80,7 @@ class TestInterfaces;
 class WebTestDelegate;
 class WebTestInterfaces;
 class WebTestRunner;
+class WebUserMediaClientMock;
 
 class WEBTESTRUNNER_EXPORT WebTestProxyBase {
 public:
@@ -120,8 +120,6 @@ protected:
     void didChangeSelection(bool isEmptySelection);
     void didChangeContents();
     void didEndEditing();
-    void registerIntentService(WebKit::WebFrame*, const WebKit::WebIntentServiceInfo&);
-    void dispatchIntent(WebKit::WebFrame* source, const WebKit::WebIntentRequest&);
     bool createView(WebKit::WebFrame* creator, const WebKit::WebURLRequest&, const WebKit::WebWindowFeatures&, const WebKit::WebString& frameName, WebKit::WebNavigationPolicy);
     WebKit::WebPlugin* createPlugin(WebKit::WebFrame*, const WebKit::WebPluginParams&);
     void setStatusText(const WebKit::WebString&);
@@ -129,6 +127,8 @@ protected:
     bool isSmartInsertDeleteEnabled();
     bool isSelectTrailingWhitespaceEnabled();
     void showContextMenu(WebKit::WebFrame*, const WebKit::WebContextMenuData&);
+    WebKit::WebUserMediaClient* userMediaClient();
+    void printPage(WebKit::WebFrame*);
 
     void willPerformClientRedirect(WebKit::WebFrame*, const WebKit::WebURL& from, const WebKit::WebURL& to, double interval, double fire_time);
     void didCancelClientRedirect(WebKit::WebFrame*);
@@ -170,6 +170,7 @@ private:
     WebTestDelegate* m_delegate;
 
     std::auto_ptr<SpellCheckClient> m_spellcheck;
+    std::auto_ptr<WebUserMediaClientMock> m_userMediaClient;
 
     WebKit::WebRect m_paintRect;
     std::map<unsigned, std::string> m_resourceIdentifierMap;
@@ -290,16 +291,6 @@ public:
         WebTestProxyBase::didEndEditing();
         Base::didEndEditing();
     }
-    virtual void registerIntentService(WebKit::WebFrame* frame, const WebKit::WebIntentServiceInfo& service)
-    {
-        WebTestProxyBase::registerIntentService(frame, service);
-        Base::registerIntentService(frame, service);
-    }
-    virtual void dispatchIntent(WebKit::WebFrame* source, const WebKit::WebIntentRequest& request)
-    {
-        WebTestProxyBase::dispatchIntent(source, request);
-        Base::dispatchIntent(source, request);
-    }
     virtual WebKit::WebView* createView(WebKit::WebFrame* creator, const WebKit::WebURLRequest& request, const WebKit::WebWindowFeatures& features, const WebKit::WebString& frameName, WebKit::WebNavigationPolicy policy)
     {
         if (!WebTestProxyBase::createView(creator, request, features, frameName, policy))
@@ -331,10 +322,18 @@ public:
     {
         return WebTestProxyBase::isSelectTrailingWhitespaceEnabled();
     }
-    void showContextMenu(WebKit::WebFrame* frame, const WebKit::WebContextMenuData& contextMenuData)
+    virtual void showContextMenu(WebKit::WebFrame* frame, const WebKit::WebContextMenuData& contextMenuData)
     {
         WebTestProxyBase::showContextMenu(frame, contextMenuData);
         Base::showContextMenu(frame, contextMenuData);
+    }
+    virtual WebKit::WebUserMediaClient* userMediaClient()
+    {
+        return WebTestProxyBase::userMediaClient();
+    }
+    virtual void printPage(WebKit::WebFrame* frame)
+    {
+        WebTestProxyBase::printPage(frame);
     }
 
     // WebFrameClient implementation.

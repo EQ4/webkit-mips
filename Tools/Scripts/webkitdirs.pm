@@ -1053,6 +1053,7 @@ sub blackberryCMakeArguments()
     push @includeSystemDirectories, File::Spec->catdir($stageInc, "jpeg-turbo") if $arch=~/arm/;
     push @includeSystemDirectories, $stageInc;
     push @includeSystemDirectories, File::Spec->catdir($stageInc, "browser", "platform");
+    push @includeSystemDirectories, File::Spec->catdir($stageInc, "browser", "platform", "graphics");
     push @includeSystemDirectories, File::Spec->catdir($stageInc, "browser", "qsk");
     push @includeSystemDirectories, File::Spec->catdir($stageInc, "ots");
 
@@ -2139,7 +2140,7 @@ sub buildAutotoolsProject($@)
 
     chdir ".." or die;
 
-    if ($project eq 'WebKit' && !isCrossCompilation()) {
+    if ($project eq 'WebKit' && !isCrossCompilation() && !($noWebKit1 && $noWebKit2)) {
         my @docGenerationOptions = ("$sourceDir/Tools/gtk/generate-gtkdoc", "--skip-html");
         push(@docGenerationOptions, productDir());
 

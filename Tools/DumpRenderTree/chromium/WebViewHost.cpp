@@ -58,7 +58,6 @@
 #include "WebScreenInfo.h"
 #include "WebSerializedScriptValue.h"
 #include "WebStorageNamespace.h"
-#include "WebUserMediaClientMock.h"
 #include "WebView.h"
 #include "WebWindowFeatures.h"
 #include "skia/ext/platform_canvas.h"
@@ -319,20 +318,6 @@ WebDeviceOrientationClient* WebViewHost::deviceOrientationClient()
 {
     return deviceOrientationClientMock();
 }
-
-#if ENABLE(MEDIA_STREAM)
-WebUserMediaClient* WebViewHost::userMediaClient()
-{
-    return userMediaClientMock();
-}
-
-WebUserMediaClientMock* WebViewHost::userMediaClientMock()
-{
-    if (!m_userMediaClientMock.get())
-        m_userMediaClientMock = WebUserMediaClientMock::create();
-    return m_userMediaClientMock.get();
-}
-#endif
 
 // WebWidgetClient -----------------------------------------------------------
 
@@ -704,18 +689,6 @@ void WebViewHost::applyPreferences()
     m_shell->applyPreferences();
 }
 
-#if ENABLE(WEB_INTENTS)
-void WebViewHost::setCurrentWebIntentRequest(const WebIntentRequest& request)
-{
-    m_currentRequest = request;
-}
-
-WebIntentRequest* WebViewHost::currentWebIntentRequest()
-{
-    return &m_currentRequest;
-}
-#endif
-
 std::string WebViewHost::makeURLErrorDescription(const WebKit::WebURLError& error)
 {
     return webkit_support::MakeURLErrorDescription(error);
@@ -1059,7 +1032,6 @@ void WebViewHost::reset()
 
     if (m_webWidget) {
         webView()->mainFrame()->setName(WebString());
-        webView()->settings()->setMinimumTimerInterval(webkit_support::GetForegroundTabTimerInterval());
     }
 }
 
@@ -1331,13 +1303,4 @@ void WebViewHost::discardBackingStore()
 void WebViewHost::displayRepaintMask()
 {
     canvas()->drawARGB(167, 0, 0, 0);
-}
-
-// Simulate a print by going into print mode and then exit straight away.
-void WebViewHost::printPage(WebKit::WebFrame* frame)
-{
-    WebSize pageSizeInPixels = webWidget()->size();
-    WebPrintParams printParams(pageSizeInPixels);
-    frame->printBegin(printParams);
-    frame->printEnd();
 }

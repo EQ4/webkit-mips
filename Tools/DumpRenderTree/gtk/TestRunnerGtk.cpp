@@ -382,15 +382,6 @@ void TestRunner::setXSSAuditorEnabled(bool flag)
     g_object_set(G_OBJECT(settings), "enable-xss-auditor", flag, NULL);
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool flag)
-{
-    WebKitWebView* view = webkit_web_frame_get_web_view(mainFrame);
-    ASSERT(view);
-
-    WebKitWebSettings* settings = webkit_web_view_get_settings(view);
-    g_object_set(G_OBJECT(settings), "enable-frame-flattening", flag, NULL);
-}
-
 void TestRunner::setSpatialNavigationEnabled(bool flag)
 {
     WebKitWebView* view = webkit_web_frame_get_web_view(mainFrame);
@@ -901,12 +892,6 @@ void TestRunner::setSerializeHTTPLoads(bool serialize)
     DumpRenderTreeSupportGtk::setSerializeHTTPLoads(serialize);
 }
 
-void TestRunner::setMinimumTimerInterval(double minimumTimerInterval)
-{
-    WebKitWebView* webView = webkit_web_frame_get_web_view(mainFrame);
-    DumpRenderTreeSupportGtk::setMinimumTimerInterval(webView, minimumTimerInterval);
-}
-
 void TestRunner::setTextDirection(JSStringRef direction)
 {
     GOwnPtr<gchar> writingDirection(JSStringCopyUTF8CString(direction));
@@ -971,16 +956,6 @@ void TestRunner::setPageVisibility(const char*)
 }
 
 void TestRunner::setAutomaticLinkDetectionEnabled(bool)
-{
-    // FIXME: Implement this.
-}
-
-void TestRunner::sendWebIntentResponse(JSStringRef)
-{
-    // FIXME: Implement this.
-}
-
-void TestRunner::deliverWebIntent(JSStringRef, JSStringRef, JSStringRef)
 {
     // FIXME: Implement this.
 }

@@ -6492,6 +6492,9 @@
     <ClCompile Include="..\inspector\InspectorFrontendHost.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
+    <ClCompile Include="..\inspector\InspectorHeapProfilerAgent.cpp">
+      <Filter>inspector</Filter>
+    </ClCompile>
     <ClCompile Include="..\inspector\InspectorHistory.cpp">
       <Filter>inspector</Filter>
     </ClCompile>
@@ -11310,12 +11313,6 @@
     <ClInclude Include="..\xml\XSLTUnicodeSort.h">
       <Filter>xml</Filter>
     </ClInclude>
-    <ClInclude Include="..\xml\parser\MarkupTokenBase.h">
-      <Filter>xml\parser</Filter>
-    </ClInclude>
-    <ClInclude Include="..\xml\parser\MarkupTokenizerBase.h">
-      <Filter>xml\parser</Filter>
-    </ClInclude>
     <ClInclude Include="..\xml\parser\MarkupTokenizerInlines.h">
       <Filter>xml\parser</Filter>
     </ClInclude>
@@ -12609,6 +12606,9 @@
     <ClInclude Include="..\html\parser\HTMLViewSourceParser.h">
       <Filter>html\parser</Filter>
     </ClInclude>
+    <ClInclude Include="..\html\parser\InputStreamPreprocessor.h">
+      <Filter>html\parser</Filter>
+    </ClInclude>
     <ClInclude Include="..\html\parser\NestingLevelIncrementer.h">
       <Filter>html\parser</Filter>
     </ClInclude>
@@ -13777,6 +13777,9 @@
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InspectorFrontendHost.h">
+      <Filter>inspector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inspector\InspectorHeapProfilerAgent.h">
       <Filter>inspector</Filter>
     </ClInclude>
     <ClInclude Include="..\inspector\InspectorHistory.h">

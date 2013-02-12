@@ -131,9 +131,9 @@ void CoordinatedLayerTreeHostProxy::createCustomFilterProgram(int id, const Cust
 }
 #endif
 
-void CoordinatedLayerTreeHostProxy::didRenderFrame(const IntSize& contentsSize, const IntRect& coveredRect)
+void CoordinatedLayerTreeHostProxy::didRenderFrame(const FloatPoint& scrollPosition, const IntSize& contentsSize, const IntRect& coveredRect)
 {
-    dispatchUpdate(bind(&CoordinatedGraphicsScene::flushLayerChanges, m_scene.get()));
+    dispatchUpdate(bind(&CoordinatedGraphicsScene::flushLayerChanges, m_scene.get(), scrollPosition));
     updateViewport();
 #if USE(TILED_BACKING_STORE)
     m_drawingAreaProxy->page()->didRenderFrame(contentsSize, coveredRect);
@@ -163,11 +163,6 @@ void CoordinatedLayerTreeHostProxy::removeImageBacking(CoordinatedImageBackingID
     dispatchUpdate(bind(&CoordinatedGraphicsScene::removeImageBacking, m_scene.get(), imageID));
 }
 
-void CoordinatedLayerTreeHostProxy::setContentsSize(const FloatSize& contentsSize)
-{
-    dispatchUpdate(bind(&CoordinatedGraphicsScene::setContentsSize, m_scene.get(), contentsSize));
-}
-
 void CoordinatedLayerTreeHostProxy::setLayerAnimations(CoordinatedLayerID id, const GraphicsLayerAnimations& animations)
 {
     dispatchUpdate(bind(&CoordinatedGraphicsScene::setLayerAnimations, m_scene.get(), id, animations));
@@ -181,7 +176,7 @@ void CoordinatedLayerTreeHostProxy::setAnimationsLocked(bool locked)
 void CoordinatedLayerTreeHostProxy::setVisibleContentsRect(const FloatRect& rect, const FloatPoint& trajectoryVector)
 {
     // Inform the renderer to adjust viewport-fixed layers.
-    dispatchUpdate(bind(&CoordinatedGraphicsScene::setVisibleContentsRect, m_scene.get(), rect));
+    dispatchUpdate(bind(&CoordinatedGraphicsScene::setScrollPosition, m_scene.get(), rect.location()));
 
     if (rect == m_lastSentVisibleRect && trajectoryVector == m_lastSentTrajectoryVector)
         return;
@@ -208,11 +203,6 @@ void CoordinatedLayerTreeHostProxy::animationFrameReady()
     m_drawingAreaProxy->page()->process()->send(Messages::CoordinatedLayerTreeHost::AnimationFrameReady(), m_drawingAreaProxy->page()->pageID());
 }
 #endif
-
-void CoordinatedLayerTreeHostProxy::didChangeScrollPosition(const FloatPoint& position)
-{
-    dispatchUpdate(bind(&CoordinatedGraphicsScene::didChangeScrollPosition, m_scene.get(), position));
-}
 
 #if USE(GRAPHICS_SURFACE)
 void CoordinatedLayerTreeHostProxy::createCanvas(CoordinatedLayerID id, const IntSize& canvasSize, const GraphicsSurfaceToken& token)

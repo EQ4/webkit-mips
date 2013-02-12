@@ -239,6 +239,10 @@ webkit.org/b/92942 fast/events/constructors/device-proximity-event-constructor.h
 # Missing support in DRT for Geolocation's Coordinate attributes.
 webkit.org/b/98212 fast/dom/Geolocation/coordinates-interface-attributes.html [ Failure ]
 
+# Disable until chromium side of getCurrentTimeMillisecond is fixed.
+Bug(jochen) fast/mediastream/RTCPeerConnection-statsSelector.html [ Failure ]
+Bug(jochen) fast/mediastream/RTCPeerConnection-stats.html [ Failure ]
+
 # -----------------------------------------------------------------
 # WONTFIX TESTS
 # -----------------------------------------------------------------
@@ -813,7 +817,7 @@ fast/dom/Element/id-in-deletebutton.html [ WontFix ]
 fast/fast-mobile-scrolling/fixed-position-element.html [ WontFix ]
 fast/fast-mobile-scrolling/no-fixed-position-elements.html [ WontFix ]
 
-# Tests for frameset flattening. Relevant only on mobile browsers.
+# Tests for frameset flattening which is not used by Chromium.
 fast/frames/flattening [ WontFix ]
 fast/text-autosizing/narrow-iframe-flattened.html [ WontFix ]
 http/tests/misc/iframe-flattening-3level-nesting-with-blocking-resource.html [ WontFix ]
@@ -1017,6 +1021,8 @@ webkit.org/b/83260 fast/text/international/embed-bidi-style-in-isolate-crash.htm
 
 webkit.org/b/105005 [ Debug ] fast/css/variables/case-insensitive.html [ Pass Crash ]
 
+webkit.org/b/109415 editing/spelling/spellcheck-async.html [ Pass Failure ]
+
 # ResourceRequest needs to support setTimeoutInterval
 webkit.org/b/98397 http/tests/xmlhttprequest/timeout/xmlhttprequest-timeout-aborted.html [ Skip ]
 webkit.org/b/98397 http/tests/xmlhttprequest/timeout/xmlhttprequest-timeout-abortedonmain.html [ Skip ]
@@ -1073,8 +1079,6 @@ webkit.org/b/82894 [ Debug ] inspector/profiler/heap-snapshot-inspect-dom-wrappe
 
 webkit.org/b/60109 [ Win Linux Mac Release ] inspector/elements/edit-dom-actions.html [ Pass Slow ]
 webkit.org/b/60109 [ Win Mac Debug ] inspector/elements/edit-dom-actions.html [ Skip ]
-
-webkit.org/b/109391 fast/frames/seamless/seamless-inherited-origin.html [ Failure ]
 
 webkit.org/b/90488 [ Mac Debug ] inspector/elements/edit-style-attribute.html [ Pass Timeout ]
 
@@ -3605,6 +3609,7 @@ webkit.org/b/108429 svg/repaint/svgsvgelement-repaint-children.html [ Pass Failu
 webkit.org/b/101670 media/video-controls-captions-trackmenu.html [ Skip ]
 webkit.org/b/101670 media/video-controls-captions-trackmenu-sorted.html [ Skip ]
 webkit.org/b/101670 media/video-controls-captions-trackmenu-localized.html [ Skip ]
+webkit.org/b/101670 media/track/track-user-preferences.html [ Skip ]
 
 webkit.org/b/92835 [ Android Mac Win Debug ] svg/as-background-image/svg-as-background-5.html [ Pass Slow ]
 
@@ -3646,7 +3651,7 @@ webkit.org/b/93565 [ Debug ] fast/dom/Document/document-reopen.html [ Failure Pa
 webkit.org/b/93566 [ Debug ] fast/parser/iframe-sets-parent-to-javascript-url.html [ Failure Pass ]
 webkit.org/b/93567 [ Debug ] fast/parser/javascript-url-compat-mode.html [ Failure Pass ]
 webkit.org/b/93569 [ Debug ] http/tests/navigation/lockedhistory-iframe.html [ Failure Pass Timeout ]
-webkit.org/b/93568 [ Debug ] http/tests/misc/window-dot-stop.html [ Failure Pass ]
+webkit.org/b/93568 [ Debug ] http/tests/misc/window-dot-stop.html [ Failure Pass Timeout ]
 
 # V8 does not support static attributes
 webkit.org/b/93488 fast/notifications/notifications-permission.html [ Skip ]
@@ -4242,6 +4247,7 @@ webkit.org/b/107508 platform/chromium/fast/forms/calendar-picker/calendar-picker
 webkit.org/b/107508 platform/chromium/fast/forms/calendar-picker/calendar-picker-appearance.html [ ImageOnlyFailure Pass ]
 webkit.org/b/109136 platform/chromium/fast/forms/calendar-picker/calendar-picker-appearance-required.html [ ImageOnlyFailure Pass Missing ]
 webkit.org/b/109136 platform/chromium/fast/forms/calendar-picker/calendar-picker-appearance-required-ar.html [ ImageOnlyFailure Pass Missing ]
+webkit.org/b/109158 platform/chromium/fast/forms/calendar-picker/calendar-picker-appearance-ar.html [ ImageOnlyFailure Pass Missing ]
 
 # Rebaseline after currentPath
 webkit.org/b/108246 fast/canvas/canvas-currentPath.html [ Failure ]
@@ -4355,11 +4361,12 @@ webkit.org/b/108912 inspector-protocol/heap-profiler/heap-snapshot-with-detached
 webkit.org/b/109283 [ MountainLion ] fast/regions/selecting-text-through-different-region-flows.html [ ImageOnlyFailure ]
 
 webkit.org/b/109262 [ Debug SnowLeopard ] fast/table/table-cell-before-after-content-around-table-row.html [ Crash Pass ]
-webkit.org/b/109376 [ Debug ] fast/frames/seamless/seamless-inherited-origin.html [ Failure ]
 webkit.org/b/109312 [ Win ] fast/canvas/canvas-drawImage-shadow.html [ Pass Failure ]
 webkit.org/b/109312 [ Win ] platform/chromium/virtual/gpu/fast/canvas/canvas-drawImage-shadow.html [ Pass Failure ]
 
 # ENABLE_ENCRYPTED_MEDIA_V2 is not enabled.
 webkit.org/b/97037 media/encrypted-media/encrypted-media-v2-events.html [ Timeout ]
 webkit.org/b/97037 media/encrypted-media/encrypted-media-v2-syntax.html [ Timeout ]
+
+webkit.org/b/109416 [ Mac ] inspector/editor/text-editor-home-button.html [ Failure ]
 

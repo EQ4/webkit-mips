@@ -1,3 +1,159 @@
+2013-02-11  Oliver Hunt  <oliver@apple.com>
+
+        Build fix.
+
+        * wtf/FastMalloc.cpp:
+        (WTF::TCMalloc_PageHeap::IncrementalScavenge):
+
+2013-02-11  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Disable delete button controller on non-Mac ports and delete EditorClient::shouldShowDeleteInterface
+        https://bugs.webkit.org/show_bug.cgi?id=109534
+
+        Reviewed by Anders Carlsson.
+
+        * wtf/Platform.h:
+
+2013-02-11  David Kilzer  <ddkilzer@apple.com>
+
+        [iOS] Upstream changes to Platform.h
+        <http://webkit.org/b/109459>
+
+        Reviewed by Benjamin Poulain.
+
+        * wtf/Platform.h:
+        - Changes for armv7s.
+        - Add ENABLE() definitions for DASHBOARD_SUPPORT and WEBGL.
+        - Re-sort ENABLE() and USE() macros.
+        - Remove ENABLE() macros for JIT, LLINT and YARR_JIT to enable
+          on iOS Simulator.  They are already defined below.
+        - Turn off HAVE(HOSTED_CORE_ANIMATION) for iOS.
+        - Turn on USE(COREMEDIA) for iOS 6.0 and later.
+
+2013-02-08  Oliver Hunt  <oliver@apple.com>
+
+        Harden FastMalloc (again)
+        https://bugs.webkit.org/show_bug.cgi?id=109334
+
+        Reviewed by Mark Hahnenberg.
+
+        Re-implement hardening of linked lists in TCMalloc.
+
+        In order to keep heap introspection working, we need to thread the
+        heap entropy manually as the introspection process can't use the
+        address of a global in determining the mask.  Given we now have to
+        thread a value through anyway, I've stopped relying on ASLR for entropy
+        and am simply using arc4random() on darwin, and time + ASLR everywhere
+        else.
+
+        I've also made an explicit struct type for the FastMalloc singly linked
+        lists, as it seemed like the only way to reliably distinguish between
+        void*'s that were lists vs. void* that were not.  This also made it
+        somewhat easier to reason about things across processes.
+
+        Verified that all the introspection tools work as expected.
+
+        * wtf/FastMalloc.cpp:
+        (WTF::internalEntropyValue):
+        (WTF):
+        (HardenedSLL):
+        (WTF::HardenedSLL::create):
+        (WTF::HardenedSLL::null):
+        (WTF::HardenedSLL::setValue):
+        (WTF::HardenedSLL::value):
+        (WTF::HardenedSLL::operator!):
+        (WTF::HardenedSLL::operator UnspecifiedBoolType):
+        (TCEntry):
+        (WTF::SLL_Next):
+        (WTF::SLL_SetNext):
+        (WTF::SLL_Push):
+        (WTF::SLL_Pop):
+        (WTF::SLL_PopRange):
+        (WTF::SLL_PushRange):
+        (WTF::SLL_Size):
+        (PageHeapAllocator):
+        (WTF::PageHeapAllocator::Init):
+        (WTF::PageHeapAllocator::New):
+        (WTF::PageHeapAllocator::Delete):
+        (WTF::PageHeapAllocator::recordAdministrativeRegions):
+        (WTF::Span::next):
+        (WTF::Span::remoteNext):
+        (WTF::Span::prev):
+        (WTF::Span::setNext):
+        (WTF::Span::setPrev):
+        (Span):
+        (WTF::DLL_Init):
+        (WTF::DLL_Remove):
+        (WTF::DLL_IsEmpty):
+        (WTF::DLL_Length):
+        (WTF::DLL_Prepend):
+        (TCMalloc_Central_FreeList):
+        (WTF::TCMalloc_Central_FreeList::enumerateFreeObjects):
+        (WTF::TCMalloc_Central_FreeList::entropy):
+        (TCMalloc_PageHeap):
+        (WTF::TCMalloc_PageHeap::init):
+        (WTF::TCMalloc_PageHeap::scavenge):
+        (WTF::TCMalloc_PageHeap::New):
+        (WTF::TCMalloc_PageHeap::AllocLarge):
+        (WTF::TCMalloc_PageHeap::Carve):
+        (WTF::TCMalloc_PageHeap::Delete):
+        (WTF::TCMalloc_PageHeap::ReturnedBytes):
+        (WTF::TCMalloc_PageHeap::Check):
+        (WTF::TCMalloc_PageHeap::CheckList):
+        (WTF::TCMalloc_PageHeap::ReleaseFreeList):
+        (TCMalloc_ThreadCache_FreeList):
+        (WTF::TCMalloc_ThreadCache_FreeList::Init):
+        (WTF::TCMalloc_ThreadCache_FreeList::empty):
+        (WTF::TCMalloc_ThreadCache_FreeList::Push):
+        (WTF::TCMalloc_ThreadCache_FreeList::PushRange):
+        (WTF::TCMalloc_ThreadCache_FreeList::PopRange):
+        (WTF::TCMalloc_ThreadCache_FreeList::Pop):
+        (WTF::TCMalloc_ThreadCache_FreeList::enumerateFreeObjects):
+        (TCMalloc_ThreadCache):
+        (WTF::TCMalloc_Central_FreeList::Init):
+        (WTF::TCMalloc_Central_FreeList::ReleaseListToSpans):
+        (WTF::TCMalloc_Central_FreeList::ReleaseToSpans):
+        (WTF::TCMalloc_Central_FreeList::InsertRange):
+        (WTF::TCMalloc_Central_FreeList::RemoveRange):
+        (WTF::TCMalloc_Central_FreeList::FetchFromSpansSafe):
+        (WTF::TCMalloc_Central_FreeList::FetchFromSpans):
+        (WTF::TCMalloc_Central_FreeList::Populate):
+        (WTF::TCMalloc_ThreadCache::Init):
+        (WTF::TCMalloc_ThreadCache::Deallocate):
+        (WTF::TCMalloc_ThreadCache::FetchFromCentralCache):
+        (WTF::TCMalloc_ThreadCache::ReleaseToCentralCache):
+        (WTF::TCMalloc_ThreadCache::InitModule):
+        (WTF::TCMalloc_ThreadCache::NewHeap):
+        (WTF::TCMalloc_ThreadCache::CreateCacheIfNecessary):
+        * wtf/MallocZoneSupport.h:
+        (RemoteMemoryReader):
+
+2013-02-11  Enrica Casucci  <enrica@apple.com>
+
+        Add ENABLE_DELETION_UI to control the use of the deletion UI.
+        https://bugs.webkit.org/show_bug.cgi?id=109463.
+        
+        ENABLE_DELETION_UI is set to 1 by default for
+        all ports. It is explicitly enabled for MAC and disabled for iOS.
+
+        Reviewed by Ryosuke Niwa.
+
+        * wtf/Platform.h:
+
+2013-02-11  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        [EFL] Stop using smart pointers for Ecore_Timer
+        https://bugs.webkit.org/show_bug.cgi?id=109409
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Remove support in OwnPtr for EFL's Ecore_Timer. It is a bad idea to use
+        OwnPtr for Ecore_Timer because the timer handle may become invalid.
+
+        * wtf/OwnPtrCommon.h:
+        (WTF):
+        * wtf/efl/OwnPtrEfl.cpp:
+
 2013-02-11  Abhishek Arya  <inferno@chromium.org>
 
         Add ASSERT_WITH_SECURITY_IMPLICATION to detect out of bounds access

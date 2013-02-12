@@ -30,6 +30,7 @@
 #include "ChildProcess.h"
 #include "DownloadManager.h"
 #include "EventDispatcher.h"
+#include "PluginProcessConnectionManager.h"
 #include "ResourceCachesToClear.h"
 #include "SandboxExtension.h"
 #include "SharedMemory.h"
@@ -92,11 +93,7 @@ class NetworkProcessConnection;
 class WebResourceLoadScheduler;
 #endif
 
-#if ENABLE(PLUGIN_PROCESS)
-class PluginProcessConnectionManager;
-#endif
-
-class WebProcess : public ChildProcess, private CoreIPC::Connection::QueueClient, private DownloadManager::Client {
+class WebProcess : public ChildProcess, private DownloadManager::Client {
 public:
     static WebProcess& shared();
 
@@ -229,10 +226,6 @@ private:
     void clearPluginSiteData(const Vector<String>& pluginPaths, const Vector<String>& sites, uint64_t flags, uint64_t maxAgeInSeconds, uint64_t callbackID);
 #endif
 
-#if ENABLE(PLUGIN_PROCESS)
-    void pluginProcessCrashed(CoreIPC::Connection*, const String& pluginPath, uint32_t processType);
-#endif
-
     void startMemorySampler(const SandboxExtension::Handle&, const String&, const double);
     void stopMemorySampler();
 
@@ -271,13 +264,8 @@ private:
     virtual void didClose(CoreIPC::Connection*);
     virtual void didReceiveInvalidMessage(CoreIPC::Connection*, CoreIPC::StringReference messageReceiverName, CoreIPC::StringReference messageName) OVERRIDE;
 
-    // CoreIPC::Connection::QueueClient
-    virtual void didReceiveMessageOnConnectionWorkQueue(CoreIPC::Connection*, OwnPtr<CoreIPC::MessageDecoder>&) OVERRIDE;
-    virtual void didCloseOnConnectionWorkQueue(CoreIPC::Connection*) OVERRIDE;
-
     // Implemented in generated WebProcessMessageReceiver.cpp
     void didReceiveWebProcessMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&);
-    void didReceiveWebProcessMessageOnConnectionWorkQueue(CoreIPC::Connection*, OwnPtr<CoreIPC::MessageDecoder>&);
 
     RefPtr<WebConnectionToUIProcess> m_webConnection;
 
@@ -336,7 +324,7 @@ private:
 #endif
 
 #if ENABLE(PLUGIN_PROCESS)
-    PluginProcessConnectionManager* m_pluginProcessConnectionManager;
+    PluginProcessConnectionManager m_pluginProcessConnectionManager;
 #endif
 
 #if USE(SOUP)

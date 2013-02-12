@@ -350,11 +350,6 @@ void TestRunner::setAllowFileAccessFromFileURLs(bool enabled)
     WKBundleSetAllowFileAccessFromFileURLs(InjectedBundle::shared().bundle(), InjectedBundle::shared().pageGroup(), enabled);
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool enabled)
-{
-    WKBundleSetFrameFlatteningEnabled(InjectedBundle::shared().bundle(), InjectedBundle::shared().pageGroup(), enabled);
-}
-
 void TestRunner::setPluginsEnabled(bool enabled)
 {
     WKBundleSetPluginsEnabled(InjectedBundle::shared().bundle(), InjectedBundle::shared().pageGroup(), enabled);
@@ -654,11 +649,6 @@ void TestRunner::setUserStyleSheetLocation(JSStringRef location)
 
     if (m_userStyleSheetEnabled)
         setUserStyleSheetEnabled(true);
-}
-
-void TestRunner::setMinimumTimerInterval(double seconds)
-{
-    WKBundleSetMinimumTimerInterval(InjectedBundle::shared().bundle(), InjectedBundle::shared().pageGroup(), seconds);
 }
 
 void TestRunner::setSpatialNavigationEnabled(bool enabled)

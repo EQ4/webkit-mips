@@ -465,23 +465,6 @@ void TestRunner::setXSSAuditorEnabled(bool enabled)
     prefsPrivate->setXSSAuditorEnabled(enabled);
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool enabled)
-{
-    COMPtr<IWebView> webView;
-    if (FAILED(frame->webView(&webView)))
-        return;
-
-    COMPtr<IWebPreferences> preferences;
-    if (FAILED(webView->preferences(&preferences)))
-        return;
-
-    COMPtr<IWebPreferencesPrivate> prefsPrivate(Query, preferences);
-    if (!prefsPrivate)
-        return;
-
-    prefsPrivate->setFrameFlatteningEnabled(enabled);
-}
-
 void TestRunner::setSpatialNavigationEnabled(bool enabled)
 {
     // FIXME: Implement for SpatialNavigation layout tests.
@@ -1270,19 +1253,6 @@ void TestRunner::deleteLocalStorageForOrigin(JSStringRef URL)
     // FIXME: Implement.
 }
 
-void TestRunner::setMinimumTimerInterval(double minimumTimerInterval)
-{
-    COMPtr<IWebView> webView;
-    if (FAILED(frame->webView(&webView)))
-        return;
-
-    COMPtr<IWebViewPrivate> viewPrivate(Query, webView);
-    if (!viewPrivate)
-        return;
-
-    viewPrivate->setMinimumTimerInterval(minimumTimerInterval);
-}
-
 void TestRunner::setTextDirection(JSStringRef direction)
 {
     COMPtr<IWebFramePrivate> framePrivate(Query, frame);
@@ -1340,16 +1310,6 @@ void TestRunner::setPageVisibility(const char*)
 }
 
 void TestRunner::setAutomaticLinkDetectionEnabled(bool)
-{
-    // FIXME: Implement this.
-}
-
-void TestRunner::sendWebIntentResponse(JSStringRef)
-{
-    // FIXME: Implement this.
-}
-
-void TestRunner::deliverWebIntent(JSStringRef, JSStringRef, JSStringRef)
 {
     // FIXME: Implement this.
 }

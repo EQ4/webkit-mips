@@ -508,7 +508,9 @@ private:
         case CompareGreater:
         case CompareGreaterEq:
         case CompareEq:
+        case CompareEqConstant:
         case CompareStrictEq:
+        case CompareStrictEqConstant:
         case InstanceOf:
         case IsUndefined:
         case IsBoolean:
@@ -725,6 +727,7 @@ private:
         case PutByValAlias:
         case GetArrayLength:
         case Int32ToDouble:
+        case ForwardInt32ToDouble:
         case DoubleAsInt32:
         case GetLocalUnlinked:
         case GetMyArgumentsLength:

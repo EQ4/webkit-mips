@@ -1,3 +1,251 @@
+2013-02-11  Oliver Hunt  <oliver@apple.com>
+
+        Make JSC API more NULL tolerant
+        https://bugs.webkit.org/show_bug.cgi?id=109515
+
+        Reviewed by Mark Hahnenberg.
+
+        We do so much marshalling for the C API these days anyway that a single null
+        check isn't a performance issue.  Yet the existing "null is unsafe" behaviour
+        leads to crashes in embedding applications whenever there's an untested code
+        path, so it seems having defined behaviour is superior.
+
+        * API/APICast.h:
+        (toJS):
+        (toJSForGC):
+        * API/JSObjectRef.cpp:
+        (JSObjectIsFunction):
+        (JSObjectCallAsFunction):
+        (JSObjectIsConstructor):
+        (JSObjectCallAsConstructor):
+        * API/tests/testapi.c:
+        (main):
+
+2013-02-11  Filip Pizlo  <fpizlo@apple.com>
+
+        Unreviewed, adding a FIXME to remind ourselves of a bug.
+        https://bugs.webkit.org/show_bug.cgi?id=109487
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileStrictEqForConstant):
+
+2013-02-11  Filip Pizlo  <fpizlo@apple.com>
+
+        Strange bug in DFG OSR in JSC
+        https://bugs.webkit.org/show_bug.cgi?id=109491
+
+        Reviewed by Mark Hahnenberg.
+        
+        Int32ToDouble was being injected after a side-effecting operation and before a SetLocal. Anytime we
+        inject something just before a SetLocal we should be aware that the previous operation may have been
+        a side-effect associated with the current code origin. Hence, we should use a forward exit.
+        Int32ToDouble does not do forward exits by default.
+        
+        This patch adds a forward-exiting form of Int32ToDouble, for use in SetLocal Int32ToDouble injections.
+        Changed the CSE and other things to treat these nodes identically, but for the exit strategy to be
+        distinct (Int32ToDouble -> backward, ForwardInt32ToDouble -> forward). The use of the NodeType for
+        signaling exit direction is not "great" but it's what we use in other places already (like
+        ForwardCheckStructure).
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::int32ToDoubleCSE):
+        (CSEPhase):
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGCommon.h:
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        (JSC::DFG::FixupPhase::fixDoubleEdge):
+        (JSC::DFG::FixupPhase::injectInt32ToDoubleNode):
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::willHaveCodeGenOrOSR):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::convertLastOSRExitToForward):
+        (JSC::DFG::SpeculativeJIT::compileInt32ToDouble):
+        * dfg/DFGSpeculativeJIT.h:
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGVariableEventStream.cpp:
+        (JSC::DFG::VariableEventStream::reconstruct):
+
+2013-02-11  Filip Pizlo  <fpizlo@apple.com>
+
+        NonStringCell and Object are practically the same thing for the purpose of speculation
+        https://bugs.webkit.org/show_bug.cgi?id=109492
+
+        Reviewed by Mark Hahnenberg.
+        
+        Removed isNonStringCellSpeculation, and made all callers use isObjectSpeculation.
+        
+        Changed isNonStringCellOrOtherSpeculation to be isObjectOrOtherSpeculation.
+        
+        I believe this is correct because even weird object types like JSNotAnObject end up
+        being "objects" from the standpoint of our typesystem. Anyway, the assumption that
+        "is cell but not a string" equates to "object" is an assumption that is already made
+        in other places in the system so there's little value in being paranoid about it.
+
+        * bytecode/SpeculatedType.h:
+        (JSC::isObjectSpeculation):
+        (JSC::isObjectOrOtherSpeculation):
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGNode.h:
+        (Node):
+        (JSC::DFG::Node::shouldSpeculateObjectOrOther):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleBranch):
+        (JSC::DFG::SpeculativeJIT::compare):
+        (JSC::DFG::SpeculativeJIT::compileStrictEq):
+        * dfg/DFGSpeculativeJIT.h:
+        (SpeculativeJIT):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileObjectOrOtherLogicalNot):
+        (JSC::DFG::SpeculativeJIT::compileLogicalNot):
+        (JSC::DFG::SpeculativeJIT::emitObjectOrOtherBranch):
+        (JSC::DFG::SpeculativeJIT::emitBranch):
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileObjectOrOtherLogicalNot):
+        (JSC::DFG::SpeculativeJIT::compileLogicalNot):
+        (JSC::DFG::SpeculativeJIT::emitObjectOrOtherBranch):
+        (JSC::DFG::SpeculativeJIT::emitBranch):
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-10  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CompareEq(a, null) and CompareStrictEq(a, const) are unsound with respect to constant folding
+        https://bugs.webkit.org/show_bug.cgi?id=109387
+
+        Reviewed by Oliver Hunt and Mark Hahnenberg.
+        
+        Lock in the decision to use a non-speculative constant comparison as early as possible
+        and don't let the CFA change it by folding constants. This might be a performance
+        penalty on some really weird code (FWIW, I haven't seen this on benchmarks), but on
+        the other hand it completely side-steps the unsoundness that the bug speaks of.
+        
+        Rolling back in after adding 32-bit path.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::isConstantForCompareStrictEq):
+        (ByteCodeParser):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileStrictEq):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-10  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG TypeOf implementation should have its backend code aligned to what the CFA does
+        https://bugs.webkit.org/show_bug.cgi?id=109385
+
+        Reviewed by Sam Weinig.
+        
+        The problem was that if we ended up trying to constant fold, but didn't succeed
+        because of prediction mismatches, then we would also fail to do filtration.
+        
+        Rearranged the control flow in the CFA to fix that.
+        
+        As far as I know, this is asymptomatic - it's sort of OK for the CFA to prove less
+        things, which is what the bug was.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+
+2013-02-11  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r142491.
+        http://trac.webkit.org/changeset/142491
+        https://bugs.webkit.org/show_bug.cgi?id=109470
+
+        broke the 32 bit build (Requested by jessieberlin on #webkit).
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileStrictEq):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-10  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CompareEq(a, null) and CompareStrictEq(a, const) are unsound with respect to constant folding
+        https://bugs.webkit.org/show_bug.cgi?id=109387
+
+        Reviewed by Oliver Hunt.
+        
+        Lock in the decision to use a non-speculative constant comparison as early as possible
+        and don't let the CFA change it by folding constants. This might be a performance
+        penalty on some really weird code (FWIW, I haven't seen this on benchmarks), but on
+        the other hand it completely side-steps the unsoundness that the bug speaks of.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::isConstantForCompareStrictEq):
+        (ByteCodeParser):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileStrictEq):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-11  Csaba Osztrogonác  <ossy@webkit.org>
+
+        Unreviewed fix after r13954 for !ENABLE(JIT) builds.
+
+        * llint/LowLevelInterpreter.cpp:
+
+2013-02-11  Gabor Rapcsanyi  <rgabor@webkit.org>
+
+        JSC build failing with verbose debug mode
+        https://bugs.webkit.org/show_bug.cgi?id=109441
+
+        Reviewed by Darin Adler.
+
+        Fixing some verbose messages which caused build errors.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::mergeToSuccessors):
+        * dfg/DFGCFAPhase.cpp:
+        (JSC::DFG::CFAPhase::performBlockCFA):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::setReplacement):
+        (JSC::DFG::CSEPhase::eliminate):
+        * dfg/DFGPredictionInjectionPhase.cpp:
+        (JSC::DFG::PredictionInjectionPhase::run):
+
 2013-02-10  Martin Robinson  <mrobinson@igalia.com>
 
         Fix the GTK+ gyp build

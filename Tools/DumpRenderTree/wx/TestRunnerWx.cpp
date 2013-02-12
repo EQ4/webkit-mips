@@ -184,11 +184,6 @@ void TestRunner::setXSSAuditorEnabled(bool enabled)
     // FIXME: implement
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool enabled)
-{
-    // FIXME: implement
-}
-
 void TestRunner::setAllowUniversalAccessFromFileURLs(bool enabled)
 {
     // FIXME: implement
@@ -502,11 +497,6 @@ void TestRunner::setSerializeHTTPLoads(bool)
     // FIXME: Implement.
 }
 
-void TestRunner::setMinimumTimerInterval(double interval)
-{
-
-}
-
 void TestRunner::syncLocalStorage()
 {
     // FIXME: Implement.
@@ -570,16 +560,6 @@ void TestRunner::setPageVisibility(const char*)
 }
 
 void TestRunner::setAutomaticLinkDetectionEnabled(bool)
-{
-    // FIXME: Implement this.
-}
-
-void TestRunner::sendWebIntentResponse(JSStringRef)
-{
-    // FIXME: Implement this.
-}
-
-void TestRunner::deliverWebIntent(JSStringRef, JSStringRef, JSStringRef)
 {
     // FIXME: Implement this.
 }

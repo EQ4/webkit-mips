@@ -32,6 +32,7 @@
 #include "RunLoop.h"
 #include "TextureMapper.h"
 #include "TextureMapperBackingStore.h"
+#include "TextureMapperFPSCounter.h"
 #include "Timer.h"
 #include <wtf/Functional.h>
 #include <wtf/HashSet.h>
@@ -84,9 +85,7 @@ public:
 #elif USE(CAIRO)
     void paintToGraphicsContext(cairo_t*);
 #endif
-    void setContentsSize(const FloatSize&);
-    void setVisibleContentsRect(const FloatRect&);
-    void didChangeScrollPosition(const FloatPoint& position);
+    void setScrollPosition(const FloatPoint&);
 #if USE(GRAPHICS_SURFACE)
     void createCanvas(CoordinatedLayerID, const IntSize&, PassRefPtr<GraphicsSurface>);
     void syncCanvas(CoordinatedLayerID, uint32_t frontBuffer);
@@ -121,7 +120,7 @@ public:
     void updateTile(CoordinatedLayerID, uint32_t tileID, const TileUpdate&);
     void createUpdateAtlas(uint32_t atlasID, PassRefPtr<CoordinatedSurface>);
     void removeUpdateAtlas(uint32_t atlasID);
-    void flushLayerChanges();
+    void flushLayerChanges(const FloatPoint& scrollPosition);
     void createImageBacking(CoordinatedImageBackingID);
     void updateImageBacking(CoordinatedImageBackingID, PassRefPtr<CoordinatedSurface>);
     void clearImageBackingContents(CoordinatedImageBackingID);
@@ -164,7 +163,7 @@ private:
     void createLayer(CoordinatedLayerID);
     void deleteLayer(CoordinatedLayerID);
 
-    void assignImageBackingToLayer(GraphicsLayer*, CoordinatedImageBackingID);
+    void assignImageBackingToLayer(CoordinatedLayerID, GraphicsLayer*, CoordinatedImageBackingID);
     void removeReleasedImageBackingsIfNeeded();
     void ensureRootLayer();
     void commitPendingBackingStoreOperations();
@@ -173,9 +172,6 @@ private:
     void createBackingStoreIfNeeded(GraphicsLayer*);
     void removeBackingStoreIfNeeded(GraphicsLayer*);
     void resetBackingStoreSizeToLayerSize(GraphicsLayer*);
-
-    FloatSize m_contentsSize;
-    FloatRect m_visibleContentsRect;
 
     // Render queue can be accessed ony from main thread or updatePaintNode call stack!
     Vector<Function<void()> > m_renderQueue;
@@ -211,8 +207,8 @@ private:
     typedef HashMap<CoordinatedLayerID, GraphicsLayer*> LayerRawPtrMap;
     LayerRawPtrMap m_fixedLayers;
     CoordinatedLayerID m_rootLayerID;
+    FloatPoint m_scrollPosition;
     FloatPoint m_renderedContentsScrollPosition;
-    FloatPoint m_pendingRenderedContentsScrollPosition;
     bool m_animationsLocked;
 #if ENABLE(REQUEST_ANIMATION_FRAME)
     bool m_animationFrameRequested;
@@ -224,6 +220,8 @@ private:
     typedef HashMap<int, RefPtr<CustomFilterProgram> > CustomFilterProgramMap;
     CustomFilterProgramMap m_customFilterPrograms;
 #endif
+
+    TextureMapperFPSCounter m_fpsCounter;
 };
 
 } // namespace WebCore

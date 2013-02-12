@@ -943,6 +943,7 @@ struct Node {
         switch (op()) {
         case SetLocal:
         case Int32ToDouble:
+        case ForwardInt32ToDouble:
         case ValueToInt32:
         case UInt32ToNumber:
         case DoubleAsInt32:
@@ -1092,16 +1093,6 @@ struct Node {
         return isFinalObjectSpeculation(prediction());
     }
     
-    bool shouldSpeculateNonStringCell()
-    {
-        return isNonStringCellSpeculation(prediction());
-    }
-
-    bool shouldSpeculateNonStringCellOrOther()
-    {
-        return isNonStringCellOrOtherSpeculation(prediction());
-    }
-
     bool shouldSpeculateFinalObjectOrOther()
     {
         return isFinalObjectOrOtherSpeculation(prediction());
@@ -1172,6 +1163,11 @@ struct Node {
         return isObjectSpeculation(prediction());
     }
     
+    bool shouldSpeculateObjectOrOther()
+    {
+        return isObjectOrOtherSpeculation(prediction());
+    }
+
     bool shouldSpeculateCell()
     {
         return isCellSpeculation(prediction());

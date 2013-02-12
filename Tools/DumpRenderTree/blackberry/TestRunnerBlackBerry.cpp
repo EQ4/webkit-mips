@@ -453,11 +453,6 @@ bool TestRunner::callShouldCloseOnWebView()
     return false;
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool enable)
-{
-    BlackBerry::WebKit::DumpRenderTree::currentInstance()->page()->settings()->setFrameFlatteningEnabled(enable);
-}
-
 void TestRunner::setSpatialNavigationEnabled(bool enable)
 {
     notImplemented();
@@ -575,11 +570,6 @@ void TestRunner::setViewModeMediaFeature(const JSStringRef mode)
 void TestRunner::setSerializeHTTPLoads(bool)
 {
     // FIXME: Implement if needed for https://bugs.webkit.org/show_bug.cgi?id=50758.
-    notImplemented();
-}
-
-void TestRunner::setMinimumTimerInterval(double)
-{
     notImplemented();
 }
 
@@ -765,16 +755,6 @@ void TestRunner::setPageVisibility(const char*)
 }
 
 void TestRunner::setAutomaticLinkDetectionEnabled(bool)
-{
-    notImplemented();
-}
-
-void TestRunner::sendWebIntentResponse(JSStringRef)
-{
-    notImplemented();
-}
-
-void TestRunner::deliverWebIntent(JSStringRef, JSStringRef, JSStringRef)
 {
     notImplemented();
 }

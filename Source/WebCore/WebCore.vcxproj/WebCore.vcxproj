@@ -5692,6 +5692,9 @@
     <ClCompile Include="..\inspector\InspectorFrontendHost.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\inspector\InspectorHeapProfilerAgent.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\inspector\InspectorHistory.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
@@ -7510,8 +7513,6 @@
     <ClInclude Include="..\xml\XSLTExtensions.h" />
     <ClInclude Include="..\xml\XSLTProcessor.h" />
     <ClInclude Include="..\xml\XSLTUnicodeSort.h" />
-    <ClInclude Include="..\xml\parser\MarkupTokenBase.h" />
-    <ClInclude Include="..\xml\parser\MarkupTokenizerBase.h" />
     <ClInclude Include="..\xml\parser\MarkupTokenizerInlines.h" />
     <ClInclude Include="..\xml\parser\XMLDocumentParser.h" />
     <ClInclude Include="..\xml\parser\XMLDocumentParserScope.h" />
@@ -7950,6 +7951,7 @@
     <ClInclude Include="..\html\parser\HTMLTokenTypes.h" />
     <ClInclude Include="..\html\parser\HTMLTreeBuilder.h" />
     <ClInclude Include="..\html\parser\HTMLViewSourceParser.h" />
+    <ClInclude Include="..\html\parser\InputStreamPreprocessor.h" />
     <ClInclude Include="..\html\parser\NestingLevelIncrementer.h" />
     <ClInclude Include="..\html\parser\TextDocumentParser.h" />
     <ClInclude Include="..\html\parser\TextViewSourceParser.h" />
@@ -8370,6 +8372,7 @@
     <ClInclude Include="..\inspector\InspectorFrontendClient.h" />
     <ClInclude Include="..\inspector\InspectorFrontendClientLocal.h" />
     <ClInclude Include="..\inspector\InspectorFrontendHost.h" />
+    <ClInclude Include="..\inspector\InspectorHeapProfilerAgent.h" />
     <ClInclude Include="..\inspector\InspectorHistory.h" />
     <ClInclude Include="..\inspector\InspectorIndexedDBAgent.h" />
     <ClInclude Include="..\inspector\InspectorInputAgent.h" />

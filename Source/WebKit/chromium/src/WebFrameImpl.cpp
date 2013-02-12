@@ -81,7 +81,6 @@
 #include "DOMFileSystem.h"
 #include "DOMUtilitiesPrivate.h"
 #include "DOMWindow.h"
-#include "DOMWindowIntents.h"
 #include "DOMWrapperWorld.h"
 #include "DirectoryEntry.h"
 #include "Document.h"
@@ -153,12 +152,10 @@
 #include "V8DirectoryEntry.h"
 #include "V8FileEntry.h"
 #include "V8GCController.h"
-#include "WebAnimationControllerImpl.h"
 #include "WebConsoleMessage.h"
 #include "WebDOMEvent.h"
 #include "WebDOMEventListener.h"
 #include "WebDataSourceImpl.h"
-#include "WebDeliveredIntentClient.h"
 #include "WebDevToolsAgentPrivate.h"
 #include "WebDocument.h"
 #include "WebFindOptions.h"
@@ -167,7 +164,6 @@
 #include "WebHistoryItem.h"
 #include "WebIconURL.h"
 #include "WebInputElement.h"
-#include "WebIntent.h"
 #include "WebNode.h"
 #include "WebPerformance.h"
 #include "WebPlugin.h"
@@ -194,11 +190,6 @@
 #include <public/WebVector.h>
 #include <wtf/CurrentTime.h>
 #include <wtf/HashMap.h>
-
-#if ENABLE(WEB_INTENTS)
-#include "DeliveredIntent.h"
-#include "DeliveredIntentClientImpl.h"
-#endif
 
 using namespace WebCore;
 
@@ -769,11 +760,6 @@ WebDocument WebFrameImpl::document() const
     return WebDocument(frame()->document());
 }
 
-WebAnimationController* WebFrameImpl::animationController()
-{
-    return &m_animationController;
-}
-
 WebPerformance WebFrameImpl::performance() const
 {
     if (!frame())
@@ -1310,11 +1296,13 @@ void WebFrameImpl::replaceMisspelledRange(const WebString& text)
     Vector<DocumentMarker*> markers = frame()->document()->markers()->markersInRange(caretRange.get(), DocumentMarker::Spelling | DocumentMarker::Grammar);
     if (markers.size() < 1 || markers[0]->startOffset() >= markers[0]->endOffset())
         return;
-    RefPtr<Range> markerRange = TextIterator::rangeFromLocationAndLength(frame()->selection()->rootEditableElementOrDocumentElement(), markers[0]->startOffset(), markers[0]->endOffset() - markers[0]->startOffset());
-    if (!markerRange.get() || !frame()->selection()->shouldChangeSelection(markerRange.get()))
+    RefPtr<Range> markerRange = Range::create(caretRange->ownerDocument(), caretRange->startContainer(), markers[0]->startOffset(), caretRange->endContainer(), markers[0]->endOffset());
+    if (!markerRange)
+        return;
+    if (!frame()->selection()->shouldChangeSelection(markerRange.get()))
         return;
     frame()->selection()->setSelection(markerRange.get(), CharacterGranularity);
-    frame()->editor()->replaceSelectionWithText(text, false, true);
+    frame()->editor()->replaceSelectionWithText(text, false, false);
 }
 
 bool WebFrameImpl::hasSelection() const
@@ -2086,32 +2074,6 @@ int WebFrameImpl::selectFindMatch(unsigned index, WebRect* selectionRect)
     return ordinalOfFirstMatchForFrame(this) + m_activeMatchIndexInCurrentFrame + 1;
 }
 
-void WebFrameImpl::deliverIntent(const WebIntent& intent, WebMessagePortChannelArray* ports, WebDeliveredIntentClient* intentClient)
-{
-#if ENABLE(WEB_INTENTS)
-    OwnPtr<WebCore::DeliveredIntentClient> client(adoptPtr(new DeliveredIntentClientImpl(intentClient)));
-
-    WebSerializedScriptValue intentData = WebSerializedScriptValue::fromString(intent.data());
-    const WebCore::Intent* webcoreIntent = intent;
-
-    // See PlatformMessagePortChannel.cpp
-    OwnPtr<MessagePortChannelArray> channels;
-    if (ports && ports->size()) {
-        channels = adoptPtr(new MessagePortChannelArray(ports->size()));
-        for (size_t i = 0; i < ports->size(); ++i) {
-            RefPtr<PlatformMessagePortChannel> platformChannel = PlatformMessagePortChannel::create((*ports)[i]);
-            (*ports)[i]->setClient(platformChannel.get());
-            (*channels)[i] = MessagePortChannel::create(platformChannel);
-        }
-    }
-    OwnPtr<MessagePortArray> portArray = WebCore::MessagePort::entanglePorts(*(frame()->document()), channels.release());
-
-    RefPtr<DeliveredIntent> deliveredIntent = DeliveredIntent::create(frame(), client.release(), intent.action(), intent.type(), intentData, portArray.release(), webcoreIntent->extras());
-
-    DOMWindowIntents::from(frame()->document()->domWindow())->deliver(deliveredIntent.release());
-#endif
-}
-
 WebString WebFrameImpl::contentAsText(size_t maxChars) const
 {
     if (!frame())
@@ -2202,7 +2164,6 @@ WebFrameImpl::WebFrameImpl(WebFrameClient* client)
     , m_nextInvalidateAfter(0)
     , m_findMatchMarkersVersion(0)
     , m_findMatchRectsAreValid(false)
-    , m_animationController(this)
     , m_identifier(generateFrameIdentifier())
     , m_inSameDocumentHistoryLoad(false)
 {

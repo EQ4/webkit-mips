@@ -56,7 +56,6 @@ interface TestRunner {
     void setXSSAuditorEnabled(in boolean value);
     void setAllowUniversalAccessFromFileURLs(in boolean value);
     void setAllowFileAccessFromFileURLs(in boolean value);
-    void setFrameFlatteningEnabled(in boolean value);
     void setPluginsEnabled(in boolean value);
     void setJavaScriptCanAccessClipboard(in boolean value);
     void setPrivateBrowsingEnabled(in boolean value);
@@ -67,7 +66,6 @@ interface TestRunner {
     void removeOriginAccessWhitelistEntry(in DOMString sourceOrigin, in DOMString destinationProtocol, in DOMString destinationHost, in boolean allowDestinationSubdomains);
     void setUserStyleSheetEnabled(in boolean value);
     void setUserStyleSheetLocation(in DOMString location);
-    void setMinimumTimerInterval(in double interval); // Interval specified in seconds.
     void setSpatialNavigationEnabled(in boolean value);
     void setTabKeyCyclesThroughElements(in boolean enabled);
     void setSerializeHTTPLoads();

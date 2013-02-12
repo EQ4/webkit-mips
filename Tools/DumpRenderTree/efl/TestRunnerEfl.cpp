@@ -318,11 +318,6 @@ void TestRunner::setXSSAuditorEnabled(bool flag)
     ewk_view_setting_enable_xss_auditor_set(browser->mainView(), flag);
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool flag)
-{
-    ewk_view_setting_enable_frame_flattening_set(browser->mainView(), flag);
-}
-
 void TestRunner::setSpatialNavigationEnabled(bool flag)
 {
     ewk_view_setting_spatial_navigation_set(browser->mainView(), flag);
@@ -796,11 +791,6 @@ void TestRunner::setSerializeHTTPLoads(bool serialize)
     DumpRenderTreeSupportEfl::setSerializeHTTPLoads(serialize);
 }
 
-void TestRunner::setMinimumTimerInterval(double minimumTimerInterval)
-{
-    ewk_view_setting_minimum_timer_interval_set(browser->mainView(), minimumTimerInterval);
-}
-
 void TestRunner::setTextDirection(JSStringRef direction)
 {
     Ewk_Text_Direction ewkDirection;
@@ -878,20 +868,6 @@ void TestRunner::setPageVisibility(const char* visibility)
 
 void TestRunner::setAutomaticLinkDetectionEnabled(bool)
 {
-    notImplemented();
-}
-
-void TestRunner::sendWebIntentResponse(JSStringRef)
-{
-    // No plan to support Web Intents. The feature will likely
-    // be removed from WebKit.
-    notImplemented();
-}
-
-void TestRunner::deliverWebIntent(JSStringRef, JSStringRef, JSStringRef)
-{
-    // No plan to support Web Intents. The feature will likely
-    // be removed from WebKit.
     notImplemented();
 }
 

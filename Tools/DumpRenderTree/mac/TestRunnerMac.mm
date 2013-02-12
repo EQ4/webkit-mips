@@ -547,11 +547,6 @@ void TestRunner::setXSSAuditorEnabled(bool enabled)
     [[[mainFrame webView] preferences] setXSSAuditorEnabled:enabled];
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool enabled)
-{
-    [[[mainFrame webView] preferences] setFrameFlatteningEnabled:enabled];
-}
-
 void TestRunner::setSpatialNavigationEnabled(bool enabled)
 {
     [[[mainFrame webView] preferences] setSpatialNavigationEnabled:enabled];
@@ -1074,11 +1069,6 @@ void TestRunner::setSerializeHTTPLoads(bool serialize)
     [WebView _setLoadResourcesSerially:serialize];
 }
 
-void TestRunner::setMinimumTimerInterval(double minimumTimerInterval)
-{
-    [[mainFrame webView] _setMinimumTimerInterval:minimumTimerInterval];
-}
-
 void TestRunner::setTextDirection(JSStringRef directionName)
 {
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
@@ -1142,16 +1132,6 @@ void TestRunner::setPageVisibility(const char* newVisibility)
         [webView _setVisibilityState:WebPageVisibilityStatePrerender isInitialState:NO];
     else if (!strcmp(newVisibility, "preview"))
         [webView _setVisibilityState:WebPageVisibilityStatePreview isInitialState:NO];
-}
-
-void TestRunner::sendWebIntentResponse(JSStringRef)
-{
-    // FIXME: Implement.
-}
-
-void TestRunner::deliverWebIntent(JSStringRef, JSStringRef, JSStringRef)
-{
-    // FIXME: Implement.
 }
 
 void TestRunner::grantWebNotificationPermission(JSStringRef jsOrigin)

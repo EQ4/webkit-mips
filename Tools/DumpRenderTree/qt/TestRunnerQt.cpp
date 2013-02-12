@@ -450,11 +450,6 @@ void TestRunner::evaluateInWebInspector(long callId, const QString& script)
     DumpRenderTreeSupportQt::webInspectorExecuteScript(m_drt->pageAdapter(), callId, script);
 }
 
-void TestRunner::setFrameFlatteningEnabled(bool enabled)
-{
-    DumpRenderTreeSupportQt::setFrameFlatteningEnabled(m_drt->pageAdapter(), enabled);
-}
-
 void TestRunner::goBack()
 {
     DumpRenderTreeSupportQt::goBack(m_drt->pageAdapter());
@@ -871,11 +866,6 @@ void TestRunner::removeAllVisitedLinks()
 void TestRunner::addURLToRedirect(const QString& origin, const QString& destination)
 {
     DumpRenderTreeSupportQt::addURLToRedirect(origin, destination);
-}
-
-void TestRunner::setMinimumTimerInterval(double minimumTimerInterval)
-{
-    DumpRenderTreeSupportQt::setMinimumTimerInterval(m_drt->pageAdapter(), minimumTimerInterval);
 }
 
 void TestRunner::originsWithLocalStorage()

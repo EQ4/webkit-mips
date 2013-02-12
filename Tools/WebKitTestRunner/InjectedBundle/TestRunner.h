@@ -100,7 +100,6 @@ public:
     void setXSSAuditorEnabled(bool);
     void setAllowUniversalAccessFromFileURLs(bool);
     void setAllowFileAccessFromFileURLs(bool);
-    void setFrameFlatteningEnabled(bool);
     void setPluginsEnabled(bool);
     void setJavaScriptCanAccessClipboard(bool);
     void setPrivateBrowsingEnabled(bool);
@@ -111,7 +110,6 @@ public:
     void removeOriginAccessWhitelistEntry(JSStringRef sourceOrigin, JSStringRef destinationProtocol, JSStringRef destinationHost, bool allowDestinationSubdomains);
     void setUserStyleSheetEnabled(bool);
     void setUserStyleSheetLocation(JSStringRef);
-    void setMinimumTimerInterval(double seconds); // Interval specified in seconds.
     void setSpatialNavigationEnabled(bool);
     void setTabKeyCyclesThroughElements(bool);
     void setSerializeHTTPLoads();

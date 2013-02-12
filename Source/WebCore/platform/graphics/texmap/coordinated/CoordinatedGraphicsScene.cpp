@@ -51,16 +51,6 @@ void CoordinatedGraphicsScene::dispatchOnMainThread(const Function<void()>& func
         callOnMainThread(function);
 }
 
-static FloatPoint boundedScrollPosition(const FloatPoint& scrollPosition, const FloatRect& visibleContentRect, const FloatSize& contentSize)
-{
-    float scrollPositionX = std::max(scrollPosition.x(), 0.0f);
-    scrollPositionX = std::min(scrollPositionX, contentSize.width() - visibleContentRect.width());
-
-    float scrollPositionY = std::max(scrollPosition.y(), 0.0f);
-    scrollPositionY = std::min(scrollPositionY, contentSize.height() - visibleContentRect.height());
-    return FloatPoint(scrollPositionX, scrollPositionY);
-}
-
 static bool layerShouldHaveBackingStore(GraphicsLayer* layer)
 {
     return layer->drawsContent() && layer->contentsAreVisible() && !layer->size().isEmpty();
@@ -124,6 +114,7 @@ void CoordinatedGraphicsScene::paintToCurrentGLContext(const TransformationMatri
     }
 
     layer->paint();
+    m_fpsCounter.updateFPSAndDisplay(m_textureMapper.get(), clipRect.location(), matrix);
     m_textureMapper->endClip();
     m_textureMapper->endPainting();
 
@@ -171,22 +162,19 @@ void CoordinatedGraphicsScene::paintToGraphicsContext(cairo_t* painter)
     m_textureMapper->setGraphicsContext(&graphicsContext);
     m_textureMapper->beginPainting();
 
+    IntRect clipRect = graphicsContext.clipBounds();
     if (m_setDrawsBackground)
-        m_textureMapper->drawSolidColor(graphicsContext.clipBounds(), TransformationMatrix(), m_backgroundColor);
+        m_textureMapper->drawSolidColor(clipRect, TransformationMatrix(), m_backgroundColor);
 
     layer->paint();
+    m_fpsCounter.updateFPSAndDisplay(m_textureMapper.get(), clipRect.location());
     m_textureMapper->endPainting();
     m_textureMapper->setGraphicsContext(0);
 }
 
-void CoordinatedGraphicsScene::setContentsSize(const FloatSize& contentsSize)
+void CoordinatedGraphicsScene::setScrollPosition(const FloatPoint& scrollPosition)
 {
-    m_contentsSize = contentsSize;
-}
-
-void CoordinatedGraphicsScene::setVisibleContentsRect(const FloatRect& rect)
-{
-    m_visibleContentsRect = rect;
+    m_scrollPosition = scrollPosition;
 }
 
 void CoordinatedGraphicsScene::updateViewport()
@@ -204,18 +192,11 @@ void CoordinatedGraphicsScene::adjustPositionForFixedLayers()
     // Fixed layer positions are updated by the web process when we update the visible contents rect / scroll position.
     // If we want those layers to follow accurately the viewport when we move between the web process updates, we have to offset
     // them by the delta between the current position and the position of the viewport used for the last layout.
-    FloatPoint scrollPosition = boundedScrollPosition(m_visibleContentsRect.location(), m_visibleContentsRect, m_contentsSize);
-    FloatPoint renderedScrollPosition = boundedScrollPosition(m_renderedContentsScrollPosition, m_visibleContentsRect, m_contentsSize);
-    FloatSize delta = scrollPosition - renderedScrollPosition;
+    FloatSize delta = m_scrollPosition - m_renderedContentsScrollPosition;
 
     LayerRawPtrMap::iterator end = m_fixedLayers.end();
     for (LayerRawPtrMap::iterator it = m_fixedLayers.begin(); it != end; ++it)
         toTextureMapperLayer(it->value)->setScrollPositionDeltaIfNeeded(delta);
-}
-
-void CoordinatedGraphicsScene::didChangeScrollPosition(const FloatPoint& position)
-{
-    m_pendingRenderedContentsScrollPosition = position;
 }
 
 #if USE(GRAPHICS_SURFACE)
@@ -347,7 +328,7 @@ void CoordinatedGraphicsScene::setLayerState(CoordinatedLayerID id, const Coordi
     else
         m_fixedLayers.remove(id);
 
-    assignImageBackingToLayer(layer, layerInfo.imageID);
+    assignImageBackingToLayer(id, layer, layerInfo.imageID);
     prepareContentBackingStore(layer);
 
     // Never make the root layer clip.
@@ -529,8 +510,13 @@ void CoordinatedGraphicsScene::removeImageBacking(CoordinatedImageBackingID imag
     m_releasedImageBackings.append(m_imageBackings.take(imageID));
 }
 
-void CoordinatedGraphicsScene::assignImageBackingToLayer(GraphicsLayer* layer, CoordinatedImageBackingID imageID)
+void CoordinatedGraphicsScene::assignImageBackingToLayer(CoordinatedLayerID id, GraphicsLayer* layer, CoordinatedImageBackingID imageID)
 {
+#if USE(GRAPHICS_SURFACE)
+    if (m_surfaceBackingStores.contains(id))
+        return;
+#endif
+
     if (imageID == InvalidCoordinatedImageBackingID) {
         layer->setContentsToMedia(0);
         return;
@@ -554,9 +540,9 @@ void CoordinatedGraphicsScene::commitPendingBackingStoreOperations()
     m_backingStoresWithPendingBuffers.clear();
 }
 
-void CoordinatedGraphicsScene::flushLayerChanges()
+void CoordinatedGraphicsScene::flushLayerChanges(const FloatPoint& scrollPosition)
 {
-    m_renderedContentsScrollPosition = m_pendingRenderedContentsScrollPosition;
+    m_renderedContentsScrollPosition = scrollPosition;
 
     // Since the frame has now been rendered, we can safely unlock the animations until the next layout.
     setAnimationsLocked(false);

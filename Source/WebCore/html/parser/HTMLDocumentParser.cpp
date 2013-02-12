@@ -52,27 +52,27 @@ using namespace HTMLNames;
 
 // This is a direct transcription of step 4 from:
 // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-end.html#fragment-case
-static HTMLTokenizerState::State tokenizerStateForContextElement(Element* contextElement, bool reportErrors, const HTMLParserOptions& options)
+static HTMLTokenizer::State tokenizerStateForContextElement(Element* contextElement, bool reportErrors, const HTMLParserOptions& options)
 {
     if (!contextElement)
-        return HTMLTokenizerState::DataState;
+        return HTMLTokenizer::DataState;
 
     const QualifiedName& contextTag = contextElement->tagQName();
 
     if (contextTag.matches(titleTag) || contextTag.matches(textareaTag))
-        return HTMLTokenizerState::RCDATAState;
+        return HTMLTokenizer::RCDATAState;
     if (contextTag.matches(styleTag)
         || contextTag.matches(xmpTag)
         || contextTag.matches(iframeTag)
         || (contextTag.matches(noembedTag) && options.pluginsEnabled)
         || (contextTag.matches(noscriptTag) && options.scriptEnabled)
         || contextTag.matches(noframesTag))
-        return reportErrors ? HTMLTokenizerState::RAWTEXTState : HTMLTokenizerState::PLAINTEXTState;
+        return reportErrors ? HTMLTokenizer::RAWTEXTState : HTMLTokenizer::PLAINTEXTState;
     if (contextTag.matches(scriptTag))
-        return reportErrors ? HTMLTokenizerState::ScriptDataState : HTMLTokenizerState::PLAINTEXTState;
+        return reportErrors ? HTMLTokenizer::ScriptDataState : HTMLTokenizer::PLAINTEXTState;
     if (contextTag.matches(plaintextTag))
-        return HTMLTokenizerState::PLAINTEXTState;
-    return HTMLTokenizerState::DataState;
+        return HTMLTokenizer::PLAINTEXTState;
+    return HTMLTokenizer::DataState;
 }
 
 HTMLDocumentParser::HTMLDocumentParser(HTMLDocument* document, bool reportErrors)
@@ -162,12 +162,16 @@ void HTMLDocumentParser::prepareToStopParsing()
     // but we need to ensure it isn't deleted yet.
     RefPtr<HTMLDocumentParser> protect(this);
 
-#if ENABLE(THREADED_HTML_PARSER)
     // NOTE: This pump should only ever emit buffered character tokens,
     // so ForceSynchronous vs. AllowYield should be meaningless.
-    if (!m_haveBackgroundParser)
-#endif
+#if ENABLE(THREADED_HTML_PARSER)
+    if (m_tokenizer) {
+        ASSERT(!m_haveBackgroundParser);
         pumpTokenizerIfPossible(ForceSynchronous);
+    }
+#else
+    pumpTokenizerIfPossible(ForceSynchronous);
+#endif
 
     if (isStopped())
         return;
@@ -370,7 +374,7 @@ void HTMLDocumentParser::forcePlaintextForTextDocument()
         HTMLParserThread::shared()->postTask(bind(&BackgroundHTMLParser::forcePlaintextForTextDocument, m_backgroundParser));
     } else
 #endif
-        m_tokenizer->setState(HTMLTokenizerState::PLAINTEXTState);
+        m_tokenizer->setState(HTMLTokenizer::PLAINTEXTState);
 }
 
 Document* HTMLDocumentParser::contextForParsingSession()
@@ -388,7 +392,8 @@ void HTMLDocumentParser::pumpTokenizer(SynchronousMode mode)
     ASSERT(!isScheduledForResume());
     // ASSERT that this object is both attached to the Document and protected.
     ASSERT(refCount() >= 2);
-
+    ASSERT(m_tokenizer);
+    ASSERT(m_token);
     ASSERT(!shouldUseThreading() || mode == ForceSynchronous);
 
     PumpSession session(m_pumpSessionNestingLevel, contextForParsingSession());
@@ -433,7 +438,7 @@ void HTMLDocumentParser::pumpTokenizer(SynchronousMode mode)
         m_parserScheduler->scheduleForResume();
 
     if (isWaitingForScripts()) {
-        ASSERT(m_tokenizer->state() == HTMLTokenizerState::DataState);
+        ASSERT(m_tokenizer->state() == HTMLTokenizer::DataState);
         if (!m_preloadScanner) {
             m_preloadScanner = adoptPtr(new HTMLPreloadScanner(m_options, document()->url()));
             m_preloadScanner->appendToEnd(m_input.current());
