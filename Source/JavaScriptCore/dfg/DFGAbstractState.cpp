@@ -848,22 +848,22 @@ bool AbstractState::execute(unsigned indexInBlock)
                 node->setCanExit(false);
                 break;
             } 
+            if (left->shouldSpeculateObject() && right->shouldSpeculateObject()) {
+                node->setCanExit(true);
+                forNode(left).filter(SpecObject);
+                forNode(right).filter(SpecObject);
+                break;
+            }
             if (left->shouldSpeculateObject() && right->shouldSpeculateObjectOrOther()) {
                 node->setCanExit(true);
-                forNode(left).filter(SpecCell & ~SpecString);
-                forNode(right).filter((SpecCell & ~SpecString) | SpecOther);
+                forNode(left).filter(SpecObject);
+                forNode(right).filter(SpecObject | SpecOther);
                 break;
             }
             if (left->shouldSpeculateObjectOrOther() && right->shouldSpeculateObject()) {
                 node->setCanExit(true);
-                forNode(left).filter((SpecCell & ~SpecString) | SpecOther);
-                forNode(right).filter(SpecCell & ~SpecString);
-                break;
-            }
-            if (left->shouldSpeculateObject() && right->shouldSpeculateObject()) {
-                node->setCanExit(true);
-                forNode(left).filter(SpecCell & ~SpecString);
-                forNode(right).filter(SpecCell & ~SpecString);
+                forNode(left).filter(SpecObject | SpecOther);
+                forNode(right).filter(SpecObject);
                 break;
             }
  
@@ -914,8 +914,8 @@ bool AbstractState::execute(unsigned indexInBlock)
         }
         if (leftNode->shouldSpeculateObject() && rightNode->shouldSpeculateObject()) {
             node->setCanExit(true);
-            forNode(leftNode).filter((SpecCell & ~SpecString) | SpecOther);
-            forNode(rightNode).filter((SpecCell & ~SpecString) | SpecOther);
+            forNode(leftNode).filter(SpecObject);
+            forNode(rightNode).filter(SpecObject);
             break;
         }
         node->setCanExit(false);
@@ -1205,7 +1205,7 @@ bool AbstractState::execute(unsigned indexInBlock)
             speculateBooleanUnary(node);
         else if (child->shouldSpeculateObjectOrOther()) {
             node->setCanExit(true);
-            forNode(child).filter((SpecCell & ~SpecString) | SpecOther);
+            forNode(child).filter(SpecObject | SpecOther);
         } else if (child->shouldSpeculateInteger())
             speculateInt32Unary(node);
         else if (child->shouldSpeculateNumber())
@@ -1331,7 +1331,7 @@ bool AbstractState::execute(unsigned indexInBlock)
         }
         
         if (isObjectSpeculation(child->prediction())) {
-            source.filter(SpecObjectMask);
+            source.filter(SpecObject);
             destination = source;
             break;
         }

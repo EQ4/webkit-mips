@@ -89,6 +89,7 @@ fast/js/dfg-array-pop-value-clearing
 fast/js/dfg-array-push-bad-time
 fast/js/dfg-array-push-slow-put
 fast/js/dfg-bool-to-int32-reuse
+fast/js/dfg-branch-logical-not-peephole-around-osr-exit
 fast/js/dfg-branch-not-fail
 fast/js/dfg-cfa-merge-with-dead-use-at-tail
 fast/js/dfg-cfg-simplify-phantom-get-local-on-same-block-set-local
@@ -167,7 +168,6 @@ fast/js/dfg-obvious-constant-cfa
 fast/js/dfg-osr-entry-hoisted-clobbered-structure-check
 fast/js/dfg-other-branch
 fast/js/dfg-phantom-get-local
-fast/js/dfg-poison-fuzz
 fast/js/dfg-proto-access-inline-osr-exit
 fast/js/dfg-proven-sqrt-backwards-propagation
 fast/js/dfg-put-by-id-prototype-check

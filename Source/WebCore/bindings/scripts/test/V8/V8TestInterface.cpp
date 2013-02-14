@@ -131,6 +131,24 @@ static void supplementalStr2AttrSetter(v8::Local<v8::String> name, v8::Local<v8:
 
 #if ENABLE(Condition11) || ENABLE(Condition12)
 
+static v8::Handle<v8::Value> supplementalStr3AttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+        return V8TestInterface::supplementalStr3AttrGetterCustom(name, info);
+}
+
+#endif // ENABLE(Condition11) || ENABLE(Condition12)
+
+#if ENABLE(Condition11) || ENABLE(Condition12)
+
+static void supplementalStr3AttrSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+        V8TestInterface::supplementalStr3AttrSetterCustom(name, value, info);
+}
+
+#endif // ENABLE(Condition11) || ENABLE(Condition12)
+
+#if ENABLE(Condition11) || ENABLE(Condition12)
+
 static v8::Handle<v8::Value> supplementalNodeAttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     TestInterface* imp = V8TestInterface::toNative(info.Holder());
@@ -187,6 +205,15 @@ static v8::Handle<v8::Value> supplementalMethod2Callback(const v8::Arguments& ar
 
 #if ENABLE(Condition11) || ENABLE(Condition12)
 
+static v8::Handle<v8::Value> supplementalMethod3Callback(const v8::Arguments& args)
+{
+    return V8TestInterface::supplementalMethod3CallbackCustom(args);
+}
+
+#endif // ENABLE(Condition11) || ENABLE(Condition12)
+
+#if ENABLE(Condition11) || ENABLE(Condition12)
+
 static v8::Handle<v8::Value> supplementalMethod4Callback(const v8::Arguments& args)
 {
     TestSupplemental::supplementalMethod4();
@@ -216,7 +243,7 @@ static const V8DOMConfiguration::BatchedAttribute V8TestInterfaceAttrs[] = {
 #endif // ENABLE(Condition11) || ENABLE(Condition12)
 #if ENABLE(Condition11) || ENABLE(Condition12)
     // Attribute 'supplementalStr3' (Type: 'attribute' ExtAttr: 'CustomSetter CustomGetter Conditional ImplementedBy')
-    {"supplementalStr3", V8TestInterface::supplementalStr3AccessorGetter, V8TestInterface::supplementalStr3AccessorSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    {"supplementalStr3", TestInterfaceV8Internal::supplementalStr3AttrGetter, TestInterfaceV8Internal::supplementalStr3AttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
 #endif // ENABLE(Condition11) || ENABLE(Condition12)
 #if ENABLE(Condition11) || ENABLE(Condition12)
     // Attribute 'supplementalNode' (Type: 'attribute' ExtAttr: 'Conditional ImplementedBy')
@@ -229,7 +256,7 @@ static const V8DOMConfiguration::BatchedCallback V8TestInterfaceCallbacks[] = {
     {"supplementalMethod1", TestInterfaceV8Internal::supplementalMethod1Callback},
 #endif
 #if ENABLE(Condition11) || ENABLE(Condition12)
-    {"supplementalMethod3", V8TestInterface::supplementalMethod3Callback},
+    {"supplementalMethod3", TestInterfaceV8Internal::supplementalMethod3Callback},
 #endif
 };
 

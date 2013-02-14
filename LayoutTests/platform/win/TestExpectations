@@ -58,6 +58,9 @@ fast/css/image-set-parsing-invalid.html
 fast/css/cursor-parsing-image-set.html
 fast/events/mouse-cursor-image-set.html
 
+# X-Content-Type-Options (ENABLE_NOSNIFF) is not enabled.
+http/tests/security/contentTypeOptions
+
 # https://bugs.webkit.org/show_bug.cgi?id=77645
 css3/filters/filtered-compositing-descendant.html
 
@@ -1647,9 +1650,6 @@ fast/events/platform-wheelevent-paging-y-in-non-scrolling-page.html
 fast/events/platform-wheelevent-paging-y-in-scrolling-div.html
 fast/events/platform-wheelevent-paging-y-in-scrolling-page.html
 
-# Web Intents is not yet enabled.
-webintents/
-
 # Pointer Lock is not implemented.
 pointer-lock/
 http/tests/pointer-lock/
@@ -2409,9 +2409,10 @@ css3/flexbox/flexbox-baseline.html
 #https://bugs.webkit.org/show_bug.cgi?id=99878
 css3/flexbox/flexbox-baseline-margins.html
 
-# css3-conditionals support is not yet enabled. http://webkit.org/b/86146 http://webkit.org/b/104822
+# css3-conditionals support is not yet enabled. http://webkit.org/b/86146 http://webkit.org/b/104822 http://webkit.org/b/100324
 css3/supports.html
 css3/supports-cssom.html
+css3/supports-dom-api.html
 
 # https://bugs.webkit.org/show_bug.cgi?id=98169
 http/tests/inspector/stacktraces
@@ -2527,6 +2528,7 @@ media/track/track-user-preferences.html
 media/video-controls-captions-trackmenu-localized.html
 media/video-controls-captions-trackmenu-sorted.html
 media/video-controls-captions-trackmenu.html
+media/video-controls-captions-trackmenu-hide-on-click.html
 media/video-controls-visible-exiting-fullscreen.html
 
 # Fails on JSC platforms due to gc timing issues

@@ -41,7 +41,7 @@
 
 namespace WebCore {
 
-v8::Handle<v8::Value> V8History::stateAccessorGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+v8::Handle<v8::Value> V8History::stateAttrGetterCustom(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     History* history = V8History::toNative(info.Holder());
 
@@ -57,7 +57,7 @@ v8::Handle<v8::Value> V8History::stateAccessorGetter(v8::Local<v8::String> name,
     return value;
 }
 
-v8::Handle<v8::Value> V8History::pushStateCallback(const v8::Arguments& args)
+v8::Handle<v8::Value> V8History::pushStateCallbackCustom(const v8::Arguments& args)
 {
     bool didThrow = false;
     RefPtr<SerializedScriptValue> historyState = SerializedScriptValue::create(args[0], 0, 0, didThrow, args.GetIsolate());
@@ -74,7 +74,7 @@ v8::Handle<v8::Value> V8History::pushStateCallback(const v8::Arguments& args)
     return setDOMException(ec, args.GetIsolate());
 }
 
-v8::Handle<v8::Value> V8History::replaceStateCallback(const v8::Arguments& args)
+v8::Handle<v8::Value> V8History::replaceStateCallbackCustom(const v8::Arguments& args)
 {
     bool didThrow = false;
     RefPtr<SerializedScriptValue> historyState = SerializedScriptValue::create(args[0], 0, 0, didThrow, args.GetIsolate());

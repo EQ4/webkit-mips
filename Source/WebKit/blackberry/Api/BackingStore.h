@@ -61,6 +61,9 @@ public:
     void suspendBackingStoreUpdates();
     void resumeBackingStoreUpdates();
 
+    void suspendGeometryUpdates();
+    void resumeGeometryUpdates();
+
     void suspendScreenUpdates();
     void resumeScreenUpdates(BackingStore::ResumeUpdateOperation);
 
@@ -72,8 +75,6 @@ public:
 
     bool hasBlitJobs() const;
     void blitOnIdle();
-
-    bool isDirectRenderingToWindow() const;
 
     void acquireBackingStoreMemory();
     void releaseOwnedBackingStoreMemory();

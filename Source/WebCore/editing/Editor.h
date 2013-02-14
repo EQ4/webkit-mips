@@ -96,9 +96,16 @@ public:
     TextCheckerClient* textChecker() const;
 
     Frame* frame() const { return m_frame; }
+
 #if ENABLE(DELETION_UI)
     DeleteButtonController* deleteButtonController() const { return m_deleteButtonController.get(); }
+    PassRefPtr<Range> avoidIntersectionWithDeleteButtonController(const Range*) const;
+    VisibleSelection avoidIntersectionWithDeleteButtonController(const VisibleSelection&) const;
+#else
+    PassRefPtr<Range> avoidIntersectionWithDeleteButtonController(Range* range) const { return range; }
+    VisibleSelection avoidIntersectionWithDeleteButtonController(const VisibleSelection& selection) const { return selection; }
 #endif
+
     CompositeEditCommand* lastEditCommand() { return m_lastEditCommand.get(); }
 
     void handleKeyboardEvent(KeyboardEvent*);

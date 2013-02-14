@@ -289,6 +289,7 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document* docum
 #if ENABLE(VIDEO_TRACK)
     , m_tracksAreReady(true)
     , m_haveVisibleTextTrack(false)
+    , m_processingPreferenceChange(false)
     , m_lastTextTrackUpdateTime(-1)
     , m_textTracks(0)
     , m_ignoreTrackDisplayUpdate(0)
@@ -1972,8 +1973,14 @@ bool HTMLMediaElement::mediaPlayerKeyNeeded(MediaPlayer*, const String& keySyste
 #endif
 
 #if ENABLE(ENCRYPTED_MEDIA_V2)
-void HTMLMediaElement::mediaPlayerKeyNeeded(MediaPlayer*, Uint8Array* initData)
+bool HTMLMediaElement::mediaPlayerKeyNeeded(MediaPlayer*, Uint8Array* initData)
 {
+    if (!hasEventListeners("webkitneedkey")) {
+        m_error = MediaError::create(MediaError::MEDIA_ERR_ENCRYPTED);
+        scheduleEvent(eventNames().errorEvent);
+        return false;
+    }
+
     MediaKeyNeededEventInit initializer;
     initializer.initData = initData;
     initializer.bubbles = false;
@@ -1982,6 +1989,8 @@ void HTMLMediaElement::mediaPlayerKeyNeeded(MediaPlayer*, Uint8Array* initData)
     RefPtr<Event> event = MediaKeyNeededEvent::create(eventNames().webkitneedkeyEvent, initializer);
     event->setTarget(this);
     m_asyncEventQueue->enqueueEvent(event.release());
+
+    return true;
 }
 
 void HTMLMediaElement::setMediaKeys(MediaKeys* mediaKeys)
@@ -2782,7 +2791,7 @@ float HTMLMediaElement::percentLoaded() const
         return 0;
     float duration = m_player->duration();
 
-    if (!duration || isinf(duration))
+    if (!duration || std::isinf(duration))
         return 0;
 
     float buffered = 0;
@@ -3014,7 +3023,7 @@ bool HTMLMediaElement::userIsInterestedInThisTrackKind(String kind) const
     return false;
 }
 
-void HTMLMediaElement::configureTextTrackGroup(const TrackGroup& group) const
+void HTMLMediaElement::configureTextTrackGroup(const TrackGroup& group)
 {
     ASSERT(group.tracks.size());
 
@@ -3031,11 +3040,18 @@ void HTMLMediaElement::configureTextTrackGroup(const TrackGroup& group) const
     }
 
     // First, find the track in the group that should be enabled (if any).
+    Vector<RefPtr<TextTrack> > currentlyEnabledTracks;
     RefPtr<TextTrack> trackToEnable;
     RefPtr<TextTrack> defaultTrack;
     RefPtr<TextTrack> fallbackTrack;
-    for (size_t i = 0; !trackToEnable && i < group.tracks.size(); ++i) {
+    for (size_t i = 0; i < group.tracks.size(); ++i) {
         RefPtr<TextTrack> textTrack = group.tracks[i];
+
+        if (m_processingPreferenceChange && textTrack->mode() == TextTrack::showingKeyword())
+            currentlyEnabledTracks.append(textTrack);
+
+        if (trackToEnable)
+            continue;
 
         if (userIsInterestedInThisTrackKind(textTrack->kind())) {
             // * If the text track kind is { [subtitles or captions] [descriptions] } and the user has indicated an interest in having a
@@ -3074,6 +3090,15 @@ void HTMLMediaElement::configureTextTrackGroup(const TrackGroup& group) const
     // because the user has explicitly stated a preference for this kind of track.
     if (!trackToEnable && fallbackTrack)
         trackToEnable = fallbackTrack;
+
+    if (currentlyEnabledTracks.size()) {
+        m_processingPreferenceChange = false;
+        for (size_t i = 0; i < currentlyEnabledTracks.size(); ++i) {
+            RefPtr<TextTrack> textTrack = currentlyEnabledTracks[i];
+            if (textTrack != trackToEnable)
+                textTrack->setMode(TextTrack::disabledKeyword());
+        }
+    }
 
     if (trackToEnable)
         trackToEnable->setMode(TextTrack::showingKeyword());
@@ -3397,7 +3422,7 @@ void HTMLMediaElement::mediaPlayerTimeChanged(MediaPlayer*)
     
     // When the current playback position reaches the end of the media resource when the direction of
     // playback is forwards, then the user agent must follow these steps:
-    if (!isnan(dur) && dur && now >= dur && m_playbackRate > 0) {
+    if (!std::isnan(dur) && dur && now >= dur && m_playbackRate > 0) {
         // If the media element has a loop attribute specified and does not have a current media controller,
         if (loop() && !m_mediaController) {
             m_sentEndEvent = false;
@@ -3653,7 +3678,7 @@ bool HTMLMediaElement::couldPlayIfEnoughData() const
 bool HTMLMediaElement::endedPlayback() const
 {
     float dur = duration();
-    if (!m_player || isnan(dur))
+    if (!m_player || std::isnan(dur))
         return false;
 
     // 4.8.10.8 Playing the media resource
@@ -4413,28 +4438,23 @@ void HTMLMediaElement::captionPreferencesChanged()
     if (!isVideo())
         return;
 
+    m_processingPreferenceChange = true;
+    setClosedCaptionsVisible(userPrefersCaptions());
+
     if (hasMediaControls())
         mediaControls()->textTrackPreferencesChanged();
-    
-    markCaptionAndSubtitleTracksAsUnconfigured();
 }
 
 void HTMLMediaElement::markCaptionAndSubtitleTracksAsUnconfigured()
 {
-    // Mark all track elements as not "configured" so that configureTextTracks()
+    // Mark all tracks as not "configured" so that configureTextTracks()
     // will reconsider which tracks to display in light of new user preferences
     // (e.g. default tracks should not be displayed if the user has turned off
     // captions and non-default tracks should be displayed based on language
     // preferences if the user has turned captions on).
-    for (RefPtr<Node> node = firstChild(); node; node = node->nextSibling()) {
-        if (!node->hasTagName(trackTag))
-            continue;
+    for (unsigned i = 0; i < m_textTracks->length(); ++i) {
         
-        HTMLTrackElement* trackElement = static_cast<HTMLTrackElement*>(node.get());
-        RefPtr<TextTrack> textTrack = trackElement->track();
-        if (!textTrack)
-            continue;
-        
+        RefPtr<TextTrack> textTrack = m_textTracks->item(i);
         String kind = textTrack->kind();
 
         if (kind == TextTrack::subtitlesKeyword() || kind == TextTrack::captionsKeyword())

@@ -254,27 +254,41 @@ void Connection::setShouldExitOnSyncMessageSendFailure(bool shouldExitOnSyncMess
     m_shouldExitOnSyncMessageSendFailure = shouldExitOnSyncMessageSendFailure;
 }
 
-void Connection::addQueueClient(QueueClient* queueClient)
+void Connection::addWorkQueueMessageReceiver(StringReference messageReceiverName, WorkQueue* workQueue, WorkQueueMessageReceiver* workQueueMessageReceiver)
 {
-    m_connectionQueue->dispatch(WTF::bind(&Connection::addQueueClientOnWorkQueue, this, queueClient));
+    ASSERT(RunLoop::current() == m_clientRunLoop);
+    ASSERT(!m_isConnected);
+
+    m_connectionQueue->dispatch(bind(&Connection::addWorkQueueMessageReceiverOnConnectionWorkQueue, this, messageReceiverName, RefPtr<WorkQueue>(workQueue), RefPtr<WorkQueueMessageReceiver>(workQueueMessageReceiver)));
 }
 
-void Connection::removeQueueClient(QueueClient* queueClient)
+void Connection::removeWorkQueueMessageReceiver(StringReference messageReceiverName)
 {
-    m_connectionQueue->dispatch(WTF::bind(&Connection::removeQueueClientOnWorkQueue, this, queueClient));
+    ASSERT(RunLoop::current() == m_clientRunLoop);
+
+    m_connectionQueue->dispatch(bind(&Connection::removeWorkQueueMessageReceiverOnConnectionWorkQueue, this, messageReceiverName));
 }
 
-void Connection::addQueueClientOnWorkQueue(QueueClient* queueClient)
+void Connection::addWorkQueueMessageReceiverOnConnectionWorkQueue(StringReference messageReceiverName, WorkQueue* workQueue, WorkQueueMessageReceiver* workQueueMessageReceiver)
 {
-    ASSERT(!m_connectionQueueClients.contains(queueClient));
-    m_connectionQueueClients.append(queueClient);
+    ASSERT(!m_workQueueMessageReceivers.contains(messageReceiverName));
+    m_workQueueMessageReceivers.add(messageReceiverName, std::make_pair(workQueue, workQueueMessageReceiver));
 }
 
-void Connection::removeQueueClientOnWorkQueue(QueueClient* queueClient)
+void Connection::removeWorkQueueMessageReceiverOnConnectionWorkQueue(StringReference messageReceiverName)
 {
-    size_t index = m_connectionQueueClients.find(queueClient);
-    ASSERT(index != notFound);
-    m_connectionQueueClients.remove(index);
+    ASSERT(m_workQueueMessageReceivers.contains(messageReceiverName));
+    m_workQueueMessageReceivers.remove(messageReceiverName);
+}
+
+void Connection::dispatchWorkQueueMessageReceiverMessage(WorkQueueMessageReceiver* workQueueMessageReceiver, MessageDecoder* incomingMessageDecoder)
+{
+    OwnPtr<MessageDecoder> decoder = adoptPtr(incomingMessageDecoder);
+
+    // FIXME: Handle sync messages.
+    ASSERT(!decoder->isSyncMessage());
+
+    workQueueMessageReceiver->didReceiveMessage(this, *decoder);
 }
 
 void Connection::setDidCloseOnConnectionWorkQueueCallback(DidCloseOnConnectionWorkQueueCallback callback)
@@ -599,13 +613,11 @@ void Connection::processIncomingMessage(PassOwnPtr<MessageDecoder> incomingMessa
         }
     }
 
-    // Hand off the message to the connection queue clients.
-    for (size_t i = 0; i < m_connectionQueueClients.size(); ++i) {
-        m_connectionQueueClients[i]->didReceiveMessageOnConnectionWorkQueue(this, message);
-        if (!message) {
-            // A connection queue client handled the message, our work here is done.
-            return;
-        }
+    // Check if any work queue message receivers are interested in this message.
+    HashMap<StringReference, std::pair<RefPtr<WorkQueue>, RefPtr<WorkQueueMessageReceiver> > >::const_iterator it = m_workQueueMessageReceivers.find(message->messageReceiverName());
+    if (it != m_workQueueMessageReceivers.end()) {
+        it->value.first->dispatch(bind(&Connection::dispatchWorkQueueMessageReceiverMessage, this, it->value.second, message.release().leakPtr()));
+        return;
     }
 
     enqueueIncomingMessage(message.release());
@@ -634,9 +646,6 @@ void Connection::connectionDidClose()
             iter->value->semaphore.signal();
     }
 
-    for (size_t i = 0; i < m_connectionQueueClients.size(); ++i)
-        m_connectionQueueClients[i]->didCloseOnConnectionWorkQueue(this);
-
     if (m_didCloseOnConnectionWorkQueueCallback)
         m_didCloseOnConnectionWorkQueueCallback(this);
 
@@ -649,7 +658,6 @@ void Connection::dispatchConnectionDidClose()
     // then the client will be null here.
     if (!m_client)
         return;
-
 
     // Because we define a connection as being "valid" based on wheter it has a null client, we null out
     // the client before calling didClose here. Otherwise, sendSync will try to send a message to the connection and

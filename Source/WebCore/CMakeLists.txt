@@ -318,6 +318,7 @@ set(WebCore_IDL_FILES
     css/CSSSupportsRule.idl
     css/CSSValue.idl
     css/CSSValueList.idl
+    css/DOMWindowCSS.idl
     css/MediaList.idl
     css/MediaQueryList.idl
     css/RGBColor.idl
@@ -1063,6 +1064,7 @@ set(WebCore_SOURCES
     css/CSSValue.cpp
     css/CSSValueList.cpp
     css/CSSValuePool.cpp
+    css/DOMWindowCSS.cpp
     css/DocumentRuleSets.cpp
     css/FontFeatureValue.cpp
     css/FontValue.cpp
@@ -1161,7 +1163,6 @@ set(WebCore_SOURCES
     dom/DocumentStyleSheetCollection.cpp
     dom/DocumentType.cpp
     dom/Element.cpp
-    dom/ElementAttributeData.cpp
     dom/ElementRareData.cpp
     dom/ElementShadow.cpp
     dom/EntityReference.cpp
@@ -1746,6 +1747,7 @@ set(WebCore_SOURCES
 
     page/AutoscrollController.cpp
     page/BarInfo.cpp
+    page/CaptionUserPreferences.cpp
     page/Chrome.cpp
     page/Console.cpp
     page/ContentSecurityPolicy.cpp
@@ -2493,6 +2495,7 @@ set(WebCore_SOURCES
 
     svg/graphics/SVGImage.cpp
     svg/graphics/SVGImageCache.cpp
+    svg/graphics/SVGImageForContainer.cpp
 
     svg/graphics/filters/SVGFEImage.cpp
     svg/graphics/filters/SVGFilter.cpp

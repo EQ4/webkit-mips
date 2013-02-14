@@ -43,61 +43,115 @@ namespace WebCore {
 
 using namespace HTMLNames;
 
-static bool isStartTag(const HTMLToken& token)
+static bool isStartTag(HTMLToken::Type type)
 {
-    return token.type() == HTMLTokenTypes::StartTag;
+    return type == HTMLToken::StartTag;
 }
 
-static bool isStartOrEndTag(const HTMLToken& token)
+static bool isStartOrEndTag(HTMLToken::Type type)
 {
-    return token.type() == HTMLTokenTypes::EndTag || isStartTag(token);
+    return type == HTMLToken::EndTag || isStartTag(type);
 }
 
-class StartTagScanner {
+TokenPreloadScanner::TagId TokenPreloadScanner::identifierFor(const AtomicString& tagName)
+{
+    if (tagName == imgTag)
+        return ImgTagId;
+    if (tagName == inputTag)
+        return InputTagId;
+    if (tagName == linkTag)
+        return LinkTagId;
+    if (tagName == scriptTag)
+        return ScriptTagId;
+    if (tagName == styleTag)
+        return StyleTagId;
+    if (tagName == baseTag)
+        return BaseTagId;
+    if (tagName == templateTag)
+        return TemplateTagId;
+    return UnknownTagId;
+}
+
+String TokenPreloadScanner::inititatorFor(TagId tagId)
+{
+    switch (tagId) {
+    case ImgTagId:
+        return "img";
+    case InputTagId:
+        return "input";
+    case LinkTagId:
+        return "link";
+    case ScriptTagId:
+        return "script";
+    case UnknownTagId:
+    case StyleTagId:
+    case BaseTagId:
+    case TemplateTagId:
+        ASSERT_NOT_REACHED();
+        return "unknown";
+    }
+    ASSERT_NOT_REACHED();
+    return "unknown";
+}
+
+class TokenPreloadScanner::StartTagScanner {
 public:
-    explicit StartTagScanner(const AtomicString& tagName, const HTMLToken::AttributeList& attributes)
-        : m_tagName(tagName)
+    explicit StartTagScanner(TagId tagId)
+        : m_tagId(tagId)
         , m_linkIsStyleSheet(false)
         , m_linkMediaAttributeIsScreen(true)
         , m_inputIsImage(false)
     {
-        processAttributes(attributes);
     }
 
     void processAttributes(const HTMLToken::AttributeList& attributes)
     {
-        if (m_tagName != imgTag
-            && m_tagName != inputTag
-            && m_tagName != linkTag
-            && m_tagName != scriptTag)
+        ASSERT(isMainThread());
+
+        if (m_tagId >= UnknownTagId)
             return;
 
-        for (HTMLToken::AttributeList::const_iterator iter = attributes.begin();
-             iter != attributes.end(); ++iter) {
-            AtomicString attributeName(iter->m_name.data(), iter->m_name.size());
-            String attributeValue = StringImpl::create8BitIfPossible(iter->m_value.data(), iter->m_value.size());
+        for (HTMLToken::AttributeList::const_iterator iter = attributes.begin(); iter != attributes.end(); ++iter) {
+            AtomicString attributeName(iter->name);
+            String attributeValue = StringImpl::create8BitIfPossible(iter->value);
+            processAttribute(attributeName, attributeValue);
+        }
+    }
 
-            if (attributeName == charsetAttr)
-                m_charset = attributeValue;
+    PassOwnPtr<PreloadRequest> createPreloadRequest(const KURL& predictedBaseURL)
+    {
+        if (!shouldPreload())
+            return nullptr;
 
-            if (m_tagName == scriptTag || m_tagName == imgTag) {
-                if (attributeName == srcAttr)
-                    setUrlToLoad(attributeValue);
-                else if (attributeName == crossoriginAttr && !attributeValue.isNull())
-                    m_crossOriginMode = stripLeadingAndTrailingHTMLSpaces(attributeValue);
-            } else if (m_tagName == linkTag) {
-                if (attributeName == hrefAttr)
-                    setUrlToLoad(attributeValue);
-                else if (attributeName == relAttr)
-                    m_linkIsStyleSheet = relAttributeIsStyleSheet(attributeValue);
-                else if (attributeName == mediaAttr)
-                    m_linkMediaAttributeIsScreen = linkMediaAttributeIsScreen(attributeValue);
-            } else if (m_tagName == inputTag) {
-                if (attributeName == srcAttr)
-                    setUrlToLoad(attributeValue);
-                else if (attributeName == typeAttr)
-                    m_inputIsImage = equalIgnoringCase(attributeValue, InputTypeNames::image());
-            }
+        OwnPtr<PreloadRequest> request = PreloadRequest::create(inititatorFor(m_tagId), m_urlToLoad, predictedBaseURL, resourceType());
+        request->setCrossOriginModeAllowsCookies(crossOriginModeAllowsCookies());
+        request->setCharset(charset());
+        return request.release();
+    }
+
+private:
+    void processAttribute(const String& attributeName, const String& attributeValue)
+    {
+        if (threadSafeMatch(attributeName, charsetAttr))
+            m_charset = attributeValue;
+
+        if (m_tagId == ScriptTagId || m_tagId == ImgTagId) {
+            if (threadSafeMatch(attributeName, srcAttr))
+                setUrlToLoad(attributeValue);
+            else if (threadSafeMatch(attributeName, crossoriginAttr) && !attributeValue.isNull())
+                m_crossOriginMode = stripLeadingAndTrailingHTMLSpaces(attributeValue);
+        } else if (m_tagId == LinkTagId) {
+            if (threadSafeMatch(attributeName, hrefAttr))
+                setUrlToLoad(attributeValue);
+            else if (threadSafeMatch(attributeName, relAttr))
+                m_linkIsStyleSheet = relAttributeIsStyleSheet(attributeValue);
+            else if (threadSafeMatch(attributeName, mediaAttr))
+                m_linkMediaAttributeIsScreen = linkMediaAttributeIsScreen(attributeValue);
+        } else if (m_tagId == InputTagId) {
+            if (threadSafeMatch(attributeName, srcAttr))
+                setUrlToLoad(attributeValue);
+            else if (threadSafeMatch(attributeName, typeAttr))
+                m_inputIsImage = equalIgnoringCase(attributeValue, InputTypeNames::image());
         }
     }
 
@@ -132,18 +186,18 @@ public:
     const String& charset() const
     {
         // FIXME: Its not clear that this if is needed, the loader probably ignores charset for image requests anyway.
-        if (m_tagName == imgTag)
+        if (m_tagId == ImgTagId)
             return emptyString();
         return m_charset;
     }
 
     CachedResource::Type resourceType() const
     {
-        if (m_tagName == scriptTag)
+        if (m_tagId == ScriptTagId)
             return CachedResource::Script;
-        if (m_tagName == imgTag || (m_tagName == inputTag && m_inputIsImage))
+        if (m_tagId == ImgTagId || (m_tagId == InputTagId && m_inputIsImage))
             return CachedResource::ImageResource;
-        if (m_tagName == linkTag && m_linkIsStyleSheet && m_linkMediaAttributeIsScreen)
+        if (m_tagId == LinkTagId && m_linkIsStyleSheet && m_linkMediaAttributeIsScreen)
             return CachedResource::CSSStyleSheet;
         ASSERT_NOT_REACHED();
         return CachedResource::RawResource;
@@ -154,35 +208,21 @@ public:
         if (m_urlToLoad.isEmpty())
             return false;
 
-        if (m_tagName == linkTag && (!m_linkIsStyleSheet || !m_linkMediaAttributeIsScreen))
+        if (m_tagId == LinkTagId && (!m_linkIsStyleSheet || !m_linkMediaAttributeIsScreen))
             return false;
 
-        if (m_tagName == inputTag && !m_inputIsImage)
+        if (m_tagId == InputTagId && !m_inputIsImage)
             return false;
+
         return true;
     }
-
-    PassOwnPtr<PreloadRequest> createPreloadRequest(const KURL& predictedBaseURL)
-    {
-        if (!shouldPreload())
-            return nullptr;
-
-        OwnPtr<PreloadRequest> request = PreloadRequest::create(m_tagName, m_urlToLoad, predictedBaseURL, resourceType());
-        request->setCrossOriginModeAllowsCookies(crossOriginModeAllowsCookies());
-        request->setCharset(charset());
-        return request.release();
-    }
-
-    const AtomicString& tagName() const { return m_tagName; }
-
-private:
 
     bool crossOriginModeAllowsCookies()
     {
         return m_crossOriginMode.isNull() || equalIgnoringCase(m_crossOriginMode, "use-credentials");
     }
 
-    AtomicString m_tagName;
+    TagId m_tagId;
     String m_urlToLoad;
     String m_charset;
     String m_crossOriginMode;
@@ -191,47 +231,24 @@ private:
     bool m_inputIsImage;
 };
 
-HTMLPreloadScanner::HTMLPreloadScanner(const HTMLParserOptions& options, const KURL& documentURL)
-    : m_tokenizer(HTMLTokenizer::create(options))
+TokenPreloadScanner::TokenPreloadScanner(const KURL& documentURL)
+    : m_documentURL(documentURL)
     , m_inStyle(false)
-    , m_documentURL(documentURL)
 #if ENABLE(TEMPLATE_ELEMENT)
     , m_templateCount(0)
 #endif
 {
 }
 
-void HTMLPreloadScanner::appendToEnd(const SegmentedString& source)
+TokenPreloadScanner::~TokenPreloadScanner()
 {
-    m_source.append(source);
-}
-
-// This function exists for convenience on the main thread and is not used by the background-thread preload scanner.
-void HTMLPreloadScanner::scan(HTMLResourcePreloader* preloader, const KURL& startingBaseElementURL)
-{
-    ASSERT(isMainThread()); // HTMLTokenizer::updateStateFor only works on the main thread.
-    // When we start scanning, our best prediction of the baseElementURL is the real one!
-    if (!startingBaseElementURL.isEmpty())
-        m_predictedBaseElementURL = startingBaseElementURL;
-
-    Vector<OwnPtr<PreloadRequest> > requests;
-    // Note: m_token is only used from this function and for the main thread.
-    // All other functions are passed a token.
-    while (m_tokenizer->nextToken(m_source, m_token)) {
-        if (isStartTag(m_token))
-            m_tokenizer->updateStateFor(AtomicString(m_token.name().data(), m_token.name().size()));
-        processToken(m_token, requests);
-        m_token.clear();
-    }
-    for (size_t i = 0; i < requests.size(); i++)
-        preloader->preload(requests[i].release());
 }
 
 #if ENABLE(TEMPLATE_ELEMENT)
-bool HTMLPreloadScanner::processPossibleTemplateTag(const AtomicString& tagName, const HTMLToken& token)
+bool TokenPreloadScanner::processPossibleTemplateTag(TagId tagId, HTMLToken::Type type)
 {
-    if (isStartOrEndTag(token) && tagName == templateTag) {
-        if (isStartTag(token))
+    if (isStartOrEndTag(type) && tagId == TemplateTagId) {
+        if (isStartTag(type))
             m_templateCount++;
         else
             m_templateCount--;
@@ -242,66 +259,107 @@ bool HTMLPreloadScanner::processPossibleTemplateTag(const AtomicString& tagName,
 }
 #endif
 
-bool HTMLPreloadScanner::processPossibleStyleTag(const AtomicString& tagName, const HTMLToken& token)
+bool TokenPreloadScanner::processPossibleStyleTag(TagId tagId, HTMLToken::Type type)
 {
-    ASSERT(isStartOrEndTag(token));
-    if (tagName == styleTag) {
-        m_inStyle = isStartTag(token);
-        if (!m_inStyle)
-            m_cssScanner.reset();
-        return true;
-    }
-    return false;
+    ASSERT(isStartOrEndTag(type));
+    if (tagId != StyleTagId)
+        return false;
+
+    m_inStyle = isStartTag(type);
+
+    if (!m_inStyle)
+        m_cssScanner.reset();
+
+    return true;
 }
 
-bool HTMLPreloadScanner::processPossibleBaseTag(const AtomicString& tagName, const HTMLToken& token)
+bool TokenPreloadScanner::processPossibleBaseTag(TagId tagId, const HTMLToken& token)
 {
-    ASSERT(isStartTag(token));
-    if (tagName == baseTag) {
-        // The first <base> element is the one that wins.
-        if (!m_predictedBaseElementURL.isEmpty())
-            return true;
+    ASSERT(isStartTag(token.type()));
+    if (tagId != BaseTagId)
+        return false;
 
-        for (HTMLToken::AttributeList::const_iterator iter = token.attributes().begin(); iter != token.attributes().end(); ++iter) {
-            AtomicString attributeName(iter->m_name.data(), iter->m_name.size());
-            if (attributeName == hrefAttr) {
-                String hrefValue = StringImpl::create8BitIfPossible(iter->m_value.data(), iter->m_value.size());
-                m_predictedBaseElementURL = KURL(m_documentURL, stripLeadingAndTrailingHTMLSpaces(hrefValue));
-                break;
-            }
+    // The first <base> element is the one that wins.
+    if (!m_predictedBaseElementURL.isEmpty())
+        return true;
+
+    for (HTMLToken::AttributeList::const_iterator iter = token.attributes().begin(); iter != token.attributes().end(); ++iter) {
+        AtomicString attributeName(iter->name);
+        if (attributeName == hrefAttr) {
+            String hrefValue = StringImpl::create8BitIfPossible(iter->value);
+            m_predictedBaseElementURL = KURL(m_documentURL, stripLeadingAndTrailingHTMLSpaces(hrefValue));
+            break;
         }
-        return true;
     }
-    return false;
+    return true;
 }
 
-void HTMLPreloadScanner::processToken(const HTMLToken& token, Vector<OwnPtr<PreloadRequest> >& requests)
+void TokenPreloadScanner::scan(const HTMLToken& token, Vector<OwnPtr<PreloadRequest> >& requests)
 {
     // <style> is the only place we search for urls in non-start/end-tag tokens.
     if (m_inStyle) {
-        if (token.type() != HTMLTokenTypes::Character)
+        if (token.type() != HTMLToken::Character)
             return;
-        return m_cssScanner.scan(token, requests);
+        const HTMLToken::DataVector& characters = token.characters();
+        return m_cssScanner.scan(characters.begin(), characters.end(), requests);
     }
-    if (!isStartOrEndTag(token))
+
+    if (!isStartOrEndTag(token.type()))
         return;
 
-    AtomicString tagName(token.name().data(), token.name().size());
+    AtomicString tagName(token.name());
+    TagId tagId = identifierFor(tagName);
+
 #if ENABLE(TEMPLATE_ELEMENT)
-    if (processPossibleTemplateTag(tagName, token))
+    if (processPossibleTemplateTag(tagId, token.type()))
         return;
 #endif
-    if (processPossibleStyleTag(tagName, token))
+    if (processPossibleStyleTag(tagId, token.type()))
         return;
-    if (!isStartTag(token))
+    if (!isStartTag(token.type()))
         return;
-    if (processPossibleBaseTag(tagName, token))
+    if (processPossibleBaseTag(tagId, token))
         return;
 
-    StartTagScanner scanner(tagName, token.attributes());
+    StartTagScanner scanner(tagId);
+    scanner.processAttributes(token.attributes());
     OwnPtr<PreloadRequest> request =  scanner.createPreloadRequest(m_predictedBaseElementURL);
     if (request)
         requests.append(request.release());
+}
+
+HTMLPreloadScanner::HTMLPreloadScanner(const HTMLParserOptions& options, const KURL& documentURL)
+    : m_scanner(documentURL)
+    , m_tokenizer(HTMLTokenizer::create(options))
+{
+}
+
+HTMLPreloadScanner::~HTMLPreloadScanner()
+{
+}
+
+void HTMLPreloadScanner::appendToEnd(const SegmentedString& source)
+{
+    m_source.append(source);
+}
+
+void HTMLPreloadScanner::scan(HTMLResourcePreloader* preloader, const KURL& startingBaseElementURL)
+{
+    ASSERT(isMainThread()); // HTMLTokenizer::updateStateFor only works on the main thread.
+
+    // When we start scanning, our best prediction of the baseElementURL is the real one!
+    if (!startingBaseElementURL.isEmpty())
+        m_scanner.setPredictedBaseElementURL(startingBaseElementURL);
+
+    Vector<OwnPtr<PreloadRequest> > requests;
+    while (m_tokenizer->nextToken(m_source, m_token)) {
+        if (isStartTag(m_token.type()))
+            m_tokenizer->updateStateFor(AtomicString(m_token.name()));
+        m_scanner.scan(m_token, requests);
+        m_token.clear();
+    }
+    for (size_t i = 0; i < requests.size(); i++)
+        preloader->preload(requests[i].release());
 }
 
 }

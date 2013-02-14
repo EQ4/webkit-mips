@@ -36,6 +36,7 @@
 #include "HTMLTokenizer.h"
 #include <wtf/PassOwnPtr.h>
 #include <wtf/RefPtr.h>
+#include <wtf/Vector.h>
 #include <wtf/WeakPtr.h>
 
 namespace WebCore {
@@ -53,14 +54,28 @@ public:
         // Caller must free by calling stop().
     }
 
+    struct Checkpoint {
+        WeakPtr<HTMLDocumentParser> parser;
+        OwnPtr<HTMLToken> token;
+        OwnPtr<HTMLTokenizer> tokenizer;
+        HTMLInputCheckpoint inputCheckpoint;
+        String unparsedInput;
+    };
+
     void append(const String&);
-    void resumeFrom(const WeakPtr<HTMLDocumentParser>&, PassOwnPtr<HTMLToken>, PassOwnPtr<HTMLTokenizer>, HTMLInputCheckpoint);
+    void resumeFrom(PassOwnPtr<Checkpoint>);
     void finish();
     void stop();
 
     void forcePlaintextForTextDocument();
 
 private:
+    enum Namespace {
+        HTML,
+        SVG,
+        MathML
+    };
+
     BackgroundHTMLParser(PassRefPtr<WeakReference<BackgroundHTMLParser> >, const HTMLParserOptions&, const WeakPtr<HTMLDocumentParser>&, PassOwnPtr<XSSAuditor>);
 
     void markEndOfFile();
@@ -68,8 +83,9 @@ private:
     bool simulateTreeBuilder(const CompactHTMLToken&);
 
     void sendTokensToMainThread();
+    bool inForeignContent() const { return m_namespaceStack.last() != HTML; }
 
-    bool m_inForeignContent; // FIXME: We need a stack of foreign content markers.
+    Vector<Namespace, 1> m_namespaceStack;
     WeakPtrFactory<BackgroundHTMLParser> m_weakFactory;
     BackgroundHTMLInputStream m_input;
     HTMLSourceTracker m_sourceTracker;

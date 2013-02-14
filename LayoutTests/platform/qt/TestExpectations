@@ -399,9 +399,6 @@ http/tests/multipart
 fast/hidpi
 svg/as-image/image-respects-deviceScaleFactor.html
 
-# Web Intents is not yet enabled.
-webintents/
-
 # Pointer Lock is not implemented.
 pointer-lock/
 http/tests/pointer-lock/
@@ -481,6 +478,9 @@ webkit.org/b/61138 http/tests/w3c/webperf/submission/Intel/resource-timing
 
 # Missing eventSender.scheduleAsynchronousKeyDown() implementation
 fast/dom/MutationObserver/inline-event-listener.html
+
+# X-Content-Type-Options (ENABLE_NOSNIFF) is not enabled.
+http/tests/security/contentTypeOptions
 
 # =========================================================================== #
 #       Drag and Drop Support in DRT.                                         #
@@ -1354,6 +1354,7 @@ fast/repaint/moving-shadow-on-path.html
 ietestcenter/css3/valuesandunits/units-010.htm
 inspector/audits/audits-panel-functional.html
 http/tests/inspector-enabled/console-clear-arguments-on-frame-navigation.html
+http/tests/inspector-enabled/console-clear-arguments-on-frame-remove.html
 svg/W3C-SVG-1.1/paths-data-03-f.svg
 svg/css/stars-with-shadow.html
 svg/custom/use-on-symbol-inside-pattern.svg
@@ -2102,6 +2103,10 @@ http/tests/loading/preload-slow-loading.php
 http/tests/security/contentSecurityPolicy/media-src-allowed.html
 http/tests/security/contentSecurityPolicy/media-src-blocked.html
 
+# [Qt] Migrate to Ubuntu 12.04. Maybe rebaseline needed.
+css2.1/t0805-c5519-brdr-r-01-e.html
+css2.1/t0905-c5525-fltblck-00-d-ag.html
+
 # [Qt]fast/events/remove-target-in-mouseup* tests fail
 # https://bugs.webkit.org/show_bug.cgi?id=60833
 fast/events/remove-target-in-mouseup-deep.html
@@ -2400,7 +2405,6 @@ Bug(_qt_slow) [ Debug ] editing/selection/dump-as-markup.html [ Pass Slow ]
 Bug(_qt_slow) [ Debug ] fast/js/array-sort-modifying-tostring.html [ Pass Timeout ]
 Bug(_qt_slow) [ Debug ] fast/overflow/lots-of-sibling-inline-boxes.html [ Pass Slow ]
 Bug(_qt_slow) [ Debug ] fast/js/dfg-inline-function-dot-caller.html [ Pass Slow ]
-Bug(_qt_slow) [ Debug ] fast/js/dfg-poison-fuzz.html [ Pass Slow ]
 
 webkit.org/b/62662 [ Debug ] inspector/cookie-parser.html [ Crash Pass ]
 
@@ -2479,6 +2483,7 @@ webkit.org/b/23166 ietestcenter/css3/bordersbackgrounds/border-radius-clip-002.h
 # css3-conditionals support is not yet enabled.
 webkit.org/b/86146 css3/supports.html
 webkit.org/b/104822 css3/supports-cssom.html
+webkit.org/b/100324 css3/supports-dom-api.html
 
 # CSS Device Adaptation is not enabled.
 webkit.org/b/95969 css3/device-adapt [ Skip ]
@@ -2531,6 +2536,7 @@ webkit.org/b/100846 inspector-protocol/debugger-terminate-dedicated-worker-while
 webkit.org/b/101670 media/video-controls-captions-trackmenu.html [ Skip ]
 webkit.org/b/101670 media/video-controls-captions-trackmenu-sorted.html [ Skip ]
 webkit.org/b/101670 media/video-controls-captions-trackmenu-localized.html [ Skip ]
+webkit.org/b/101670 media/video-controls-captions-trackmenu-hide-on-click.html [ Skip ]
 webkit.org/b/101670 media/track/track-user-preferences.html [ Skip ]
 
 # New, but failing test

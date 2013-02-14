@@ -515,12 +515,12 @@ void HTMLInputElement::updateType()
         registerForSuspensionCallbackIfNeeded();
 
     if (didRespectHeightAndWidth != m_inputType->shouldRespectHeightAndWidthAttributes()) {
-        ASSERT(attributeData());
-        if (Attribute* height = getAttributeItem(heightAttr))
+        ASSERT(elementData());
+        if (const Attribute* height = getAttributeItem(heightAttr))
             attributeChanged(heightAttr, height->value());
-        if (Attribute* width = getAttributeItem(widthAttr))
+        if (const Attribute* width = getAttributeItem(widthAttr))
             attributeChanged(widthAttr, width->value());
-        if (Attribute* align = getAttributeItem(alignAttr))
+        if (const Attribute* align = getAttributeItem(alignAttr))
             attributeChanged(alignAttr, align->value());
     }
 

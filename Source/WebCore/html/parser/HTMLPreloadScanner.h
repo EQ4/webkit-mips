@@ -34,42 +34,70 @@
 namespace WebCore {
 
 class HTMLParserOptions;
-class HTMLToken;
 class HTMLTokenizer;
 class SegmentedString;
+
+class TokenPreloadScanner {
+    WTF_MAKE_NONCOPYABLE(TokenPreloadScanner); WTF_MAKE_FAST_ALLOCATED;
+public:
+    explicit TokenPreloadScanner(const KURL& documentURL);
+    ~TokenPreloadScanner();
+
+    void scan(const HTMLToken&, Vector<OwnPtr<PreloadRequest> >& requests);
+
+    void setPredictedBaseElementURL(const KURL& url) { m_predictedBaseElementURL = url; }
+
+private:
+    enum TagId {
+        // These tags are scanned by the StartTagScanner.
+        ImgTagId,
+        InputTagId,
+        LinkTagId,
+        ScriptTagId,
+
+        // These tags are not scanned by the StartTagScanner.
+        UnknownTagId,
+        StyleTagId,
+        BaseTagId,
+        TemplateTagId,
+    };
+
+    class StartTagScanner;
+
+    static TagId identifierFor(const AtomicString& tagName);
+    static String inititatorFor(TagId);
+
+#if ENABLE(TEMPLATE_ELEMENT)
+    bool processPossibleTemplateTag(TagId, HTMLToken::Type);
+#endif
+
+    bool processPossibleStyleTag(TagId, HTMLToken::Type);
+    bool processPossibleBaseTag(TagId, const HTMLToken&);
+
+    CSSPreloadScanner m_cssScanner;
+    KURL m_documentURL;
+    KURL m_predictedBaseElementURL;
+    bool m_inStyle;
+
+#if ENABLE(TEMPLATE_ELEMENT)
+    size_t m_templateCount;
+#endif
+};
 
 class HTMLPreloadScanner {
     WTF_MAKE_NONCOPYABLE(HTMLPreloadScanner); WTF_MAKE_FAST_ALLOCATED;
 public:
-    // HTMLPreloadScanner intentionally does not have a pointer to Document.
     HTMLPreloadScanner(const HTMLParserOptions&, const KURL& documentURL);
+    ~HTMLPreloadScanner();
 
     void appendToEnd(const SegmentedString&);
     void scan(HTMLResourcePreloader*, const KURL& documentBaseElementURL);
 
 private:
-    void processToken(const HTMLToken&, Vector<OwnPtr<PreloadRequest> >& requests);
-
-    bool processStyleCharacters(const HTMLToken&);
-
-#if ENABLE(TEMPLATE_ELEMENT)
-    bool processPossibleTemplateTag(const AtomicString& tagName, const HTMLToken&);
-#endif
-
-    bool processPossibleStyleTag(const AtomicString& tagName, const HTMLToken&);
-    bool processPossibleBaseTag(const AtomicString& tagName, const HTMLToken&);
-
+    TokenPreloadScanner m_scanner;
     SegmentedString m_source;
-    CSSPreloadScanner m_cssScanner;
     HTMLToken m_token;
     OwnPtr<HTMLTokenizer> m_tokenizer;
-    bool m_inStyle;
-    KURL m_documentURL;
-    KURL m_predictedBaseElementURL;
-
-#if ENABLE(TEMPLATE_ELEMENT)
-    size_t m_templateCount;
-#endif
 };
 
 }

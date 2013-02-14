@@ -1364,8 +1364,7 @@ WebInspector.TextEditorMainPanel = function(delegate, textModel, url, syncScroll
     this.element.addEventListener("textInput", this._handleTextInput.bind(this), false);
     this.element.addEventListener("cut", this._handleCut.bind(this), false);
 
-    this._showWhitespace = WebInspector.settings.showWhitespaceInEditor.get();
-    this._handleShowWhitespaceInEditorChange = this._handleShowWhitespaceInEditorChange.bind(this);
+    this._showWhitespace = WebInspector.experimentsSettings.showWhitespaceInEditor.isEnabled();
 
     this._container.addEventListener("focus", this._handleFocused.bind(this), false);
 
@@ -1439,21 +1438,6 @@ WebInspector.TextEditorMainPanel.prototype = {
             selection = selection.collapseToEnd();
         this._restoreSelection(selection);
         return true;
-    },
-
-    _handleShowWhitespaceInEditorChange: function()
-    {
-        this._showWhitespace = WebInspector.settings.showWhitespaceInEditor.get();
-        var visibleFrom = this.scrollTop();
-        var visibleTo = visibleFrom + this.clientHeight();
-
-        if (!visibleTo)
-            return;
-
-        var result = this.findVisibleChunks(visibleFrom, visibleTo);
-        var startLine = this._textChunks[result.start].startLine;
-        var endLine = this._textChunks[result.end - 1].startLine + this._textChunks[result.end - 1].linesCount;
-        this._paintLines(startLine, endLine + 1);
     },
 
     /**
@@ -1531,8 +1515,6 @@ WebInspector.TextEditorMainPanel.prototype = {
 
     wasShown: function()
     {
-        WebInspector.settings.showWhitespaceInEditor.addChangeListener(this._handleShowWhitespaceInEditorChange);
-
         this._boundSelectionChangeListener = this._handleSelectionChange.bind(this);
         document.addEventListener("selectionchange", this._boundSelectionChangeListener, false);
 
@@ -1542,8 +1524,6 @@ WebInspector.TextEditorMainPanel.prototype = {
 
     willHide: function()
     {
-        WebInspector.settings.showWhitespaceInEditor.removeChangeListener(this._handleShowWhitespaceInEditorChange);
-
         document.removeEventListener("selectionchange", this._boundSelectionChangeListener, false);
         delete this._boundSelectionChangeListener;
 
@@ -3424,6 +3404,27 @@ WebInspector.TextEditorMainPanel.BraceHighlightController = function(textEditor,
 
 WebInspector.TextEditorMainPanel.BraceHighlightController.prototype = {
     /**
+     * @param {string} line
+     * @param {number} column
+     * @return {number}
+     */
+    activeBraceColumnForCursorPosition: function(line, column)
+    {
+        var char = line.charAt(column);
+        if (WebInspector.TextUtils.isOpeningBraceChar(char))
+            return column;
+
+        var previousChar = line.charAt(column - 1);
+        if (WebInspector.TextUtils.isBraceChar(previousChar))
+            return column - 1;
+
+        if (WebInspector.TextUtils.isBraceChar(char))
+            return column;
+        else
+            return -1;
+    },
+
+    /**
      * @param {WebInspector.TextRange} selectionRange
      */
     handleSelectionChange: function(selectionRange)
@@ -3440,8 +3441,9 @@ WebInspector.TextEditorMainPanel.BraceHighlightController.prototype = {
         var lineNumber = selectionRange.startLine;
         var column = selectionRange.startColumn;
         var line = this._textModel.line(lineNumber);
-        if (column > 0 && WebInspector.TextUtils.isBraceChar(line.charAt(column - 1)))
-            --column;
+        column = this.activeBraceColumnForCursorPosition(line, column);
+        if (column < 0)
+            return;
 
         var enclosingBraces = this._braceMatcher.enclosingBraces(lineNumber, column);
         if (!enclosingBraces)

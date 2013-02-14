@@ -529,13 +529,10 @@ RenderBlock* RenderBlock::containingColumnsBlock(bool allowAnonymousColumnBlock)
             || curr->isInlineBlockOrInlineTable())
             return 0;
 
-        // FIXME: Table manages its own table parts, most of which are RenderBoxes.
-        // Multi-column code cannot handle splitting the flow in table. Disabling it
-        // to prevent crashes.
-        // Similarly, RenderButton maintains an anonymous block child and overrides
-        // addChild() to prevent itself from having additional direct children. This
-        // causes problems for split flows.
-        if (curr->isTable() || curr->isRenderButton())
+        // FIXME: Tables, RenderButtons, and RenderListItems all do special management
+        // of their children that breaks when the flow is split through them. Disabling
+        // multi-column for them to avoid this problem.
+        if (curr->isTable() || curr->isRenderButton() || curr->isListItem())
             return 0;
         
         RenderBlock* currBlock = toRenderBlock(curr);
@@ -2808,7 +2805,7 @@ void RenderBlock::paintColumnRules(PaintInfo& paintInfo, const LayoutPoint& pain
     EBorderStyle ruleStyle = style()->columnRuleStyle();
     LayoutUnit ruleThickness = style()->columnRuleWidth();
     LayoutUnit colGap = columnGap();
-    bool renderRule = ruleStyle > BHIDDEN && !ruleTransparent && ruleThickness <= colGap;
+    bool renderRule = ruleStyle > BHIDDEN && !ruleTransparent;
     if (!renderRule)
         return;
 

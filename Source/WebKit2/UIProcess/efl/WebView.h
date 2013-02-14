@@ -32,6 +32,7 @@
 #include "WebPageGroup.h"
 #include "WebPageProxy.h"
 #include "WebPreferences.h"
+#include "WebViewClient.h"
 
 namespace WebKit {
 
@@ -56,6 +57,11 @@ public:
     void suspendActiveDOMObjectsAndAnimations();
     void resumeActiveDOMObjectsAndAnimations();
 
+    // View client.
+    void initializeClient(const WKViewClient*);
+    void setViewNeedsDisplay(const WebCore::IntRect&);
+    void didChangeContentsSize(const WebCore::IntSize&);
+
     // FIXME: Remove when possible.
     Evas_Object* evasObject() { return m_evasObject; }
     WebPageProxy* page() { return m_webPageProxy.get(); }
@@ -63,6 +69,7 @@ public:
 private:
     virtual Type type() const { return APIType; }
 
+    WebViewClient m_client;
     RefPtr<WebPageProxy> m_webPageProxy;
     Evas_Object* m_evasObject;
 };

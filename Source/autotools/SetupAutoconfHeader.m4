@@ -4,15 +4,17 @@ AC_DEFINE([WTF_USE_FREETYPE], [1], [ ])
 AC_DEFINE([WTF_USE_HARFBUZZ], [1], [ ])
 AC_DEFINE([WTF_USE_SOUP], [1], [ ])
 AC_DEFINE([WTF_USE_WEBP], [1], [ ])
+AC_DEFINE([WTF_USE_ICU_UNICODE], [1], [ ])
+AC_DEFINE([GST_API_VERSION_1], [1], [Using GStreamer 1.0])
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE", [The gettext catalog name])
 
-if test "$enable_debug_features" = "yes"; then
+if test "$enable_debug" = "yes"; then
     AC_DEFINE([GDK_PIXBUF_DISABLE_DEPRECATED], [1], [ ])
     AC_DEFINE([GDK_DISABLE_DEPRECATED], [1], [ ])
     AC_DEFINE([GTK_DISABLE_DEPRECATED], [1], [ ])
     AC_DEFINE([PANGO_DISABLE_DEPRECATED], [1], [ ])
 else
-    AC_DEFINE([NDEBUG], [1], [Define to disable debugging features])
+    AC_DEFINE([NDEBUG], [1], [Define to disable debugging])
 fi
 
 if test "$os_win32" = "no"; then
@@ -48,12 +50,6 @@ if test "$with_target" = "x11"; then
     AC_DEFINE([WTF_PLATFORM_X11], [1], [Define if target is X11])
 fi
 
-if test "$with_unicode_backend" = "icu"; then
-    AC_DEFINE([WTF_USE_ICU_UNICODE], [1], [ ])
-else
-    AC_DEFINE([WTF_USE_GLIB_UNICODE], [1], [ ])
-fi
-
 if test "$enable_fast_malloc" = "no"; then
     AC_DEFINE([WTF_SYSTEM_MALLOC], [1], [ ])
 fi
@@ -66,19 +62,15 @@ if test "$enable_introspection" = "yes"; then
     AC_DEFINE([ENABLE_INTROSPECTION], [1], [Define to enable GObject introspection support])
 fi
 
-if test "$have_gstreamer" = "yes"; then
+if test "$enable_video" = "yes" || test "$enable_web_audio" = "yes"; then
     AC_DEFINE([WTF_USE_GSTREAMER], [1], [ ])
-    if test "$enable_debug_features" = "yes"; then
+    if test "$enable_debug" = "yes"; then
         AC_DEFINE([GST_DISABLE_DEPRECATED], [1], [ ])
     fi
 
     if test "$enable_video" = "yes"; then
         AC_DEFINE([WTF_USE_NATIVE_FULLSCREEN_VIDEO], [1], [ ])
     fi
-fi
-
-if test "$GST_API_VERSION" = "1.0"; then
-    AC_DEFINE([GST_API_VERSION_1], [1], [Using GStreamer 1.0])
 fi
 
 if test "$enable_web_audio" = "yes"; then

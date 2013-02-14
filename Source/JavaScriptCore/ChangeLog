@@ -1,3 +1,301 @@
+2013-02-13  Anders Carlsson  <andersca@apple.com>
+
+        Better build fix.
+
+        * API/tests/testapi.c:
+        (assertEqualsAsNumber):
+        (main):
+
+2013-02-13  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Build fix.
+
+        * API/tests/testapi.c:
+        (assertEqualsAsNumber):
+        (main):
+
+2013-02-13  Oliver Hunt  <oliver@apple.com>
+
+        Yet another build fix
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+
+2013-02-13  Zan Dobersek  <zdobersek@igalia.com>
+
+        The 'global isinf/isnan' compiler quirk required when using clang with libstdc++
+        https://bugs.webkit.org/show_bug.cgi?id=109325
+
+        Reviewed by Anders Carlsson.
+
+        Prefix calls to the isinf and isnan methods with std::, declaring we want to use the
+        two methods as they're provided by the C++ standard library being used.
+
+        * API/JSValueRef.cpp:
+        (JSValueMakeNumber):
+        * JSCTypedArrayStubs.h:
+        (JSC):
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::emitLoad):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::constantNaN):
+        * offlineasm/cloop.rb:
+        * runtime/DateConstructor.cpp:
+        (JSC::dateUTC): Also include an opportunistic style fix.
+        * runtime/DateInstance.cpp:
+        (JSC::DateInstance::calculateGregorianDateTime):
+        (JSC::DateInstance::calculateGregorianDateTimeUTC):
+        * runtime/DatePrototype.cpp:
+        (JSC::dateProtoFuncGetMilliSeconds):
+        (JSC::dateProtoFuncGetUTCMilliseconds):
+        (JSC::setNewValueFromTimeArgs):
+        (JSC::setNewValueFromDateArgs):
+        (JSC::dateProtoFuncSetYear):
+        * runtime/JSCJSValue.cpp:
+        (JSC::JSValue::toInteger):
+        * runtime/JSDateMath.cpp:
+        (JSC::getUTCOffset):
+        (JSC::parseDateFromNullTerminatedCharacters):
+        (JSC::parseDate):
+        * runtime/JSGlobalObjectFunctions.cpp:
+        (JSC::globalFuncIsNaN):
+        * runtime/MathObject.cpp:
+        (JSC::mathProtoFuncMax):
+        (JSC::mathProtoFuncMin):
+        (JSC::mathProtoFuncPow):
+        * runtime/PropertyDescriptor.cpp:
+        (JSC::sameValue):
+
+2013-02-13  Filip Pizlo  <fpizlo@apple.com>
+
+        Change another use of (SpecCell & ~SpecString) to SpecObject.
+
+        Reviewed by Mark Hahnenberg.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+
+2013-02-13  Filip Pizlo  <fpizlo@apple.com>
+
+        ForwardInt32ToDouble is not in DFG::MinifiedNode's list of relevant node types
+        https://bugs.webkit.org/show_bug.cgi?id=109726
+
+        Reviewed by Mark Hahnenberg.
+        
+        If you add it to the list of relevant node types, you also need to make sure
+        it's listed as either hasChild or one of the other kinds. Otherwise you get
+        an assertion. This is causing test failures in run-javascriptcore-tests.
+
+        * dfg/DFGMinifiedNode.h:
+        (JSC::DFG::MinifiedNode::hasChild):
+
+2013-02-13  Oliver Hunt  <oliver@apple.com>
+
+        Build fix.
+
+        Rearranged the code somewhat to reduce the number of
+        DFG related ifdefs.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+
+2013-02-13  Filip Pizlo  <fpizlo@apple.com>
+
+        ForwardInt32ToDouble is not in DFG::MinifiedNode's list of relevant node types
+        https://bugs.webkit.org/show_bug.cgi?id=109726
+
+        Reviewed by Gavin Barraclough.
+        
+        This is asymptomatic because ForwardInt32ToDouble is only used in SetLocals, in
+        which case the value is already stored to the stack.  Still, we should fix this.
+
+        * dfg/DFGMinifiedNode.h:
+        (JSC::DFG::belongsInMinifiedGraph):
+
+2013-02-12  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG LogicalNot/Branch peephole removal and inversion ignores the possibility of things exiting
+        https://bugs.webkit.org/show_bug.cgi?id=109489
+
+        Reviewed by Mark Hahnenberg.
+        
+        If things can exit between the LogicalNot and the Branch then don't peephole.
+
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+
+2013-02-13  Oliver Hunt  <oliver@apple.com>
+
+        Remove unnecessary indirection to non-local variable access operations
+        https://bugs.webkit.org/show_bug.cgi?id=109724
+
+        Reviewed by Filip Pizlo.
+
+        Linked bytecode now stores a direct pointer to the resolve operation
+        vectors, so the interpreter no longer needs a bunch of indirection to
+        to perform non-local lookup.
+
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::CodeBlock):
+        * bytecode/CodeBlock.h:
+        (CodeBlock):
+        * bytecode/Instruction.h:
+        * dfg/DFGByteCodeParser.cpp:
+        (ByteCodeParser):
+        (InlineStackEntry):
+        (JSC::DFG::ByteCodeParser::parseResolveOperations):
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        (JSC::DFG::ByteCodeParser::InlineStackEntry::InlineStackEntry):
+        * dfg/DFGCapabilities.h:
+        (JSC::DFG::canInlineOpcode):
+        * dfg/DFGGraph.h:
+        (ResolveGlobalData):
+        (ResolveOperationData):
+        (PutToBaseOperationData):
+        * dfg/DFGSpeculativeJIT.h:
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * jit/JITOpcodes.cpp:
+        (JSC::JIT::emit_op_put_to_base):
+        (JSC::JIT::emit_op_resolve):
+        (JSC::JIT::emitSlow_op_resolve):
+        (JSC::JIT::emit_op_resolve_base):
+        (JSC::JIT::emitSlow_op_resolve_base):
+        (JSC::JIT::emit_op_resolve_with_base):
+        (JSC::JIT::emitSlow_op_resolve_with_base):
+        (JSC::JIT::emit_op_resolve_with_this):
+        (JSC::JIT::emitSlow_op_resolve_with_this):
+        (JSC::JIT::emitSlow_op_put_to_base):
+        * jit/JITOpcodes32_64.cpp:
+        (JSC::JIT::emit_op_put_to_base):
+        * llint/LLIntSlowPaths.cpp:
+        (JSC::LLInt::LLINT_SLOW_PATH_DECL):
+        * llint/LowLevelInterpreter.asm:
+
+2013-02-13  Zoltan Herczeg  <zherczeg@webkit.org>
+
+        replaceWithJump should not decrease the offset by 1 on ARM traditional.
+        https://bugs.webkit.org/show_bug.cgi?id=109689
+
+        Reviewed by Zoltan Herczeg.
+
+        * assembler/ARMAssembler.h:
+        (JSC::ARMAssembler::replaceWithJump):
+
+2013-02-12  Joseph Pecoraro  <pecoraro@apple.com>
+
+        [iOS] Enable PAGE_VISIBILITY_API
+        https://bugs.webkit.org/show_bug.cgi?id=109399
+
+        Reviewed by David Kilzer.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-12  Filip Pizlo  <fpizlo@apple.com>
+
+        Renamed SpecObjectMask to SpecObject.
+
+        Rubber stamped by Mark Hahnenberg.
+        
+        "SpecObjectMask" is a weird name considering that a bunch of the other speculated
+        types are also masks, but don't have "Mask" in the name.
+
+        * bytecode/SpeculatedType.h:
+        (JSC):
+        (JSC::isObjectSpeculation):
+        (JSC::isObjectOrOtherSpeculation):
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectEquality):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileObjectEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileObjectEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality):
+
+2013-02-12  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CFA doesn't filter precisely enough for CompareStrictEq
+        https://bugs.webkit.org/show_bug.cgi?id=109618
+
+        Reviewed by Mark Hahnenberg.
+        
+        The backend speculates object for this case, but the CFA was filtering on
+        (SpecCell & ~SpecString) | SpecOther.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+
+2013-02-12  Martin Robinson  <mrobinson@igalia.com>
+
+        Fix the gyp build of JavaScriptCore.
+
+        * JavaScriptCore.gypi: Added some missing DFG files to the source list.
+
+2013-02-12  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r142387.
+        http://trac.webkit.org/changeset/142387
+        https://bugs.webkit.org/show_bug.cgi?id=109601
+
+        caused all layout and jscore tests on windows to fail
+        (Requested by kling on #webkit).
+
+        * bytecode/UnlinkedCodeBlock.cpp:
+        (JSC::UnlinkedCodeBlock::UnlinkedCodeBlock):
+        * bytecode/UnlinkedCodeBlock.h:
+        (UnlinkedCodeBlock):
+
+2013-02-11  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CompareEq optimization should be retuned
+        https://bugs.webkit.org/show_bug.cgi?id=109545
+
+        Reviewed by Mark Hahnenberg.
+        
+        - Made the object-to-object equality case work again by hoisting the if statement
+          for it. Previously, object-to-object equality would be compiled as
+          object-to-object-or-other.
+        
+        - Added AbstractState guards for most of the type checks that the object equality
+          code uses.
+        
+        Looks like a hint of a speed-up on all of the things.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectEquality):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleBranch):
+        (JSC::DFG::SpeculativeJIT::compare):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileObjectEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileObjectEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality):
+
+2013-02-12  Gabor Rapcsanyi  <rgabor@webkit.org>
+
+        JSC asserting with long parameter list functions in debug mode on ARM traditional
+        https://bugs.webkit.org/show_bug.cgi?id=109565
+
+        Reviewed by Zoltan Herczeg.
+
+        Increase the value of sequenceGetByIdSlowCaseInstructionSpace to 80.
+
+        * jit/JIT.h:
+
 2013-02-11  Oliver Hunt  <oliver@apple.com>
 
         Make JSC API more NULL tolerant

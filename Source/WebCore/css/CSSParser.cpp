@@ -260,6 +260,9 @@ CSSParser::CSSParser(const CSSParserContext& context)
     , m_important(false)
     , m_id(CSSPropertyInvalid)
     , m_styleSheet(0)
+#if ENABLE(CSS3_CONDITIONAL_RULES)
+    , m_supportsCondition(false)
+#endif
     , m_selectorListForParseSelector(0)
     , m_numParsedPropertiesBeforeMarginBox(INVALID_NUM_PARSED_PROPERTIES)
     , m_inParseShorthand(0)
@@ -432,6 +435,16 @@ PassRefPtr<StyleKeyframe> CSSParser::parseKeyframeRule(StyleSheetContents* sheet
     cssyyparse(this);
     return m_keyframe.release();
 }
+
+#if ENABLE(CSS3_CONDITIONAL_RULES)
+bool CSSParser::parseSupportsCondition(const String& string)
+{
+    m_supportsCondition = false;
+    setupParser("@-webkit-supports-condition{ ", string, "} ");
+    cssyyparse(this);
+    return m_supportsCondition;
+}
+#endif
 
 static inline bool isColorPropertyID(CSSPropertyID propertyId)
 {
@@ -10030,6 +10043,10 @@ inline void CSSParser::detectDashToken(int length)
 #endif
     } else if (length == 12 && isEqualToCSSIdentifier(name + 1, "webkit-calc"))
         m_token = CALCFUNCTION;
+#if ENABLE(SHADOW_DOM)
+    else if (length == 19 && isEqualToCSSIdentifier(name + 1, "webkit-distributed"))
+        m_token = DISTRIBUTEDFUNCTION;
+#endif
 }
 
 template <typename CharacterType>
@@ -10250,6 +10267,15 @@ inline void CSSParser::detectAtToken(int length, bool hasEscape)
         case 22:
             if (!hasEscape && isEqualToCSSIdentifier(name + 2, "webkit-keyframe-rule"))
                 m_token = WEBKIT_KEYFRAME_RULE_SYM;
+            return;
+
+        case 27:
+#if ENABLE(CSS3_CONDITIONAL_RULES)
+            if (isEqualToCSSIdentifier(name + 2, "webkit-supports-condition")) {
+                m_parsingMode = SupportsMode;
+                m_token = WEBKIT_SUPPORTS_CONDITION_SYM;
+            }
+#endif
             return;
         }
     }
@@ -10861,12 +10887,7 @@ StyleRuleBase* CSSParser::createSupportsRule(bool conditionIsSupported, RuleList
 {
     m_allowImportRules = m_allowNamespaceDeclarations = false;
 
-    ASSERT(!m_supportsRuleDataStack->isEmpty());
-    RefPtr<CSSRuleSourceData> data = m_supportsRuleDataStack->last();
-    m_supportsRuleDataStack->removeLast();
-    if (m_supportsRuleDataStack->isEmpty())
-        m_supportsRuleDataStack.clear();
-
+    RefPtr<CSSRuleSourceData> data = popSupportsRuleData();
     RefPtr<StyleRuleSupports> rule;
     String conditionText;
     unsigned conditionOffset = data->ruleHeaderRange.start + 9;
@@ -10903,13 +10924,22 @@ void CSSParser::markSupportsRuleHeaderStart()
 
 void CSSParser::markSupportsRuleHeaderEnd()
 {
-    ASSERT(!m_supportsRuleDataStack->isEmpty());
+    ASSERT(m_supportsRuleDataStack && !m_supportsRuleDataStack->isEmpty());
 
     if (is8BitSource())
         m_supportsRuleDataStack->last()->ruleHeaderRange.end = tokenStart<LChar>() - m_dataStart8.get();
     else
         m_supportsRuleDataStack->last()->ruleHeaderRange.end = tokenStart<UChar>() - m_dataStart16.get();
 }
+
+PassRefPtr<CSSRuleSourceData> CSSParser::popSupportsRuleData()
+{
+    ASSERT(m_supportsRuleDataStack && !m_supportsRuleDataStack->isEmpty());
+    RefPtr<CSSRuleSourceData> data = m_supportsRuleDataStack->last();
+    m_supportsRuleDataStack->removeLast();
+    return data.release();
+}
+
 #endif
 
 CSSParser::RuleList* CSSParser::createRuleList()
@@ -11048,25 +11078,40 @@ QualifiedName CSSParser::determineNameInNamespace(const AtomicString& prefix, co
     return QualifiedName(prefix, localName, m_styleSheet->determineNamespace(prefix));
 }
 
-void CSSParser::updateSpecifiersWithNamespaceIfNeeded(CSSParserSelector* specifiers)
+CSSParserSelector* CSSParser::rewriteSpecifiersWithNamespaceIfNeeded(CSSParserSelector* specifiers)
 {
     if (m_defaultNamespace != starAtom || specifiers->isCustomPseudoElement())
-        updateSpecifiersWithElementName(nullAtom, starAtom, specifiers, /*tagIsForNamespaceRule*/true);
+        return rewriteSpecifiersWithElementName(nullAtom, starAtom, specifiers, /*tagIsForNamespaceRule*/true);
+    return specifiers;
 }
 
-void CSSParser::updateSpecifiersWithElementName(const AtomicString& namespacePrefix, const AtomicString& elementName, CSSParserSelector* specifiers, bool tagIsForNamespaceRule)
+CSSParserSelector* CSSParser::rewriteSpecifiersWithElementName(const AtomicString& namespacePrefix, const AtomicString& elementName, CSSParserSelector* specifiers, bool tagIsForNamespaceRule)
 {
     AtomicString determinedNamespace = namespacePrefix != nullAtom && m_styleSheet ? m_styleSheet->determineNamespace(namespacePrefix) : m_defaultNamespace;
     QualifiedName tag(namespacePrefix, elementName, determinedNamespace);
 
+#if ENABLE(SHADOW_DOM)
+    if (specifiers->isDistributedPseudoElement()) {
+        CSSParserSelector* argumentSelector = specifiers->functionArgumentSelector();
+        ASSERT(argumentSelector);
+        CSSParserSelector* end = argumentSelector;
+        while (end->tagHistory())
+            end = end->tagHistory();
+        OwnPtr<CSSParserSelector> elementNameSelector = adoptPtr(new CSSParserSelector(tag));
+        end->setTagHistory(elementNameSelector.release());
+        end->setRelation(CSSSelector::ShadowDistributed);
+        return argumentSelector;
+    }
+#endif
+
     if (!specifiers->isCustomPseudoElement()) {
         if (tag == anyQName())
-            return;
+            return specifiers;
 #if ENABLE(VIDEO_TRACK)
         if (!(specifiers->pseudoType() == CSSSelector::PseudoCue))
 #endif
             specifiers->prependTagSelector(tag, tagIsForNamespaceRule);
-        return;
+        return specifiers;
     }
 
     CSSParserSelector* lastShadowDescendant = specifiers;
@@ -11080,7 +11125,7 @@ void CSSParser::updateSpecifiersWithElementName(const AtomicString& namespacePre
     if (lastShadowDescendant->tagHistory()) {
         if (tag != anyQName())
             lastShadowDescendant->tagHistory()->prependTagSelector(tag, tagIsForNamespaceRule);
-        return;
+        return specifiers;
     }
 
     // For shadow-ID pseudo-elements to be correctly matched, the ShadowDescendant combinator has to be used.
@@ -11088,9 +11133,10 @@ void CSSParser::updateSpecifiersWithElementName(const AtomicString& namespacePre
     OwnPtr<CSSParserSelector> elementNameSelector = adoptPtr(new CSSParserSelector(tag));
     lastShadowDescendant->setTagHistory(elementNameSelector.release());
     lastShadowDescendant->setRelation(CSSSelector::ShadowDescendant);
+    return specifiers;
 }
 
-CSSParserSelector* CSSParser::updateSpecifiers(CSSParserSelector* specifiers, CSSParserSelector* newSpecifier)
+CSSParserSelector* CSSParser::rewriteSpecifiers(CSSParserSelector* specifiers, CSSParserSelector* newSpecifier)
 {
 #if ENABLE(VIDEO_TRACK)
     if (newSpecifier->isCustomPseudoElement() || newSpecifier->pseudoType() == CSSSelector::PseudoCue) {

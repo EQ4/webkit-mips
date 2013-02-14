@@ -99,6 +99,7 @@ list(APPEND WebKit2_SOURCES
     UIProcess/efl/RequestManagerClientEfl.cpp
     UIProcess/efl/TextCheckerEfl.cpp
     UIProcess/efl/VibrationClientEfl.cpp
+    UIProcess/efl/ViewClientEfl.cpp
     UIProcess/efl/WebContextEfl.cpp
     UIProcess/efl/WebContextMenuProxyEfl.cpp
     UIProcess/efl/WebFullScreenManagerProxyEfl.cpp
@@ -108,6 +109,7 @@ list(APPEND WebKit2_SOURCES
     UIProcess/efl/WebPreferencesEfl.cpp
     UIProcess/efl/WebProcessProxyEfl.cpp
     UIProcess/efl/WebView.cpp
+    UIProcess/efl/WebViewClient.cpp
 
     UIProcess/InspectorServer/efl/WebInspectorServerEfl.cpp
     UIProcess/InspectorServer/soup/WebSocketServerSoup.cpp
@@ -367,6 +369,7 @@ target_link_libraries(ewk2UnitTestUtils ${EWK2UnitTests_LIBRARIES})
 # The "ewk" on the test name needs to be suffixed with "2", otherwise it
 # will clash with tests from the WebKit 1 test suite.
 set(EWK2UnitTests_BINARIES
+    test_ewk2_auth_request
     test_ewk2_back_forward_list
     test_ewk2_color_picker
     test_ewk2_context

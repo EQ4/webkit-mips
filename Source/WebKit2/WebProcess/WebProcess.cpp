@@ -27,9 +27,11 @@
 #include "WebProcess.h"
 
 #include "AuthenticationManager.h"
+#include "EventDispatcher.h"
 #include "InjectedBundle.h"
 #include "InjectedBundleUserMessageCoders.h"
 #include "Logging.h"
+#include "PluginProcessConnectionManager.h"
 #include "StatisticsData.h"
 #include "WebApplicationCacheManager.h"
 #include "WebConnectionToUIProcess.h"
@@ -136,7 +138,8 @@ WebProcess& WebProcess::shared()
 }
 
 WebProcess::WebProcess()
-    : m_inDidClose(false)
+    : m_eventDispatcher(EventDispatcher::create())
+    , m_inDidClose(false)
     , m_shouldTrackVisitedLinks(true)
     , m_hasSetCacheModel(false)
     , m_cacheModel(CacheModelDocumentViewer)
@@ -161,6 +164,9 @@ WebProcess::WebProcess()
 #if ENABLE(NETWORK_PROCESS)
     , m_usesNetworkProcess(false)
     , m_webResourceLoadScheduler(new WebResourceLoadScheduler)
+#endif
+#if ENABLE(PLUGIN_PROCESS)
+    , m_pluginProcessConnectionManager(PluginProcessConnectionManager::create())
 #endif
 #if USE(SOUP)
     , m_soupRequestManager(this)
@@ -205,14 +211,15 @@ void WebProcess::initializeConnection(CoreIPC::Connection* connection)
     ChildProcess::initializeConnection(connection);
 
     connection->setShouldExitOnSyncMessageSendFailure(true);
-    connection->addQueueClient(&m_eventDispatcher);
+
+    m_eventDispatcher->initializeConnection(connection);
 
 #if ENABLE(PLUGIN_PROCESS)
-    connection->addQueueClient(&m_pluginProcessConnectionManager);
+    m_pluginProcessConnectionManager->initializeConnection(connection);
 #endif
 
 #if USE(SECURITY_FRAMEWORK)
-    connection->addQueueClient(&SecItemShim::shared());
+    SecItemShim::shared().initializeConnection(connection);
 #endif
 
     m_webConnection = WebConnectionToUIProcess::create(this);
@@ -445,7 +452,7 @@ DownloadManager& WebProcess::downloadManager()
 #if ENABLE(PLUGIN_PROCESS)
 PluginProcessConnectionManager& WebProcess::pluginProcessConnectionManager()
 {
-    return m_pluginProcessConnectionManager;
+    return *m_pluginProcessConnectionManager;
 }
 #endif
 
@@ -901,7 +908,7 @@ void WebProcess::getWebCoreStatistics(uint64_t callbackID)
     // Get WebCore memory cache statistics
     getWebCoreMemoryCacheStatistics(data.webCoreCacheStatistics);
     
-    parentProcessConnection()->send(Messages::WebContext::DidGetWebCoreStatistics(data, callbackID), 0);
+    parentProcessConnection()->send(Messages::WebContext::DidGetStatistics(data, callbackID), 0);
 }
 
 void WebProcess::garbageCollectJavaScriptObjects()

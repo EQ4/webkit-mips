@@ -43,6 +43,7 @@
 #include "DOMTimer.h"
 #include "DOMTokenList.h"
 #include "DOMURL.h"
+#include "DOMWindowCSS.h"
 #include "DOMWindowExtension.h"
 #include "DOMWindowNotifications.h"
 #include "DeviceMotionController.h"
@@ -330,18 +331,21 @@ FloatRect DOMWindow::adjustWindowRect(Page* page, const FloatRect& pendingChange
     ASSERT(isfinite(window.height()));
 
     // Update window values if new requested values are not NaN.
-    if (!isnan(pendingChanges.x()))
+    if (!std::isnan(pendingChanges.x()))
         window.setX(pendingChanges.x());
-    if (!isnan(pendingChanges.y()))
+    if (!std::isnan(pendingChanges.y()))
         window.setY(pendingChanges.y());
-    if (!isnan(pendingChanges.width()))
+    if (!std::isnan(pendingChanges.width()))
         window.setWidth(pendingChanges.width());
-    if (!isnan(pendingChanges.height()))
+    if (!std::isnan(pendingChanges.height()))
         window.setHeight(pendingChanges.height());
 
     FloatSize minimumSize = page->chrome()->client()->minimumWindowSize();
-    window.setWidth(min(max(minimumSize.width(), window.width()), screen.width()));
-    window.setHeight(min(max(minimumSize.height(), window.height()), screen.height()));
+    // Let size 0 pass through, since that indicates default size, not minimum size.
+    if (window.width())
+        window.setWidth(min(max(minimumSize.width(), window.width()), screen.width()));
+    if (window.height())
+        window.setHeight(min(max(minimumSize.height(), window.height()), screen.height()));
 
     // Constrain the window position within the valid screen area.
     window.setX(max(screen.x(), min(window.x(), screen.maxX() - window.width())));
@@ -1563,6 +1567,15 @@ void DOMWindow::cancelAnimationFrame(int id)
 {
     if (Document* d = document())
         d->cancelAnimationFrame(id);
+}
+#endif
+
+#if ENABLE(CSS3_CONDITIONAL_RULES)
+DOMWindowCSS* DOMWindow::css()
+{
+    if (!m_css)
+        m_css = DOMWindowCSS::create();
+    return m_css.get();
 }
 #endif
 

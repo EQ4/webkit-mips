@@ -221,6 +221,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSDOMURL.h \
 	DerivedSources/WebCore/JSDOMWindow.cpp \
 	DerivedSources/WebCore/JSDOMWindow.h \
+	DerivedSources/WebCore/JSDOMWindowCSS.cpp \
+	DerivedSources/WebCore/JSDOMWindowCSS.h \
 	DerivedSources/WebCore/JSDynamicsCompressorNode.h \
 	DerivedSources/WebCore/JSDynamicsCompressorNode.cpp \
 	DerivedSources/WebCore/JSElement.cpp \
@@ -1340,6 +1342,7 @@ dom_binding_idls += \
 	$(WebCore)/css/CSSValue.idl \
 	$(WebCore)/css/CSSValueList.idl \
 	$(WebCore)/css/Counter.idl \
+	$(WebCore)/css/DOMWindowCSS.idl \
 	$(WebCore)/css/MediaList.idl \
 	$(WebCore)/css/MediaQueryList.idl \
 	$(WebCore)/css/RGBColor.idl \
@@ -2636,6 +2639,8 @@ webcore_sources += \
 	Source/WebCore/css/CSSValuePool.cpp \
 	Source/WebCore/css/CSSValuePool.h \
 	Source/WebCore/css/CSSVariableValue.h \
+	Source/WebCore/css/DOMWindowCSS.cpp \
+	Source/WebCore/css/DOMWindowCSS.h \
 	Source/WebCore/css/DashboardRegion.h \
 	Source/WebCore/css/DocumentRuleSets.cpp \
 	Source/WebCore/css/DocumentRuleSets.h \
@@ -2838,8 +2843,6 @@ webcore_sources += \
 	Source/WebCore/dom/DOMTimeStamp.h \
 	Source/WebCore/dom/Element.cpp \
 	Source/WebCore/dom/Element.h \
-	Source/WebCore/dom/ElementAttributeData.cpp \
-	Source/WebCore/dom/ElementAttributeData.h \
 	Source/WebCore/dom/ElementRareData.cpp \
 	Source/WebCore/dom/ElementRareData.h \
 	Source/WebCore/dom/ElementShadow.cpp \
@@ -3570,6 +3573,7 @@ webcore_sources += \
 	Source/WebCore/html/MonthInputType.h \
 	Source/WebCore/html/NumberInputType.cpp \
 	Source/WebCore/html/NumberInputType.h \
+	Source/WebCore/html/parser/AtomicHTMLToken.h \
 	Source/WebCore/html/parser/BackgroundHTMLInputStream.cpp \
 	Source/WebCore/html/parser/BackgroundHTMLInputStream.h \
 	Source/WebCore/html/parser/BackgroundHTMLParser.cpp \
@@ -3613,7 +3617,6 @@ webcore_sources += \
 	Source/WebCore/html/parser/HTMLSourceTracker.h \
 	Source/WebCore/html/parser/HTMLStackItem.h \
 	Source/WebCore/html/parser/HTMLToken.h \
-	Source/WebCore/html/parser/HTMLTokenTypes.h \
 	Source/WebCore/html/parser/HTMLTokenizer.cpp \
 	Source/WebCore/html/parser/HTMLTokenizer.h \
 	Source/WebCore/html/parser/HTMLTreeBuilder.cpp \
@@ -4099,6 +4102,7 @@ webcore_sources += \
 	Source/WebCore/page/AutoscrollController.h \
 	Source/WebCore/page/BarInfo.cpp \
 	Source/WebCore/page/BarInfo.h \
+	Source/WebCore/page/CaptionUserPreferences.cpp \
 	Source/WebCore/page/CaptionUserPreferences.h \
 	Source/WebCore/page/Chrome.cpp \
 	Source/WebCore/page/Chrome.h \
@@ -4922,6 +4926,8 @@ webcore_svg_sources += \
 	Source/WebCore/svg/graphics/SVGImageCache.cpp \
 	Source/WebCore/svg/graphics/SVGImageCache.h \
 	Source/WebCore/svg/graphics/SVGImageChromeClient.h \
+	Source/WebCore/svg/graphics/SVGImageForContainer.cpp \
+	Source/WebCore/svg/graphics/SVGImageForContainer.h \
 	Source/WebCore/svg/graphics/SVGImage.cpp \
 	Source/WebCore/svg/graphics/SVGImage.h \
 	Source/WebCore/svg/LinearGradientAttributes.h \
@@ -5639,6 +5645,7 @@ webcore_platform_sources += \
 	Source/WebCore/platform/graphics/IntPointHash.h \
 	Source/WebCore/platform/graphics/IntRect.cpp \
 	Source/WebCore/platform/graphics/IntRect.h \
+	Source/WebCore/platform/graphics/IntRectExtent.h \	
 	Source/WebCore/platform/graphics/IntSize.h \
 	Source/WebCore/platform/graphics/IntSizeHash.h \
 	Source/WebCore/platform/graphics/Latin1TextIterator.h \
@@ -5979,6 +5986,7 @@ webcore_platform_sources += \
 	Source/WebCore/platform/SystemTime.h \
 	Source/WebCore/platform/text/enchant/TextCheckerEnchant.h \
 	Source/WebCore/platform/text/enchant/TextCheckerEnchant.cpp \
+	Source/WebCore/platform/text/gtk/TextBreakIteratorInternalICUGtk.cpp \
 	Source/WebCore/platform/text/BidiContext.cpp \
 	Source/WebCore/platform/text/BidiContext.h \
 	Source/WebCore/platform/text/BidiResolver.h \
@@ -6009,6 +6017,8 @@ webcore_platform_sources += \
 	Source/WebCore/platform/text/TextBoundaries.cpp \
 	Source/WebCore/platform/text/TextBoundaries.h \
 	Source/WebCore/platform/text/TextBreakIterator.cpp \
+	Source/WebCore/platform/text/TextBreakIteratorICU.cpp \
+	Source/WebCore/platform/text/TextBreakIteratorInternalICU.h \
 	Source/WebCore/platform/text/TextBreakIterator.h \
 	Source/WebCore/platform/text/TextCheckerClient.h \
 	Source/WebCore/platform/text/TextChecking.h \
@@ -6023,6 +6033,8 @@ webcore_platform_sources += \
 	Source/WebCore/platform/text/TextCodecUTF16.h \
 	Source/WebCore/platform/text/TextCodecUTF8.cpp \
 	Source/WebCore/platform/text/TextCodecUTF8.h \
+	Source/WebCore/platform/text/TextCodecICU.cpp \
+	Source/WebCore/platform/text/TextCodecICU.h \
 	Source/WebCore/platform/text/TextDirection.h \
 	Source/WebCore/platform/text/TextEncoding.cpp \
 	Source/WebCore/platform/text/TextEncodingDetector.h \
@@ -6265,28 +6277,6 @@ webcore_sources += \
 	Source/WebCore/platform/graphics/OpenGLShims.h
 endif # END USE_GLES2
 
-# ----
-# icu unicode backend
-# ----
-if USE_ICU_UNICODE
-webcore_sources += \
-	Source/WebCore/platform/text/TextCodecICU.cpp \
-	Source/WebCore/platform/text/TextCodecICU.h \
-	Source/WebCore/platform/text/TextBreakIteratorICU.cpp \
-	Source/WebCore/platform/text/TextBreakIteratorInternalICU.h \
-	Source/WebCore/platform/text/gtk/TextBreakIteratorInternalICUGtk.cpp
-endif
-
-# ----
-# glib unicode backend
-# ----
-if USE_GLIB_UNICODE
-webcore_sources += \
-	Source/WebCore/platform/text/gtk/TextCodecGtk.cpp \
-	Source/WebCore/platform/text/gtk/TextCodecGtk.h \
-	Source/WebCore/platform/text/gtk/TextBreakIteratorGtk.cpp
-endif
-
 if USE_GSTREAMER
 webcoregtk_sources += \
 	Source/WebCore/platform/graphics/gstreamer/GRefPtrGStreamer.cpp \
@@ -6501,8 +6491,8 @@ endif  # END USE_TEXTURE_MAPPER_CAIRO
 
 if USE_TEXTURE_MAPPER_GL
 webcore_sources += \
-	Source/WebCore//platform/graphics/filters/texmap/CustomFilterValidatedProgramTextureMapper.cpp \
-	Source/WebCore//platform/graphics/filters/texmap/TextureMapperPlatformCompiledProgram.h \
+	Source/WebCore/platform/graphics/filters/texmap/CustomFilterValidatedProgramTextureMapper.cpp \
+	Source/WebCore/platform/graphics/filters/texmap/TextureMapperPlatformCompiledProgram.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperGL.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapperGL.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperShaderProgram.cpp \
@@ -6517,6 +6507,8 @@ webcore_sources += \
 	Source/WebCore/platform/graphics/texmap/TextureMapperBackingStore.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapper.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapper.h \
+	Source/WebCore/platform/graphics/texmap/TextureMapperFPSCounter.cpp \
+	Source/WebCore/platform/graphics/texmap/TextureMapperFPSCounter.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.cpp \
 	Source/WebCore/platform/graphics/texmap/TextureMapperImageBuffer.h \
 	Source/WebCore/platform/graphics/texmap/TextureMapperLayer.cpp \

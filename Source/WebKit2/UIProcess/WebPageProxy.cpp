@@ -45,7 +45,6 @@
 #include "PageClient.h"
 #include "PrintInfo.h"
 #include "SessionState.h"
-#include "StringPairVector.h"
 #include "TextChecker.h"
 #include "TextCheckerState.h"
 #include "WKContextPrivate.h"
@@ -396,17 +395,17 @@ void WebPageProxy::reattachToWebProcess()
     m_process->addExistingWebPage(this, m_pageID);
     m_process->addMessageReceiver(Messages::WebPageProxy::messageReceiverName(), m_pageID, this);
 
-    initializeWebPage();
-
-    m_pageClient->didRelaunchProcess();
-    m_drawingArea->waitForBackingStoreUpdateOnNextPaint();
-
 #if ENABLE(INSPECTOR)
     m_inspector = WebInspectorProxy::create(this);
 #endif
 #if ENABLE(FULLSCREEN_API)
     m_fullScreenManager = WebFullScreenManagerProxy::create(this);
 #endif
+
+    initializeWebPage();
+
+    m_pageClient->didRelaunchProcess();
+    m_drawingArea->waitForBackingStoreUpdateOnNextPaint();
 }
 
 void WebPageProxy::reattachToWebProcessWithItem(WebBackForwardListItem* item)
@@ -2411,7 +2410,7 @@ void WebPageProxy::unableToImplementPolicy(uint64_t frameID, const ResourceError
 
 // FormClient
 
-void WebPageProxy::willSubmitForm(uint64_t frameID, uint64_t sourceFrameID, const StringPairVector& textFieldValues, uint64_t listenerID, CoreIPC::MessageDecoder& decoder)
+void WebPageProxy::willSubmitForm(uint64_t frameID, uint64_t sourceFrameID, const Vector<std::pair<String, String> >& textFieldValues, uint64_t listenerID, CoreIPC::MessageDecoder& decoder)
 {
     RefPtr<APIObject> userData;
     WebContextUserMessageDecoder messageDecoder(userData, m_process.get());
@@ -2425,7 +2424,7 @@ void WebPageProxy::willSubmitForm(uint64_t frameID, uint64_t sourceFrameID, cons
     MESSAGE_CHECK(sourceFrame);
 
     RefPtr<WebFormSubmissionListenerProxy> listener = frame->setUpFormSubmissionListenerProxy(listenerID);
-    if (!m_formClient.willSubmitForm(this, frame, sourceFrame, textFieldValues.stringPairVector(), userData.get(), listener.get()))
+    if (!m_formClient.willSubmitForm(this, frame, sourceFrame, textFieldValues, userData.get(), listener.get()))
         listener->continueSubmission();
 }
 

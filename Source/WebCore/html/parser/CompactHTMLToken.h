@@ -28,7 +28,7 @@
 
 #if ENABLE(THREADED_HTML_PARSER)
 
-#include "HTMLTokenTypes.h"
+#include "HTMLToken.h"
 #include <wtf/OwnPtr.h>
 #include <wtf/PassOwnPtr.h>
 #include <wtf/RefCounted.h>
@@ -39,7 +39,7 @@
 
 namespace WebCore {
 
-class HTMLToken;
+class QualifiedName;
 class XSSInfo;
 
 class CompactAttribute {
@@ -65,11 +65,12 @@ public:
 
     bool isSafeToSendToAnotherThread() const;
 
-    HTMLTokenTypes::Type type() const { return static_cast<HTMLTokenTypes::Type>(m_type); }
+    HTMLToken::Type type() const { return static_cast<HTMLToken::Type>(m_type); }
     const String& data() const { return m_data; }
     bool selfClosing() const { return m_selfClosing; }
     bool isAll8BitData() const { return m_isAll8BitData; }
     const Vector<CompactAttribute>& attributes() const { return m_attributes; }
+    const CompactAttribute* getAttributeItem(const QualifiedName&) const;
     const TextPosition& textPosition() const { return m_textPosition; }
 
     // There is only 1 DOCTYPE token per document, so to avoid increasing the

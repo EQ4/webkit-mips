@@ -341,7 +341,7 @@ void handleMessage(MessageDecoder& decoder, MessageEncoder& replyEncoder, C* obj
 }
 
 template<typename T, typename C, typename MF>
-void handleMessageOnConnectionQueue(Connection* connection, MessageDecoder& decoder, C* object, MF function)
+void handleMessage(Connection* connection, MessageDecoder& decoder, C* object, MF function)
 {
     typename T::DecodeType::ValueType arguments;
     if (!decoder.decode(arguments))

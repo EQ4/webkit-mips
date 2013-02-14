@@ -291,7 +291,7 @@ void HTMLSelectElement::parseAttribute(const QualifiedName& name, const AtomicSt
         String attrSize = String::number(size);
         if (attrSize != value) {
             // FIXME: This is horribly factored.
-            if (Attribute* sizeAttribute = getAttributeItem(sizeAttr))
+            if (Attribute* sizeAttribute = ensureUniqueElementData()->getAttributeItem(sizeAttr))
                 sizeAttribute->setValue(attrSize);
         }
         size = max(size, 1);
@@ -373,9 +373,6 @@ void HTMLSelectElement::childrenChanged(bool changedByParser, Node* beforeChange
     setNeedsValidityCheck();
 
     HTMLFormControlElementWithState::childrenChanged(changedByParser, beforeChange, afterChange, childCountDelta);
-    
-    if (AXObjectCache::accessibilityEnabled() && renderer())
-        renderer()->document()->axObjectCache()->childrenChanged(this);
 }
 
 void HTMLSelectElement::optionElementChildrenChanged()
@@ -724,6 +721,9 @@ void HTMLSelectElement::setRecalcListItems()
     }
     if (!inDocument())
         invalidateSelectedItems();
+    
+    if (AXObjectCache::accessibilityEnabled() && renderer())
+        renderer()->document()->axObjectCache()->childrenChanged(this);
 }
 
 void HTMLSelectElement::recalcListItems(bool updateSelectedStates) const

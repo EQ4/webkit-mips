@@ -23,7 +23,6 @@ crbug.com/24182 [ SnowLeopard Debug ] fast/frames/frameset-frameborder-boolean-v
 crbug.com/24182 [ Debug ] fast/frames/valid.html [ Pass Slow ]
 webkit.org/b/77184 [ Debug ] fast/js/dfg-double-vote-fuzz.html [ Pass Slow ]
 webkit.org/b/92948 [ Debug ] fast/js/dfg-osr-entry-hoisted-clobbered-structure-check.html [ Pass Timeout ]
-webkit.org/b/74787 [ Debug ] fast/js/dfg-poison-fuzz.html [ Pass Slow ]
 crbug.com/24182 fast/js/regexp-overflow.html [ Pass Slow ]
 crbug.com/24182 [ SnowLeopard Debug ] fast/js/repeat-cached-vm-reentry.html [ Pass Timeout ]
 crbug.com/24182 [ Debug ] fast/js/toString-and-valueOf-override.html [ Failure Timeout ]
@@ -205,9 +204,6 @@ webkit.org/b/62698 batterystatus
 
 # Network Information API is not supported yet in the chromium port.
 webkit.org/b/73528 networkinformation
-
-# The intent tag is not yet enabled.
-webkit.org/b/75123 webintents/intent-tag.html
 
 # CSS image-resolution is not yet enabled.
 webkit.org/b/85262 fast/css/image-resolution
@@ -809,10 +805,6 @@ fast/dom/HTMLScriptElement/nested-execution.html [ WontFix ]
 storage/domstorage/storage-close-database-on-idle.html [ WontFix ]
 storage/domstorage/localstorage/close-idle-localstorage-databases-immediately.html [ WontFix ]
 
-# Deletion UI is a Mail-ism. We don't need to worry about this.
-editing/deleting/deletionUI-single-instance.html [ WontFix ]
-fast/dom/Element/id-in-deletebutton.html [ WontFix ]
-
 # Tests for FAST_MOBILE_SCROLLING. We don't use it.
 fast/fast-mobile-scrolling/fixed-position-element.html [ WontFix ]
 fast/fast-mobile-scrolling/no-fixed-position-elements.html [ WontFix ]
@@ -940,9 +932,6 @@ fast/dom/timer-throttling-hidden-page.html [ WontFix ]
 # Chromium disabled MATHML
 crbug.com/22554 mathml [ Skip ]
 
-# Chromium disabled web intents
-crbug.com/173194 webintents [ Skip ]
-
 # We disabled INPUT_TYPE_DATETIME.
 webkit.org/b/109272 fast/forms/datetime [ Skip ]
 webkit.org/b/109272 fast/forms/datetime-multiple-fields [ Skip ]
@@ -957,6 +946,11 @@ webkit.org/b/109272 platform/chromium/fast/forms/calendar-picker/calendar-picker
 webkit.org/b/109272 platform/chromium/fast/forms/calendar-picker/calendar-picker-datetime.html [ Skip ]
 webkit.org/b/109272 platform/chromium/fast/forms/suggestion-picker/datetime-suggestion-picker-appearance.html [ Skip ]
 webkit.org/b/109272 platform/chromium/fast/forms/suggestion-picker/datetime-suggestion-picker-mouse-operations.html [ Skip ]
+
+# Skip until 109528 is fixed.
+#webkit.org/b/109528 platform/chromium/fast/forms/suggestion-picker/date-suggestion-picker-appearance-with-scroll-bar.html [ Skip ]
+#webkit.org/b/109528 platform/chromium/fast/forms/suggestion-picker/month-suggestion-picker-appearance-with-scroll-bar.html [ Skip ]
+#webkit.org/b/109528 platform/chromium/fast/forms/suggestion-picker/week-suggestion-picker-appearance-with-scroll-bar.html [ Skip ]
 
 # Skipping rules for ANDROID are in platform/chromium-android/TestExpectations.
 
@@ -1458,7 +1452,47 @@ webkit.org/b/75276 [ Android ] fast/repaint/shadow-multiple-strict-vertical.html
 # -----------------------------------------------------------------
 # WebGL Tests
 # -----------------------------------------------------------------
+crbug.com/174268 webgl
+crbug.com/174268 webgl/conformance/textures/copy-tex-image-2d-formats.html [ Skip ]
+crbug.com/174268 webgl/conformance/textures/origin-clean-conformance.html [ Skip ]
+crbug.com/174268 webgl/conformance/textures/texture-mips.html [ Skip ]
+crbug.com/174268 webgl/conformance/uniforms/gl-uniform-arrays.html [ Skip ]
+crbug.com/174268 webgl/conformance/uniforms/uniform-default-values.html [ Skip ]
+crbug.com/174268 webgl/conformance/uniforms/uniform-location.html [ Skip ]
+crbug.com/174268 webgl/conformance/uniforms/uniform-samplers-test.html [ Skip ]
+crbug.com/174268 webgl/conformance/rendering/point-size.html [ Skip ]
+crbug.com/174268 webgl/conformance/rendering/multisample-corruption.html [ Skip ]
+crbug.com/174268 webgl/conformance/reading/read-pixels-test.html [ Skip ]
+crbug.com/174268 webgl/conformance/state/gl-object-get-calls.html [ Skip ]
+crbug.com/174268 webgl/conformance/renderbuffers/framebuffer-object-attachment.html [ Skip ]
 crbug.com/174268 webgl/conformance/attribs/gl-vertex-attrib-zero-issues.html [ Skip ]
+crbug.com/174268 webgl/conformance/glsl/functions/glsl-function-smoothstep-gentype.html [ Skip ]
+crbug.com/174268 webgl/conformance/glsl/misc/shader-varying-packing-restrictions.html [ Skip ]
+crbug.com/174268 webgl/conformance/glsl/misc/shader-with-array-of-structs-containing-arrays.html [ Skip ]
+crbug.com/174268 webgl/conformance/glsl/misc/shader-with-global-variable-precision-mismatch.html [ Skip ]
+crbug.com/174268 webgl/conformance/glsl/misc/shader-with-similar-uniform-array-names.html [ Skip ]
+crbug.com/174268 webgl/conformance/glsl/misc/shaders-with-varyings.html [ Skip ]
+crbug.com/174268 webgl/conformance/glsl/variables/gl-pointcoord.html [ Skip ]
+crbug.com/174268 webgl/conformance/ogles/GL/acos/acos_001_to_006.html [ Skip ]
+crbug.com/174268 webgl/conformance/ogles/GL/asin/asin_001_to_006.html [ Skip ]
+crbug.com/174268 webgl/conformance/ogles/GL/atan/atan_001_to_008.html [ Skip ]
+crbug.com/174268 webgl/conformance/ogles/GL/log/log_001_to_008.html [ Skip ]
+crbug.com/174268 webgl/conformance/ogles/GL/log2/log2_001_to_008.html [ Skip ]
+crbug.com/174268 webgl/conformance/ogles/GL/control_flow/control_flow_001_to_008.html [ Skip ]
+crbug.com/174268 webgl/conformance/ogles/GL/smoothstep/smoothstep_001_to_006.html [ Skip ]
+
+crbug.com/174466 webgl/conformance/glsl/misc/shader-uniform-packing-restrictions.html [ Skip ]
+crbug.com/174466 webgl/conformance/glsl/misc/shader-with-non-reserved-words.html [ Skip Skip ]
+crbug.com/174466 webgl/conformance/glsl/literals/float_literal.vert.html [ Skip ]
+crbug.com/174466 webgl/conformance/more/functions/bufferDataBadArgs.html [ Skip ]
+crbug.com/174466 webgl/conformance/more/functions/readPixelsBadArgs.html [ Skip ]
+crbug.com/174466 webgl/conformance/more/functions/texImage2DHTML.html [ Skip ]
+crbug.com/174466 webgl/conformance/more/functions/texSubImage2DHTML.html [ Skip ]
+crbug.com/174466 webgl/conformance/canvas/buffer-offscreen-test.html [ Skip ]
+crbug.com/174466 webgl/conformance/canvas/buffer-preserve-test.html [ Skip ]
+crbug.com/174466 webgl/conformance/canvas/to-data-url-test.html [ Skip ]
+crbug.com/174466 webgl/conformance/context/context-attribute-preserve-drawing-buffer.html [ Skip ]
+crbug.com/174466 webgl/conformance/context/context-creation-and-destruction.html [ Skip ]
 
 webkit.org/b/108901 webgl/conformance/attribs/gl-vertexattribpointer.html [ Slow ]
 webkit.org/b/109114 webgl/conformance/context/context-release-upon-reload.html [ Pass Timeout ]
@@ -3609,6 +3643,7 @@ webkit.org/b/108429 svg/repaint/svgsvgelement-repaint-children.html [ Pass Failu
 webkit.org/b/101670 media/video-controls-captions-trackmenu.html [ Skip ]
 webkit.org/b/101670 media/video-controls-captions-trackmenu-sorted.html [ Skip ]
 webkit.org/b/101670 media/video-controls-captions-trackmenu-localized.html [ Skip ]
+webkit.org/b/101670 media/video-controls-captions-trackmenu-hide-on-click.html [ Skip ]
 webkit.org/b/101670 media/track/track-user-preferences.html [ Skip ]
 
 webkit.org/b/92835 [ Android Mac Win Debug ] svg/as-background-image/svg-as-background-5.html [ Pass Slow ]
@@ -3685,8 +3720,6 @@ webkit.org/b/94010 [ Debug ] fast/regex/unicodeCaseInsensitive.html [ Crash Pass
 webkit.org/b/94017 [ Win ] css2.1/20110323/c541-word-sp-000.htm [ ImageOnlyFailure ]
 
 webkit.org/b/94078 [ Win Release ] http/tests/inspector/web-socket-frame-error.html [ Failure Pass ]
-
-webkit.org/b/94256 [ Debug ] fast/block/inline-children-root-linebox-crash.html [ Crash Pass ]
 
 # Following tests need baselines on Win and Linux 
 webkit.org/b/94492 [ Linux Win ] css3/filters/custom/custom-filter-color-matrix.html [ ImageOnlyFailure ]
@@ -3928,6 +3961,7 @@ webkit.org/b/95121 [ Android ] fast/borders/border-image-side-reduction.html [ I
 # css3-conditionals support is not yet enabled.
 webkit.org/b/86146 css3/supports.html
 webkit.org/b/104822 css3/supports-cssom.html
+webkit.org/b/100324 css3/supports-dom-api.html
 
 # CSS Device Adaptation is not enabled.
 webkit.org/b/95959 css3/device-adapt [ Skip ]
@@ -4140,6 +4174,33 @@ webkit.org/b/103181 [ Win7 ] http/tests/local/drag-over-remote-content.html [ Pa
 webkit.org/b/103299 [ Linux Mac Win ] fast/dom/shadow/shadow-dom-event-dispatching.html [ Failure Pass ]
 webkit.org/b/103148 [ Linux Win ] fast/text/atsui-small-caps-punctuation-size.html [ ImageOnlyFailure Failure Pass ]
 webkit.org/b/103308 [ SnowLeopard Lion ] css3/filters/custom/custom-filter-transforms-animation.html [ Pass Timeout ]
+
+# Rebaseline after https://bugs.webkit.org/show_bug.cgi?id=106159
+webkit.org/b/106159 svg/as-background-image/animated-svg-as-background.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-as-background-1.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-as-background-2.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-as-background-3.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-as-background-4.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-as-background-5.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-as-background-6.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-as-background-with-relative-size.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-background-image/svg-background-partial-redraw.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-border-image/svg-as-border-image.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-image/animated-svg-as-image-no-fixed-intrinsic-size.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-image/img-preserveAspectRatio-support-2.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-image/svg-image-change-content-size.xhtml [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-image/svg-non-integer-scaled-image.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/carto.net/combobox.svg [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/wicd/test-scalable-background-image1.xhtml [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/wicd/test-scalable-background-image2.xhtml [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/zoom/page/zoom-background-images.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/zoom/page/zoom-svg-as-background-with-relative-size-and-viewBox.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/zoom/page/zoom-svg-as-background-with-relative-size.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 css2.1/20110323/background-intrinsic-005.htm [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 svg/as-image/same-image-two-instances.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 css2.1/20110323/background-intrinsic-004.htm [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 fast/backgrounds/size/contain-and-cover.html [ ImageOnlyFailure Pass ]
+webkit.org/b/106159 fast/writing-mode/block-level-images.html [ ImageOnlyFailure Pass ]
 
 webkit.org/b/103363 [ Mac ] touchadjustment/touch-links-longpress.html [ Failure ]
 webkit.org/b/103446 [ Mac ] http/tests/canvas/canvas-slow-font-loading.html [ ImageOnlyFailure ]
@@ -4370,3 +4431,4 @@ webkit.org/b/97037 media/encrypted-media/encrypted-media-v2-syntax.html [ Timeou
 
 webkit.org/b/109416 [ Mac ] inspector/editor/text-editor-home-button.html [ Failure ]
 
+webkit.org/b/109581 [ Win ] inspector/debugger/debugger-script-preprocessor.html [ Pass Crash ]

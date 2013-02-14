@@ -1491,26 +1491,35 @@ void SpeculativeJIT::compileObjectEquality(Node* node)
     
     if (m_jit.graph().globalObjectFor(node->codeOrigin)->masqueradesAsUndefinedWatchpoint()->isStillValid()) {
         m_jit.graph().globalObjectFor(node->codeOrigin)->masqueradesAsUndefinedWatchpoint()->add(speculationWatchpoint()); 
-        speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), node->child1(), 
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                MacroAssembler::Address(op1GPR, JSCell::structureOffset()), 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
-        speculationCheck(BadType, JSValueSource::unboxedCell(op2GPR), node->child2(), 
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                MacroAssembler::Address(op2GPR, JSCell::structureOffset()), 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if (m_state.forNode(node->child1()).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op1GPR), node->child1(), 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    MacroAssembler::Address(op1GPR, JSCell::structureOffset()), 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
+        if (m_state.forNode(node->child2()).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op2GPR), node->child2(), 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    MacroAssembler::Address(op2GPR, JSCell::structureOffset()), 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
     } else {
         GPRTemporary structure(this);
         GPRReg structureGPR = structure.gpr();
 
         m_jit.loadPtr(MacroAssembler::Address(op1GPR, JSCell::structureOffset()), structureGPR);
-        speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), node->child1(), 
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                structureGPR, 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if (m_state.forNode(node->child1()).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op1GPR), node->child1(), 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    structureGPR, 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
         speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), node->child1(), 
             m_jit.branchTest8(
                 MacroAssembler::NonZero, 
@@ -1518,11 +1527,14 @@ void SpeculativeJIT::compileObjectEquality(Node* node)
                 MacroAssembler::TrustedImm32(MasqueradesAsUndefined)));
 
         m_jit.loadPtr(MacroAssembler::Address(op2GPR, JSCell::structureOffset()), structureGPR);
-        speculationCheck(BadType, JSValueSource::unboxedCell(op2GPR), node->child2(), 
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                structureGPR, 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if (m_state.forNode(node->child2()).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op2GPR), node->child2(), 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    structureGPR, 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
         speculationCheck(BadType, JSValueSource::unboxedCell(op2GPR), node->child2(), 
             m_jit.branchTest8(
                 MacroAssembler::NonZero, 
@@ -1556,21 +1568,27 @@ void SpeculativeJIT::compileObjectToObjectOrOtherEquality(Edge leftChild, Edge r
     
     if (m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->isStillValid()) { 
         m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->add(speculationWatchpoint());
-        speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), leftChild, 
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                MacroAssembler::Address(op1GPR, JSCell::structureOffset()), 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if (m_state.forNode(leftChild).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op1GPR), leftChild, 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    MacroAssembler::Address(op1GPR, JSCell::structureOffset()), 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
     } else {
         GPRTemporary structure(this);
         GPRReg structureGPR = structure.gpr();
 
         m_jit.loadPtr(MacroAssembler::Address(op1GPR, JSCell::structureOffset()), structureGPR);
-        speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), leftChild, 
-            m_jit.branchPtr(
-                MacroAssembler::Equal,
-                structureGPR,
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if (m_state.forNode(leftChild).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op1GPR), leftChild, 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal,
+                    structureGPR,
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
         speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), leftChild, 
             m_jit.branchTest8(
                 MacroAssembler::NonZero, 
@@ -1587,21 +1605,27 @@ void SpeculativeJIT::compileObjectToObjectOrOtherEquality(Edge leftChild, Edge r
     // We know that within this branch, rightChild must be a cell.
     if (m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->isStillValid()) { 
         m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->add(speculationWatchpoint());
-        speculationCheck(BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild, 
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                MacroAssembler::Address(op2PayloadGPR, JSCell::structureOffset()), 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if ((m_state.forNode(rightChild).m_type & SpecCell) & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild, 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    MacroAssembler::Address(op2PayloadGPR, JSCell::structureOffset()), 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
     } else {
         GPRTemporary structure(this);
         GPRReg structureGPR = structure.gpr();
 
         m_jit.loadPtr(MacroAssembler::Address(op2PayloadGPR, JSCell::structureOffset()), structureGPR);
-        speculationCheck(BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild, 
-            m_jit.branchPtr(
-                MacroAssembler::Equal,
-                structureGPR,
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if ((m_state.forNode(rightChild).m_type & SpecCell) & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild, 
+                m_jit.branchPtr(
+                    MacroAssembler::Equal,
+                    structureGPR,
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
         speculationCheck(BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild, 
             m_jit.branchTest8(
                 MacroAssembler::NonZero, 
@@ -1619,7 +1643,7 @@ void SpeculativeJIT::compileObjectToObjectOrOtherEquality(Edge leftChild, Edge r
     
     // We know that within this branch, rightChild must not be a cell. Check if that is enough to
     // prove that it is either null or undefined.
-    if (!isOtherOrEmptySpeculation(m_state.forNode(rightChild).m_type & ~SpecCell)) {
+    if ((m_state.forNode(rightChild).m_type & ~SpecCell) & ~SpecOther) {
         m_jit.move(op2TagGPR, resultGPR);
         m_jit.or32(TrustedImm32(1), resultGPR);
         
@@ -1656,21 +1680,27 @@ void SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality(Edge leftChild
     
     if (m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->isStillValid()) {
         m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->add(speculationWatchpoint());
-        speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), leftChild,
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                MacroAssembler::Address(op1GPR, JSCell::structureOffset()), 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if (m_state.forNode(leftChild).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op1GPR), leftChild,
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    MacroAssembler::Address(op1GPR, JSCell::structureOffset()), 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
     } else {
         GPRTemporary structure(this);
         GPRReg structureGPR = structure.gpr();
 
         m_jit.loadPtr(MacroAssembler::Address(op1GPR, JSCell::structureOffset()), structureGPR);
-        speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), leftChild,
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                structureGPR, 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if (m_state.forNode(leftChild).m_type & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueSource::unboxedCell(op1GPR), leftChild,
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    structureGPR, 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
         speculationCheck(BadType, JSValueSource::unboxedCell(op1GPR), leftChild,
             m_jit.branchTest8(
                 MacroAssembler::NonZero, 
@@ -1686,21 +1716,27 @@ void SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality(Edge leftChild
     // We know that within this branch, rightChild must be a cell.
     if (m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->isStillValid()) {
         m_jit.graph().globalObjectFor(m_currentNode->codeOrigin)->masqueradesAsUndefinedWatchpoint()->add(speculationWatchpoint());
-        speculationCheck(BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild,
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                MacroAssembler::Address(op2PayloadGPR, JSCell::structureOffset()), 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if ((m_state.forNode(rightChild).m_type & SpecCell) & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild,
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    MacroAssembler::Address(op2PayloadGPR, JSCell::structureOffset()), 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
     } else {
         GPRTemporary structure(this);
         GPRReg structureGPR = structure.gpr();
 
         m_jit.loadPtr(MacroAssembler::Address(op2PayloadGPR, JSCell::structureOffset()), structureGPR);
-        speculationCheck(BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild,
-            m_jit.branchPtr(
-                MacroAssembler::Equal, 
-                structureGPR, 
-                MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        if ((m_state.forNode(rightChild).m_type & SpecCell) & ~SpecObject) {
+            speculationCheck(
+                BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild,
+                m_jit.branchPtr(
+                    MacroAssembler::Equal, 
+                    structureGPR, 
+                    MacroAssembler::TrustedImmPtr(m_jit.globalData()->stringStructure.get())));
+        }
         speculationCheck(BadType, JSValueRegs(op2TagGPR, op2PayloadGPR), rightChild,
             m_jit.branchTest8(
                 MacroAssembler::NonZero, 
@@ -1715,7 +1751,7 @@ void SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality(Edge leftChild
     
     // We know that within this branch, rightChild must not be a cell. Check if that is enough to
     // prove that it is either null or undefined.
-    if (isOtherOrEmptySpeculation(m_state.forNode(rightChild).m_type & ~SpecCell))
+    if ((m_state.forNode(rightChild).m_type & ~SpecCell) & ~SpecOther)
         rightNotCell.link(&m_jit);
     else {
         jump(notTaken, ForceJump);
@@ -4676,7 +4712,7 @@ void SpeculativeJIT::compile(Node* node)
         GPRResult resultPayload(this);
         GPRResult2 resultTag(this);
         ResolveOperationData& data = m_jit.graph().m_resolveOperationsData[node->resolveOperationsDataIndex()];
-        callOperation(operationResolve, resultTag.gpr(), resultPayload.gpr(), identifier(data.identifierNumber), resolveOperations(data.resolveOperationsIndex));
+        callOperation(operationResolve, resultTag.gpr(), resultPayload.gpr(), identifier(data.identifierNumber), data.resolveOperations);
         jsValueResult(resultTag.gpr(), resultPayload.gpr(), node);
         break;
     }
@@ -4686,7 +4722,7 @@ void SpeculativeJIT::compile(Node* node)
         GPRResult resultPayload(this);
         GPRResult2 resultTag(this);
         ResolveOperationData& data = m_jit.graph().m_resolveOperationsData[node->resolveOperationsDataIndex()];
-        callOperation(operationResolveBase, resultTag.gpr(), resultPayload.gpr(), identifier(data.identifierNumber), resolveOperations(data.resolveOperationsIndex), putToBaseOperation(data.putToBaseOperationIndex));
+        callOperation(operationResolveBase, resultTag.gpr(), resultPayload.gpr(), identifier(data.identifierNumber), data.resolveOperations, data.putToBaseOperation);
         jsValueResult(resultTag.gpr(), resultPayload.gpr(), node);
         break;
     }
@@ -4696,7 +4732,7 @@ void SpeculativeJIT::compile(Node* node)
         GPRResult resultPayload(this);
         GPRResult2 resultTag(this);
         ResolveOperationData& data = m_jit.graph().m_resolveOperationsData[node->resolveOperationsDataIndex()];
-        callOperation(operationResolveBaseStrictPut, resultTag.gpr(), resultPayload.gpr(), identifier(data.identifierNumber), resolveOperations(data.resolveOperationsIndex), putToBaseOperation(data.putToBaseOperationIndex));
+        callOperation(operationResolveBaseStrictPut, resultTag.gpr(), resultPayload.gpr(), identifier(data.identifierNumber), data.resolveOperations, data.putToBaseOperation);
         jsValueResult(resultTag.gpr(), resultPayload.gpr(), node);
         break;
     }
@@ -4713,7 +4749,7 @@ void SpeculativeJIT::compile(Node* node)
         GPRReg resultPayloadGPR = resultPayload.gpr();
 
         ResolveGlobalData& data = m_jit.graph().m_resolveGlobalData[node->resolveGlobalDataIndex()];
-        ResolveOperation* resolveOperationAddress = &(m_jit.codeBlock()->resolveOperations(data.resolveOperationsIndex)->data()[data.resolvePropertyIndex]);
+        ResolveOperation* resolveOperationAddress = &(data.resolveOperations->data()[data.resolvePropertyIndex]);
 
         // Check Structure of global object
         m_jit.move(JITCompiler::TrustedImmPtr(m_jit.globalObjectFor(node->codeOrigin)), globalObjectGPR);

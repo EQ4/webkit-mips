@@ -50,16 +50,15 @@ my (
     $canvasProxySupport,
     $channelMessagingSupport,
     $cspNextSupport,
-    $css3BackgroundSupport,
     $css3ConditionalRulesSupport,
     $css3TextSupport,
     $cssBoxDecorationBreakSupport,
     $cssDeviceAdaptation,
     $cssExclusionsSupport,
     $cssFiltersSupport,
-    $cssHierarchiesSupport,
     $cssImageOrientationSupport,
     $cssImageResolutionSupport,
+    $cssImageSetSupport,
     $cssRegionsSupport,
     $cssShadersSupport,
     $cssStickyPositionSupport,
@@ -84,7 +83,6 @@ my (
     $highDPICanvasSupport,
     $icondatabaseSupport,
     $iframeSeamlessSupport,
-    $imageResizerSupport,
     $indexedDatabaseSupport,
     $inputSpeechSupport,
     $inputTypeColorSupport,
@@ -110,7 +108,6 @@ my (
     $mhtmlSupport,
     $microdataSupport,
     $mouseCursorScaleSupport,
-    $mutationObserversSupport,
     $netscapePluginAPISupport,
     $networkInfoSupport,
     $nosniffSupport,
@@ -150,7 +147,6 @@ my (
     $webSocketsSupport,
     $webTimingSupport,
     $workersSupport,
-    $xhrResponseBlobSupport,
     $xhrTimeoutSupport,
     $xsltSupport,
 );
@@ -204,6 +200,9 @@ my @features = (
     { option => "css-image-resolution", desc => "Toggle CSS image-resolution support",
       define => "ENABLE_CSS_IMAGE_RESOLUTION", default => (isBlackBerry() || isGtk()), value => \$cssImageResolutionSupport },
 
+    { option => "css-image-set", desc => "Toggle CSS image-set support",
+      define => "ENABLE_CSS_IMAGE_SET", default => (isEfl() || isGtk()), value => \$cssImageSetSupport },
+
     { option => "css-regions", desc => "Toggle CSS Regions support",
       define => "ENABLE_CSS_REGIONS", default => 1, value => \$cssRegionsSupport },
 
@@ -220,7 +219,7 @@ my @features = (
       define => "ENABLE_CSS_TRANSFORMS_ANIMATIONS_UNPREFIXED", default => 1, value => \$cssAnimationsTransformsUnprefixedSupport },
 
     { option => "css-variables", desc => "Toggle CSS Variable support",
-      define => "ENABLE_CSS_VARIABLES", default => (isBlackBerry() || isEfl()), value => \$cssVariablesSupport },
+      define => "ENABLE_CSS_VARIABLES", default => (isBlackBerry() || isEfl() || isGtk()), value => \$cssVariablesSupport },
 
     { option => "custom-scheme-handler", desc => "Toggle Custom Scheme Handler support",
       define => "ENABLE_CUSTOM_SCHEME_HANDLER", default => (isBlackBerry() || isEfl()), value => \$customSchemeHandlerSupport },
@@ -244,7 +243,7 @@ my @features = (
       define => "ENABLE_DIRECTORY_UPLOAD", default => 0, value => \$directoryUploadSupport },
 
     { option => "dom4-events-constructor", desc => "Expose DOM4 Events constructors",
-      define => "ENABLE_DOM4_EVENTS_CONSTRUCTOR", default => isAppleWebKit(), value => \$dom4EventsConstructor },
+      define => "ENABLE_DOM4_EVENTS_CONSTRUCTOR", default => (isAppleWebKit() || isGtk()), value => \$dom4EventsConstructor },
 
     { option => "download-attribute", desc => "Toggle Download Attribute support",
       define => "ENABLE_DOWNLOAD_ATTRIBUTE", default => (isBlackBerry() || isEfl()), value => \$downloadAttributeSupport },
@@ -467,9 +466,6 @@ my @features = (
 
     { option => "workers", desc => "Toggle Workers support",
       define => "ENABLE_WORKERS", default => (isAppleWebKit() || isGtk() || isBlackBerry() || isEfl()), value => \$workersSupport },
-
-    { option => "xhr-response-blob", desc => "Toggle XHR Response BLOB support",
-      define => "ENABLE_XHR_RESPONSE_BLOB", default => isBlackBerry(), value => \$xhrResponseBlobSupport },
 
     { option => "xhr-timeout", desc => "Toggle XHR Timeout support",
       define => "ENABLE_XHR_TIMEOUT", default => (isEfl() || isGtk() || isAppleMacWebKit()), value => \$xhrTimeoutSupport },

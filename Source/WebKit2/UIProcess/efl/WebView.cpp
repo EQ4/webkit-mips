@@ -51,6 +51,9 @@ WebView::WebView(WebContext* context, PageClient* pageClient, WebPageGroup* page
 
 WebView::~WebView()
 {
+    if (m_webPageProxy->isClosed())
+        return;
+
     m_webPageProxy->close();
 }
 
@@ -92,6 +95,21 @@ void WebView::suspendActiveDOMObjectsAndAnimations()
 void WebView::resumeActiveDOMObjectsAndAnimations()
 {
     m_webPageProxy->resumeActiveDOMObjectsAndAnimations();
+}
+
+void WebView::initializeClient(const WKViewClient* client)
+{
+    m_client.initialize(client);
+}
+
+void WebView::setViewNeedsDisplay(const WebCore::IntRect& area)
+{
+    m_client.viewNeedsDisplay(this, area);
+}
+
+void WebView::didChangeContentsSize(const WebCore::IntSize& size)
+{
+    m_client.didChangeContentsSize(this, size);
 }
 
 } // namespace WebKit

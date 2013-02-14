@@ -61,7 +61,11 @@ static inline int cssyyerror(void*, const char*)
 
 %}
 
+#if ENABLE_SHADOW_DOM
+%expect 67
+#else
 %expect 66
+#endif
 
 %nonassoc LOWEST_PREC
 
@@ -111,6 +115,9 @@ static inline int cssyyerror(void*, const char*)
 %token WEBKIT_SELECTOR_SYM
 %token WEBKIT_REGION_RULE_SYM
 %token WEBKIT_VIEWPORT_RULE_SYM
+#if ENABLE_CSS3_CONDITIONAL_RULES
+%token WEBKIT_SUPPORTS_CONDITION_SYM
+#endif
 #if ENABLE_CSS_SHADERS
 %token WEBKIT_FILTER_RULE_SYM
 #endif
@@ -181,6 +188,7 @@ static inline int cssyyerror(void*, const char*)
 %token <string> CUEFUNCTION
 #endif
 %token <string> NOTFUNCTION
+%token <string> DISTRIBUTEDFUNCTION
 %token <string> CALCFUNCTION
 %token <string> MINFUNCTION
 %token <string> MAXFUNCTION
@@ -249,6 +257,7 @@ static inline int cssyyerror(void*, const char*)
 %type <boolean> supports_conjunction
 %type <boolean> supports_disjunction
 %type <boolean> supports_declaration_condition
+%type <boolean> supports_error
 #endif
 
 %type <string> keyframe_name
@@ -311,6 +320,9 @@ stylesheet:
   | webkit_mediaquery maybe_space
   | webkit_selector maybe_space
   | webkit_keyframe_rule maybe_space
+#if ENABLE_CSS3_CONDITIONAL_RULES
+  | webkit_supports_condition maybe_space
+#endif
   ;
 
 webkit_rule:
@@ -357,6 +369,14 @@ webkit_selector:
         }
     }
 ;
+
+#if ENABLE_CSS3_CONDITIONAL_RULES
+webkit_supports_condition:
+    WEBKIT_SUPPORTS_CONDITION_SYM '{' maybe_space supports_condition '}' {
+        parser->m_supportsCondition = $4;
+    }
+;
+#endif
 
 maybe_space:
     /* empty */ %prec UNIMPORTANT_TOK
@@ -692,7 +712,15 @@ supports:
     before_supports_rule SUPPORTS_SYM maybe_space supports_condition at_supports_rule_header_end '{' at_rule_body_start maybe_space block_rule_list save_block {
         $$ = parser->createSupportsRule($4, $9);
     }
+    | before_supports_rule SUPPORTS_SYM supports_error {
+        parser->popRuleData();
+        parser->popSupportsRuleData();
+    }
     ;
+
+supports_error:
+    error ';'
+    | error invalid_block
 
 before_supports_rule:
     /* empty */ {
@@ -744,6 +772,7 @@ supports_condition_in_parens:
         $$ = $3;
     }
     | supports_declaration_condition
+    | '(' error ')'
     ;
 
 supports_declaration_condition:
@@ -1179,12 +1208,12 @@ simple_selector:
     | element_name specifier_list {
         $$ = $2;
         if ($$)
-            parser->updateSpecifiersWithElementName(nullAtom, $1, $$);
+            $$ = parser->rewriteSpecifiersWithElementName(nullAtom, $1, $$);
     }
     | specifier_list {
         $$ = $1;
         if ($$)
-            parser->updateSpecifiersWithNamespaceIfNeeded($$);
+            $$ = parser->rewriteSpecifiersWithNamespaceIfNeeded($$);
     }
     | namespace_selector element_name {
         $$ = parser->createFloatingSelectorWithTagName(parser->determineNameInNamespace($1, $2));
@@ -1192,12 +1221,12 @@ simple_selector:
     | namespace_selector element_name specifier_list {
         $$ = $3;
         if ($$)
-            parser->updateSpecifiersWithElementName($1, $2, $$);
+            $$ = parser->rewriteSpecifiersWithElementName($1, $2, $$);
     }
     | namespace_selector specifier_list {
         $$ = $2;
         if ($$)
-            parser->updateSpecifiersWithElementName($1, starAtom, $$);
+            $$ = parser->rewriteSpecifiersWithElementName($1, starAtom, $$);
     }
   ;
 
@@ -1242,7 +1271,7 @@ specifier_list:
         if (!$2)
             $$ = 0;
         else if ($1)
-            $$ = parser->updateSpecifiers($1, $2);
+            $$ = parser->rewriteSpecifiers($1, $2);
     }
     | specifier_list error {
         $$ = 0;
@@ -1387,6 +1416,19 @@ pseudo:
                 $$ = 0;
         } else
             $$ = 0;
+    }
+#endif
+#if ENABLE_SHADOW_DOM
+    | ':' ':' DISTRIBUTEDFUNCTION maybe_space selector maybe_space ')' {
+        if (!$5)
+            $$ = 0;
+        else {
+            $$ = parser->createFloatingSelector();
+            $$->setMatch(CSSSelector::PseudoElement);
+            $$->setFunctionArgumentSelector($5);
+            $3.lower();
+            $$->setValue($3);
+        }
     }
 #endif
     // use by :-webkit-any.

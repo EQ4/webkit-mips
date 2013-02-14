@@ -1,3 +1,149 @@
+2013-02-14  Eric Seidel  <eric@webkit.org>
+
+        REGRESSION(r142712): attribute values show up as "(null)" instead of null with the threaded parser
+        https://bugs.webkit.org/show_bug.cgi?id=109784
+
+        Reviewed by Benjamin Poulain.
+
+        When I changed many callsites to use the (existing) String(Vector) constructor
+        I inadvertantly made those callsites convert empty vectors to null strings
+        instead of empty strings (like String(UChar,size_t) does).
+
+        This is due to an oddity/bug in our Vector implementation where data()
+        will be 0 if the Vector is empty, but only if it doesn't have inline capacity.
+        https://bugs.webkit.org/show_bug.cgi?id=109792
+
+        This changes String(Vector) to exactly match the behavior of String(vector.data(), vector.size()).
+
+        This regression was easily detectable with the threaded parser, because we use String
+        instead of AtomicString in our CompactToken (used to send the Token data
+        between threads). The main-thread parser path uses AtomicHTMLToken which
+        uses AtomicString(Vector) and does not have this bug.
+
+        * wtf/text/WTFString.h:
+        (String):
+        (WTF::String::String):
+
+2013-02-13  Zan Dobersek  <zdobersek@igalia.com>
+
+        The 'global isinf/isnan' compiler quirk required when using clang with libstdc++
+        https://bugs.webkit.org/show_bug.cgi?id=109325
+
+        Reviewed by Anders Carlsson.
+
+        Prefix calls to the isinf and isnan methods with std::, declaring we want to use the
+        two methods as they're provided by the C++ standard library being used.
+
+        * wtf/Compiler.h: Remove the global isinf/isnan compiler quirk definitions. They're not required anymore.
+        * wtf/DateMath.cpp: Move the workaround for isinf on Solaris into the std namespace. Ditto for isinf and isnan
+        when using MSVC. Stop bringing the isinf and isnan methods into the global scope when using other configurations.
+        (WTF::parseDateFromNullTerminatedCharacters):
+        * wtf/IntegralTypedArrayBase.h:
+        (WTF::IntegralTypedArrayBase::set):
+        * wtf/MathExtras.h:
+        (std):
+        (std::isinf):
+        (wtf_fmod):
+        (wtf_pow):
+        (doubleToInteger):
+        * wtf/MediaTime.cpp:
+        (WTF::MediaTime::createWithFloat):
+        (WTF::MediaTime::createWithDouble):
+        * wtf/Uint8ClampedArray.h:
+        (WTF::Uint8ClampedArray::set):
+
+2013-02-13  Eric Seidel  <eric@webkit.org>
+
+        Don't copy Vector<UChar> when passing to new String methods from bug 109617
+        https://bugs.webkit.org/show_bug.cgi?id=109708
+
+        Reviewed by Tony Gentilcore.
+
+        Thanks for the catch Darin.
+
+        * wtf/text/AtomicString.h:
+        (WTF::AtomicString::AtomicString):
+        * wtf/text/StringImpl.h:
+        (WTF::StringImpl::create8BitIfPossible):
+
+2013-02-13  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Remove remaining dead code from the GLib unicode backend
+        https://bugs.webkit.org/show_bug.cgi?id=109707
+
+        Reviewed by Philippe Normand.
+
+        * wtf/unicode/Unicode.h:
+
+2013-02-13  Andrew Wilson  <atwilson@chromium.org>
+
+        Unreviewed Chromium gyp-file cleanup after glib backend removal.
+        https://bugs.webkit.org/show_bug.cgi?id=109672
+
+        Removed references to GLib unicode backend:
+
+        * WTF.gyp/WTF.gyp:
+        * WTF.gypi:
+
+2013-02-12  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Remove the GLib unicode backend
+        https://bugs.webkit.org/show_bug.cgi?id=109627
+
+        Reviewed by Benjamin Poulain.
+
+        Remove references to the GLib unicode backend from WTF.
+
+        * GNUmakefile.list.am: Remove GLib unicode files from the source list.
+        * wtf/unicode/glib/UnicodeGLib.cpp: Removed.
+        * wtf/unicode/glib/UnicodeGLib.h: Removed.
+
+2013-02-12  Takeshi Yoshino  <tyoshino@google.com>
+
+        Remove unnecessary and confusing includes from StreamBuffer.h.
+        https://bugs.webkit.org/show_bug.cgi?id=109652
+
+        Reviewed by Benjamin Poulain.
+
+        StreamBuffer.h is using OwnPtr for storing Vectors into a Deque.
+        FixedArray.h and PassOwnPtr.h are included but not used.
+
+        VectorTraits defines how to move OwnPtr in Vector. It's done by memcpy.
+        So, there's no need for PassOwnPtr (Deque<PassOwnPtr<Vector<char> > >
+        is even slower).
+
+        * wtf/StreamBuffer.h:
+
+2013-02-12  Eric Seidel  <eric@webkit.org>
+
+        Teach more WTF string classes about vectors with inline capacity
+        https://bugs.webkit.org/show_bug.cgi?id=109617
+
+        Reviewed by Benjamin Poulain.
+
+        The HTML and WebVTT parsers use constructions like:
+        AtomicString name(m_name.data(), m_name.size())
+        all over the place because they use inline capacity
+        on the parse vectors for performance.
+
+        This change just add the necessary template variants
+        to the related String constructors/methods in WTF so that
+        this parser code can just pass the vector directly instead.
+
+        I'll do the actual parser cleanups in follow-up patches to keep things simple.
+
+        * wtf/text/AtomicString.h:
+        (AtomicString):
+        (WTF::AtomicString::AtomicString):
+        * wtf/text/StringImpl.h:
+        (StringImpl):
+        (WTF::StringImpl::create8BitIfPossible):
+        * wtf/text/WTFString.h:
+        (String):
+        (WTF::String::make8BitFrom16BitSource):
+        (WTF):
+        (WTF::append):
+
 2013-02-11  Oliver Hunt  <oliver@apple.com>
 
         Build fix.

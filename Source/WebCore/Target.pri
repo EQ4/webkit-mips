@@ -305,6 +305,7 @@ SOURCES += \
     css/CSSValue.cpp \
     css/CSSValueList.cpp \
     css/CSSValuePool.cpp \
+    css/DOMWindowCSS.cpp \
     css/DocumentRuleSets.cpp \
     css/FontFeatureValue.cpp \
     css/FontValue.cpp \
@@ -398,7 +399,6 @@ SOURCES += \
     dom/DOMStringMap.cpp \
     dom/DatasetDOMStringMap.cpp \
     dom/Element.cpp \
-    dom/ElementAttributeData.cpp \
     dom/ElementRareData.cpp \
     dom/ElementShadow.cpp \
     dom/EntityReference.cpp \
@@ -907,6 +907,7 @@ SOURCES += \
     page/animation/KeyframeAnimation.cpp \
     page/AutoscrollController.cpp \
     page/BarInfo.cpp \
+    page/CaptionUserPreferences.cpp \
     page/Chrome.cpp \
     page/Console.cpp \
     page/ContentSecurityPolicy.cpp \
@@ -1539,6 +1540,7 @@ HEADERS += \
     css/CSSValueList.h \
     css/CSSValuePool.h \
     css/CSSVariableValue.h \
+    css/DOMWindowCSS.h \
     css/FontFeatureValue.h \
     css/FontValue.h \
     css/LengthFunctions.h \
@@ -1624,7 +1626,6 @@ HEADERS += \
     dom/DatasetDOMStringMap.h \
     dom/Element.h \
     dom/ElementShadow.h \
-    dom/ElementAttributeData.h \
     dom/Entity.h \
     dom/EntityReference.h \
     dom/Event.h \
@@ -1917,6 +1918,7 @@ HEADERS += \
     html/TimeRanges.h \
     html/TypeAhead.h \
     html/ValidityState.h \
+    html/parser/AtomicHTMLToken.h \
     html/parser/CSSPreloadScanner.h \
     html/parser/CompactHTMLToken.h \
     html/parser/HTMLConstructionSite.h \
@@ -1932,7 +1934,6 @@ HEADERS += \
     html/parser/HTMLScriptRunner.h \
     html/parser/HTMLScriptRunnerHost.h \
     html/parser/HTMLToken.h \
-    html/parser/HTMLTokenTypes.h \
     html/parser/HTMLTokenizer.h \
     html/parser/HTMLTreeBuilder.h \
     html/parser/HTMLViewSourceParser.h \
@@ -2091,6 +2092,7 @@ HEADERS += \
     page/AdjustViewSizeOrNot.h \
     page/AutoscrollController.h \
     page/BarInfo.h \
+    page/CaptionUserPreferences.h \
     page/Chrome.h \
     page/Console.h \
     page/ConsoleTypes.h \
@@ -2248,6 +2250,7 @@ HEADERS += \
     platform/graphics/IntPoint.h \
     platform/graphics/IntPointHash.h \
     platform/graphics/IntRect.h \
+    platform/graphics/IntRectExtent.h \
     platform/graphics/Latin1TextIterator.h \
     platform/graphics/MediaPlayer.h \
     platform/graphics/NativeImagePtr.h \
@@ -2653,6 +2656,7 @@ HEADERS += \
     svg/graphics/filters/SVGFilter.h \
     svg/graphics/SVGImage.h \
     svg/graphics/SVGImageCache.h \
+    svg/graphics/SVGImageForContainer.h \
     svg/properties/SVGAttributeToPropertyMap.h \
     svg/properties/SVGAnimatedEnumerationPropertyTearOff.h \
     svg/properties/SVGAnimatedListPropertyTearOff.h \
@@ -3774,6 +3778,7 @@ enable?(SVG) {
         svg/graphics/filters/SVGFilterBuilder.cpp \
         svg/graphics/SVGImage.cpp \
         svg/graphics/SVGImageCache.cpp \
+        svg/graphics/SVGImageForContainer.cpp \
         svg/properties/SVGAttributeToPropertyMap.cpp \
         svg/properties/SVGPathSegListPropertyTearOff.cpp \
         svg/SVGDocumentExtensions.cpp \
@@ -4221,6 +4226,7 @@ contains(DEFINES, ENABLE_OPENCL=1) {
     SOURCES += \
         platform/graphics/gpu/opencl/FilterContextOpenCL.cpp \
         platform/graphics/gpu/opencl/OpenCLFEColorMatrix.cpp \
+        platform/graphics/gpu/opencl/OpenCLFEFlood.cpp \
         platform/graphics/gpu/opencl/OpenCLFESourceAlpha.cpp \
         platform/graphics/gpu/opencl/OpenCLFESourceGraphic.cpp \
         platform/graphics/gpu/opencl/OpenCLFETurbulence.cpp

@@ -258,7 +258,6 @@ fast/dom/Document/CaretRangeFromPoint/basic.html
 fast/dom/Document/CaretRangeFromPoint/hittest-relative-to-viewport.html
 fast/dom/Element/class-attribute-whitespace.html 
 fast/dom/Element/getBoundingClientRect.html
-fast/dom/Element/id-in-deletebutton.html 
 fast/dom/Element/null-offset-parent.html 
 fast/dom/HTMLDocument/frameless-location-bugzilla10837.html 
 fast/dom/HTMLElement/bdo.html 
@@ -2149,9 +2148,6 @@ fast/events/platform-wheelevent-paging-y-in-non-scrolling-page.html
 fast/events/platform-wheelevent-paging-y-in-scrolling-div.html
 fast/events/platform-wheelevent-paging-y-in-scrolling-page.html
 
-# Web Intents is not yet enabled.
-webintents/
-
 # Pointer Lock is not implemented.
 pointer-lock/
 http/tests/pointer-lock/
@@ -2522,6 +2518,9 @@ fast/multicol/span/clone-flexbox.html
 # Content Security Policy 1.1 (ENABLE_CSP_NEXT) is not enabled
 # https://bugs.webkit.org/show_bug.cgi?id=85558
 http/tests/security/contentSecurityPolicy/1.1
+
+# X-Content-Type-Options (ENABLE_NOSNIFF) is not enabled.
+http/tests/security/contentTypeOptions
 
 # Skip tests in fast/text/shaping
 fast/text/shaping
@@ -2909,9 +2908,10 @@ css3/flexbox/flexbox-baseline.html
 #https://bugs.webkit.org/show_bug.cgi?id=99878
 css3/flexbox/flexbox-baseline-margins.html
 
-# css3-conditionals support is not yet enabled. http://webkit.org/b/86146 http://webkit.org/b/104822
+# css3-conditionals support is not yet enabled. http://webkit.org/b/86146 http://webkit.org/b/104822 http://webkit.org/b/100324
 css3/supports.html
 css3/supports-cssom.html
+css3/supports-dom-api.html
 
 # https://bugs.webkit.org/show_bug.cgi?id=98169
 http/tests/inspector/stacktraces

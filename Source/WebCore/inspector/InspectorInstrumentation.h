@@ -152,6 +152,7 @@ public:
     static void didDispatchEventOnWindow(const InspectorInstrumentationCookie&);
     static InspectorInstrumentationCookie willEvaluateScript(Frame*, const String& url, int lineNumber);
     static void didEvaluateScript(const InspectorInstrumentationCookie&);
+    static void scriptsEnabled(Page*, bool isEnabled);
     static void didCreateIsolatedContext(Frame*, ScriptState*, SecurityOrigin*);
     static InspectorInstrumentationCookie willFireTimer(ScriptExecutionContext*, int timerId);
     static void didFireTimer(const InspectorInstrumentationCookie&);
@@ -356,6 +357,7 @@ private:
     static void didDispatchEventOnWindowImpl(const InspectorInstrumentationCookie&);
     static InspectorInstrumentationCookie willEvaluateScriptImpl(InstrumentingAgents*, const String& url, int lineNumber, Frame*);
     static void didEvaluateScriptImpl(const InspectorInstrumentationCookie&);
+    static void scriptsEnabledImpl(InstrumentingAgents*, bool isEnabled);
     static void didCreateIsolatedContextImpl(InstrumentingAgents*, Frame*, ScriptState*, SecurityOrigin*);
     static InspectorInstrumentationCookie willFireTimerImpl(InstrumentingAgents*, int timerId, ScriptExecutionContext*);
     static void didFireTimerImpl(const InspectorInstrumentationCookie&);
@@ -876,7 +878,7 @@ inline InspectorInstrumentationCookie InspectorInstrumentation::willDispatchEven
     UNUSED_PARAM(event);
     UNUSED_PARAM(window);
     UNUSED_PARAM(node);
-    UNUSED_PARAM(ancestors);
+    UNUSED_PARAM(eventPath);
 #endif
     return InspectorInstrumentationCookie();
 }
@@ -963,6 +965,18 @@ inline void InspectorInstrumentation::didEvaluateScript(const InspectorInstrumen
         didEvaluateScriptImpl(cookie);
 #else
     UNUSED_PARAM(cookie);
+#endif
+}
+
+inline void InspectorInstrumentation::scriptsEnabled(Page* page, bool isEnabled)
+{
+#if ENABLE(INSPECTOR)
+    FAST_RETURN_IF_NO_FRONTENDS(void());
+    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
+        return scriptsEnabledImpl(instrumentingAgents, isEnabled);
+#else
+    UNUSED_PARAM(page);
+    UNUSED_PARAM(isEnabled);
 #endif
 }
 

@@ -128,34 +128,28 @@ bool CaptionUserPreferencesMac::userHasCaptionPreferences() const
 
 void CaptionUserPreferencesMac::registerForPreferencesChangedCallbacks(CaptionPreferencesChangedListener* listener)
 {
-    if (!MediaAccessibilityLibrary()) {
-        CaptionUserPreferences::registerForPreferencesChangedCallbacks(listener);
-        return;
-    }
+    CaptionUserPreferences::registerForPreferencesChangedCallbacks(listener);
 
-    ASSERT(!m_captionPreferenceChangeListeners.contains(listener));
+    if (!MediaAccessibilityLibrary())
+        return;
 
     if (!kMAXCaptionAppearanceSettingsChangedNotification)
         return;
 
     if (!m_listeningForPreferenceChanges) {
         m_listeningForPreferenceChanges = true;
-        CFNotificationCenterAddObserver (CFNotificationCenterGetLocalCenter(), this, userCaptionPreferencesChangedNotificationCallback, kMAXCaptionAppearanceSettingsChangedNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
+        CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), this, userCaptionPreferencesChangedNotificationCallback, kMAXCaptionAppearanceSettingsChangedNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
     }
     
     updateCaptionStyleSheetOveride();
-    m_captionPreferenceChangeListeners.add(listener);
 }
 
-void CaptionUserPreferencesMac::unregisterForPreferencesChangedCallbacks(CaptionPreferencesChangedListener* listener)
+void CaptionUserPreferencesMac::captionPreferencesChanged()
 {
-    if (!MediaAccessibilityLibrary()) {
-        CaptionUserPreferences::unregisterForPreferencesChangedCallbacks(listener);
-        return;
-    }
+    if (havePreferenceChangeListeners())
+        updateCaptionStyleSheetOveride();
 
-    if (kMAXCaptionAppearanceSettingsChangedNotification)
-        m_captionPreferenceChangeListeners.remove(listener);
+    CaptionUserPreferences::captionPreferencesChanged();
 }
 
 String CaptionUserPreferencesMac::captionsWindowCSS() const
@@ -421,17 +415,6 @@ float CaptionUserPreferencesMac::captionFontSizeScale(bool& important) const
 #endif
 }
 
-void CaptionUserPreferencesMac::captionPreferencesChanged()
-{
-    if (m_captionPreferenceChangeListeners.isEmpty())
-        return;
-
-    updateCaptionStyleSheetOveride();
-
-    for (HashSet<CaptionPreferencesChangedListener*>::iterator i = m_captionPreferenceChangeListeners.begin(); i != m_captionPreferenceChangeListeners.end(); ++i)
-        (*i)->captionPreferencesChanged();
-}
-
 void CaptionUserPreferencesMac::updateCaptionStyleSheetOveride()
 {
     // Identify our override style sheet with a unique URL - a new scheme and a UUID.
@@ -473,8 +456,10 @@ Vector<String> CaptionUserPreferencesMac::preferredLanguages() const
         }
     }
 
+    CFIndex languageCount = 0;
     RetainPtr<CFArrayRef> languages(AdoptCF, MACaptionAppearanceCopySelectedLanguages(kMACaptionAppearanceDomainUser));
-    CFIndex languageCount = CFArrayGetCount(languages.get());
+    if (languages)
+        languageCount = CFArrayGetCount(languages.get());
 
     if (!languageCount)
         return CaptionUserPreferences::preferredLanguages();

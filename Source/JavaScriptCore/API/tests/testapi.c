@@ -46,6 +46,9 @@ static double nan(const char*)
     return std::numeric_limits<double>::quiet_NaN();
 }
 
+using std::isinf;
+using std::isnan;
+
 #endif
 
 #if JS_OBJC_API_ENABLED

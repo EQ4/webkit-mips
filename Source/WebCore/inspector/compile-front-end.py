@@ -151,6 +151,7 @@ modules = [
             "SplitView.js",
             "SidebarView.js",
             "StatusBarButton.js",
+            "SuggestBox.js",
             "TabbedPane.js",
             "TextEditor.js",
             "TextEditorHighlighter.js",
@@ -276,7 +277,9 @@ modules = [
         "name": "timeline",
         "dependencies": ["components"],
         "sources": [
+            "DOMCountersGraph.js",
             "MemoryStatistics.js",
+            "NativeMemoryGraph.js",
             "TimelineModel.js",
             "TimelineOverviewPane.js",
             "TimelinePanel.js",

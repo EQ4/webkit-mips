@@ -55,6 +55,7 @@ class WebDragData;
 class WebFrame;
 class WebImage;
 class WebNode;
+class WebNotificationPresenter;
 class WebPlugin;
 class WebRange;
 class WebSerializedScriptValue;
@@ -94,6 +95,8 @@ public:
     void setPaintRect(const WebKit::WebRect&);
     WebKit::WebRect paintRect() const;
 
+    std::string captureTree(bool debugRenderTree);
+
     void setLogConsoleOutput(bool enabled);
 
 protected:
@@ -129,6 +132,7 @@ protected:
     void showContextMenu(WebKit::WebFrame*, const WebKit::WebContextMenuData&);
     WebKit::WebUserMediaClient* userMediaClient();
     void printPage(WebKit::WebFrame*);
+    WebKit::WebNotificationPresenter* notificationPresenter();
 
     void willPerformClientRedirect(WebKit::WebFrame*, const WebKit::WebURL& from, const WebKit::WebURL& to, double interval, double fire_time);
     void didCancelClientRedirect(WebKit::WebFrame*);
@@ -334,6 +338,10 @@ public:
     virtual void printPage(WebKit::WebFrame* frame)
     {
         WebTestProxyBase::printPage(frame);
+    }
+    virtual WebKit::WebNotificationPresenter* notificationPresenter()
+    {
+        return WebTestProxyBase::notificationPresenter();
     }
 
     // WebFrameClient implementation.

@@ -47,12 +47,14 @@
 
 namespace WebKit {
 class WebArrayBufferView;
+class WebNotificationPresenter;
 class WebPermissionClient;
 class WebView;
 }
 
 namespace WebTestRunner {
 
+class NotificationPresenter;
 class WebPermissions;
 class WebTestDelegate;
 
@@ -71,20 +73,20 @@ public:
     void setTestIsRunning(bool);
 
     // WebTestRunner implementation.
-    virtual bool shouldDumpAsText() const OVERRIDE;
-    virtual bool shouldGeneratePixelResults() const OVERRIDE;
-    virtual bool shouldDumpChildFrameScrollPositions() const OVERRIDE;
-    virtual bool shouldDumpChildFramesAsText() const OVERRIDE;
+    virtual bool shouldGeneratePixelResults() OVERRIDE;
     virtual bool shouldDumpAsAudio() const OVERRIDE;
     virtual const WebKit::WebArrayBufferView* audioData() const OVERRIDE;
     virtual WebKit::WebPermissionClient* webPermissions() const OVERRIDE;
-    virtual bool shouldDumpBackForwardList() const OVERRIDE;
     virtual bool shouldDumpSelectionRect() const OVERRIDE;
     virtual bool testRepaint() const OVERRIDE;
     virtual bool sweepHorizontally() const OVERRIDE;
     virtual bool isPrinting() const OVERRIDE;
 
     // Methods used by WebTestProxyBase.
+    bool shouldDumpAsText();
+    bool shouldDumpBackForwardList() const;
+    bool shouldDumpChildFrameScrollPositions() const;
+    bool shouldDumpChildFramesAsText() const;
     void showDevTools();
     void setShouldDumpAsText(bool);
     void setShouldGeneratePixelResults(bool);
@@ -116,6 +118,9 @@ public:
     bool shouldInterceptPostMessage() const;
     bool isSmartInsertDeleteEnabled() const;
     bool isSelectTrailingWhitespaceEnabled() const;
+#if ENABLE_NOTIFICATIONS
+    WebKit::WebNotificationPresenter* notificationPresenter() const;
+#endif
 
     // A single item in the work queue.
     class WorkItem {
@@ -456,10 +461,12 @@ private:
     void setMockGeolocationPosition(const CppArgumentList&, CppVariant*);
     void setMockGeolocationPositionUnavailableError(const CppArgumentList&, CppVariant*);
 
+#if ENABLE_NOTIFICATIONS
     // Grants permission for desktop notifications to an origin
     void grantWebNotificationPermission(const CppArgumentList&, CppVariant*);
     // Simulates a click on a desktop notification.
     void simulateLegacyWebNotificationClick(const CppArgumentList&, CppVariant*);
+#endif
 
     // Speech input related functions.
     void addMockSpeechInputResult(const CppArgumentList&, CppVariant*);
@@ -486,6 +493,7 @@ private:
 
     ///////////////////////////////////////////////////////////////////////////
     // Internal helpers
+    void checkResponseMimeType();
     void completeNotifyDone(bool isTimeout);
     class NotifyDoneTimedOutTask: public WebMethodTask<TestRunner> {
     public:
@@ -659,6 +667,10 @@ private:
 
     // WebPermissionClient mock object.
     std::auto_ptr<WebPermissions> m_webPermissions;
+
+#if ENABLE_NOTIFICATIONS
+    std::auto_ptr<NotificationPresenter> m_notificationPresenter;
+#endif
 };
 
 }
