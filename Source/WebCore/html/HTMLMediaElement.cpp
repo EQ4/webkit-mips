@@ -313,7 +313,7 @@ HTMLMediaElement::HTMLMediaElement(const QualifiedName& tagName, Document* docum
     m_mediaSourceURL.setPath(createCanonicalUUIDString());
 #endif
 
-    setHasCustomCallbacks();
+    setHasCustomStyleCallbacks();
     addElementToDocumentMap(this, document);
 
 #if ENABLE(VIDEO_TRACK)
@@ -347,6 +347,10 @@ HTMLMediaElement::~HTMLMediaElement()
 
 #if ENABLE(MEDIA_SOURCE)
     setSourceState(MediaSource::closedKeyword());
+#endif
+
+#if ENABLE(ENCRYPTED_MEDIA_V2)
+    setMediaKeys(0);
 #endif
 
     removeElementFromDocumentMap(this, document());
@@ -1995,7 +1999,14 @@ bool HTMLMediaElement::mediaPlayerKeyNeeded(MediaPlayer*, Uint8Array* initData)
 
 void HTMLMediaElement::setMediaKeys(MediaKeys* mediaKeys)
 {
+    if (m_mediaKeys == mediaKeys)
+        return;
+
+    if (m_mediaKeys)
+        m_mediaKeys->setMediaElement(0);
     m_mediaKeys = mediaKeys;
+    if (m_mediaKeys)
+        m_mediaKeys->setMediaElement(this);
 }
 #endif
 
@@ -2543,7 +2554,7 @@ void HTMLMediaElement::webkitAddKey(const String& keySystem, PassRefPtr<Uint8Arr
 #if ENABLE(ENCRYPTED_MEDIA_V2)
     static bool firstTime = true;
     if (firstTime && context() && context()->scriptExecutionContext()) {
-        context()->scriptExecutionContext()->addConsoleMessage(JSMessageSource, WarningMessageLevel, "'HTMLMediaElement.webkitAddKey()' is deprecated.  Use 'MediaKeySession.addKey()' instead.");
+        context()->scriptExecutionContext()->addConsoleMessage(JSMessageSource, WarningMessageLevel, "'HTMLMediaElement.webkitAddKey()' is deprecated.  Use 'MediaKeySession.update()' instead.");
         firstTime = false;
     }
 #endif
@@ -4447,6 +4458,9 @@ void HTMLMediaElement::captionPreferencesChanged()
 
 void HTMLMediaElement::markCaptionAndSubtitleTracksAsUnconfigured()
 {
+    if (!m_textTracks)
+        return;
+
     // Mark all tracks as not "configured" so that configureTextTracks()
     // will reconsider which tracks to display in light of new user preferences
     // (e.g. default tracks should not be displayed if the user has turned off

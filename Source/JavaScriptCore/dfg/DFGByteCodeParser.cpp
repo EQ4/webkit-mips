@@ -35,7 +35,7 @@
 #include "DFGArrayMode.h"
 #include "DFGCapabilities.h"
 #include "GetByIdStatus.h"
-#include "JSCJSValueInlines.h"
+#include "Operations.h"
 #include "PreciseJumpTargets.h"
 #include "PutByIdStatus.h"
 #include "ResolveGlobalStatus.h"
@@ -1464,7 +1464,6 @@ bool ByteCodeParser::handleMinMax(bool usesResult, int resultOperand, NodeType o
     }
      
     if (argumentCountIncludingThis == 2) { // Math.min(x)
-        // FIXME: what we'd really like is a ValueToNumber, except we don't support that right now. Oh well.
         Node* result = get(registerOffset + argumentToOperand(1));
         addToGraph(CheckNumber, result);
         setIntrinsicResult(usesResult, resultOperand, result);

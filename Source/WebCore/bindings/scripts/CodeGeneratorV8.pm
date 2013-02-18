@@ -1150,7 +1150,7 @@ static void ${interfaceName}ReplaceableAttrSetter(v8::Local<v8::String> name, v8
 END
     push(@implContentDecls, GenerateFeatureObservation($interface->extendedAttributes->{"V8MeasureAs"}));
 
-    if ($interfaceName eq "DOMWindow" || $interface->extendedAttributes->{"CheckSecurity"}) {
+    if ($interface->extendedAttributes->{"CheckSecurity"}) {
         AddToImplIncludes("Frame.h");
         push(@implContentDecls, <<END);
     ${interfaceName}* imp = V8${interfaceName}::toNative(info.Holder());
@@ -1369,49 +1369,6 @@ END
     push(@implContentDecls, "#endif // ${conditionalString}\n\n") if $conditionalString;
 }
 
-sub GenerateEventListenerCallback
-{
-    my $interfaceName = shift;
-    my $requiresHiddenDependency = shift;
-    my $function = shift;
-    my $name = $function->signature->name;
-    my $lookupType = ($name eq "addEventListener") ? "OrCreate" : "Only";
-    my $passRefPtrHandling = ($name eq "addEventListener") ? "" : ".get()";
-    my $hiddenDependencyAction = ($name eq "addEventListener") ? "create" : "remove";
-
-    AddToImplIncludes("V8EventListenerList.h");
-    push(@implContentDecls, <<END);
-static v8::Handle<v8::Value> ${name}Callback(const v8::Arguments& args)
-{
-END
-    if (HasCustomMethod($function->signature->extendedAttributes)) {
-        push(@implContentDecls, <<END);
-    return V8${interfaceName}::${name}CallbackCustom(args);
-}
-
-END
-        return;
-    }
-
-    push(@implContentDecls, <<END);
-    RefPtr<EventListener> listener = V8EventListenerList::getEventListener(args[1], false, ListenerFind${lookupType});
-    if (listener) {
-        V8TRYCATCH_FOR_V8STRINGRESOURCE(V8StringResource<WithNullCheck>, stringResource, args[0]);
-        V8${interfaceName}::toNative(args.Holder())->${name}(stringResource, listener${passRefPtrHandling}, args[2]->BooleanValue());
-END
-    if ($requiresHiddenDependency) {
-        push(@implContentDecls, <<END);
-        ${hiddenDependencyAction}HiddenDependency(args.Holder(), args[1], V8${interfaceName}::eventListenerCacheIndex, args.GetIsolate());
-END
-    }
-    push(@implContentDecls, <<END);
-    }
-    return v8Undefined();
-}
-
-END
-}
-
 sub GenerateParametersCheckExpression
 {
     my $numParameters = shift;
@@ -1536,17 +1493,6 @@ sub GenerateFunctionCallback
         $name = $name . $function->{overloadIndex};
     }
 
-    # Adding and removing event listeners are not standard callback behavior,
-    # but they are extremely consistent across the various interfaces that take event listeners,
-    # so we can generate them as a "special case".
-    if ($name eq "addEventListener") {
-        GenerateEventListenerCallback($interfaceName, !$codeGenerator->InheritsInterface($interface, "Node"), $function);
-        return;
-    } elsif ($name eq "removeEventListener") {
-        GenerateEventListenerCallback($interfaceName, !$codeGenerator->InheritsInterface($interface, "Node"), $function);
-        return;
-    }
-
     my $conditionalString = $codeGenerator->GenerateConditionalString($function->signature);
     push(@implContentDecls, "#if ${conditionalString}\n\n") if $conditionalString;
     push(@implContentDecls, <<END);
@@ -1559,6 +1505,33 @@ END
         $name = $function->signature->name;
         push(@implContentDecls, <<END);
     return ${v8InterfaceName}::${name}CallbackCustom(args);
+}
+
+END
+        push(@implContentDecls, "#endif // ${conditionalString}\n\n") if $conditionalString;
+        return;
+    }
+
+    if ($name eq "addEventListener" || $name eq "removeEventListener") {
+        my $lookupType = ($name eq "addEventListener") ? "OrCreate" : "Only";
+        my $passRefPtrHandling = ($name eq "addEventListener") ? "" : ".get()";
+        my $hiddenDependencyAction = ($name eq "addEventListener") ? "create" : "remove";
+
+        AddToImplIncludes("V8EventListenerList.h");
+        push(@implContentDecls, <<END);
+    RefPtr<EventListener> listener = V8EventListenerList::getEventListener(args[1], false, ListenerFind${lookupType});
+    if (listener) {
+        V8TRYCATCH_FOR_V8STRINGRESOURCE(V8StringResource<WithNullCheck>, stringResource, args[0]);
+        V8${interfaceName}::toNative(args.Holder())->${name}(stringResource, listener${passRefPtrHandling}, args[2]->BooleanValue());
+END
+        if (!$codeGenerator->InheritsInterface($interface, "Node")) {
+            push(@implContentDecls, <<END);
+        ${hiddenDependencyAction}HiddenDependency(args.Holder(), args[1], V8${interfaceName}::eventListenerCacheIndex, args.GetIsolate());
+END
+        }
+        push(@implContentDecls, <<END);
+    }
+    return v8Undefined();
 }
 
 END
@@ -1600,9 +1573,7 @@ END
     }
 
     # Check domain security if needed
-    if (($interface->extendedAttributes->{"CheckSecurity"}
-        || $interfaceName eq "DOMWindow")
-        && !$function->signature->extendedAttributes->{"DoNotCheckSecurity"}) {
+    if ($interface->extendedAttributes->{"CheckSecurity"} && !$function->signature->extendedAttributes->{"DoNotCheckSecurity"}) {
         # We have not find real use cases yet.
         AddToImplIncludes("Frame.h");
         push(@implContentDecls, <<END);
@@ -2412,8 +2383,7 @@ sub GenerateNonStandardFunction
         $conditional = "if (${enable_function}(impl->document()))\n        ";
     }
 
-    if ($attrExt->{"DoNotCheckSecurity"} &&
-        ($interface->extendedAttributes->{"CheckSecurity"} || $interfaceName eq "DOMWindow")) {
+    if ($interface->extendedAttributes->{"CheckSecurity"} && $attrExt->{"DoNotCheckSecurity"}) {
         # Functions that are marked DoNotCheckSecurity are always readable but if they are changed
         # and then accessed on a different domain we do not return the underlying value but instead
         # return a new copy of the original function. This is achieved by storing the changed value
@@ -2790,7 +2760,7 @@ END
         # If the function does not need domain security check, we need to
         # generate an access getter that returns different function objects
         # for different calling context.
-        if (($interface->extendedAttributes->{"CheckSecurity"} || ($interfaceName eq "DOMWindow")) && $function->signature->extendedAttributes->{"DoNotCheckSecurity"}) {
+        if ($interface->extendedAttributes->{"CheckSecurity"} && $function->signature->extendedAttributes->{"DoNotCheckSecurity"}) {
             if (!HasCustomMethod($function->signature->extendedAttributes) || $function->{overloadIndex} == 1) {
                 GenerateDomainSafeFunctionGetter($function, $interfaceName);
                 $needsDomainSafeFunctionSetter = 1;
@@ -3860,12 +3830,7 @@ sub GetNativeType
     return "Range::CompareHow" if $type eq "CompareHow";
     return "DOMTimeStamp" if $type eq "DOMTimeStamp";
     return "double" if $type eq "Date";
-
-    # FIXME: When EventTarget is an interface and not a mixin, fix this so that
-    # EventTarget can be passed as a parameter.
-    return "Node*" if $type eq "EventTarget" and $isParameter;
-
-    return "ScriptValue" if $type eq "DOMObject" or $type eq "any";
+    return "ScriptValue" if $type eq "any";
     return "Dictionary" if $type eq "Dictionary";
 
     return "RefPtr<DOMStringList>" if $type eq "DOMStringList";
@@ -3956,7 +3921,7 @@ sub JSValueToNative
         return "Dictionary($value, $getIsolate)";
     }
 
-    if ($type eq "DOMObject" or $type eq "any") {
+    if ($type eq "any") {
         AddToImplIncludes("ScriptValue.h");
         return "ScriptValue($value)";
     }
@@ -3970,14 +3935,8 @@ sub JSValueToNative
         return "MediaQueryListListener::create(" . $value . ")";
     }
 
-    # Default, assume autogenerated type conversion routines
-    # FIXME: When EventTarget is an interface and not a mixin, fix this to use
-    # V8EventTarget::HasInstance etc.
     if ($type eq "EventTarget") {
-        AddToImplIncludes("V8Node.h");
-
-        # EventTarget is not in DOM hierarchy, but all Nodes are EventTarget.
-        return "V8Node::HasInstance($value, $getIsolate) ? V8Node::toNative(v8::Handle<v8::Object>::Cast($value)) : 0";
+        return "V8DOMWrapper::isDOMWrapper($value) ? toWrapperTypeInfo(v8::Handle<v8::Object>::Cast($value))->toEventTarget(v8::Handle<v8::Object>::Cast($value)) : 0";
     }
 
     if ($type eq "XPathNSResolver") {
@@ -4008,7 +3967,7 @@ sub GetV8HeaderName
     return "V8Event.h" if $type eq "DOMTimeStamp";
     return "EventListener.h" if $type eq "EventListener";
     return "SerializedScriptValue.h" if $type eq "SerializedScriptValue";
-    return "ScriptValue.h" if $type eq "DOMObject" or $type eq "any";
+    return "ScriptValue.h" if $type eq "any";
     return "V8${type}.h";
 }
 

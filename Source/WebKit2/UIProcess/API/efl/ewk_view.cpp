@@ -25,7 +25,6 @@
 #include "FindClientEfl.h"
 #include "FormClientEfl.h"
 #include "InputMethodContextEfl.h"
-#include "PageClientBase.h"
 #include "PageLoadClientEfl.h"
 #include "PagePolicyClientEfl.h"
 #include "PageUIClientEfl.h"
@@ -62,8 +61,20 @@
 using namespace WebKit;
 using namespace WebCore;
 
+static inline EwkView* toEwkViewChecked(const Evas_Object* evasObject)
+{
+    EINA_SAFETY_ON_NULL_RETURN_VAL(evasObject, 0);
+    if (!isEwkViewEvasObject(evasObject))
+        return 0;
+
+    Ewk_View_Smart_Data* smartData = static_cast<Ewk_View_Smart_Data*>(evas_object_smart_data_get(evasObject));
+    EINA_SAFETY_ON_NULL_RETURN_VAL(smartData, 0);
+
+    return smartData->priv;
+}
+
 #define EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, ...)                        \
-    EwkView* impl = toEwkView(ewkView);                                        \
+    EwkView* impl = toEwkViewChecked(ewkView);                                 \
     do {                                                                       \
         if (!impl) {                                                           \
             EINA_LOG_CRIT("no private data for object %p", ewkView);           \
@@ -120,11 +131,11 @@ const char* ewk_view_url_get(const Evas_Object* ewkView)
     return impl->url();
 }
 
-const char *ewk_view_icon_url_get(const Evas_Object *ewkView)
+Evas_Object* ewk_view_favicon_get(const Evas_Object* ewkView)
 {
     EWK_VIEW_IMPL_GET_OR_RETURN(ewkView, impl, 0);
 
-    return impl->faviconURL();
+    return impl->createFavicon();
 }
 
 Eina_Bool ewk_view_reload(Evas_Object* ewkView)

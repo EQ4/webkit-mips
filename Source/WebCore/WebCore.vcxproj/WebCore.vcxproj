@@ -1874,12 +1874,14 @@
     <ClCompile Include="..\Modules\webdatabase\SQLResultSet.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLResultSetRowList.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLStatement.cpp" />
+    <ClCompile Include="..\Modules\webdatabase\SQLStatementBackend.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLStatementSync.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLTransaction.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLTransactionBackend.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLTransactionBackendSync.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLTransactionClient.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLTransactionCoordinator.cpp" />
+    <ClCompile Include="..\Modules\webdatabase\SQLTransactionStateMachine.cpp" />
     <ClCompile Include="..\Modules\webdatabase\SQLTransactionSync.cpp" />
     <ClCompile Include="..\Modules\webdatabase\WorkerContextWebDatabase.cpp" />
     <ClCompile Include="..\Modules\websockets\ThreadableWebSocketChannel.cpp" />
@@ -2266,6 +2268,7 @@
     </ClCompile>
     <ClCompile Include="..\platform\win\WebCoreInstanceHandle.cpp" />
     <ClCompile Include="..\storage\StorageStrategy.cpp" />
+    <ClCompile Include="..\svg\graphics\SVGImageForContainer.cpp" />
     <ClCompile Include="..\WebCorePrefix.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4819;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -6415,6 +6418,7 @@
     <ClInclude Include="..\Modules\notifications\NotificationClient.h" />
     <ClInclude Include="..\Modules\notifications\WorkerContextNotifications.h" />
     <ClInclude Include="..\Modules\webdatabase\AbstractDatabaseServer.h" />
+    <ClInclude Include="..\Modules\webdatabase\ChangeVersionData.h" />
     <ClInclude Include="..\Modules\webdatabase\ChangeVersionWrapper.h" />
     <ClInclude Include="..\Modules\webdatabase\Database.h" />
     <ClInclude Include="..\Modules\webdatabase\DatabaseAuthorizer.h" />
@@ -6442,6 +6446,7 @@
     <ClInclude Include="..\Modules\webdatabase\SQLResultSet.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLResultSetRowList.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLStatement.h" />
+    <ClInclude Include="..\Modules\webdatabase\SQLStatementBackend.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLStatementCallback.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLStatementErrorCallback.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLStatementSync.h" />
@@ -6452,6 +6457,8 @@
     <ClInclude Include="..\Modules\webdatabase\SQLTransactionClient.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLTransactionCoordinator.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLTransactionErrorCallback.h" />
+    <ClInclude Include="..\Modules\webdatabase\SQLTransactionState.h" />
+    <ClInclude Include="..\Modules\webdatabase\SQLTransactionStateMachine.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLTransactionSync.h" />
     <ClInclude Include="..\Modules\webdatabase\SQLTransactionSyncCallback.h" />
     <ClInclude Include="..\Modules\webdatabase\WorkerContextWebDatabase.h" />
@@ -6798,6 +6805,7 @@
     <ClInclude Include="..\platform\win\WCDataObject.h" />
     <ClInclude Include="..\platform\win\WebCoreInstanceHandle.h" />
     <ClInclude Include="..\storage\StorageStrategy.h" />
+    <ClInclude Include="..\svg\graphics\SVGImageForContainer.h" />
     <ClInclude Include="..\WebCorePrefix.h" />
     <ClInclude Include="..\platform\win\WebCoreTextRenderer.h" />
     <ClInclude Include="..\platform\win\WindowMessageBroadcaster.h" />

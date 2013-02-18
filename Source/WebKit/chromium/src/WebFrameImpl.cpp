@@ -119,7 +119,7 @@
 #include "Page.h"
 #include "PageOverlay.h"
 #include "Performance.h"
-#include "PlatformMessagePortChannel.h"
+#include "PlatformMessagePortChannelChromium.h"
 #include "PluginDocument.h"
 #include "PrintContext.h"
 #include "RenderBox.h"
@@ -1181,7 +1181,7 @@ size_t WebFrameImpl::characterIndexForPoint(const WebPoint& webPoint) const
         return notFound;
 
     IntPoint point = frame()->view()->windowToContents(webPoint);
-    HitTestResult result = frame()->eventHandler()->hitTestResultAtPoint(point, false);
+    HitTestResult result = frame()->eventHandler()->hitTestResultAtPoint(point);
     RefPtr<Range> range = frame()->rangeForPoint(result.roundedPointInInnerNodeFrame());
     if (!range)
         return notFound;

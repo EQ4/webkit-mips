@@ -47,6 +47,7 @@
 #include "WebSocketHandshakeResponse.h"
 #include <wtf/RefPtr.h>
 #include <wtf/UnusedParam.h>
+#include <wtf/Vector.h>
 
 namespace WebCore {
 
@@ -82,6 +83,7 @@ class ShadowRoot;
 class StorageArea;
 class StyleResolver;
 class StyleRule;
+class StyleSheet;
 class ThreadableLoaderClient;
 class WorkerContext;
 class WorkerContextProxy;
@@ -122,6 +124,7 @@ public:
     static void didRemoveDOMAttr(Document*, Element*, const AtomicString& name);
     static void characterDataModified(Document*, CharacterData*);
     static void didInvalidateStyleAttr(Document*, Node*);
+    static void activeStyleSheetsUpdated(Document*, const Vector<RefPtr<StyleSheet> >&, const Vector<RefPtr<StyleSheet> >&);
     static void frameWindowDiscarded(Frame*, DOMWindow*);
     static void mediaQueryResultChanged(Document*);
     static void didPushShadowRoot(Element* host, ShadowRoot*);
@@ -156,8 +159,6 @@ public:
     static void didCreateIsolatedContext(Frame*, ScriptState*, SecurityOrigin*);
     static InspectorInstrumentationCookie willFireTimer(ScriptExecutionContext*, int timerId);
     static void didFireTimer(const InspectorInstrumentationCookie&);
-    static void didBeginFrame(Page*);
-    static void didCancelFrame(Page*);
     static void didInvalidateLayout(Frame*);
     static InspectorInstrumentationCookie willLayout(Frame*);
     static void didLayout(const InspectorInstrumentationCookie&, RenderObject*);
@@ -327,6 +328,7 @@ private:
     static void didRemoveDOMAttrImpl(InstrumentingAgents*, Element*, const AtomicString& name);
     static void characterDataModifiedImpl(InstrumentingAgents*, CharacterData*);
     static void didInvalidateStyleAttrImpl(InstrumentingAgents*, Node*);
+    static void activeStyleSheetsUpdatedImpl(InstrumentingAgents*, const Vector<RefPtr<StyleSheet> >&, const Vector<RefPtr<StyleSheet> >&);
     static void frameWindowDiscardedImpl(InstrumentingAgents*, DOMWindow*);
     static void mediaQueryResultChangedImpl(InstrumentingAgents*);
     static void didPushShadowRootImpl(InstrumentingAgents*, Element* host, ShadowRoot*);
@@ -361,8 +363,6 @@ private:
     static void didCreateIsolatedContextImpl(InstrumentingAgents*, Frame*, ScriptState*, SecurityOrigin*);
     static InspectorInstrumentationCookie willFireTimerImpl(InstrumentingAgents*, int timerId, ScriptExecutionContext*);
     static void didFireTimerImpl(const InspectorInstrumentationCookie&);
-    static void didBeginFrameImpl(InstrumentingAgents*);
-    static void didCancelFrameImpl(InstrumentingAgents*);
     static void didInvalidateLayoutImpl(InstrumentingAgents*, Frame*);
     static InspectorInstrumentationCookie willLayoutImpl(InstrumentingAgents*, Frame*);
     static void didLayoutImpl(const InspectorInstrumentationCookie&, RenderObject*);
@@ -373,8 +373,6 @@ private:
     static void didScrollLayerImpl(InstrumentingAgents*);
     static InspectorInstrumentationCookie willPaintImpl(InstrumentingAgents*, Frame*);
     static void didPaintImpl(const InspectorInstrumentationCookie&, GraphicsContext*, const LayoutRect&);
-    static void willCompositeImpl(InstrumentingAgents*);
-    static void didCompositeImpl(InstrumentingAgents*);
     static InspectorInstrumentationCookie willRecalculateStyleImpl(InstrumentingAgents*, Frame*);
     static void didRecalculateStyleImpl(const InspectorInstrumentationCookie&);
     static void didScheduleStyleRecalculationImpl(InstrumentingAgents*, Document*);
@@ -619,6 +617,19 @@ inline void InspectorInstrumentation::didInvalidateStyleAttr(Document* document,
 #else
     UNUSED_PARAM(document);
     UNUSED_PARAM(node);
+#endif
+}
+
+inline void InspectorInstrumentation::activeStyleSheetsUpdated(Document* document, const Vector<RefPtr<StyleSheet> >& oldSheets, const Vector<RefPtr<StyleSheet> >& newSheets)
+{
+#if ENABLE(INSPECTOR)
+    FAST_RETURN_IF_NO_FRONTENDS(void());
+    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
+        activeStyleSheetsUpdatedImpl(instrumentingAgents, oldSheets, newSheets);
+#else
+    UNUSED_PARAM(document);
+    UNUSED_PARAM(oldSheets);
+    UNUSED_PARAM(newSheets);
 #endif
 }
 
@@ -1017,28 +1028,6 @@ inline void InspectorInstrumentation::didFireTimer(const InspectorInstrumentatio
 #endif
 }
 
-inline void InspectorInstrumentation::didBeginFrame(Page* page)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
-        didBeginFrameImpl(instrumentingAgents);
-#else
-    UNUSED_PARAM(page);
-#endif
-}
-
-inline void InspectorInstrumentation::didCancelFrame(Page* page)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
-        didCancelFrameImpl(instrumentingAgents);
-#else
-    UNUSED_PARAM(page);
-#endif
-}
-
 inline void InspectorInstrumentation::didInvalidateLayout(Frame* frame)
 {
 #if ENABLE(INSPECTOR)
@@ -1153,28 +1142,6 @@ inline void InspectorInstrumentation::didScrollLayer(Frame* frame)
         didScrollLayerImpl(instrumentingAgents);
 #else
     UNUSED_PARAM(frame);
-#endif
-}
-
-inline void InspectorInstrumentation::willComposite(Page* page)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
-        willCompositeImpl(instrumentingAgents);
-#else
-    UNUSED_PARAM(page);
-#endif
-}
-
-inline void InspectorInstrumentation::didComposite(Page* page)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
-        didCompositeImpl(instrumentingAgents);
-#else
-    UNUSED_PARAM(page);
 #endif
 }
 
@@ -1704,6 +1671,8 @@ inline void InspectorInstrumentation::frameStartedLoading(Frame* frame)
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
         frameStartedLoadingImpl(instrumentingAgents, frame);
+#else
+    UNUSED_PARAM(frame);
 #endif
 }
 
@@ -1712,6 +1681,8 @@ inline void InspectorInstrumentation::frameStoppedLoading(Frame* frame)
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
         frameStoppedLoadingImpl(instrumentingAgents, frame);
+#else
+    UNUSED_PARAM(frame);
 #endif
 }
 
@@ -1720,6 +1691,9 @@ inline void InspectorInstrumentation::frameScheduledNavigation(Frame* frame, dou
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
         frameScheduledNavigationImpl(instrumentingAgents, frame, delay);
+#else
+    UNUSED_PARAM(frame);
+    UNUSED_PARAM(delay);
 #endif
 }
 
@@ -1728,6 +1702,8 @@ inline void InspectorInstrumentation::frameClearedScheduledNavigation(Frame* fra
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForFrame(frame))
         frameClearedScheduledNavigationImpl(instrumentingAgents, frame);
+#else
+    UNUSED_PARAM(frame);
 #endif
 }
 

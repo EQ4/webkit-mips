@@ -957,12 +957,14 @@ set(WebCore_SOURCES
     Modules/webdatabase/SQLResultSet.cpp
     Modules/webdatabase/SQLResultSetRowList.cpp
     Modules/webdatabase/SQLStatement.cpp
+    Modules/webdatabase/SQLStatementBackend.cpp
     Modules/webdatabase/SQLStatementSync.cpp
     Modules/webdatabase/SQLTransaction.cpp
     Modules/webdatabase/SQLTransactionBackend.cpp
     Modules/webdatabase/SQLTransactionBackendSync.cpp
     Modules/webdatabase/SQLTransactionClient.cpp
     Modules/webdatabase/SQLTransactionCoordinator.cpp
+    Modules/webdatabase/SQLTransactionStateMachine.cpp
     Modules/webdatabase/SQLTransactionSync.cpp
 
     Modules/websockets/ThreadableWebSocketChannel.cpp
@@ -1174,6 +1176,7 @@ set(WebCore_SOURCES
     dom/EventException.cpp
     dom/EventListenerMap.cpp
     dom/EventNames.cpp
+    dom/EventRetargeter.cpp
     dom/EventTarget.cpp
     dom/ExceptionBase.cpp
     dom/ExceptionCodePlaceholder.cpp
@@ -2828,6 +2831,7 @@ endif ()
 
 set(WebCoreTestSupport_INCLUDE_DIRECTORIES
     "${WEBCORE_DIR}/testing"
+    "${WEBCORE_DIR}/platform/mock"
 )
 
 set(WebCoreTestSupport_IDL_INCLUDES
@@ -2844,6 +2848,7 @@ set(WebCoreTestSupport_IDL_FILES
 set(WebCoreTestSupport_SOURCES
     testing/Internals.cpp
     testing/InternalSettings.cpp
+    platform/mock/PlatformSpeechSynthesizerMock.cpp
 )
 
 # Modules that the bindings generator scripts may use

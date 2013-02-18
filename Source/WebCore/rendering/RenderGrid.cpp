@@ -66,6 +66,44 @@ public:
     LayoutUnit m_maxBreadth;
 };
 
+class RenderGrid::GridIterator {
+    WTF_MAKE_NONCOPYABLE(GridIterator);
+public:
+    // |direction| is the direction that is fixed to |fixedTrackIndex| so e.g
+    // GridIterator(m_grid, ForColumns, 1) will walk over the rows of the 2nd column.
+    GridIterator(const Vector<Vector<Vector<RenderBox*, 1> > >& grid, TrackSizingDirection direction, size_t fixedTrackIndex)
+        : m_grid(grid)
+        , m_direction(direction)
+        , m_rowIndex((direction == ForColumns) ? 0 : fixedTrackIndex)
+        , m_columnIndex((direction == ForColumns) ? fixedTrackIndex : 0)
+        , m_childIndex(0)
+    {
+    }
+
+    RenderBox* nextGridItem()
+    {
+        if (!m_grid.size())
+            return 0;
+
+        size_t& varyingTrackIndex = (m_direction == ForColumns) ? m_rowIndex : m_columnIndex;
+        const size_t endOfVaryingTrackIndex = (m_direction == ForColumns) ? m_grid.size() : m_grid[0].size();
+        for (; varyingTrackIndex < endOfVaryingTrackIndex; ++varyingTrackIndex) {
+            const Vector<RenderBox*>& children = m_grid[m_rowIndex][m_columnIndex];
+            if (m_childIndex < children.size())
+                return children[m_childIndex++];
+
+            m_childIndex = 0;
+        }
+        return 0;
+    }
+private:
+    const Vector<Vector<Vector<RenderBox*, 1> > >& m_grid;
+    TrackSizingDirection m_direction;
+    size_t m_rowIndex;
+    size_t m_columnIndex;
+    size_t m_childIndex;
+};
+
 RenderGrid::RenderGrid(Element* element)
     : RenderBlock(element)
 {
@@ -130,6 +168,25 @@ void RenderGrid::layoutBlock(bool relayoutChildren, LayoutUnit)
     setNeedsLayout(false);
 }
 
+void RenderGrid::computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const
+{
+    const_cast<RenderGrid*>(this)->placeItemsOnGrid();
+
+    const Vector<GridTrackSize>& trackStyles = style()->gridColumns();
+    for (size_t i = 0; i < trackStyles.size(); ++i) {
+        LayoutUnit minTrackBreadth = computePreferredTrackWidth(trackStyles[i].minTrackBreadth(), i);
+        LayoutUnit maxTrackBreadth = computePreferredTrackWidth(trackStyles[i].maxTrackBreadth(), i);
+        maxTrackBreadth = std::max(maxTrackBreadth, minTrackBreadth);
+
+        minLogicalWidth += minTrackBreadth;
+        maxLogicalWidth += maxTrackBreadth;
+
+        // FIXME: This should add in the scrollbarWidth (e.g. see RenderFlexibleBox).
+    }
+
+    const_cast<RenderGrid*>(this)->m_grid.clear();
+}
+
 void RenderGrid::computePreferredLogicalWidths()
 {
     ASSERT(preferredLogicalWidthsDirty());
@@ -138,20 +195,7 @@ void RenderGrid::computePreferredLogicalWidths()
     m_maxPreferredLogicalWidth = 0;
 
     // FIXME: We don't take our own logical width into account.
-
-    const Vector<GridTrackSize>& trackStyles = style()->gridColumns();
-
-    for (size_t i = 0; i < trackStyles.size(); ++i) {
-        LayoutUnit minTrackBreadth = computePreferredTrackWidth(trackStyles[i].minTrackBreadth(), i);
-        LayoutUnit maxTrackBreadth = computePreferredTrackWidth(trackStyles[i].maxTrackBreadth(), i);
-        maxTrackBreadth = std::max(maxTrackBreadth, minTrackBreadth);
-
-        m_minPreferredLogicalWidth += minTrackBreadth;
-        m_maxPreferredLogicalWidth += maxTrackBreadth;
-
-        // FIXME: This should add in the scrollbarWidth (e.g. see RenderFlexibleBox).
-    }
-
+    computeIntrinsicLogicalWidths(m_minPreferredLogicalWidth, m_maxPreferredLogicalWidth);
     // FIXME: We should account for min / max logical width.
 
     LayoutUnit borderAndPaddingInInlineDirection = borderAndPaddingLogicalWidth();
@@ -170,28 +214,20 @@ LayoutUnit RenderGrid::computePreferredTrackWidth(const Length& length, size_t t
 
     if (length.isMinContent()) {
         LayoutUnit minContentSize = 0;
-        // FIXME: It's inefficient to iterate over our grid items. We should be able to
-        // get the subset of grid items in the current row / column faster.
-        for (RenderBox* child = firstChildBox(); child; child = child->nextSiblingBox()) {
-            size_t cellIndex = resolveGridPosition(ForColumns, child);
-            if (cellIndex != trackIndex)
-                continue;
-
+        GridIterator iterator(m_grid, ForColumns, trackIndex);
+        while (RenderBox* gridItem = iterator.nextGridItem()) {
             // FIXME: We should include the child's fixed margins like RenderFlexibleBox.
-            minContentSize = std::max(minContentSize, child->minPreferredLogicalWidth());
+            minContentSize = std::max(minContentSize, gridItem->minPreferredLogicalWidth());
         }
         return minContentSize;
     }
 
     if (length.isMaxContent()) {
         LayoutUnit maxContentSize = 0;
-        for (RenderBox* child = firstChildBox(); child; child = child->nextSiblingBox()) {
-            size_t cellIndex = resolveGridPosition(ForColumns, child);
-            if (cellIndex != trackIndex)
-                continue;
-
+        GridIterator iterator(m_grid, ForColumns, trackIndex);
+        while (RenderBox* gridItem = iterator.nextGridItem()) {
             // FIXME: We should include the child's fixed margins like RenderFlexibleBox.
-            maxContentSize = std::max(maxContentSize, child->maxPreferredLogicalWidth());
+            maxContentSize = std::max(maxContentSize, gridItem->maxPreferredLogicalWidth());
         }
         return maxContentSize;
     }
@@ -369,15 +405,12 @@ void RenderGrid::resolveContentBasedTrackSizingFunctions(TrackSizingDirection di
     }
 }
 
-void RenderGrid::resolveContentBasedTrackSizingFunctionsForItems(TrackSizingDirection direction, Vector<GridTrack>& columnTracks, Vector<GridTrack>& rowTracks, size_t i, SizingFunction sizingFunction, AccumulatorGetter trackGetter, AccumulatorGrowFunction trackGrowthFunction)
+void RenderGrid::resolveContentBasedTrackSizingFunctionsForItems(TrackSizingDirection direction, Vector<GridTrack>& columnTracks, Vector<GridTrack>& rowTracks, size_t trackIndex, SizingFunction sizingFunction, AccumulatorGetter trackGetter, AccumulatorGrowFunction trackGrowthFunction)
 {
-    GridTrack& track = (direction == ForColumns) ? columnTracks[i] : rowTracks[i];
-    for (RenderBox* child = firstChildBox(); child; child = child->nextSiblingBox()) {
-        size_t cellIndex = resolveGridPosition(direction, child);
-        if (cellIndex != i)
-            continue;
-
-        LayoutUnit contentSize = (this->*sizingFunction)(child, direction, columnTracks);
+    GridTrack& track = (direction == ForColumns) ? columnTracks[trackIndex] : rowTracks[trackIndex];
+    GridIterator iterator(m_grid, direction, trackIndex);
+    while (RenderBox* gridItem = iterator.nextGridItem()) {
+        LayoutUnit contentSize = (this->*sizingFunction)(gridItem, direction, columnTracks);
         LayoutUnit additionalBreadthSpace = contentSize - (track.*trackGetter)();
         Vector<GridTrack*> tracks;
         tracks.append(&track);
@@ -436,10 +469,28 @@ bool RenderGrid::tracksAreWiderThanMinTrackBreadth(TrackSizingDirection directio
 }
 #endif
 
+void RenderGrid::placeItemsOnGrid()
+{
+    ASSERT(m_grid.isEmpty());
+    m_grid.grow(maximumIndexInDirection(ForRows));
+    size_t maximumColumnIndex = maximumIndexInDirection(ForColumns);
+    for (size_t i = 0; i < gridRowCount(); ++i)
+        m_grid[i].grow(maximumColumnIndex);
+
+    for (RenderBox* child = firstChildBox(); child; child = child->nextSiblingBox()) {
+        size_t columnTrack = resolveGridPosition(child->style()->gridItemColumn());
+        size_t rowTrack = resolveGridPosition(child->style()->gridItemRow());
+
+        m_grid[rowTrack][columnTrack].append(child);
+    }
+}
+
 void RenderGrid::layoutGridItems()
 {
-    Vector<GridTrack> columnTracks(maximumIndexInDirection(ForColumns));
-    Vector<GridTrack> rowTracks(maximumIndexInDirection(ForRows));
+    placeItemsOnGrid();
+
+    Vector<GridTrack> columnTracks(gridColumnCount());
+    Vector<GridTrack> rowTracks(gridRowCount());
     computedUsedBreadthOfGridTracks(ForColumns, columnTracks, rowTracks);
     ASSERT(tracksAreWiderThanMinTrackBreadth(ForColumns, columnTracks));
     computedUsedBreadthOfGridTracks(ForRows, columnTracks, rowTracks);
@@ -479,6 +530,7 @@ void RenderGrid::layoutGridItems()
     // FIXME: We should handle min / max logical height.
 
     setLogicalHeight(logicalHeight() + borderAndPaddingLogicalHeight());
+    m_grid.clear();
 }
 
 size_t RenderGrid::resolveGridPosition(TrackSizingDirection direction, const RenderObject* gridItem) const

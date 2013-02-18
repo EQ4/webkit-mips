@@ -1,3 +1,328 @@
+2013-02-18  Laszlo Gombos  <l.gombos@samsung.com>
+
+        Move ENABLE macros for WebCore out from Platform.h
+        https://bugs.webkit.org/show_bug.cgi?id=105735
+
+        Move the chromium specific WebCore ENABLE macro definitions
+        from Platform.h to features.gypi.
+
+        Reviewed by Darin Adler and Benjamin Poulain.
+
+        * features.gypi: Set ENABLE_SUBPIXEL_LAYOUT to 1.
+
+2013-02-15  Alec Flett  <alecflett@chromium.org>
+
+        IndexedDB: Stub out SharedBuffer version of get()
+        https://bugs.webkit.org/show_bug.cgi?id=108993
+
+        Reviewed by Darin Fisher.
+
+        All asynchronous get()-like calls go through WebIDBCallbacks,
+        so this includes both get() and cursor callbacks.
+
+        * public/WebIDBCallbacks.h:
+        (WebKit::WebIDBCallbacks::onSuccess):
+        (WebKit::WebIDBCallbacks::onSuccessWithPrefetch):
+
+2013-02-15  Alec Flett  <alecflett@chromium.org>
+
+        IndexedDB: fix chromium windows bustage
+        https://bugs.webkit.org/show_bug.cgi?id=109970
+
+        Unreviewed build fix for Chromium Windows.
+
+        * tests/IDBDatabaseBackendTest.cpp:
+
+2013-02-15  Alec Flett  <alecflett@chromium.org>
+
+        IndexedDB: Implement SharedBuffer version of put()
+        https://bugs.webkit.org/show_bug.cgi?id=109092
+
+        Reviewed by Adam Barth.
+
+        Implement SharedBuffer/WebData version of
+        IDBDatabaseBackendInterface::put, and put
+        temporary scaffolding in until chrome is ready.
+
+        * src/IDBDatabaseBackendProxy.cpp:
+        (WebKit::IDBDatabaseBackendProxy::put):
+        * src/IDBDatabaseBackendProxy.h:
+        (IDBDatabaseBackendProxy):
+        * src/WebIDBDatabaseImpl.cpp:
+        (WebKit::WebIDBDatabaseImpl::put):
+        (WebKit):
+        * src/WebIDBDatabaseImpl.h:
+        (WebIDBDatabaseImpl):
+        * tests/IDBDatabaseBackendTest.cpp:
+
+2013-02-15  Alexandre Elias  <aelias@chromium.org>
+
+        [chromium] WebInputEventBuilders should not reverse page scale
+        https://bugs.webkit.org/show_bug.cgi?id=109901
+
+        Reviewed by James Robinson.
+
+        Though in theory logical that if WebInputEvent -> PlatformEvent
+        conversions divide by page scale, then the reverse builders should
+        multiply, in reality the only user of the reverse builders is
+        plugins which expect the same coordinate space as WebCore.
+
+        * src/WebInputEventConversion.cpp:
+        (WebKit::updateWebMouseEventFromWebCoreMouseEvent):
+        (WebKit::WebMouseEventBuilder::WebMouseEventBuilder):
+        (WebKit::addTouchPoints):
+        (WebKit::WebGestureEventBuilder::WebGestureEventBuilder):
+        * tests/WebInputEventConversionTest.cpp:
+        (WebCore::TEST):
+
+2013-02-15  Anders Carlsson  <andersca@apple.com>
+
+        Remove const from a bunch of StorageArea member functions
+        https://bugs.webkit.org/show_bug.cgi?id=109957
+
+        Reviewed by Beth Dakin.
+
+        Update for WebCore changes.
+
+        * src/StorageAreaProxy.cpp:
+        (WebCore::StorageAreaProxy::length):
+        (WebCore::StorageAreaProxy::key):
+        (WebCore::StorageAreaProxy::getItem):
+        (WebCore::StorageAreaProxy::contains):
+        (WebCore::StorageAreaProxy::canAccessStorage):
+        (WebCore::StorageAreaProxy::memoryBytesUsedByCache):
+        * src/StorageAreaProxy.h:
+        (StorageAreaProxy):
+
+2013-02-15  Keishi Hattori  <keishi@webkit.org>
+
+        PagePopupController.formatMonth should support short month format
+        https://bugs.webkit.org/show_bug.cgi?id=109530
+
+        Reviewed by Kent Tamura.
+
+        * tests/LocaleMacTest.cpp:
+        (LocaleMacTest::formatMonth):
+        (TEST_F):
+
+2013-02-15  Keishi Hattori  <keishi@webkit.org>
+
+        Add setValue and closePopup methods to PagePopupController
+        https://bugs.webkit.org/show_bug.cgi?id=109897
+
+        Reviewed by Kent Tamura.
+
+        * src/ColorChooserPopupUIController.cpp:
+        (WebKit::ColorChooserPopupUIController::setValue):
+        (WebKit):
+        * src/ColorChooserPopupUIController.h:
+        (ColorChooserPopupUIController):
+        * src/DateTimeChooserImpl.cpp:
+        (WebKit::DateTimeChooserImpl::setValueAndClosePopup): Use setValue and closePopup.
+        (WebKit):
+        (WebKit::DateTimeChooserImpl::setValue):
+        (WebKit::DateTimeChooserImpl::closePopup):
+        * src/DateTimeChooserImpl.h:
+        (DateTimeChooserImpl):
+
+2013-02-15  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        Simplify hitTestResultAtPoint and nodesFromRect APIs
+        https://bugs.webkit.org/show_bug.cgi?id=95720
+
+        Reviewed by Julien Chaffraix.
+
+        Update calls to new API.
+
+        * src/ContextMenuClientImpl.cpp:
+        (WebKit::selectMisspelledWord):
+        * src/FrameLoaderClientImpl.cpp:
+        (WebKit::FrameLoaderClientImpl::dispatchDecidePolicyForNavigationAction):
+        * src/WebFrameImpl.cpp:
+        (WebKit::WebFrameImpl::characterIndexForPoint):
+        * src/WebPluginContainerImpl.cpp:
+        (WebKit::WebPluginContainerImpl::isRectTopmost):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::handleMouseDown):
+        (WebKit::WebViewImpl::computeBlockBounds):
+        (WebKit::WebViewImpl::bestTouchLinkNode):
+        (WebKit::WebViewImpl::hitTestResultForWindowPos):
+
+2013-02-14  Vsevolod Vlasov  <vsevik@chromium.org>
+
+        Unreviewed chromium test fix: incorrect field was used for UISourceCode url.
+
+        * src/js/Tests.js:
+        (.TestSuite.prototype.testNoScriptDuplicatesOnPanelSwitch.checkNoDuplicates):
+        (.TestSuite.prototype.uiSourceCodesToString_):
+
+2013-02-14  David Trainor  <dtrainor@chromium.org>
+
+        [chromium] No triggering autofill on unfocus
+        https://bugs.webkit.org/show_bug.cgi?id=109735
+
+        Reviewed by James Robinson.
+
+        Need to notify the autofill client to not process text changes when we're setting
+        focus to false and are trying to commit a composition.
+
+        * public/WebAutofillClient.h:
+        (WebAutofillClient):
+        (WebKit::WebAutofillClient::setIgnoreTextChanges):
+        (WebKit::WebAutofillClient::~WebAutofillClient):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::setFocus):
+        * tests/WebViewTest.cpp:
+
+2013-02-14  Alexandre Elias  <aelias@chromium.org>
+
+        [chromium] Fix scaling in WebViewImpl::handleGestureEvent, second try
+        https://bugs.webkit.org/show_bug.cgi?id=109671
+
+        Reviewed by James Robinson.
+
+        My patch 142571 broke a bunch of things in handleGestureEvent that
+        assumed the event came in scaled, most notably tap highlight and
+        double-tap zoom. Switch those to PlatformGestureEvent.
+
+        142808 was an earlier version of this patch that was reverted
+        due to fling events asserting they can't be converted to
+        PlatformGestureEvent. This version moves fling earlier in the
+        function to avoid that.
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::handleGestureEvent):
+        (WebKit::WebViewImpl::bestTapNode):
+        (WebKit::WebViewImpl::enableTapHighlight):
+        * src/WebViewImpl.h:
+        (WebViewImpl):
+        * tests/LinkHighlightTest.cpp:
+        (WebCore::TEST):
+
+2013-02-14  Dirk Pranke  <dpranke@chromium.org>
+
+        Unreviewed, rolling out r142901.
+        http://trac.webkit.org/changeset/142901
+
+        r182258 introduces a dependency on chrome.gyp that breaks the win
+        build. Rolling back to r182150 until I can work up a workaround.
+
+        * DEPS:
+
+2013-02-14  Dirk Pranke  <dpranke@chromium.org>
+
+        Unreviewed, chromium roll 182150 -> 182448
+
+        * DEPS:
+
+2013-02-14  Mark Pilgrim  <pilgrim@chromium.org>
+
+        [Chromium] Move PlatformMessagePortChannel to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=109845
+
+        Reviewed by Adam Barth.
+
+        Part of a larger refactoring series; see tracking bug 106829.
+
+        * WebKit.gyp:
+        * src/PlatformMessagePortChannel.cpp: Removed.
+        * src/PlatformMessagePortChannel.h: Removed.
+        * src/SharedWorkerRepository.cpp:
+        * src/WebDOMMessageEvent.cpp:
+        * src/WebFrameImpl.cpp:
+        * src/WebSharedWorkerImpl.cpp:
+        * src/WebWorkerClientImpl.cpp:
+
+2013-02-14  Min Qin  <qinmin@chromium.org>
+
+        Passing alpha to DeferredImageDecoder once decoding completes
+        https://bugs.webkit.org/show_bug.cgi?id=108892
+
+        Reviewed by Stephen White.
+
+        Add test to check that alpha value is passed from the decoder to ImageFrameGenerator.
+
+        * tests/ImageFrameGeneratorTest.cpp:
+        (WebCore::MockImageDecoderFactory::create):
+        (WebCore::TEST_F):
+        * tests/MockImageDecoder.h:
+        (WebCore::MockImageDecoder::MockImageDecoder):
+        (WebCore::MockImageDecoder::setFrameHasAlpha):
+        (MockImageDecoder):
+        (WebCore::MockImageDecoder::frameHasAlphaAtIndex):
+
+2013-02-08  Andrey Kosyakov  <caseq@chromium.org>
+
+        Web Inspector: expose did{Begin,Cancel}Frame() and {will,did}Composite() on WebDebToolsAgent
+        https://bugs.webkit.org/show_bug.cgi?id=109192
+
+        Reviewed by Pavel Feldman.
+
+        - expose frame and compositing insturmentation methods on WebDevToolsAgent;
+        - temporarily route them from WebViewImpl to WebDevToolsAgent;
+
+        * public/WebDevToolsAgent.h:
+        (WebDevToolsAgent):
+        * src/WebDevToolsAgentImpl.cpp:
+        (WebKit::WebDevToolsAgentImpl::didBeginFrame):
+        (WebKit):
+        (WebKit::WebDevToolsAgentImpl::didCancelFrame):
+        (WebKit::WebDevToolsAgentImpl::willComposite):
+        (WebKit::WebDevToolsAgentImpl::didComposite):
+        * src/WebDevToolsAgentImpl.h:
+        (WebDevToolsAgentImpl):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::instrumentBeginFrame):
+        (WebKit::WebViewImpl::instrumentCancelFrame):
+        (WebKit::WebViewImpl::didBeginFrame):
+        (WebKit::WebViewImpl::willCommit):
+
+2013-02-14  Mikhail Naganov  <mnaganov@chromium.org>
+
+        [Chromium] Add a setting to control scaling content to fit viewport
+        https://bugs.webkit.org/show_bug.cgi?id=109584
+
+        Adds a setting called 'initializeAtMinimumPageScale'. By default,
+        it is set to 'true' which corresponds to Chrome on Android behavior--
+        adjust the page scale to make the content fit into the viewport
+        by width. When set to false, the setting instructs ChromeClientImpl to
+        set page scale to 1.0, unless the scale value is set by the page
+        in the viewport meta-tag.
+
+        Reviewed by Adam Barth.
+
+        * public/WebSettings.h:
+        * src/ChromeClientImpl.cpp:
+        (WebKit::ChromeClientImpl::dispatchViewportPropertiesDidChange):
+        * src/WebSettingsImpl.cpp:
+        (WebKit::WebSettingsImpl::WebSettingsImpl):
+        (WebKit::WebSettingsImpl::setInitializeAtMinimumPageScale):
+        (WebKit):
+        * src/WebSettingsImpl.h:
+        (WebSettingsImpl):
+        (WebKit::WebSettingsImpl::initializeAtMinimumPageScale):
+        * tests/WebFrameTest.cpp:
+        * tests/data/viewport-2x-initial-scale.html: Added.
+        * tests/data/viewport-auto-initial-scale.html: Added.
+
+2013-02-14  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r142808.
+        http://trac.webkit.org/changeset/142808
+        https://bugs.webkit.org/show_bug.cgi?id=109816
+
+        Crashes on chromium webkit canary bots (Requested by atwilson_
+        on #webkit).
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::handleGestureEvent):
+        (WebKit::WebViewImpl::bestTouchLinkNode):
+        (WebKit::WebViewImpl::enableTouchHighlight):
+        * src/WebViewImpl.h:
+        (WebViewImpl):
+        * tests/LinkHighlightTest.cpp:
+        (WebCore::TEST):
+
 2013-02-14  Sheriff Bot  <webkit.review.bot@gmail.com>
 
         Unreviewed, rolling out r142841.

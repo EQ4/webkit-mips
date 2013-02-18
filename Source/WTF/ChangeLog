@@ -1,3 +1,195 @@
+2013-02-18  Laszlo Gombos  <l.gombos@samsung.com>
+
+        Move ENABLE macros for WebCore out from Platform.h
+        https://bugs.webkit.org/show_bug.cgi?id=105735
+
+        Reviewed by Darin Adler and Benjamin Poulain.
+
+        Introduce FeatureDefines.h by combining the existing rules from
+        Platform.h and adding new rules for all the ENABLE flags that are
+        listed in the FeatureFlags wiki.
+
+        The new rules are not used at the moment by any ports
+        as the port specific build systems already define these flags
+        so the !defined() guard will prevent redefinition of the macros.
+
+        * GNUmakefile.list.am: Add FeatureDefines.h.
+        * WTF.gypi: Ditto.
+        * WTF.pro: Ditto.
+        * WTF.vcproj/WTF.vcproj: Ditto.
+        * WTF.xcodeproj/project.pbxproj: Ditto.
+        * wtf/CMakeLists.txt: Ditto.
+        * wtf/FeatureDefines.h: Added.
+        * wtf/Platform.h: Move macro definitions to FeatureDefines.h.
+
+2013-02-16  Darin Adler  <darin@apple.com>
+
+        Remove redundant use of inline keyword in StringHasher.h
+        https://bugs.webkit.org/show_bug.cgi?id=110036
+
+        Reviewed by Geoffrey Garen.
+
+        I have some other improvements for StringHasher.h, but wanted to get the simplest ones
+        out of the way first.
+
+        * wtf/StringHasher.h: Remove inline keyword on functions inside the class definition,
+        since functions defined inside the class are automatically inline.
+
+2013-02-15  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Spread the gyp build files throughout the tree
+        https://bugs.webkit.org/show_bug.cgi?id=109960
+
+        Reviewed by Dirk Pranke.
+
+        * WTF.gyp/WTFGTK.gyp: Renamed from Source/WebKit/gtk/gyp/WTF.gyp.
+
+2013-02-15  Anders Carlsson  <andersca@apple.com>
+
+        Add HashMap::isValidKey and HashSet::isValidValue
+        https://bugs.webkit.org/show_bug.cgi?id=109977
+
+        Reviewed by Sam Weinig and Darin Adler.
+
+        Add helper functions for determining whether keys are valid, i.e. if
+        they are _not_ empty or deleted according to the hash traits.
+
+        * wtf/HashMap.h:
+        * wtf/HashSet.h:
+
+2013-02-15  Laszlo Gombos  <l.gombos@samsung.com>
+
+        Remove support for RVCT version less than 4.0
+        https://bugs.webkit.org/show_bug.cgi?id=109390
+
+        The 4.0 version of the RVCT compiler was 
+        released in 2008. 
+        
+        Remove support for version older then 4.0 of RVCT, 
+        and keep the support for newer RVCT versions.
+
+        Reviewed by Zoltan Herczeg.
+
+        * WTF.gypi: Remove StringExtras.cpp.
+        * WTF.vcproj/WTF.vcproj: Remove StringExtras.cpp.
+        * WTF.vcxproj/WTF.vcxproj: Remove StringExtras.cpp.
+        * WTF.vcxproj/WTF.vcxproj.filters: Remove StringExtras.cpp.
+        * WTF.xcodeproj/project.pbxproj: Remove StringExtras.cpp.
+        * wtf/CMakeLists.txt: Remove StringExtras.cpp.
+        * wtf/Compiler.h: Remove tests for RVCT_VERSION_AT_LEAST(3, 0, 0, 0).
+        * wtf/Float32Array.h: Remove a quirk introduced for RVCT version <=2.2 .
+        * wtf/Float64Array.h: Ditto.
+        * wtf/Int16Array.h: Ditto.
+        * wtf/Int32Array.h: Ditto.
+        * wtf/Int8Array.h: Ditto.
+        * wtf/MathExtras.h: Remove a quirk needed for RVCT version  <= 3.0.
+        * wtf/Platform.h: Remove test for RVCT 4.0. Remove OS(RVCT).
+        * wtf/StringExtras.cpp: Removed.
+        * wtf/StringExtras.h: Remove a quirk introduced for RVCT version < 4.0.
+        * wtf/Uint16Array.h: Remove a quirk introduced for RVCT version <= 2.2.
+        * wtf/Uint32Array.h: Ditto.
+        * wtf/Uint8Array.h: Ditto.
+        * wtf/Uint8ClampedArray.h: Ditto.
+
+2013-02-15  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        Add CString operators for comparison with const char*
+        https://bugs.webkit.org/show_bug.cgi?id=109947
+
+        Reviewed by Darin Adler.
+
+        Add operators to WTF::CString for equality/inequality comparison
+        with const char* strings. This avoids constructing a CString
+        from a const char* in such cases, which is can be expensive as
+        it would copy it and call strlen().
+
+        * wtf/text/CString.cpp:
+        (WTF::operator==): Use memcmp instead of strncmp to compare the
+        CString buffers as we know they are the same size and we don't
+        want to scan for terminating null byte.
+        (WTF):
+        * wtf/text/CString.h:
+        (WTF):
+        (WTF::operator!=):
+
+2013-02-15  Geoffrey Garen  <ggaren@apple.com>
+
+        Merged the global function cache into the source code cache
+        https://bugs.webkit.org/show_bug.cgi?id=108660
+
+        Reviewed by Sam Weinig.
+
+        Responding to review comments by Darin Adler.
+
+        * wtf/HashTraits.h: Added a using directive to simplify client code.
+
+2013-02-14  Dan Bernstein  <mitz@apple.com>
+
+        No easy way to use a RetainPtr as a key in a HashMap using object (rather than pointer) equality
+        https://bugs.webkit.org/show_bug.cgi?id=109864
+
+        Reviewed by Sam Weinig and Benjamin Poulain.
+
+        Added RetainPtrObjectHashTraits and RetainPtrObjectHash, which use CFEqual
+        and CFHash.
+
+        * wtf/RetainPtr.h:
+        (RetainPtrObjectHashTraits):
+        (WTF::RetainPtrObjectHashTraits::emptyValue):
+        (WTF::RetainPtrObjectHashTraits::constructDeletedValue):
+        (WTF::RetainPtrObjectHashTraits::isDeletedValue):
+        (WTF):
+        (WTF::RetainPtrObjectHash::hash):
+        (WTF::RetainPtrObjectHash::equal):
+        (RetainPtrObjectHash):
+
+2013-02-14  Tony Chang  <tony@chromium.org>
+
+        Unreviewed, set svn:eol-style native for .sln, .vcproj, and .vsprops files.
+        https://bugs.webkit.org/show_bug.cgi?id=96934
+
+        * WTF.vcproj/WTF.sln: Modified property svn:eol-style.
+
+2013-02-14  Tony Chang  <tony@chromium.org>
+
+        Unreviewed, set svn:eol-style CRLF for .sln files.
+
+        * WTF.vcproj/WTF.sln: Added property svn:eol-style.
+
+2013-02-14  David Kilzer  <ddkilzer@apple.com>
+
+        [Mac] Clean up WARNING_CFLAGS
+        <http://webkit.org/b/109747>
+        <rdar://problem/13208373>
+
+        Reviewed by Mark Rowe.
+
+        * Configurations/Base.xcconfig: Use
+        GCC_WARN_64_TO_32_BIT_CONVERSION to enable and disable
+        -Wshorten-64-to-32 rather than WARNING_CFLAGS.
+
+        * WTF.vcproj/WTF.sln: Added property svn:eol-style.
+
+2013-02-14  Eric Seidel  <eric@webkit.org>
+
+        String(Vector) behaves differently from String(vector.data(), vector.size()) for vectors with inline capacity in the size=0 case
+        https://bugs.webkit.org/show_bug.cgi?id=109784
+
+        Reviewed by Darin Adler.
+
+        This makes String(Vector) never return null strings.
+        Which matches behavior of String(UChar*, size_t)
+        for vectors with inlineCapacity, but differs from
+        String(UChar*, size_t) in the no-inlineCapacity case.
+
+        This incidentally will fix a behavioral regression
+        in the html threaded parser which came from converting
+        many String(UChar*, size_t) callsites to using String(Vector).
+
+        * wtf/text/WTFString.h:
+        (String):
+        (WTF::String::String):
+
 2013-02-14  Eric Seidel  <eric@webkit.org>
 
         REGRESSION(r142712): attribute values show up as "(null)" instead of null with the threaded parser

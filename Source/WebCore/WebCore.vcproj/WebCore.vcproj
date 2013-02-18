@@ -25378,6 +25378,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\Modules\webdatabase\ChangeVersionData.h"
+					>
+				</File>
+				<File
 					RelativePath="..\Modules\webdatabase\ChangeVersionWrapper.cpp"
 					>
 				</File>
@@ -25574,6 +25578,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\Modules\webdatabase\SQLStatementBackend.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Modules\webdatabase\SQLStatementBackend.h"
+					>
+				</File>
+				<File
 					RelativePath="..\Modules\webdatabase\SQLStatementCallback.h"
 					>
 				</File>
@@ -25635,6 +25647,18 @@
 				</File>
 				<File
 					RelativePath="..\Modules\webdatabase\SQLTransactionErrorCallback.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Modules\webdatabase\SQLTransactionState.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Modules\webdatabase\SQLTransactionStateMachine.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Modules\webdatabase\SQLTransactionStateMachine.h"
 					>
 				</File>
 				<File
@@ -77422,7 +77446,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\inspector\front-end\IsolatedFileSystemModel.js"
+					RelativePath="..\inspector\front-end\IsolatedFileSystem.js"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\IsolatedFileSystemManager.js"
 					>
 				</File>
 				<File
@@ -77599,6 +77627,10 @@
 				</File>
 				<File
 					RelativePath="..\inspector\front-end\ProfilesPanel.js"
+					>
+				</File>
+				<File
+					RelativePath="..\inspector\front-end\ProfilesPanelDescriptor.js"
 					>
 				</File>
 				<File

@@ -233,33 +233,13 @@ bool RenderReplaced::hasReplacedLogicalWidth() const
     return firstContainingBlockWithLogicalWidth(this);
 }
 
-static inline bool hasAutoHeightOrContainingBlockWithAutoHeight(const RenderReplaced* replaced)
-{
-    Length logicalHeightLength = replaced->style()->logicalHeight();
-    if (logicalHeightLength.isAuto())
-        return true;
-
-    // For percentage heights: The percentage is calculated with respect to the height of the generated box's
-    // containing block. If the height of the containing block is not specified explicitly (i.e., it depends
-    // on content height), and this element is not absolutely positioned, the value computes to 'auto'.
-    if (!logicalHeightLength.isPercent() || replaced->isOutOfFlowPositioned() || replaced->document()->inQuirksMode())
-        return false;
-
-    for (RenderBlock* cb = replaced->containingBlock(); !cb->isRenderView(); cb = cb->containingBlock()) {
-        if (cb->isTableCell() || (!cb->style()->logicalHeight().isAuto() || (!cb->style()->top().isAuto() && !cb->style()->bottom().isAuto())))
-            return false;
-    }
-
-    return true;
-}
-
 bool RenderReplaced::hasReplacedLogicalHeight() const
 {
     if (style()->logicalHeight().isAuto())
         return false;
 
     if (style()->logicalHeight().isSpecified()) {
-        if (hasAutoHeightOrContainingBlockWithAutoHeight(this))
+        if (hasAutoHeightOrContainingBlockWithAutoHeight())
             return false;
         return true;
     }
@@ -439,32 +419,36 @@ LayoutUnit RenderReplaced::computeReplacedLogicalHeight() const
     return computeReplacedLogicalHeightRespectingMinMaxHeight(intrinsicLogicalHeight());
 }
 
-LayoutUnit RenderReplaced::computeMaxPreferredLogicalWidth() const
+void RenderReplaced::computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const
 {
-    Length logicalWidth = style()->logicalWidth();
-
     // We cannot resolve any percent logical width here as the available logical
     // width may not be set on our containing block.
-    if (logicalWidth.isPercent())
-        return intrinsicLogicalWidth();
-
-    return computeReplacedLogicalWidth(ComputePreferred);
+    minLogicalWidth = maxLogicalWidth = style()->logicalWidth().isPercent() ? intrinsicLogicalWidth() : computeReplacedLogicalWidth(ComputePreferred);
 }
 
 void RenderReplaced::computePreferredLogicalWidths()
 {
     ASSERT(preferredLogicalWidthsDirty());
 
-    LayoutUnit borderAndPadding = borderAndPaddingLogicalWidth();
-    m_maxPreferredLogicalWidth = computeMaxPreferredLogicalWidth() + borderAndPadding;
+    computeIntrinsicLogicalWidths(m_minPreferredLogicalWidth, m_maxPreferredLogicalWidth);
 
-    if (style()->maxWidth().isFixed())
-        m_maxPreferredLogicalWidth = min<LayoutUnit>(m_maxPreferredLogicalWidth, style()->maxWidth().value() + (style()->boxSizing() == CONTENT_BOX ? borderAndPadding : LayoutUnit()));
-
-    if (hasRelativeDimensions())
+    RenderStyle* styleToUse = style();
+    if (styleToUse->logicalWidth().isPercent() || styleToUse->logicalMaxWidth().isPercent() || hasRelativeIntrinsicLogicalWidth())
         m_minPreferredLogicalWidth = 0;
-    else
-        m_minPreferredLogicalWidth = m_maxPreferredLogicalWidth;
+
+    if (styleToUse->logicalMinWidth().isFixed() && styleToUse->logicalMinWidth().value() > 0) {
+        m_maxPreferredLogicalWidth = max(m_maxPreferredLogicalWidth, adjustContentBoxLogicalWidthForBoxSizing(styleToUse->logicalMinWidth().value()));
+        m_minPreferredLogicalWidth = max(m_minPreferredLogicalWidth, adjustContentBoxLogicalWidthForBoxSizing(styleToUse->logicalMinWidth().value()));
+    }
+    
+    if (styleToUse->logicalMaxWidth().isFixed()) {
+        m_maxPreferredLogicalWidth = min(m_maxPreferredLogicalWidth, adjustContentBoxLogicalWidthForBoxSizing(styleToUse->logicalMaxWidth().value()));
+        m_minPreferredLogicalWidth = min(m_minPreferredLogicalWidth, adjustContentBoxLogicalWidthForBoxSizing(styleToUse->logicalMaxWidth().value()));
+    }
+
+    LayoutUnit borderAndPadding = borderAndPaddingLogicalWidth();
+    m_minPreferredLogicalWidth += borderAndPadding;
+    m_maxPreferredLogicalWidth += borderAndPadding;
 
     setPreferredLogicalWidthsDirty(false);
 }

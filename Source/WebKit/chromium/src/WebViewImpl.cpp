@@ -568,7 +568,7 @@ void WebViewImpl::handleMouseDown(Frame& mainFrame, const WebMouseEvent& event)
     if (event.button == WebMouseEvent::ButtonLeft) {
         IntPoint point(event.x, event.y);
         point = m_page->mainFrame()->view()->windowToContents(point);
-        HitTestResult result(m_page->mainFrame()->eventHandler()->hitTestResultAtPoint(point, false));
+        HitTestResult result(m_page->mainFrame()->eventHandler()->hitTestResultAtPoint(point));
         Node* hitNode = result.innerNonSharedNode();
 
         // Take capture on a mouse down on a plugin so we can send it mouse events.
@@ -696,6 +696,40 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
     bool eventSwallowed = false;
     bool eventCancelled = false; // for disambiguation
 
+    // Special handling for slow-path fling gestures, which have no PlatformGestureEvent equivalent.
+    switch (event.type) {
+    case WebInputEvent::GestureFlingStart: {
+        if (mainFrameImpl()->frame()->eventHandler()->isScrollbarHandlingGestures()) {
+            m_client->didHandleGestureEvent(event, eventCancelled);
+            return eventSwallowed;
+        }
+        m_client->cancelScheduledContentIntents();
+        m_positionOnFlingStart = WebPoint(event.x / pageScaleFactor(), event.y / pageScaleFactor());
+        m_globalPositionOnFlingStart = WebPoint(event.globalX, event.globalY);
+        m_flingModifier = event.modifiers;
+        m_flingSourceDevice = event.sourceDevice;
+        OwnPtr<WebGestureCurve> flingCurve = adoptPtr(Platform::current()->createFlingAnimationCurve(event.sourceDevice, WebFloatPoint(event.data.flingStart.velocityX, event.data.flingStart.velocityY), WebSize()));
+        m_gestureAnimation = WebActiveGestureAnimation::createAtAnimationStart(flingCurve.release(), this);
+        scheduleAnimation();
+        eventSwallowed = true;
+
+        m_client->didHandleGestureEvent(event, eventCancelled);
+        return eventSwallowed;
+    }
+    case WebInputEvent::GestureFlingCancel:
+        if (m_gestureAnimation) {
+            m_gestureAnimation.clear();
+            if (m_layerTreeView)
+                m_layerTreeView->didStopFlinging();
+            eventSwallowed = true;
+        }
+
+        m_client->didHandleGestureEvent(event, eventCancelled);
+        return eventSwallowed;
+    default:
+        break;
+    }
+
     PlatformGestureEventBuilder platformEvent(mainFrameImpl()->frameView(), event);
 
     // Handle link highlighting outside the main switch to avoid getting lost in the
@@ -719,28 +753,6 @@ bool WebViewImpl::handleGestureEvent(const WebGestureEvent& event)
     }
 
     switch (event.type) {
-    case WebInputEvent::GestureFlingStart: {
-        if (mainFrameImpl()->frame()->eventHandler()->isScrollbarHandlingGestures())
-            break;
-        m_client->cancelScheduledContentIntents();
-        m_positionOnFlingStart = platformEvent.position();
-        m_globalPositionOnFlingStart = platformEvent.globalPosition();
-        m_flingModifier = event.modifiers;
-        m_flingSourceDevice = event.sourceDevice;
-        OwnPtr<WebGestureCurve> flingCurve = adoptPtr(Platform::current()->createFlingAnimationCurve(event.sourceDevice, WebFloatPoint(event.data.flingStart.velocityX, event.data.flingStart.velocityY), WebSize()));
-        m_gestureAnimation = WebActiveGestureAnimation::createAtAnimationStart(flingCurve.release(), this);
-        scheduleAnimation();
-        eventSwallowed = true;
-        break;
-    }
-    case WebInputEvent::GestureFlingCancel:
-        if (m_gestureAnimation) {
-            m_gestureAnimation.clear();
-            if (m_layerTreeView)
-                m_layerTreeView->didStopFlinging();
-            eventSwallowed = true;
-        }
-        break;
     case WebInputEvent::GestureTap: {
         m_client->cancelScheduledContentIntents();
         if (detectContentOnTouch(platformEvent.position())) {
@@ -1088,9 +1100,9 @@ WebRect WebViewImpl::computeBlockBounds(const WebRect& rect, AutoZoomType zoomTy
 
     // Use the rect-based hit test to find the node.
     IntPoint point = mainFrameImpl()->frameView()->windowToContents(IntPoint(rect.x, rect.y));
-    HitTestResult result = mainFrameImpl()->frame()->eventHandler()->hitTestResultAtPoint(point,
-            false, zoomType == FindInPage, DontHitTestScrollbars, HitTestRequest::Active | HitTestRequest::ReadOnly,
-            IntSize(rect.width, rect.height));
+    HitTestRequest::HitTestRequestType hitType = HitTestRequest::ReadOnly | HitTestRequest::Active
+            | ((zoomType == FindInPage) ? HitTestRequest::IgnoreClipping : 0);
+    HitTestResult result = mainFrameImpl()->frame()->eventHandler()->hitTestResultAtPoint(point, hitType, IntSize(rect.width, rect.height));
 
     Node* node = result.innerNonSharedNode();
     if (!node)
@@ -1281,8 +1293,7 @@ Node* WebViewImpl::bestTapNode(const PlatformGestureEvent& tapEvent)
 #endif
 
     IntPoint hitTestPoint = m_page->mainFrame()->view()->windowToContents(touchEventLocation);
-    HitTestResult result = m_page->mainFrame()->eventHandler()->hitTestResultAtPoint(
-        hitTestPoint, false, false, DontHitTestScrollbars, HitTestRequest::TouchEvent);
+    HitTestResult result = m_page->mainFrame()->eventHandler()->hitTestResultAtPoint(hitTestPoint, HitTestRequest::TouchEvent);
     bestTouchNode = result.targetNode();
 
     // Make sure our highlight candidate uses a hand cursor as a heuristic to
@@ -1779,12 +1790,14 @@ void WebViewImpl::didExitFullScreen()
 
 void WebViewImpl::instrumentBeginFrame()
 {
-    InspectorInstrumentation::didBeginFrame(m_page.get());
+    if (m_devToolsAgent)
+        m_devToolsAgent->didBeginFrame();
 }
 
 void WebViewImpl::instrumentCancelFrame()
 {
-    InspectorInstrumentation::didCancelFrame(m_page.get());
+    if (m_devToolsAgent)
+        m_devToolsAgent->didCancelFrame();
 }
 
 #if ENABLE(BATTERY_STATUS)
@@ -1818,7 +1831,8 @@ void WebViewImpl::willBeginFrame()
 
 void WebViewImpl::didBeginFrame()
 {
-    InspectorInstrumentation::didComposite(m_page.get());
+    if (m_devToolsAgent)
+        m_devToolsAgent->didComposite();
 
     if (m_continuousPaintingEnabled)
         ContinuousPainter::setNeedsDisplayRecursive(m_rootGraphicsLayer, m_pageOverlays.get());
@@ -2138,8 +2152,15 @@ void WebViewImpl::setFocus(bool enable)
         if (focusedFrame) {
             // Finish an ongoing composition to delete the composition node.
             Editor* editor = focusedFrame->editor();
-            if (editor && editor->hasComposition())
+            if (editor && editor->hasComposition()) {
+                if (m_autofillClient)
+                    m_autofillClient->setIgnoreTextChanges(true);
+
                 editor->confirmComposition();
+
+                if (m_autofillClient)
+                    m_autofillClient->setIgnoreTextChanges(false);
+            }
             m_imeAcceptEvents = false;
         }
     }
@@ -3932,7 +3953,7 @@ Node* WebViewImpl::focusedWebCoreNode()
 HitTestResult WebViewImpl::hitTestResultForWindowPos(const IntPoint& pos)
 {
     IntPoint docPoint(m_page->mainFrame()->view()->windowToContents(pos));
-    return m_page->mainFrame()->eventHandler()->hitTestResultAtPoint(docPoint, false);
+    return m_page->mainFrame()->eventHandler()->hitTestResultAtPoint(docPoint);
 }
 
 void WebViewImpl::setTabsToLinks(bool enable)
@@ -4202,7 +4223,8 @@ void WebViewImpl::applyScrollAndScale(const WebSize& scrollDelta, float pageScal
 
 void WebViewImpl::willCommit()
 {
-    InspectorInstrumentation::willComposite(m_page.get());
+    if (m_devToolsAgent)
+        m_devToolsAgent->willComposite();
 }
 
 void WebViewImpl::didCommit()

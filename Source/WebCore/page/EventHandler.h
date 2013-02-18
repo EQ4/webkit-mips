@@ -91,7 +91,6 @@ extern const int TextDragHysteresis;
 extern const int GeneralDragHysteresis;
 #endif // ENABLE(DRAG_SUPPORT)
 
-enum HitTestScrollbars { ShouldHitTestScrollbars, DontHitTestScrollbars };
 enum AppendTrailingWhitespace { ShouldAppendTrailingWhitespace, DontAppendTrailingWhitespace };
 enum CheckDragHysteresis { ShouldCheckDragHysteresis, DontCheckDragHysteresis };
 
@@ -127,8 +126,7 @@ public:
     void dispatchFakeMouseMoveEventSoon();
     void dispatchFakeMouseMoveEventSoonInQuad(const FloatQuad&);
 
-    HitTestResult hitTestResultAtPoint(const LayoutPoint&, bool allowShadowContent, bool ignoreClipping = false,
-                                       HitTestScrollbars scrollbars = DontHitTestScrollbars,
+    HitTestResult hitTestResultAtPoint(const LayoutPoint&,
                                        HitTestRequest::HitTestRequestType hitType = HitTestRequest::ReadOnly | HitTestRequest::Active,
                                        const LayoutSize& padding = LayoutSize());
 
@@ -251,7 +249,6 @@ public:
 #endif
 
     bool useHandCursor(Node*, bool isOverLink, bool shiftKey);
-    void updateCursor();
 
 private:
 #if ENABLE(DRAG_SUPPORT)
@@ -278,8 +275,7 @@ private:
 #endif
     bool handleMouseReleaseEvent(const MouseEventWithHitTestResults&);
 
-    OptionalCursor selectCursor(const HitTestResult&, bool shiftKey);
-
+    OptionalCursor selectCursor(const MouseEventWithHitTestResults&, Scrollbar*);
     void hoverTimerFired(Timer<EventHandler>*);
 
     bool logicalScrollOverflow(ScrollLogicalDirection, ScrollGranularity, Node* startingNode = 0);

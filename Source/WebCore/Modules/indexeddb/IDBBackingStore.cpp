@@ -43,6 +43,7 @@
 #include "LevelDBSlice.h"
 #include "LevelDBTransaction.h"
 #include "SecurityOrigin.h"
+#include "SharedBuffer.h"
 #include <wtf/Assertions.h>
 
 namespace WebCore {
@@ -71,6 +72,8 @@ enum IDBBackingStoreErrorSource {
     GetNewDatabaseId,
     GetNewVersionNumber,
     CreateIDBDatabaseMetaData,
+    DeleteDatabase,
+    TransactionCommit,
     IDBLevelDBBackingStoreInternalErrorMax,
 };
 
@@ -587,7 +590,11 @@ bool IDBBackingStore::deleteDatabase(const String& name)
     const Vector<char> key = DatabaseNameKey::encode(m_identifier, name);
     transaction->remove(key);
 
-    return transaction->commit();
+    if (!transaction->commit()) {
+        INTERNAL_WRITE_ERROR(DeleteDatabase);
+        return false;
+    }
+    return true;
 }
 
 static bool checkObjectStoreAndMetaDataType(const LevelDBIterator* it, const Vector<char>& stopKey, int64_t objectStoreId, int64_t metaDataType)
@@ -830,7 +837,7 @@ WARN_UNUSED_RETURN static bool getNewVersionNumber(LevelDBTransaction* transacti
     return true;
 }
 
-bool IDBBackingStore::putRecord(IDBBackingStore::Transaction* transaction, int64_t databaseId, int64_t objectStoreId, const IDBKey& key, const Vector<uint8_t>& value, RecordIdentifier* recordIdentifier)
+bool IDBBackingStore::putRecord(IDBBackingStore::Transaction* transaction, int64_t databaseId, int64_t objectStoreId, const IDBKey& key, PassRefPtr<SharedBuffer> prpValue, RecordIdentifier* recordIdentifier)
 {
     IDB_TRACE("IDBBackingStore::putRecord");
     ASSERT(key.isValid());
@@ -844,7 +851,9 @@ bool IDBBackingStore::putRecord(IDBBackingStore::Transaction* transaction, int64
 
     Vector<char> v;
     v.append(encodeVarInt(version));
-    v.appendVector(value);
+    RefPtr<SharedBuffer> value = prpValue;
+    ASSERT(value);
+    v.append(value->data(), value->size());
 
     levelDBTransaction->put(objectStoredataKey, v);
 
@@ -1843,6 +1852,8 @@ bool IDBBackingStore::Transaction::commit()
     ASSERT(m_transaction);
     bool result = m_transaction->commit();
     m_transaction.clear();
+    if (!result)
+        INTERNAL_WRITE_ERROR(TransactionCommit);
     return result;
 }
 

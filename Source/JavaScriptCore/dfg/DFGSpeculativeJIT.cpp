@@ -931,16 +931,6 @@ void SpeculativeJIT::useChildren(Node* node)
     }
 }
 
-bool SpeculativeJIT::isStrictInt32(Node* node)
-{
-    if (isInt32Constant(node))
-        return true;
-    
-    GenerationInfo& info = m_generationInfo[node->virtualRegister()];
-    
-    return info.registerFormat() == DataFormatInteger;
-}
-
 bool SpeculativeJIT::isKnownInteger(Node* node)
 {
     if (isInt32Constant(node))
@@ -952,19 +942,6 @@ bool SpeculativeJIT::isKnownInteger(Node* node)
     GenerationInfo& info = m_generationInfo[node->virtualRegister()];
 
     return info.isJSInteger();
-}
-
-bool SpeculativeJIT::isKnownNumeric(Node* node)
-{
-    if (isInt32Constant(node) || isNumberConstant(node))
-        return true;
-
-    if (node->hasNumberResult())
-        return true;
-    
-    GenerationInfo& info = m_generationInfo[node->virtualRegister()];
-
-    return info.isJSInteger() || info.isJSDouble();
 }
 
 bool SpeculativeJIT::isKnownCell(Node* node)

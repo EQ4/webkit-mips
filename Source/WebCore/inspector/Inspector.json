@@ -612,6 +612,7 @@
                     { "name": "name", "type": "string", "description": "Property name." },
 	                { "name": "type", "type": "string", "enum": ["object", "function", "undefined", "string", "number", "boolean"], "description": "Object type." },
 	                { "name": "value", "type": "string", "optional": true, "description": "User-friendly property value string." },
+	                { "name": "valuePreview", "$ref": "ObjectPreview", "optional": true, "description": "Nested value preview." },
 	                { "name": "subtype", "type": "string", "optional": true, "enum": ["array", "null", "node", "regexp", "date"], "description": "Object subtype hint. Specified for <code>object</code> type values only." }
                 ]
             },
@@ -769,7 +770,7 @@
                     { "name": "source", "type": "string", "enum": ["html", "wml", "xml", "javascript", "network", "console-api", "other"], "description": "Message source." },
                     { "name": "level", "type": "string", "enum": ["tip", "log", "warning", "error", "debug"], "description": "Message severity." },
                     { "name": "text", "type": "string", "description": "Message text." },
-                    { "name": "type", "type": "string", "optional": true, "enum": ["log", "dir", "dirxml", "trace", "clear", "startGroup", "startGroupCollapsed", "endGroup", "assert", "timing"], "description": "Console message type." },
+                    { "name": "type", "type": "string", "optional": true, "enum": ["log", "dir", "dirxml", "table", "trace", "clear", "startGroup", "startGroupCollapsed", "endGroup", "assert", "timing"], "description": "Console message type." },
                     { "name": "url", "type": "string", "optional": true, "description": "URL of the message origin." },
                     { "name": "line", "type": "integer", "optional": true, "description": "Line number in the resource that generated this message." },
                     { "name": "repeatCount", "type": "integer", "optional": true, "description": "Repeat count for repeated messages." },
@@ -2161,7 +2162,7 @@
     {
         "domain": "CSS",
         "hidden": true,
-        "description": "This domain exposes CSS read/write operations. All CSS objects, like stylesheets, rules, and styles, have an associated <code>id</code> used in subsequent operations on the related object. Each object type has a specific <code>id</code> structure, and those are not interchangeable between objects of different kinds. CSS objects can be loaded using the <code>get*ForNode()</code> calls (which accept a DOM node id). Alternatively, a client can discover all the existing stylesheets with the <code>getAllStyleSheets()</code> method and subsequently load the required stylesheet contents using the <code>getStyleSheet[Text]()</code> methods.",
+        "description": "This domain exposes CSS read/write operations. All CSS objects (stylesheets, rules, and styles) have an associated <code>id</code> used in subsequent operations on the related object. Each object type has a specific <code>id</code> structure, and those are not interchangeable between objects of different kinds. CSS objects can be loaded using the <code>get*ForNode()</code> calls (which accept a DOM node id). A client can also discover all the existing stylesheets with the <code>getAllStyleSheets()</code> method (or keeping track of the <code>styleSheetAdded</code>/<code>styleSheetRemoved</code> events) and subsequently load the required stylesheet contents using the <code>getStyleSheet[Text]()</code> methods.",
         "types": [
             {
                 "id": "StyleSheetId",
@@ -2567,6 +2568,20 @@
                 "description": "Fired whenever a stylesheet is changed as a result of the client operation."
             },
             {
+                "name": "styleSheetAdded",
+                "parameters": [
+                    { "name": "header", "$ref": "CSSStyleSheetHeader", "description": "Added stylesheet metainfo." }
+                ],
+                "description": "Fired whenever an active document stylesheet is added."
+            },
+            {
+                "name": "styleSheetRemoved",
+                "parameters": [
+                    { "name": "styleSheetId", "$ref": "StyleSheetId", "description": "Identifier of the removed stylesheet." }
+                ],
+                "description": "Fired whenever an active document stylesheet is removed."
+            },
+            {
                 "name": "namedFlowCreated",
                 "parameters": [
                     { "name": "namedFlow", "$ref": "NamedFlow", "description": "The new Named Flow." }
@@ -2949,11 +2964,11 @@
             {
                 "name": "setVariableValue",
                 "parameters": [
-                    { "name": "callFrameId", "$ref": "CallFrameId", "optional": true, "description": "Id of callframe that holds variable." },
-                    { "name": "functionObjectId", "$ref": "Runtime.RemoteObjectId", "optional": true, "description": "Object id of closure (function) that holds variable." },
                     { "name": "scopeNumber", "type": "integer", "description": "0-based number of scope as was listed in scope chain. Only 'local', 'closure' and 'catch' scope types are allowed. Other scopes could be manipulated manually." },
                     { "name": "variableName", "type": "string", "description": "Variable name." },
-                    { "name": "newValue", "$ref": "Runtime.CallArgument", "description": "New variable value." }
+                    { "name": "newValue", "$ref": "Runtime.CallArgument", "description": "New variable value." },
+                    { "name": "callFrameId", "$ref": "CallFrameId", "optional": true, "description": "Id of callframe that holds variable." },
+                    { "name": "functionObjectId", "$ref": "Runtime.RemoteObjectId", "optional": true, "description": "Object id of closure (function) that holds variable." }
                 ],
                 "hidden": true,
                 "description": "Changes value of variable in a callframe or a closure. Either callframe or function must be specified. Object-based scopes are not supported and must be mutated manually."
@@ -3478,6 +3493,7 @@
                     { "name": "arguments", "type": "array", "items": { "$ref": "CallArgument" }, "optional": true },
                     { "name": "result", "$ref": "CallArgument", "optional": true },
                     { "name": "isDrawingCall", "type": "boolean", "optional": true },
+                    { "name": "isFrameEndCall", "type": "boolean", "optional": true },
                     { "name": "property", "type": "string", "optional": true },
                     { "name": "value", "$ref": "CallArgument", "optional": true },
                     { "name": "sourceURL", "type": "string", "optional": true },

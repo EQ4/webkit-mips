@@ -2701,7 +2701,7 @@ PassRefPtr<Node> WebPagePrivate::contextNode(TargetDetectionStrategy strategy)
     else
         contentPos = mapFromViewportToContents(m_lastMouseEvent.position());
 
-    HitTestResult result = eventHandler->hitTestResultAtPoint(contentPos, false /*allowShadowContent*/);
+    HitTestResult result = eventHandler->hitTestResultAtPoint(contentPos);
     return result.innerNode();
 }
 
@@ -2772,7 +2772,7 @@ Node* WebPagePrivate::nodeForZoomUnderPoint(const IntPoint& documentPoint)
     if (!m_mainFrame)
         return 0;
 
-    HitTestResult result = m_mainFrame->eventHandler()->hitTestResultAtPoint(documentPoint, false);
+    HitTestResult result = m_mainFrame->eventHandler()->hitTestResultAtPoint(documentPoint);
 
     Node* node = result.innerNonSharedNode();
 
@@ -4009,7 +4009,7 @@ bool WebPagePrivate::handleMouseEvent(PlatformMouseEvent& mouseEvent)
     }
 
     if (!node) {
-        HitTestResult result = eventHandler->hitTestResultAtPoint(mapFromViewportToContents(mouseEvent.position()), false /*allowShadowContent*/);
+        HitTestResult result = eventHandler->hitTestResultAtPoint(mapFromViewportToContents(mouseEvent.position()));
         node = result.innerNode();
     }
 
@@ -4334,7 +4334,8 @@ bool WebPage::keyEvent(const Platform::KeyboardEvent& keyboardEvent)
 
     bool handled = d->m_inputHandler->handleKeyboardInput(keyboardEvent);
 
-    if (!handled && keyboardEvent.type() == Platform::KeyboardEvent::KeyDown && !d->m_inputHandler->isInputMode()) {
+    // This is hotkey handling and perhaps doesn't belong here.
+    if (!handled && keyboardEvent.type() == Platform::KeyboardEvent::KeyDown && !d->m_inputHandler->isInputMode() && !keyboardEvent.modifiers()) {
         IntPoint previousPos = d->scrollPosition();
         handleScrolling(keyboardEvent.character(), d);
         handled = previousPos != d->scrollPosition();
@@ -4985,7 +4986,7 @@ WebDOMDocument WebPage::document() const
 
 WebDOMNode WebPage::nodeAtDocumentPoint(const Platform::IntPoint& documentPoint)
 {
-    HitTestResult result = d->m_mainFrame->eventHandler()->hitTestResultAtPoint(WebCore::IntPoint(documentPoint), false);
+    HitTestResult result = d->m_mainFrame->eventHandler()->hitTestResultAtPoint(WebCore::IntPoint(documentPoint));
     Node* node = result.innerNonSharedNode();
     return WebDOMNode(node);
 }
@@ -6243,7 +6244,7 @@ const HitTestResult& WebPagePrivate::hitTestResult(const IntPoint& contentPos)
 {
     if (m_cachedHitTestContentPos != contentPos) {
         m_cachedHitTestContentPos = contentPos;
-        m_cachedHitTestResult = m_mainFrame->eventHandler()->hitTestResultAtPoint(m_cachedHitTestContentPos, true /*allowShadowContent*/);
+        m_cachedHitTestResult = m_mainFrame->eventHandler()->hitTestResultAtPoint(m_cachedHitTestContentPos, HitTestResult::ReadOnly | HitTestResult::Active | HitTestResult::AllowShadowContent);
     }
 
     return m_cachedHitTestResult;

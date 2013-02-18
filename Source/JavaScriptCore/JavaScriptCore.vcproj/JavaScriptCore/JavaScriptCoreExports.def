@@ -25,6 +25,7 @@ EXPORTS
     ??0RefCountedLeakCounter@WTF@@QAE@PBD@Z
     ??0RegExpObject@JSC@@IAE@PAVJSGlobalObject@1@PAVStructure@1@PAVRegExp@1@@Z
     ??0SHA1@WTF@@QAE@XZ
+    ??0SourceProvider@JSC@@QAE@ABVString@WTF@@ABVTextPosition@3@PAVSourceProviderCache@1@@Z
     ??0StringObject@JSC@@IAE@AAVJSGlobalData@1@PAVStructure@1@@Z
     ??0StringPrintStream@WTF@@QAE@XZ
     ??0Structure@JSC@@AAE@AAVJSGlobalData@1@PAVJSGlobalObject@1@VJSValue@1@ABVTypeInfo@1@PBUClassInfo@1@EI@Z
@@ -46,6 +47,7 @@ EXPORTS
     ??1MemoryInstrumentation@WTF@@UAE@XZ
     ??1Mutex@WTF@@QAE@XZ
     ??1RefCountedLeakCounter@WTF@@QAE@XZ
+    ??1SourceProvider@JSC@@UAE@XZ
     ??1SourceProviderCache@JSC@@QAE@XZ
     ??1StringPrintStream@WTF@@UAE@XZ
     ??1ThreadCondition@WTF@@QAE@XZ
@@ -53,6 +55,7 @@ EXPORTS
     ??1WTFThreadData@WTF@@QAE@XZ
     ??8MediaTime@WTF@@QBE_NABV01@@Z 
     ??8WTF@@YA_NABVCString@0@0@Z
+    ??8WTF@@YA_NABVCString@0@PBD@Z
     ??GMediaTime@WTF@@QBE?AV01@ABV01@@Z 
     ??HMediaTime@WTF@@QBE?AV01@ABV01@@Z 
     ??MMediaTime@WTF@@QBE_NABV01@@Z 

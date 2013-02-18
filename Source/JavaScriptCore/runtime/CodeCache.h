@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 Apple Inc. All Rights Reserved.
+ * Copyright (C) 2012, 2013 Apple Inc. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,9 +28,9 @@
 
 #include "CodeSpecializationKind.h"
 #include "ParserModes.h"
+#include "SourceCode.h"
 #include "Strong.h"
 #include "WeakRandom.h"
-
 #include <wtf/FixedArray.h>
 #include <wtf/Forward.h>
 #include <wtf/PassOwnPtr.h>
@@ -53,93 +53,128 @@ struct ParserError;
 class SourceCode;
 class SourceProvider;
 
-template <typename KeyType, typename EntryType, int CacheSize> class CacheMap {
-    typedef typename HashMap<KeyType, unsigned>::iterator iterator;
+class SourceCodeKey {
 public:
-    CacheMap()
-        : m_randomGenerator((static_cast<uint32_t>(randomNumber() * std::numeric_limits<uint32_t>::max())))
+    enum CodeType { EvalType, ProgramType, FunctionCallType, FunctionConstructType };
+
+    SourceCodeKey()
+        : m_flags(0)
     {
     }
-    const EntryType* find(const KeyType& key)
+
+    SourceCodeKey(const SourceCode& sourceCode, const String& name, CodeType codeType, JSParserStrictness jsParserStrictness)
+        : m_sourceString(sourceCode.toString())
+        , m_name(name)
+        , m_flags((codeType << 1) | jsParserStrictness)
+    {
+    }
+
+    SourceCodeKey(WTF::HashTableDeletedValueType)
+        : m_sourceString(WTF::HashTableDeletedValue)
+    {
+    }
+
+    bool isHashTableDeletedValue() const { return m_sourceString.isHashTableDeletedValue(); }
+
+    unsigned hash() const { return m_sourceString.impl()->hash(); }
+
+    size_t length() const { return m_sourceString.length(); }
+
+    bool isNull() const { return m_sourceString.isNull(); }
+
+    bool operator==(const SourceCodeKey& other) const
+    {
+        return m_flags == other.m_flags
+            && m_name == other.m_name
+            && m_sourceString == other.m_sourceString;
+    }
+
+private:
+    String m_sourceString;
+    String m_name;
+    unsigned m_flags;
+};
+
+struct SourceCodeKeyHash {
+    static unsigned hash(const SourceCodeKey& key) { return key.hash(); }
+    static bool equal(const SourceCodeKey& a, const SourceCodeKey& b) { return a == b; }
+    static const bool safeToCompareToEmptyOrDeleted = false;
+};
+
+struct SourceCodeKeyHashTraits : SimpleClassHashTraits<SourceCodeKey> {
+    static const bool hasIsEmptyValueFunction = true;
+    static bool isEmptyValue(const SourceCodeKey& sourceCodeKey) { return sourceCodeKey.isNull(); }
+};
+
+class CodeCacheMap {
+    typedef HashMap<SourceCodeKey, Strong<JSCell>, SourceCodeKeyHash, SourceCodeKeyHashTraits> MapType;
+    typedef MapType::iterator iterator;
+
+public:
+    CodeCacheMap(size_t capacity)
+        : m_size(0)
+        , m_capacity(capacity)
+    {
+    }
+
+    const Strong<JSCell>* find(const SourceCodeKey& key)
     {
         iterator result = m_map.find(key);
         if (result == m_map.end())
             return 0;
-        return &m_data[result->value].second;
+        return &result->value;
     }
-    void add(const KeyType& key, const EntryType& value)
+
+    void set(const SourceCodeKey& key, const Strong<JSCell>& value)
     {
-        iterator result = m_map.find(key);
-        if (result != m_map.end()) {
-            m_data[result->value].second = value;
-            return;
+        while (m_size >= m_capacity) {
+            MapType::iterator it = m_map.begin();
+            m_size -= it->key.length();
+            m_map.remove(it);
         }
-        size_t newIndex = m_randomGenerator.getUint32() % CacheSize;
-        if (m_data[newIndex].second)
-            m_map.remove(m_data[newIndex].first);
-        m_map.add(key, newIndex);
-        m_data[newIndex].first = key;
-        m_data[newIndex].second = value;
-        RELEASE_ASSERT(m_map.size() <= CacheSize);
+
+        m_size += key.length();
+        m_map.set(key, value);
     }
 
     void clear()
     {
+        m_size = 0;
         m_map.clear();
-        for (size_t i = 0; i < CacheSize; i++) {
-            m_data[i].first = KeyType();
-            m_data[i].second = EntryType();
-        }
     }
 
-
 private:
-    HashMap<KeyType, unsigned> m_map;
-    FixedArray<std::pair<KeyType, EntryType>, CacheSize> m_data;
-    WeakRandom m_randomGenerator;
+    MapType m_map;
+    size_t m_size;
+    size_t m_capacity;
 };
 
+// Caches top-level code such as <script>, eval(), new Function, and JSEvaluateScript().
 class CodeCache {
 public:
     static PassOwnPtr<CodeCache> create() { return adoptPtr(new CodeCache); }
 
     UnlinkedProgramCodeBlock* getProgramCodeBlock(JSGlobalData&, ProgramExecutable*, const SourceCode&, JSParserStrictness, DebuggerMode, ProfilerMode, ParserError&);
     UnlinkedEvalCodeBlock* getEvalCodeBlock(JSGlobalData&, EvalExecutable*, const SourceCode&, JSParserStrictness, DebuggerMode, ProfilerMode, ParserError&);
-    UnlinkedFunctionCodeBlock* getFunctionCodeBlock(JSGlobalData&, UnlinkedFunctionExecutable*, const SourceCode&, CodeSpecializationKind, DebuggerMode, ProfilerMode, ParserError&);
     UnlinkedFunctionExecutable* getFunctionExecutableFromGlobalCode(JSGlobalData&, const Identifier&, const SourceCode&, ParserError&);
-    void usedFunctionCode(JSGlobalData&, UnlinkedFunctionCodeBlock*);
     ~CodeCache();
 
     void clear()
     {
         m_sourceCode.clear();
-        m_globalFunctions.clear();
-        m_recentlyUsedFunctions.clear();
     }
-
-    enum CodeType { EvalType, ProgramType, FunctionCallType, FunctionConstructType };
-    typedef std::pair<String, unsigned> SourceCodeKey;
-    typedef std::pair<String, String> FunctionKey;
 
 private:
     CodeCache();
 
-    UnlinkedFunctionCodeBlock* generateFunctionCodeBlock(JSGlobalData&, UnlinkedFunctionExecutable*, const SourceCode&, CodeSpecializationKind, DebuggerMode, ProfilerMode, ParserError&);
+    template <class UnlinkedCodeBlockType, class ExecutableType> 
+    UnlinkedCodeBlockType* getCodeBlock(JSGlobalData&, ExecutableType*, const SourceCode&, JSParserStrictness, DebuggerMode, ProfilerMode, ParserError&);
 
-    template <class UnlinkedCodeBlockType, class ExecutableType> inline UnlinkedCodeBlockType* getCodeBlock(JSGlobalData&, ExecutableType*, const SourceCode&, JSParserStrictness, DebuggerMode, ProfilerMode, ParserError&);
-    SourceCodeKey makeSourceCodeKey(const SourceCode&, CodeType, JSParserStrictness);
-    FunctionKey makeFunctionKey(const SourceCode&, const String&);
+    enum { CacheSize = 16000000 }; // Size in characters
 
-    enum {
-        MaxRootEntries = 1024, // Top-level code such as <script>, eval(), JSEvaluateScript(), etc.
-        MaxChildFunctionEntries = MaxRootEntries * 8 // Sampling shows that each root holds about 6 functions. 8 is enough to usually cache all the child functions for each top-level entry.
-    };
-
-    CacheMap<SourceCodeKey, Strong<UnlinkedCodeBlock>, MaxRootEntries> m_sourceCode;
-    CacheMap<FunctionKey, Strong<UnlinkedFunctionExecutable>, MaxRootEntries> m_globalFunctions;
-    CacheMap<UnlinkedFunctionCodeBlock*, Strong<UnlinkedFunctionCodeBlock>, MaxChildFunctionEntries> m_recentlyUsedFunctions;
+    CodeCacheMap m_sourceCode;
 };
 
 }
 
-#endif
+#endif // CodeCache_h

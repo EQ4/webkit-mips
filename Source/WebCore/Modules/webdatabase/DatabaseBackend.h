@@ -93,7 +93,7 @@ public:
 
 protected:
     friend class ChangeVersionWrapper;
-    friend class SQLStatement;
+    friend class SQLStatementBackend;
     friend class SQLStatementSync;
     friend class SQLTransactionBackend;
     friend class SQLTransactionBackendSync;
@@ -114,12 +114,21 @@ protected:
     void setCachedVersion(const String&);
     bool getActualVersionForTransaction(String& version);
 
+#if PLATFORM(CHROMIUM)
     void reportOpenDatabaseResult(int errorSite, int webSqlErrorCode, int sqliteErrorCode);
     void reportChangeVersionResult(int errorSite, int webSqlErrorCode, int sqliteErrorCode);
     void reportStartTransactionResult(int errorSite, int webSqlErrorCode, int sqliteErrorCode);
     void reportCommitTransactionResult(int errorSite, int webSqlErrorCode, int sqliteErrorCode);
     void reportExecuteStatementResult(int errorSite, int webSqlErrorCode, int sqliteErrorCode);
     void reportVacuumDatabaseResult(int sqliteErrorCode);
+#else
+    void reportOpenDatabaseResult(int, int, int) { }
+    void reportChangeVersionResult(int, int, int) { }
+    void reportStartTransactionResult(int, int, int) { }
+    void reportCommitTransactionResult(int, int, int) { }
+    void reportExecuteStatementResult(int, int, int) { }
+    void reportVacuumDatabaseResult(int) { }
+#endif
 
     static const char* databaseInfoTableName();
 

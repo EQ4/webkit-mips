@@ -30,9 +30,6 @@
 #include "NativeWebKeyboardEvent.h"
 #include "NativeWebMouseEvent.h"
 #include "NativeWebWheelEvent.h"
-#include "PageClientBase.h"
-#include "PageClientDefaultImpl.h"
-#include "PageClientLegacyImpl.h"
 #include "PageLoadClientEfl.h"
 #include "PagePolicyClientEfl.h"
 #include "PageUIClientEfl.h"
@@ -116,9 +113,18 @@ static Evas_Smart* defaultSmartClassInstance()
 
 static inline Ewk_View_Smart_Data* toSmartData(Evas_Object* evasObject)
 {
-    ASSERT(evasObject && isViewEvasObject(evasObject));
+    ASSERT(evasObject);
+    ASSERT(isEwkViewEvasObject(evasObject));
 
     return static_cast<Ewk_View_Smart_Data*>(evas_object_smart_data_get(evasObject));
+}
+
+static inline EwkView* toEwkView(const Ewk_View_Smart_Data* smartData)
+{
+    ASSERT(smartData);
+    ASSERT(smartData->priv);
+
+    return smartData->priv;
 }
 
 // EwkViewEventHandler implementation.
@@ -226,8 +232,7 @@ EwkView::EwkView(Evas_Object* evasObject, PassRefPtr<EwkContext> context, WKPage
     : m_evasObject(evasObject)
     , m_context(context)
     , m_pendingSurfaceResize(false)
-    , m_pageClient(behavior == DefaultBehavior ? PageClientDefaultImpl::create(this) : PageClientLegacyImpl::create(this))
-    , m_webView(adoptRef(new WebView(toImpl(m_context->wkContext()), m_pageClient.get(), toImpl(pageGroup), evasObject)))
+    , m_webView(adoptRef(new WebView(toImpl(m_context->wkContext()), toImpl(pageGroup), this)))
     , m_pageLoadClient(PageLoadClientEfl::create(this))
     , m_pagePolicyClient(PagePolicyClientEfl::create(this))
     , m_pageUIClient(PageUIClientEfl::create(this))
@@ -465,7 +470,7 @@ void EwkView::setSize(const IntSize& size)
         return;
 
     drawingArea->setSize(m_size, IntSize());
-    pageClient()->updateViewportSize();
+    webView()->updateViewportSize();
 }
 
 AffineTransform EwkView::transformFromScene() const
@@ -774,23 +779,6 @@ void EwkView::setTouchEventsEnabled(bool enabled)
 }
 #endif
 
-/**
- * @internal
- * Update the view's favicon and emits a "icon,changed" signal if it has
- * changed.
- *
- * This function is called whenever the URL has changed or when the icon for
- * the current page URL has changed.
- */
-void EwkView::informIconChange()
-{
-    EwkFaviconDatabase* iconDatabase = m_context->faviconDatabase();
-    ASSERT(iconDatabase);
-
-    m_faviconURL = ewk_favicon_database_icon_url_get(iconDatabase, m_url);
-    smartCallback<IconChanged>().call();
-}
-
 bool EwkView::createGLSurface()
 {
     if (!m_isAccelerated)
@@ -1039,7 +1027,15 @@ void EwkView::informURLChange()
     smartCallback<URLChanged>().call(m_url);
 
     // Update the view's favicon.
-    informIconChange();
+    smartCallback<FaviconChanged>().call();
+}
+
+Evas_Object* EwkView::createFavicon() const
+{
+    EwkFaviconDatabase* iconDatabase = m_context->faviconDatabase();
+    ASSERT(iconDatabase);
+
+    return ewk_favicon_database_icon_get(iconDatabase, m_url, smartData()->base.evas);
 }
 
 EwkWindowFeatures* EwkView::windowFeatures()
@@ -1321,7 +1317,7 @@ void EwkView::handleTouchUp(void* /* data */, Evas* /* canvas */, Evas_Object* e
 }
 
 void EwkView::handleTouchMove(void* /* data */, Evas* /* canvas */, Evas_Object* ewkView, void* /* eventInfo */)
-{    
+{
     toEwkView(ewkView)->feedTouchEvents(EWK_TOUCH_MOVE);
 }
 #endif
@@ -1333,7 +1329,7 @@ void EwkView::handleFaviconChanged(const char* pageURL, void* eventInfo)
     if (!view->url() || strcasecmp(view->url(), pageURL))
         return;
 
-    view->informIconChange();
+    view->smartCallback<FaviconChanged>().call();
 }
 
 PassRefPtr<cairo_surface_t> EwkView::takeSnapshot()
@@ -1367,17 +1363,13 @@ Evas_Smart_Class EwkView::parentSmartClass = EVAS_SMART_CLASS_INIT_NULL;
 
 EwkView* toEwkView(const Evas_Object* evasObject)
 {
-    ASSERT(evasObject && isViewEvasObject(evasObject));
+    ASSERT(evasObject);
+    ASSERT(isEwkViewEvasObject(evasObject));
+
     return toEwkView(static_cast<Ewk_View_Smart_Data*>(evas_object_smart_data_get(evasObject)));
 }
 
-EwkView* toEwkView(const Ewk_View_Smart_Data* smartData)
-{
-    ASSERT(smartData && smartData->priv);
-    return smartData->priv;
-}
-
-bool isViewEvasObject(const Evas_Object* evasObject)
+bool isEwkViewEvasObject(const Evas_Object* evasObject)
 {
     ASSERT(evasObject);
 

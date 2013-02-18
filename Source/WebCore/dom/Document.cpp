@@ -1351,7 +1351,7 @@ String Document::suggestedMIMEType() const
 // * making it receive a rect as parameter, i.e. nodesFromRect(x, y, w, h);
 // * making it receive the expading size of each direction separately,
 //   i.e. nodesFromRect(x, y, topSize, rightSize, bottomSize, leftSize);
-PassRefPtr<NodeList> Document::nodesFromRect(int centerX, int centerY, unsigned topPadding, unsigned rightPadding, unsigned bottomPadding, unsigned leftPadding, bool ignoreClipping, bool allowShadowContent) const
+PassRefPtr<NodeList> Document::nodesFromRect(int centerX, int centerY, unsigned topPadding, unsigned rightPadding, unsigned bottomPadding, unsigned leftPadding, HitTestRequest::HitTestRequestType hitType) const
 {
     // FIXME: Share code between this, elementFromPoint and caretRangeFromPoint.
     if (!renderer())
@@ -1366,17 +1366,11 @@ PassRefPtr<NodeList> Document::nodesFromRect(int centerX, int centerY, unsigned 
     float zoomFactor = frame->pageZoomFactor();
     LayoutPoint point = roundedLayoutPoint(FloatPoint(centerX * zoomFactor + view()->scrollX(), centerY * zoomFactor + view()->scrollY()));
 
-    int type = HitTestRequest::ReadOnly | HitTestRequest::Active;
+    HitTestRequest request(hitType);
 
     // When ignoreClipping is false, this method returns null for coordinates outside of the viewport.
-    if (ignoreClipping)
-        type |= HitTestRequest::IgnoreClipping;
-    else if (!frameView->visibleContentRect().intersects(HitTestLocation::rectForPoint(point, topPadding, rightPadding, bottomPadding, leftPadding)))
+    if (!request.ignoreClipping() && !frameView->visibleContentRect().intersects(HitTestLocation::rectForPoint(point, topPadding, rightPadding, bottomPadding, leftPadding)))
         return 0;
-    if (allowShadowContent)
-        type |= HitTestRequest::AllowShadowContent;
-
-    HitTestRequest request(type);
 
     // Passing a zero padding will trigger a rect hit test, however for the purposes of nodesFromRect,
     // we special handle this case in order to return a valid NodeList.
@@ -1883,9 +1877,6 @@ void Document::updateLayout()
     updateStyleIfNeeded();
 
     StackStats::LayoutCheckPoint layoutCheckPoint;
-
-    if (renderView())
-        renderView()->markQuoteContainingBlocksForLayoutIfNeeded();
 
     // Only do a layout if changes have occurred that make it necessary.      
     if (frameView && renderer() && (frameView->layoutPending() || renderer()->needsLayout()))
@@ -2439,10 +2430,7 @@ void Document::implicitClose()
     m_overMinimumLayoutThreshold = true;
     if (!ownerElement() || (ownerElement()->renderer() && !ownerElement()->renderer()->needsLayout())) {
         updateStyleIfNeeded();
-
-        if (renderView())
-            renderView()->markQuoteContainingBlocksForLayoutIfNeeded();
-
+        
         // Always do a layout after loading if needed.
         if (view() && renderObject && (!renderObject->firstChild() || renderObject->needsLayout()))
             view()->layout();

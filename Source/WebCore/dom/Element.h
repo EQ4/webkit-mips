@@ -75,14 +75,8 @@ public:
 
     const Attribute* attributeItem(unsigned index) const;
     const Attribute* getAttributeItem(const QualifiedName&) const;
-    Attribute* attributeItem(unsigned index);
-    Attribute* getAttributeItem(const QualifiedName&);
     size_t getAttributeItemIndex(const QualifiedName&) const;
     size_t getAttributeItemIndex(const AtomicString& name, bool shouldIgnoreAttributeCase) const;
-
-    // These functions do no error checking.
-    void addAttribute(const Attribute&);
-    void removeAttribute(size_t index);
 
     bool hasID() const { return !m_idForStyleResolution.isNull(); }
     bool hasClass() const { return !m_classNames.isNull(); }
@@ -92,7 +86,6 @@ public:
     void reportMemoryUsage(MemoryObjectInfo*) const;
 
     bool isUnique() const { return m_isUnique; }
-    const Attribute* immutableAttributeArray() const;
 
 protected:
     ElementData();
@@ -120,19 +113,17 @@ private:
     friend class SVGElement;
 #endif
 
-    Attribute* getAttributeItem(const AtomicString& name, bool shouldIgnoreAttributeCase);
     const Attribute* getAttributeItem(const AtomicString& name, bool shouldIgnoreAttributeCase) const;
     size_t getAttributeItemIndexSlowCase(const AtomicString& name, bool shouldIgnoreAttributeCase) const;
 
     PassRefPtr<UniqueElementData> makeUniqueCopy() const;
-
-    Vector<Attribute, 4>& mutableAttributeVector();
-    const Vector<Attribute, 4>& mutableAttributeVector() const;
 };
 
 class ShareableElementData : public ElementData {
 public:
     static PassRefPtr<ShareableElementData> createWithAttributes(const Vector<Attribute>&);
+
+    const Attribute* immutableAttributeArray() const { return reinterpret_cast<const Attribute*>(&m_attributeArray); }
 
     explicit ShareableElementData(const Vector<Attribute>&);
     explicit ShareableElementData(const UniqueElementData&);
@@ -145,6 +136,13 @@ class UniqueElementData : public ElementData {
 public:
     static PassRefPtr<UniqueElementData> create();
     PassRefPtr<ShareableElementData> makeShareableCopy() const;
+
+    // These functions do no error/duplicate checking.
+    void addAttribute(const QualifiedName&, const AtomicString&);
+    void removeAttribute(size_t index);
+
+    Attribute* attributeItem(unsigned index);
+    Attribute* getAttributeItem(const QualifiedName&);
 
     UniqueElementData();
     explicit UniqueElementData(const ShareableElementData&);
@@ -371,9 +369,9 @@ public:
     void parserSetAttributes(const Vector<Attribute>&, FragmentScriptingPermission);
 
     const ElementData* elementData() const { return m_elementData.get(); }
-    const ElementData* elementDataWithSynchronizedAttributes() const;
-    const ElementData* ensureElementDataWithSynchronizedAttributes() const;
     UniqueElementData* ensureUniqueElementData();
+
+    void synchronizeAllAttributes() const;
 
     // Clones attributes only.
     void cloneAttributesFromElement(const Element&);
@@ -649,7 +647,8 @@ private:
     void didModifyAttribute(const QualifiedName&, const AtomicString&);
     void didRemoveAttribute(const QualifiedName&);
 
-    void updateInvalidAttributes() const;
+    void synchronizeAttribute(const QualifiedName&) const;
+    void synchronizeAttribute(const AtomicString& localName) const;
 
     void scrollByUnits(int units, ScrollGranularity);
 
@@ -666,12 +665,6 @@ private:
 #endif
 
     bool pseudoStyleCacheIsInvalid(const RenderStyle* currentStyle, RenderStyle* newStyle);
-
-    virtual void updateStyleAttribute() const { }
-
-#if ENABLE(SVG)
-    virtual void updateAnimatedSVGAttribute(const QualifiedName&) const { }
-#endif
 
     void cancelFocusAppearanceUpdate();
 
@@ -774,20 +767,6 @@ inline Element* Element::nextElementSibling() const
     while (n && !n->isElementNode())
         n = n->nextSibling();
     return static_cast<Element*>(n);
-}
-
-inline const ElementData* Element::elementDataWithSynchronizedAttributes() const
-{
-    updateInvalidAttributes();
-    return elementData();
-}
-
-inline const ElementData* Element::ensureElementDataWithSynchronizedAttributes() const
-{
-    updateInvalidAttributes();
-    if (elementData())
-        return elementData();
-    return const_cast<Element*>(this)->ensureUniqueElementData();
 }
 
 inline void Element::updateName(const AtomicString& oldName, const AtomicString& newName)
@@ -903,20 +882,6 @@ inline const Attribute* Element::getAttributeItem(const QualifiedName& name) con
     return elementData()->getAttributeItem(name);
 }
 
-inline void Element::updateInvalidAttributes() const
-{
-    if (!elementData())
-        return;
-
-    if (elementData()->m_styleAttributeIsDirty)
-        updateStyleAttribute();
-
-#if ENABLE(SVG)
-    if (elementData()->m_animatedSVGAttributesAreDirty)
-        updateAnimatedSVGAttribute(anyQName());
-#endif
-}
-
 inline bool Element::hasID() const
 {
     return elementData() && elementData()->hasID();
@@ -968,28 +933,11 @@ inline bool isShadowHost(const Node* node)
 {
     return node && node->isElementNode() && toElement(node)->shadow();
 }
-inline Vector<Attribute, 4>& ElementData::mutableAttributeVector()
-{
-    ASSERT(m_isUnique);
-    return static_cast<UniqueElementData*>(this)->m_attributeVector;
-}
-
-inline const Vector<Attribute, 4>& ElementData::mutableAttributeVector() const
-{
-    ASSERT(m_isUnique);
-    return static_cast<const UniqueElementData*>(this)->m_attributeVector;
-}
-
-inline const Attribute* ElementData::immutableAttributeArray() const
-{
-    ASSERT(!m_isUnique);
-    return reinterpret_cast<const Attribute*>(&static_cast<const ShareableElementData*>(this)->m_attributeArray);
-}
 
 inline size_t ElementData::length() const
 {
     if (isUnique())
-        return mutableAttributeVector().size();
+        return static_cast<const UniqueElementData*>(this)->m_attributeVector.size();
     return m_arraySize;
 }
 
@@ -998,14 +946,6 @@ inline const StylePropertySet* ElementData::presentationAttributeStyle() const
     if (!m_isUnique)
         return 0;
     return static_cast<const UniqueElementData*>(this)->m_presentationAttributeStyle.get();
-}
-
-inline Attribute* ElementData::getAttributeItem(const AtomicString& name, bool shouldIgnoreAttributeCase)
-{
-    size_t index = getAttributeItemIndex(name, shouldIgnoreAttributeCase);
-    if (index != notFound)
-        return attributeItem(index);
-    return 0;
 }
 
 inline const Attribute* ElementData::getAttributeItem(const AtomicString& name, bool shouldIgnoreAttributeCase) const
@@ -1056,27 +996,12 @@ inline const Attribute* ElementData::getAttributeItem(const QualifiedName& name)
     return 0;
 }
 
-inline Attribute* ElementData::getAttributeItem(const QualifiedName& name)
-{
-    for (unsigned i = 0; i < length(); ++i) {
-        if (attributeItem(i)->name().matches(name))
-            return attributeItem(i);
-    }
-    return 0;
-}
-
 inline const Attribute* ElementData::attributeItem(unsigned index) const
 {
     ASSERT_WITH_SECURITY_IMPLICATION(index < length());
     if (m_isUnique)
-        return &mutableAttributeVector().at(index);
-    return &immutableAttributeArray()[index];
-}
-
-inline Attribute* ElementData::attributeItem(unsigned index)
-{
-    ASSERT_WITH_SECURITY_IMPLICATION(index < length());
-    return &mutableAttributeVector().at(index);
+        return &static_cast<const UniqueElementData*>(this)->m_attributeVector.at(index);
+    return &static_cast<const ShareableElementData*>(this)->immutableAttributeArray()[index];
 }
 
 } // namespace

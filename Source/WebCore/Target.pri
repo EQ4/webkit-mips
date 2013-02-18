@@ -410,6 +410,7 @@ SOURCES += \
     dom/EventException.cpp \
     dom/EventListenerMap.cpp \
     dom/EventNames.cpp \
+    dom/EventRetargeter.cpp \
     dom/EventTarget.cpp \
     dom/ExceptionBase.cpp \
     dom/ExceptionCodePlaceholder.cpp \
@@ -1080,6 +1081,7 @@ SOURCES += \
     platform/mock/DeviceMotionClientMock.cpp \
     platform/mock/DeviceOrientationClientMock.cpp \
     platform/mock/GeolocationClientMock.cpp \
+    platform/mock/PlatformSpeechSynthesizerMock.cpp \
     platform/mock/ScrollbarThemeMock.cpp \
     platform/network/AuthenticationChallengeBase.cpp \
     platform/network/BlobData.cpp \
@@ -1455,6 +1457,7 @@ HEADERS += \
     Modules/proximity/DeviceProximityEvent.h \
     \
     Modules/webdatabase/AbstractDatabaseServer.h \
+    Modules/webdatabase/ChangeVersionData.h \
     Modules/webdatabase/ChangeVersionWrapper.h \
     Modules/webdatabase/DOMWindowWebDatabase.h \
     Modules/webdatabase/DatabaseAuthorizer.h \
@@ -1479,12 +1482,15 @@ HEADERS += \
     Modules/webdatabase/SQLResultSet.h \
     Modules/webdatabase/SQLResultSetRowList.h \
     Modules/webdatabase/SQLStatement.h \
+    Modules/webdatabase/SQLStatementBackend.h \
     Modules/webdatabase/SQLStatementSync.h \
     Modules/webdatabase/SQLTransaction.h \
     Modules/webdatabase/SQLTransactionBackend.h \
     Modules/webdatabase/SQLTransactionBackendSync.h \
     Modules/webdatabase/SQLTransactionClient.h \
     Modules/webdatabase/SQLTransactionCoordinator.h \
+    Modules/webdatabase/SQLTransactionState.h \
+    Modules/webdatabase/SQLTransactionStateMachine.h \
     Modules/webdatabase/SQLTransactionSync.h \
     Modules/webdatabase/SQLTransactionSyncCallback.h \
     Modules/webdatabase/WorkerContextWebDatabase.h \
@@ -2170,6 +2176,7 @@ HEADERS += \
     platform/mock/DeviceMotionClientMock.h \
     platform/mock/DeviceOrientationClientMock.h \
     platform/mock/GeolocationClientMock.cpp \
+    platform/mock/PlatformSpeechSynthesizerMock.h \
     platform/mock/ScrollbarThemeMock.h \
     platform/graphics/BitmapImage.h \
     platform/graphics/Color.h \
@@ -3068,12 +3075,14 @@ enable?(SQL_DATABASE) {
         Modules/webdatabase/SQLResultSet.cpp \
         Modules/webdatabase/SQLResultSetRowList.cpp \
         Modules/webdatabase/SQLStatement.cpp \
+        Modules/webdatabase/SQLStatementBackend.cpp \
         Modules/webdatabase/SQLStatementSync.cpp \
         Modules/webdatabase/SQLTransaction.cpp \
         Modules/webdatabase/SQLTransactionBackend.cpp \
         Modules/webdatabase/SQLTransactionBackendSync.cpp \
         Modules/webdatabase/SQLTransactionClient.cpp \
         Modules/webdatabase/SQLTransactionCoordinator.cpp \
+        Modules/webdatabase/SQLTransactionStateMachine.cpp \
         Modules/webdatabase/SQLTransactionSync.cpp \
 
     SOURCES += \

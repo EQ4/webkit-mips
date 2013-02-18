@@ -81,6 +81,7 @@
       '../css',
       '../dom',
       '../dom/default',
+      '../dom/default/chromium',
       '../editing',
       '../fileapi',
       '../history',
@@ -2163,17 +2164,6 @@
         }],
         ['OS!="mac"', {
           'sources/': [['exclude', 'Mac\\.(cpp|mm?)$']]
-        }],
-        ['clang==1', {
-          # FIXME: Remove once this warning has been tweaked in Clang.
-          'cflags': [
-            '-Wno-return-type-c-linkage',
-          ],
-          'xcode_settings': {
-            'WARNING_CFLAGS': [
-              '-Wno-return-type-c-linkage',
-            ],
-          }
         }],
       ],
       # Disable c4267 warnings until we fix size_t to int truncations.

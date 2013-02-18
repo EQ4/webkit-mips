@@ -105,7 +105,6 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/bytecode/CodeBlockWithJITType.h \
 	Source/JavaScriptCore/bytecode/CodeOrigin.cpp \
 	Source/JavaScriptCore/bytecode/CodeOrigin.h \
-	Source/JavaScriptCore/bytecode/Comment.h \
 	Source/JavaScriptCore/bytecode/DataFormat.h \
 	Source/JavaScriptCore/bytecode/DFGExitProfile.cpp \
 	Source/JavaScriptCore/bytecode/DFGExitProfile.h \
@@ -493,12 +492,14 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/parser/Nodes.h \
 	Source/JavaScriptCore/parser/ParserArena.cpp \
 	Source/JavaScriptCore/parser/ParserArena.h \
+	Source/JavaScriptCore/parser/ParserError.h \
 	Source/JavaScriptCore/parser/ParserTokens.h \
 	Source/JavaScriptCore/parser/Parser.cpp \
 	Source/JavaScriptCore/parser/Parser.h \
 	Source/JavaScriptCore/parser/ParserModes.h \
 	Source/JavaScriptCore/parser/ResultType.h \
 	Source/JavaScriptCore/parser/SourceCode.h \
+	Source/JavaScriptCore/parser/SourceProvider.cpp \
 	Source/JavaScriptCore/parser/SourceProvider.h \
 	Source/JavaScriptCore/parser/SourceProviderCache.cpp \
 	Source/JavaScriptCore/parser/SourceProviderCache.h \
@@ -760,6 +761,7 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/runtime/StructureChain.h \
 	Source/JavaScriptCore/runtime/Structure.cpp \
 	Source/JavaScriptCore/runtime/Structure.h \
+	Source/JavaScriptCore/runtime/StructureInlines.h \
 	Source/JavaScriptCore/runtime/StructureRareData.cpp \
 	Source/JavaScriptCore/runtime/StructureRareData.h \
 	Source/JavaScriptCore/runtime/StructureRareDataInlines.h \

@@ -232,12 +232,18 @@ void RenderBox::styleWillChange(StyleDifference diff, const RenderStyle* newStyl
     RenderBoxModelObject::styleWillChange(diff, newStyle);
 }
 
-static bool borderWidthChanged(const RenderStyle* oldStyle, const RenderStyle* newStyle)
+static bool borderOrPaddingLogicalWidthChanged(const RenderStyle* oldStyle, const RenderStyle* newStyle)
 {
-    return oldStyle->borderLeftWidth() != newStyle->borderLeftWidth()
-        || oldStyle->borderTopWidth() != newStyle->borderTopWidth()
-        || oldStyle->borderRightWidth() != newStyle->borderRightWidth()
-        || oldStyle->borderBottomWidth() != newStyle->borderBottomWidth();
+    if (newStyle->isHorizontalWritingMode())
+        return oldStyle->borderLeftWidth() != newStyle->borderLeftWidth()
+            || oldStyle->borderRightWidth() != newStyle->borderRightWidth()
+            || oldStyle->paddingLeft() != newStyle->paddingLeft()
+            || oldStyle->paddingRight() != newStyle->paddingRight();
+
+    return oldStyle->borderTopWidth() != newStyle->borderTopWidth()
+        || oldStyle->borderBottomWidth() != newStyle->borderBottomWidth()
+        || oldStyle->paddingTop() != newStyle->paddingTop()
+        || oldStyle->paddingBottom() != newStyle->paddingBottom();
 }
 
 void RenderBox::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle)
@@ -314,9 +320,7 @@ void RenderBox::styleDidChange(StyleDifference diff, const RenderStyle* oldStyle
     updateExclusionShapeOutsideInfoAfterStyleChange(style()->shapeOutside(), oldStyle ? oldStyle->shapeOutside() : 0);
 #endif
 
-    if (oldStyle && (newStyle->boxSizing() == BORDER_BOX || oldStyle->boxSizing() == BORDER_BOX) && diff == StyleDifferenceLayout
-        && (newStyle->paddingBox() != oldStyle->paddingBox() || borderWidthChanged(oldStyle, newStyle))) {
-        ASSERT(needsLayout());
+    if (oldStyle && diff == StyleDifferenceLayout && needsLayout() && borderOrPaddingLogicalWidthChanged(oldStyle, newStyle)) {
         for (RenderObject* child = firstChild(); child; child = child->nextSibling())
             child->setChildNeedsLayout(true, MarkOnlyThis);
     }
@@ -2925,14 +2929,10 @@ static void computeInlineStaticDistance(Length& logicalLeft, Length& logicalRigh
 void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& computedValues, RenderRegion* region, LayoutUnit offsetFromLogicalTopOfFirstPage) const
 {
     if (isReplaced()) {
-        // FIXME: For regions with width auto, we want to compute width using the normal block sizing code.
-        // For now, regions are replaced elements and this code can be removed once the RenderRegion
-        // will inherit from RenderBlock instead of RenderReplaced.
-        // (see https://bugs.webkit.org/show_bug.cgi?id=74132 )
-        if (!isRenderRegion() || (isRenderRegion() && shouldComputeSizeAsReplaced())) {
-            computePositionedLogicalWidthReplaced(computedValues); // FIXME: Patch for regions when we add replaced element support.
-            return;
-        }
+        // FIXME: Positioned replaced elements inside a flow thread are not working properly
+        // with variable width regions (see https://bugs.webkit.org/show_bug.cgi?id=69896 ).
+        computePositionedLogicalWidthReplaced(computedValues);
+        return;
     }
 
     // QUESTIONS
@@ -3275,14 +3275,8 @@ static void computeBlockStaticDistance(Length& logicalTop, Length& logicalBottom
 void RenderBox::computePositionedLogicalHeight(LogicalExtentComputedValues& computedValues) const
 {
     if (isReplaced()) {
-        // FIXME: For regions with height auto, we want to compute width using the normal block sizing code.
-        // For now, regions are replaced elements and this code can be removed once the RenderRegion
-        // will inherit from RenderBlock instead of RenderReplaced.
-        // (see https://bugs.webkit.org/show_bug.cgi?id=74132 )
-        if (!isRenderRegion() || (isRenderRegion() && shouldComputeSizeAsReplaced())) {
-            computePositionedLogicalHeightReplaced(computedValues);
-            return;
-        }
+        computePositionedLogicalHeightReplaced(computedValues);
+        return;
     }
 
     // The following is based off of the W3C Working Draft from April 11, 2006 of

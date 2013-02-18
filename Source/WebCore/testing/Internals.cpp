@@ -137,6 +137,12 @@
 #include "PageGroup.h"
 #endif
 
+#if ENABLE(SPEECH_SYNTHESIS)
+#include "DOMWindowSpeechSynthesis.h"
+#include "PlatformSpeechSynthesizerMock.h"
+#include "SpeechSynthesis.h"
+#endif
+
 namespace WebCore {
 
 #if ENABLE(PAGE_POPUP)
@@ -827,6 +833,20 @@ void Internals::setFormControlStateOfPreviousHistoryItem(const Vector<String>& s
         ec = INVALID_ACCESS_ERR;
 }
 
+#if ENABLE(SPEECH_SYNTHESIS)
+void Internals::enableMockSpeechSynthesizer()
+{
+    Document* document = contextDocument();
+    if (!document || !document->domWindow())
+        return;
+    SpeechSynthesis* synthesis = DOMWindowSpeechSynthesis::speechSynthesis(document->domWindow());
+    if (!synthesis)
+        return;
+    
+    synthesis->setPlatformSynthesizer(PlatformSpeechSynthesizerMock::create(synthesis));
+}
+#endif
+    
 void Internals::setEnableMockPagePopup(bool enabled, ExceptionCode& ec)
 {
 #if ENABLE(PAGE_POPUP)
@@ -1385,17 +1405,29 @@ PassRefPtr<NodeList> Internals::nodesFromRect(Document* document, int x, int y, 
         return 0;
     }
 
-    return document->nodesFromRect(x, y, topPadding, rightPadding, bottomPadding, leftPadding, ignoreClipping, allowShadowContent);
+    HitTestRequest::HitTestRequestType hitType = HitTestRequest::ReadOnly | HitTestRequest::Active;
+    if (ignoreClipping)
+        hitType |= HitTestRequest::IgnoreClipping;
+    if (allowShadowContent)
+        hitType |= HitTestRequest::AllowShadowContent;
+
+    return document->nodesFromRect(x, y, topPadding, rightPadding, bottomPadding, leftPadding, hitType);
 }
 
 void Internals::emitInspectorDidBeginFrame()
 {
-    InspectorInstrumentation::didBeginFrame(contextDocument()->frame()->page());
+#if ENABLE(INSPECTOR)
+    InspectorController* inspectorController = contextDocument()->frame()->page()->inspectorController();
+    inspectorController->didBeginFrame();
+#endif
 }
 
 void Internals::emitInspectorDidCancelFrame()
 {
-    InspectorInstrumentation::didCancelFrame(contextDocument()->frame()->page());
+#if ENABLE(INSPECTOR)
+    InspectorController* inspectorController = contextDocument()->frame()->page()->inspectorController();
+    inspectorController->didCancelFrame();
+#endif
 }
 
 void Internals::setBatteryStatus(Document* document, const String& eventType, bool charging, double chargingTime, double dischargingTime, double level, ExceptionCode& ec)

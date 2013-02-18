@@ -104,7 +104,8 @@
     <file>InspectorFrontendHostStub.js</file>
     <file>InspectorView.js</file>
     <file>JSHeapSnapshot.js</file>
-    <file>IsolatedFileSystemModel.js</file>
+    <file>IsolatedFileSystem.js</file>
+    <file>IsolatedFileSystemManager.js</file>
     <file>JavaScriptFormatter.js</file>
     <file>JavaScriptSourceFrame.js</file>
     <file>jsdifflib.js</file>
@@ -139,6 +140,7 @@
     <file>ProfileDataGridTree.js</file>
     <file>ProfileLauncherView.js</file>
     <file>ProfilesPanel.js</file>
+    <file>ProfilesPanelDescriptor.js</file>
     <file>Progress.js</file>
     <file>ProgressIndicator.js</file>
     <file>PropertiesSection.js</file>

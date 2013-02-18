@@ -405,8 +405,11 @@ void RenderLayerBacking::updateCompositedBounds()
         RenderView* view = m_owningLayer->renderer()->view();
         RenderLayer* rootLayer = view->layer();
 
-        // Start by clipping to the document's bounds.
-        LayoutRect clippingBounds = view->unscaledDocumentRect();
+        LayoutRect clippingBounds;
+        if (renderer()->style()->position() == FixedPosition && renderer()->container() == view)
+            clippingBounds = view->frameView()->viewportConstrainedVisibleContentRect();
+        else
+            clippingBounds = view->unscaledDocumentRect();
 
         if (m_owningLayer != rootLayer)
             clippingBounds.intersect(m_owningLayer->backgroundClipRect(RenderLayer::ClipRectsContext(rootLayer, 0, AbsoluteClipRects)).rect()); // FIXME: Incorrect for CSS regions.
@@ -1400,7 +1403,10 @@ bool RenderLayerBacking::isSimpleContainerCompositingLayer() const
     
     if (paintsBoxDecorations() || paintsChildren())
         return false;
-    
+
+    if (renderObject->isRenderRegion())
+        return false;
+
     if (renderObject->node() && renderObject->node()->isDocumentNode()) {
         // Look to see if the root object has a non-simple background
         RenderObject* rootObject = renderObject->document()->documentElement() ? renderObject->document()->documentElement()->renderer() : 0;

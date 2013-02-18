@@ -94,6 +94,11 @@ namespace WebCore {
 
 using namespace HTMLNames;
 using namespace XMLNames;
+
+static inline bool shouldIgnoreAttributeCase(const Element* e)
+{
+    return e && e->document()->isHTMLDocument() && e->isHTMLElement();
+}
     
 class StyleResolverParentPusher {
 public:
@@ -313,7 +318,6 @@ void Element::setBooleanAttribute(const QualifiedName& name, bool value)
 
 NamedNodeMap* Element::attributes() const
 {
-    ensureElementDataWithSynchronizedAttributes();
     ElementRareData* rareData = const_cast<Element*>(this)->ensureElementRareData();
     if (NamedNodeMap* attributeMap = rareData->attributeMap())
         return attributeMap;
@@ -332,19 +336,64 @@ bool Element::hasAttribute(const QualifiedName& name) const
     return hasAttributeNS(name.namespaceURI(), name.localName());
 }
 
+void Element::synchronizeAllAttributes() const
+{
+    if (!elementData())
+        return;
+    if (elementData()->m_styleAttributeIsDirty) {
+        ASSERT(isStyledElement());
+        static_cast<const StyledElement*>(this)->synchronizeStyleAttributeInternal();
+    }
+#if ENABLE(SVG)
+    if (elementData()->m_animatedSVGAttributesAreDirty) {
+        ASSERT(isSVGElement());
+        static_cast<const SVGElement*>(this)->synchronizeAnimatedSVGAttribute(anyQName());
+    }
+#endif
+}
+
+inline void Element::synchronizeAttribute(const QualifiedName& name) const
+{
+    if (!elementData())
+        return;
+    if (UNLIKELY(name == styleAttr && elementData()->m_styleAttributeIsDirty)) {
+        ASSERT(isStyledElement());
+        static_cast<const StyledElement*>(this)->synchronizeStyleAttributeInternal();
+        return;
+    }
+#if ENABLE(SVG)
+    if (UNLIKELY(elementData()->m_animatedSVGAttributesAreDirty)) {
+        ASSERT(isSVGElement());
+        static_cast<const SVGElement*>(this)->synchronizeAnimatedSVGAttribute(name);
+    }
+#endif
+}
+
+inline void Element::synchronizeAttribute(const AtomicString& localName) const
+{
+    // This version of synchronizeAttribute() is streamlined for the case where you don't have a full QualifiedName,
+    // e.g when called from DOM API.
+    if (!elementData())
+        return;
+    if (elementData()->m_styleAttributeIsDirty && equalPossiblyIgnoringCase(localName, styleAttr.localName(), shouldIgnoreAttributeCase(this))) {
+        ASSERT(isStyledElement());
+        static_cast<const StyledElement*>(this)->synchronizeStyleAttributeInternal();
+        return;
+    }
+#if ENABLE(SVG)
+    if (elementData()->m_animatedSVGAttributesAreDirty) {
+        // We're not passing a namespace argument on purpose. SVGNames::*Attr are defined w/o namespaces as well.
+        ASSERT(isSVGElement());
+        static_cast<const SVGElement*>(this)->synchronizeAnimatedSVGAttribute(QualifiedName(nullAtom, localName, nullAtom));
+    }
+#endif
+}
+
 const AtomicString& Element::getAttribute(const QualifiedName& name) const
 {
     if (!elementData())
         return nullAtom;
-
-    if (UNLIKELY(name == styleAttr && elementData()->m_styleAttributeIsDirty))
-        updateStyleAttribute();
-
-#if ENABLE(SVG)
-    if (UNLIKELY(elementData()->m_animatedSVGAttributesAreDirty))
-        updateAnimatedSVGAttribute(name);
-#endif
-
+    synchronizeAttribute(name);
     if (const Attribute* attribute = getAttributeItem(name))
         return attribute->value();
     return nullAtom;
@@ -699,30 +748,12 @@ IntRect Element::screenRect() const
     return document()->view()->contentsToScreen(renderer()->absoluteBoundingBoxRectIgnoringTransforms());
 }
 
-static inline bool shouldIgnoreAttributeCase(const Element* e)
-{
-    return e && e->document()->isHTMLDocument() && e->isHTMLElement();
-}
-
-const AtomicString& Element::getAttribute(const AtomicString& name) const
+const AtomicString& Element::getAttribute(const AtomicString& localName) const
 {
     if (!elementData())
         return nullAtom;
-
-    bool ignoreCase = shouldIgnoreAttributeCase(this);
-
-    // Update the 'style' attribute if it's invalid and being requested:
-    if (elementData()->m_styleAttributeIsDirty && equalPossiblyIgnoringCase(name, styleAttr.localName(), ignoreCase))
-        updateStyleAttribute();
-
-#if ENABLE(SVG)
-    if (elementData()->m_animatedSVGAttributesAreDirty) {
-        // We're not passing a namespace argument on purpose. SVGNames::*Attr are defined w/o namespaces as well.
-        updateAnimatedSVGAttribute(QualifiedName(nullAtom, name, nullAtom));
-    }
-#endif
-
-    if (const Attribute* attribute = elementData()->getAttributeItem(name, ignoreCase))
+    synchronizeAttribute(localName);
+    if (const Attribute* attribute = elementData()->getAttributeItem(localName, shouldIgnoreAttributeCase(this)))
         return attribute->value();
     return nullAtom;
 }
@@ -732,28 +763,32 @@ const AtomicString& Element::getAttributeNS(const AtomicString& namespaceURI, co
     return getAttribute(QualifiedName(nullAtom, localName, namespaceURI));
 }
 
-void Element::setAttribute(const AtomicString& name, const AtomicString& value, ExceptionCode& ec)
+void Element::setAttribute(const AtomicString& localName, const AtomicString& value, ExceptionCode& ec)
 {
-    if (!Document::isValidName(name)) {
+    if (!Document::isValidName(localName)) {
         ec = INVALID_CHARACTER_ERR;
         return;
     }
 
-    const AtomicString& localName = shouldIgnoreAttributeCase(this) ? name.lower() : name;
+    synchronizeAttribute(localName);
+    const AtomicString& caseAdjustedLocalName = shouldIgnoreAttributeCase(this) ? localName.lower() : localName;
 
-    size_t index = ensureElementDataWithSynchronizedAttributes()->getAttributeItemIndex(localName, false);
-    const QualifiedName& qName = index != notFound ? attributeItem(index)->name() : QualifiedName(nullAtom, localName, nullAtom);
+    size_t index = elementData() ? elementData()->getAttributeItemIndex(caseAdjustedLocalName, false) : notFound;
+    const QualifiedName& qName = index != notFound ? attributeItem(index)->name() : QualifiedName(nullAtom, caseAdjustedLocalName, nullAtom);
     setAttributeInternal(index, qName, value, NotInSynchronizationOfLazyAttribute);
 }
 
 void Element::setAttribute(const QualifiedName& name, const AtomicString& value)
 {
-    setAttributeInternal(ensureElementDataWithSynchronizedAttributes()->getAttributeItemIndex(name), name, value, NotInSynchronizationOfLazyAttribute);
+    synchronizeAttribute(name);
+    size_t index = elementData() ? elementData()->getAttributeItemIndex(name) : notFound;
+    setAttributeInternal(index, name, value, NotInSynchronizationOfLazyAttribute);
 }
 
 void Element::setSynchronizedLazyAttribute(const QualifiedName& name, const AtomicString& value)
 {
-    setAttributeInternal(ensureUniqueElementData()->getAttributeItemIndex(name), name, value, InSynchronizationOfLazyAttribute);
+    size_t index = elementData() ? elementData()->getAttributeItemIndex(name) : notFound;
+    setAttributeInternal(index, name, value, InSynchronizationOfLazyAttribute);
 }
 
 inline void Element::setAttributeInternal(size_t index, const QualifiedName& name, const AtomicString& newValue, SynchronizationOfLazyAttribute inSynchronizationOfLazyAttribute)
@@ -1033,20 +1068,20 @@ void Element::parserSetAttributes(const Vector<Attribute>& attributeVector, Frag
 
 bool Element::hasAttributes() const
 {
-    updateInvalidAttributes();
+    synchronizeAllAttributes();
     return elementData() && elementData()->length();
 }
 
 bool Element::hasEquivalentAttributes(const Element* other) const
 {
-    const ElementData* elementData = elementDataWithSynchronizedAttributes();
-    const ElementData* otherElementData = other->elementDataWithSynchronizedAttributes();
-    if (elementData == otherElementData)
+    synchronizeAllAttributes();
+    other->synchronizeAllAttributes();
+    if (elementData() == other->elementData())
         return true;
-    if (elementData)
-        return elementData->isEquivalent(otherElementData);
-    if (otherElementData)
-        return otherElementData->isEquivalent(elementData);
+    if (elementData())
+        return elementData()->isEquivalent(other->elementData());
+    if (other->elementData())
+        return other->elementData()->isEquivalent(elementData());
     return true;
 }
 
@@ -1317,7 +1352,7 @@ bool Element::pseudoStyleCacheIsInvalid(const RenderStyle* currentStyle, RenderS
 
 PassRefPtr<RenderStyle> Element::styleForRenderer()
 {
-    if (hasCustomCallbacks()) {
+    if (hasCustomStyleCallbacks()) {
         if (RefPtr<RenderStyle> style = customStyleForRenderer())
             return style.release();
     }
@@ -1327,7 +1362,7 @@ PassRefPtr<RenderStyle> Element::styleForRenderer()
 
 void Element::recalcStyle(StyleChange change)
 {
-    if (hasCustomCallbacks()) {
+    if (hasCustomStyleCallbacks()) {
         if (!willRecalcStyle(change))
             return;
     }
@@ -1352,7 +1387,7 @@ void Element::recalcStyle(StyleChange change)
             clearNeedsStyleRecalc();
             clearChildNeedsStyleRecalc();
 
-            if (hasCustomCallbacks())
+            if (hasCustomStyleCallbacks())
                 didRecalcStyle(change);
             return;
         }
@@ -1423,7 +1458,7 @@ void Element::recalcStyle(StyleChange change)
     clearNeedsStyleRecalc();
     clearChildNeedsStyleRecalc();
     
-    if (hasCustomCallbacks())
+    if (hasCustomStyleCallbacks())
         didRecalcStyle(change);
 }
 
@@ -1686,7 +1721,7 @@ PassRefPtr<Attr> Element::setAttributeNode(Attr* attrNode, ExceptionCode& ec)
         return 0;
     }
 
-    updateInvalidAttributes();
+    synchronizeAllAttributes();
     UniqueElementData* elementData = ensureUniqueElementData();
 
     size_t index = elementData->getAttributeItemIndex(attrNode->qualifiedName());
@@ -1723,10 +1758,9 @@ PassRefPtr<Attr> Element::removeAttributeNode(Attr* attr, ExceptionCode& ec)
 
     ASSERT(document() == attr->document());
 
-    const ElementData* elementData = elementDataWithSynchronizedAttributes();
-    ASSERT(elementData);
+    synchronizeAttribute(attr->qualifiedName());
 
-    size_t index = elementData->getAttributeItemIndex(attr->qualifiedName());
+    size_t index = elementData()->getAttributeItemIndex(attr->qualifiedName());
     if (index == notFound) {
         ec = NOT_FOUND_ERR;
         return 0;
@@ -1788,7 +1822,7 @@ void Element::addAttributeInternal(const QualifiedName& name, const AtomicString
 {
     if (!inSynchronizationOfLazyAttribute)
         willModifyAttribute(name, nullAtom, value);
-    ensureUniqueElementData()->addAttribute(Attribute(name, value));
+    ensureUniqueElementData()->addAttribute(name, value);
     if (!inSynchronizationOfLazyAttribute)
         didAddAttribute(name, value);
 }
@@ -1814,12 +1848,12 @@ void Element::removeAttributeNS(const AtomicString& namespaceURI, const AtomicSt
     removeAttribute(QualifiedName(nullAtom, localName, namespaceURI));
 }
 
-PassRefPtr<Attr> Element::getAttributeNode(const AtomicString& name)
+PassRefPtr<Attr> Element::getAttributeNode(const AtomicString& localName)
 {
-    const ElementData* elementData = elementDataWithSynchronizedAttributes();
-    if (!elementData)
+    if (!elementData())
         return 0;
-    const Attribute* attribute = elementData->getAttributeItem(name, shouldIgnoreAttributeCase(this));
+    synchronizeAttribute(localName);
+    const Attribute* attribute = elementData()->getAttributeItem(localName, shouldIgnoreAttributeCase(this));
     if (!attribute)
         return 0;
     return ensureAttr(attribute->name());
@@ -1827,32 +1861,31 @@ PassRefPtr<Attr> Element::getAttributeNode(const AtomicString& name)
 
 PassRefPtr<Attr> Element::getAttributeNodeNS(const AtomicString& namespaceURI, const AtomicString& localName)
 {
-    const ElementData* elementData = elementDataWithSynchronizedAttributes();
-    if (!elementData)
+    if (!elementData())
         return 0;
-    const Attribute* attribute = elementData->getAttributeItem(QualifiedName(nullAtom, localName, namespaceURI));
+    QualifiedName qName(nullAtom, localName, namespaceURI);
+    synchronizeAttribute(qName);
+    const Attribute* attribute = elementData()->getAttributeItem(qName);
     if (!attribute)
         return 0;
     return ensureAttr(attribute->name());
 }
 
-bool Element::hasAttribute(const AtomicString& name) const
+bool Element::hasAttribute(const AtomicString& localName) const
 {
     if (!elementData())
         return false;
-
-    // This call to String::lower() seems to be required but
-    // there may be a way to remove it.
-    AtomicString localName = shouldIgnoreAttributeCase(this) ? name.lower() : name;
-    return elementDataWithSynchronizedAttributes()->getAttributeItem(localName, false);
+    synchronizeAttribute(localName);
+    return elementData()->getAttributeItem(shouldIgnoreAttributeCase(this) ? localName.lower() : localName, false);
 }
 
 bool Element::hasAttributeNS(const AtomicString& namespaceURI, const AtomicString& localName) const
 {
-    const ElementData* elementData = elementDataWithSynchronizedAttributes();
-    if (!elementData)
+    if (!elementData())
         return false;
-    return elementData->getAttributeItem(QualifiedName(nullAtom, localName, namespaceURI));
+    QualifiedName qName(nullAtom, localName, namespaceURI);
+    synchronizeAttribute(qName);
+    return elementData()->getAttributeItem(qName);
 }
 
 CSSStyleDeclaration *Element::style()
@@ -2723,19 +2756,19 @@ void Element::detachAllAttrNodesFromElement()
 
 bool Element::willRecalcStyle(StyleChange)
 {
-    ASSERT(hasCustomCallbacks());
+    ASSERT(hasCustomStyleCallbacks());
     return true;
 }
 
 void Element::didRecalcStyle(StyleChange)
 {
-    ASSERT(hasCustomCallbacks());
+    ASSERT(hasCustomStyleCallbacks());
 }
 
 
 PassRefPtr<RenderStyle> Element::customStyleForRenderer()
 {
-    ASSERT(hasCustomCallbacks());
+    ASSERT(hasCustomStyleCallbacks());
     return 0;
 }
 
@@ -2744,7 +2777,7 @@ void Element::cloneAttributesFromElement(const Element& other)
     if (hasSyntheticAttrChildNodes())
         detachAllAttrNodesFromElement();
 
-    other.updateInvalidAttributes();
+    other.synchronizeAllAttributes();
     if (!other.m_elementData) {
         m_elementData.clear();
         return;
@@ -2901,7 +2934,7 @@ ShareableElementData::ShareableElementData(const UniqueElementData& other)
     }
 
     for (unsigned i = 0; i < m_arraySize; ++i)
-        new (&reinterpret_cast<Attribute*>(&m_attributeArray)[i]) Attribute(*other.attributeItem(i));
+        new (&reinterpret_cast<Attribute*>(&m_attributeArray)[i]) Attribute(other.m_attributeVector.at(i));
 }
 
 ElementData::ElementData(const ElementData& other, bool isUnique)
@@ -2951,21 +2984,19 @@ PassRefPtr<UniqueElementData> ElementData::makeUniqueCopy() const
 
 PassRefPtr<ShareableElementData> UniqueElementData::makeShareableCopy() const
 {
-    void* slot = WTF::fastMalloc(sizeForShareableElementDataWithAttributeCount(mutableAttributeVector().size()));
+    void* slot = WTF::fastMalloc(sizeForShareableElementDataWithAttributeCount(m_attributeVector.size()));
     return adoptRef(new (slot) ShareableElementData(*this));
 }
 
-void ElementData::addAttribute(const Attribute& attribute)
+void UniqueElementData::addAttribute(const QualifiedName& attributeName, const AtomicString& value)
 {
-    ASSERT(isUnique());
-    mutableAttributeVector().append(attribute);
+    m_attributeVector.append(Attribute(attributeName, value));
 }
 
-void ElementData::removeAttribute(size_t index)
+void UniqueElementData::removeAttribute(size_t index)
 {
-    ASSERT(isUnique());
     ASSERT_WITH_SECURITY_IMPLICATION(index < length());
-    mutableAttributeVector().remove(index);
+    m_attributeVector.remove(index);
 }
 
 bool ElementData::isEquivalent(const ElementData* other) const
@@ -2995,8 +3026,9 @@ void ElementData::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     info.addMember(m_classNames, "classNames");
     info.addMember(m_idForStyleResolution, "idForStyleResolution");
     if (m_isUnique) {
-        info.addMember(presentationAttributeStyle(), "presentationAttributeStyle()");
-        info.addMember(mutableAttributeVector(), "mutableAttributeVector");
+        const UniqueElementData* uniqueThis = static_cast<const UniqueElementData*>(this);
+        info.addMember(uniqueThis->m_presentationAttributeStyle, "presentationAttributeStyle");
+        info.addMember(uniqueThis->m_attributeVector, "attributeVector");
     }
     for (unsigned i = 0, len = length(); i < len; i++)
         info.addMember(*attributeItem(i), "*attributeItem");
@@ -3019,6 +3051,21 @@ size_t ElementData::getAttributeItemIndexSlowCase(const AtomicString& name, bool
         }
     }
     return notFound;
+}
+
+Attribute* UniqueElementData::getAttributeItem(const QualifiedName& name)
+{
+    for (unsigned i = 0; i < length(); ++i) {
+        if (m_attributeVector.at(i).name().matches(name))
+            return &m_attributeVector.at(i);
+    }
+    return 0;
+}
+
+Attribute* UniqueElementData::attributeItem(unsigned index)
+{
+    ASSERT_WITH_SECURITY_IMPLICATION(index < length());
+    return &m_attributeVector.at(index);
 }
 
 } // namespace WebCore
