@@ -1,3 +1,35 @@
+2013-02-19  Hajime Morrita  <morrita@google.com>
+
+        Unreviewed, updated spelling of my name.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-18  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Unreviewed. Adjust expectations.
+
+        * TestWebKitAPI/Tests/WebCore/HeapGraphSerializerTest.cpp:
+        (TestWebKitAPI::TEST):
+
+2013-02-18  Zan Dobersek  <zdobersek@igalia.com>
+
+        Unreviewed GTK gardening.
+
+        * Scripts/run-gtk-tests:
+        (TestRunner): Skipped the ReloadPageAfterCrash unit test as it is flakily timing out.
+
+2013-02-18  Adenilson Cavalcanti  <cavalcantii@gmail.com>
+
+        [Qt][WK2] Remove duped test name and append new test in project file
+        https://bugs.webkit.org/show_bug.cgi?id=110117
+
+        A new WK2 API test has landed recently (ResizeWindowAfterCrash), this patch will
+        add this test into the runnable test suite and remove a duped test in project file.
+
+        Reviewed by Jocelyn Turcotte.
+
+        * TestWebKitAPI/Tests/WebKit2/WebKit2.pro:
+
 2013-02-18  Jochen Eisinger  <jochen@chromium.org>
 
         [chromium] remove log spew from dumpAllBackForwardLists

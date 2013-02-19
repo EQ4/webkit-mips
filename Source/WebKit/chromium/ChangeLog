@@ -1,3 +1,45 @@
+2013-02-19  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] fix ScrollAnimatorNoneTest after r143295
+        https://bugs.webkit.org/show_bug.cgi?id=110189
+
+        Reviewed by Nico Weber.
+
+        * tests/ScrollAnimatorNoneTest.cpp:
+        (MockScrollableArea):
+
+2013-02-18  Simon Fraser  <simon.fraser@apple.com>
+
+        Clean up the boolean argument to visibleContentRect
+        https://bugs.webkit.org/show_bug.cgi?id=110167
+
+        Reviewed by Simon Fraser.
+
+        Replace the boolean argument to visibleContentRect() with
+        an enum.
+
+        * src/ChromeClientImpl.cpp:
+        (WebKit::ChromeClientImpl::popupOpened):
+
+2013-02-18  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r183105.  Requested by
+        thakis_ via sheriffbot.
+
+        * DEPS:
+
+2013-02-18  Nico Weber  <thakis@chromium.org>
+
+        [chromium] Remove ahem_path from WebKit.gyp
+        https://bugs.webkit.org/show_bug.cgi?id=110111
+
+        Reviewed by Jochen Eisinger.
+
+        It's only used in DumpRenderTree.gyp, and that file defines its own
+        copy of this variable.
+
+        * WebKit.gyp:
+
 2013-02-18  Laszlo Gombos  <l.gombos@samsung.com>
 
         Move ENABLE macros for WebCore out from Platform.h

@@ -1,3 +1,314 @@
+2013-02-18  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [GTK] Remove webkit_web_view_get_subresources from WebKit2 GTK+ API
+        https://bugs.webkit.org/show_bug.cgi?id=110125
+
+        Reviewed by Anders Carlsson.
+
+        This API is currently implemented caching all resources in the
+        WebView which causes some problems in documents loading resources
+        indefinitely. This API was used in WebKit1 mainly to implement
+        webkit_web_view_save(), but we already have such API in
+        WebKit2.
+
+        * UIProcess/API/gtk/WebKitInjectedBundleClient.cpp:
+        (didReceiveWebViewMessageFromInjectedBundle):
+        * UIProcess/API/gtk/WebKitWebView.cpp:
+        (_WebKitWebViewPrivate):
+        (webkitWebViewLoadChanged):
+        * UIProcess/API/gtk/WebKitWebView.h:
+        * UIProcess/API/gtk/WebKitWebViewPrivate.h:
+        * UIProcess/API/gtk/docs/webkit2gtk-sections.txt:
+        * UIProcess/API/gtk/tests/TestResources.cpp:
+        (testWebViewResources):
+        (testWebResourceGetData):
+
+2013-02-18  Christophe Dumez  <dchris@gmail.com>
+
+        [WK2][EFL] Stop using internal C++ API in ewk_error
+        https://bugs.webkit.org/show_bug.cgi?id=108796
+
+        Reviewed by Benjamin Poulain.
+
+        Stop using internal C++ API in ewk_error and use C API instead of avoid
+        violating API layering.
+
+        * UIProcess/API/efl/ewk_error.cpp:
+        (EwkError::domain):
+        (EwkError::isCancellation):
+        (ewk_error_type_get):
+        * UIProcess/API/efl/ewk_error_private.h:
+        (EwkError):
+
+2013-02-18  Simon Fraser  <simon.fraser@apple.com>
+
+        Clean up the boolean argument to visibleContentRect
+        https://bugs.webkit.org/show_bug.cgi?id=110167
+
+        Reviewed by Simon Fraser.
+        
+        Replace the boolean argument to visibleContentRect() with
+        an enum.
+
+        * WebProcess/WebPage/WebFrame.cpp:
+        (WebKit::WebFrame::visibleContentBounds):
+        (WebKit::WebFrame::visibleContentBoundsExcludingScrollbars):
+
+2013-02-18  Anders Carlsson  <andersca@apple.com>
+
+        Add a DefaultHash for RefPtr<SecurityOrigin>
+        https://bugs.webkit.org/show_bug.cgi?id=110170
+
+        Reviewed by Andreas Kling.
+
+        Remove all explicit uses of SecurityOriginHash.
+
+        * UIProcess/Storage/StorageManager.cpp:
+        (StorageManager::SessionStorageNamespace):
+        * WebProcess/ApplicationCache/WebApplicationCacheManager.cpp:
+        (WebKit::WebApplicationCacheManager::getApplicationCacheOrigins):
+        * WebProcess/InjectedBundle/InjectedBundle.cpp:
+        (WebKit::InjectedBundle::originsWithApplicationCache):
+        * WebProcess/Notifications/NotificationPermissionRequestManager.h:
+        Include SecurityOriginHash.h. This fixes a bug where m_originToIDMap used pointer-equality
+        for looking up security origins.
+
+        * WebProcess/ResourceCache/WebResourceCacheManager.cpp:
+        (WebKit::WebResourceCacheManager::clearCacheForOrigin):
+        This can just take a const reference.
+
+        * WebProcess/ResourceCache/WebResourceCacheManager.h:
+
+2013-02-18  Anders Carlsson  <andersca@apple.com>
+
+        Begin stubbing out session storage classes
+        https://bugs.webkit.org/show_bug.cgi?id=110168
+
+        Reviewed by Andreas Kling.
+
+        * UIProcess/Storage/StorageManager.cpp:
+        (StorageManager::StorageArea):
+        (WebKit):
+        (WebKit::StorageManager::StorageArea::create):
+        (WebKit::StorageManager::StorageArea::StorageArea):
+        (WebKit::StorageManager::StorageArea::~StorageArea):
+        (StorageManager::SessionStorageNamespace):
+        (WebKit::StorageManager::SessionStorageNamespace::isEmpty):
+        (WebKit::StorageManager::SessionStorageNamespace::create):
+        (WebKit::StorageManager::SessionStorageNamespace::SessionStorageNamespace):
+        (WebKit::StorageManager::SessionStorageNamespace::~SessionStorageNamespace):
+        (WebKit::StorageManager::SessionStorageNamespace::cloneTo):
+        (WebKit::StorageManager::createSessionStorageNamespaceInternal):
+        (WebKit::StorageManager::destroySessionStorageNamespaceInternal):
+        (WebKit::StorageManager::cloneSessionStorageNamespaceInternal):
+        * UIProcess/Storage/StorageManager.h:
+        (StorageManager):
+
+2013-02-18  Christophe Dumez  <ch.dumez@sisa.samsung.com>
+
+        [EFL][WK2] Add C API for popup menu and popup item
+        https://bugs.webkit.org/show_bug.cgi?id=109083
+
+        Reviewed by Anders Carlsson.
+
+        WK2 EFL delegates display of the popup menu to the browser which causes
+        us to have a strong interdependency between internal C++ classes
+        (WebPopupMenuProxyEfl, WebPopupItem) and our EFL API implementation
+        (EwkView, EwkPopupMenu, EwkPopupMenuItem).
+
+        Since we want to remove this interdependency, this patch introduces a
+        for WebPopupMenuProxyEfl (WKPopupMenuListener) and for WebPopupItem
+        (WKPopupItem). It also introduces a WKPage client with callbacks for
+        showPopupMenu and hidePopupMenu.
+
+        Note that the popup menu functionality is covered by ewk_popup_menu API
+        tests and no functionality is lost.
+
+        * PlatformEfl.cmake: Add new files to EFL CMake config.
+        * Shared/API/c/efl/WKBaseEfl.h: Add typedefs for WKPopupItemRef and
+        WKPopupMenuListenerRef.
+        * Shared/APIObject.h: Add new TypePopupMenuItem APIObject type for EFL
+        platform.
+        * UIProcess/API/C/efl/WKAPICastEfl.h: Add mapping for WKPopupItemRef
+        and WKPopupMenuListenerRef API types.
+        (WebKit):
+        (WebKit::toAPI):
+        * UIProcess/API/C/efl/WKPageEfl.cpp: Added.
+        (WKPageSetUIPopupMenuClient): Add new C API to set the UI Popup Menu
+        client on the page.
+        * UIProcess/API/C/efl/WKPageEfl.h: Added.
+        * UIProcess/API/C/efl/WKPopupItem.cpp: Added. Add C API for WebPopupItem.
+        (WKPopupItemGetType):
+        (WKPopupItemGetTextDirection):
+        (WKPopupItemHasTextDirectionOverride):
+        (WKPopupItemCopyText):
+        (WKPopupItemCopyToolTipText):
+        (WKPopupItemCopyAccessibilityText):
+        (WKPopupItemIsEnabled):
+        (WKPopupItemIsLabel):
+        (WKPopupItemIsSelected):
+        * UIProcess/API/C/efl/WKPopupItem.h: Added.
+        * UIProcess/API/C/efl/WKPopupMenuListener.cpp: Added. Add C API for
+        WebPopupMenuListenerEfl (formerly WebPopupMenuProxyEfl) so that the
+        client can report which popup menu item was selected.
+        (WKPopupMenuListenerSetSelection):
+        * UIProcess/API/C/efl/WKPopupMenuListener.h: Added.
+        * UIProcess/API/efl/EwkView.cpp: Remove dependency on internal C++ types
+        (WebPopupMenuProxyEfl and WebPopupItem) and use C API types instead.
+        (EwkView::requestPopupMenu):
+        * UIProcess/API/efl/EwkView.h:
+        (WebKit):
+        (EwkView):
+        * UIProcess/API/efl/ewk_popup_menu.cpp: Use C API for Popup menu.
+        (EwkPopupMenu::EwkPopupMenu):
+        (EwkPopupMenu::setSelectedIndex):
+        * UIProcess/API/efl/ewk_popup_menu_private.h:
+        (EwkPopupMenu::create):
+        (EwkPopupMenu):
+        * UIProcess/WebPageProxy.cpp: Use WKPageUIPopupMenuClient to show / hide
+        the popup menu on EFL port instead of asking the WebPopupMenuProxy.
+        (WebKit::WebPageProxy::close):
+        (WebKit::WebPageProxy::showPopupMenu):
+        (WebKit::WebPageProxy::hidePopupMenu):
+        * UIProcess/WebPageProxy.h: Add new WKPageUIPopupMenuClient member and
+        corresponding initialization method.
+        (WebPageProxy):
+        * UIProcess/WebPopupMenuProxy.h: Disable showPopupMenu / hidePopupMenu
+        virtual methods on EFL port since we go via WKPageUIPopupMenuClient
+        for this now.
+        (WebPopupMenuProxy):
+        * UIProcess/efl/PageUIClientEfl.cpp:
+        (WebKit::PageUIClientEfl::PageUIClientEfl): Handle WKPageUIPopupMenuClient
+        callbacks and call corresponding EwkView methods. Previously, the EwkView
+        methods were called by the internal WebPageProxyEfl class which is no
+        longer needed.
+        (WebKit::PageUIClientEfl::showPopupMenu):
+        (WebKit):
+        (WebKit::PageUIClientEfl::hidePopupMenu):
+        * UIProcess/efl/PageUIClientEfl.h:
+        (PageUIClientEfl):
+        * UIProcess/efl/WebPageProxyEfl.cpp:
+        (WebKit::WebPageProxy::initializeUIPopupMenuClient):
+        (WebKit):
+        * UIProcess/efl/WebPopupItemEfl.cpp: Added. Add APIObject wrapper for
+        WebPopupItem so that we can use it in WKPageUIPopupMenuClient.
+        (WebKit):
+        (WebKit::WebPopupItemEfl::WebPopupItemEfl):
+        (WebKit::WebPopupItemEfl::~WebPopupItemEfl):
+        * UIProcess/efl/WebPopupItemEfl.h: Added.
+        (WebKit):
+        (WebPopupItemEfl):
+        (WebKit::WebPopupItemEfl::create):
+        (WebKit::WebPopupItemEfl::data):
+        (WebKit::WebPopupItemEfl::itemType):
+        (WebKit::WebPopupItemEfl::text):
+        (WebKit::WebPopupItemEfl::textDirection):
+        (WebKit::WebPopupItemEfl::hasTextDirectionOverride):
+        (WebKit::WebPopupItemEfl::toolTipText):
+        (WebKit::WebPopupItemEfl::accessibilityText):
+        (WebKit::WebPopupItemEfl::isEnabled):
+        (WebKit::WebPopupItemEfl::isLabel):
+        (WebKit::WebPopupItemEfl::isSelected):
+        (WebKit::WebPopupItemEfl::type):
+        * UIProcess/efl/WebPopupMenuListenerEfl.cpp: Renamed from Source/WebKit2/UIProcess/efl/WebPopupMenuProxyEfl.cpp.
+        Use WebPopupMenuListenerEfl name instead of WebPopupMenuProxyEfl since
+        it more accurately represents its functionality now.
+        (WebKit):
+        (WebKit::WebPopupMenuListenerEfl::WebPopupMenuListenerEfl):
+        (WebKit::WebPopupMenuListenerEfl::valueChanged):
+        * UIProcess/efl/WebPopupMenuListenerEfl.h: Renamed from Source/WebKit2/UIProcess/efl/WebPopupMenuProxyEfl.h.
+        (WebKit):
+        (WebPopupMenuListenerEfl):
+        (WebKit::WebPopupMenuListenerEfl::create):
+        * UIProcess/efl/WebUIPopupMenuClient.cpp: Added.
+        (WebUIPopupMenuClient::showPopupMenu):
+        (WebUIPopupMenuClient::hidePopupMenu):
+        * UIProcess/efl/WebUIPopupMenuClient.h: Added.
+        (WebKit):
+        (WebUIPopupMenuClient):
+        * UIProcess/efl/WebView.cpp:
+        (WebKit::WebView::createPopupMenuProxy):
+
+2013-02-18  Anders Carlsson  <andersca@apple.com>
+
+        Add StorageManager member functions for keeping track of session storage namespaces
+        https://bugs.webkit.org/show_bug.cgi?id=110163
+
+        Reviewed by Andreas Kling.
+
+        * UIProcess/Storage/StorageManager.cpp:
+        (WebKit::StorageManager::createSessionStorageNamespace):
+        (WebKit):
+        (WebKit::StorageManager::destroySessionStorageNamespace):
+        (WebKit::StorageManager::cloneSessionStorageNamespace):
+        (WebKit::StorageManager::createSessionStorageNamespaceInternal):
+        (WebKit::StorageManager::destroySessionStorageNamespaceInternal):
+        (WebKit::StorageManager::cloneSessionStorageNamespaceInternal):
+        * UIProcess/Storage/StorageManager.h:
+        (StorageManager):
+        * UIProcess/WebContext.h:
+        (WebKit::WebContext::storageManager):
+        (WebContext):
+        * UIProcess/WebPageProxy.cpp:
+        (WebKit::WebPageProxy::WebPageProxy):
+        (WebKit::WebPageProxy::close):
+        (WebKit::WebPageProxy::createNewPage):
+
+2013-02-18  Anders Carlsson  <andersca@apple.com>
+
+        StorageManager message handlers should take the connection
+        https://bugs.webkit.org/show_bug.cgi?id=110151
+
+        Reviewed by Andreas Kling.
+
+        * Platform/CoreIPC/HandleMessage.h:
+        (CoreIPC):
+        (CoreIPC::callMemberFunction):
+        (CoreIPC::handleMessage):
+        * Scripts/webkit2/messages.py:
+        (sync_message_statement):
+        (generate_message_handler):
+        * UIProcess/Storage/StorageManager.cpp:
+        (WebKit::StorageManager::createStorageArea):
+        (WebKit::StorageManager::destroyStorageArea):
+        (WebKit::StorageManager::getValues):
+        * UIProcess/Storage/StorageManager.h:
+        (StorageManager):
+        * UIProcess/Storage/StorageManager.messages.in:
+
+2013-02-18  Christophe Dumez  <christophe.dumez@intel.com>
+
+        [EFL][WK2] Use C API inside ewk_security_origin
+        https://bugs.webkit.org/show_bug.cgi?id=107923
+
+        Reviewed by Alexey Proskuryakov.
+
+        Use C API inside ewk_security_origin instead of accessing
+        directly internal C++ classes, to avoid breaking API
+        layering.
+
+        * UIProcess/API/efl/EwkView.cpp:
+        (EwkView::enterFullScreen):
+        * UIProcess/API/efl/ewk_security_origin.cpp:
+        (EwkSecurityOrigin::EwkSecurityOrigin):
+        * UIProcess/API/efl/ewk_security_origin_private.h:
+        (EwkSecurityOrigin::create):
+        (EwkSecurityOrigin):
+
+2013-01-04  Jer Noble  <jer.noble@apple.com>
+
+        pinch-zooming webpage messes up full-screening of embedded video
+        https://bugs.webkit.org/show_bug.cgi?id=106115
+
+        Reviewed by Maciej Stachowiak.
+
+        Reset the page scale when entering full screen, and reset to the original scale when exiting.
+
+        * UIProcess/mac/WKFullScreenWindowController.h:
+        * UIProcess/mac/WKFullScreenWindowController.mm:
+        (-[WKFullScreenWindowController enterFullScreen:]):
+        (-[WKFullScreenWindowController finishedExitFullScreenAnimation:]):
+
 2013-02-18  Christophe Dumez  <ch.dumez@sisa.samsung.com>
 
         [EFL][WK2] Disable failing API tests

@@ -1,3 +1,399 @@
+2013-02-19  Filip Pizlo  <fpizlo@apple.com>
+
+        REGRESSION(r143241): It made 27 layout tests crash on 32 bit platforms
+        https://bugs.webkit.org/show_bug.cgi?id=110184
+
+        Reviewed by Zoltan Herczeg.
+        
+        32-bit backend was making all sorts of crazy assumptions, which happened to mostly
+        not break things prior to http://trac.webkit.org/changeset/143241. This brings the
+        32-bit backend's type speculation fully into compliance with what the 64-bit
+        backend does.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::checkGeneratedTypeForToInt32):
+        (JSC::DFG::SpeculativeJIT::compileValueToInt32):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntInternal):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateDouble):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateCell):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateBoolean):
+
+2013-02-18  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Unreviewed build fix for Apple Windows. Second stage.
+        Add missed export statement.
+
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCoreExports.def:
+
+2013-02-18  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed Windows build fix.
+
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCoreExports.def:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExports.def.in:
+
+2013-02-18  Darin Adler  <darin@apple.com>
+
+        Remove unneeded explicit function template arguments.
+        https://bugs.webkit.org/show_bug.cgi?id=110043
+
+        Reviewed by Ryosuke Niwa.
+
+        * runtime/Identifier.cpp:
+        (JSC::IdentifierASCIIStringTranslator::hash): Let the compiler deduce the type
+        when calling computeHashAndMaskTop8Bits.
+        (JSC::IdentifierLCharFromUCharTranslator::hash): Ditto.
+        * runtime/Identifier.h:
+        (JSC::IdentifierCharBufferTranslator::hash): Ditto.
+2013-02-18  Geoffrey Garen  <ggaren@apple.com>
+
+        Shrank the SourceProvider cache
+        https://bugs.webkit.org/show_bug.cgi?id=110158
+
+        Reviewed by Oliver Hunt.
+
+        CodeCache is now our primary source cache, so a long-lived SourceProvider
+        cache is a waste. I measured this as a 10MB Membuster win; with more
+        precise instrumentation, Andreas estimated it as up to 30MB.
+
+        I didn't eliminate the SourceProvider cache because it's still useful
+        in speeding up uncached parsing of scripts with large nested functions
+        (i.e., all scripts).
+
+        * heap/Heap.cpp:
+        (JSC::Heap::collect): Discard all source provider caches after GC. This
+        is a convenient place to do so because it's reasonably soon after initial
+        parsing without being immediate.
+
+        * parser/Parser.cpp:
+        (JSC::::Parser): Updated for interface change: The heap now owns the
+        source provider cache, since most SourceProviders are not expected to
+        have one by default, and the heap is responsible for throwing them away.
+
+        (JSC::::parseInner): No need to update statistics on cache size, since
+        we're going to throw it away no matter what.
+
+        (JSC::::parseFunctionInfo): Reduced the minimum function size to 16. This
+        is a 27% win on a new parsing micro-benchmark I've added. Now that the
+        cache is temporary, we don't have to worry so much about its memory
+        footprint.
+
+        * parser/Parser.h:
+        (Parser): Updated for interface changes.
+
+        * parser/SourceProvider.cpp:
+        (JSC::SourceProvider::SourceProvider):
+        (JSC::SourceProvider::~SourceProvider):
+        * parser/SourceProvider.h:
+        (JSC):
+        (SourceProvider): SourceProvider doesn't own its cache anymore because
+        the cache is temporary.
+
+        * parser/SourceProviderCache.cpp:
+        (JSC::SourceProviderCache::clear):
+        (JSC::SourceProviderCache::add):
+        * parser/SourceProviderCache.h:
+        (JSC::SourceProviderCache::SourceProviderCache):
+        (SourceProviderCache):
+        * parser/SourceProviderCacheItem.h:
+        (SourceProviderCacheItem): No need to update statistics on cache size,
+        since we're going to throw it away no matter what.
+
+        * runtime/JSGlobalData.cpp:
+        (JSC::JSGlobalData::addSourceProviderCache):
+        (JSC):
+        (JSC::JSGlobalData::clearSourceProviderCaches):
+        * runtime/JSGlobalData.h:
+        (JSC):
+        (JSGlobalData): Moved the cache here so it's easier to throw away.
+
+2013-02-18  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG backend Branch handling has duplicate code and dead code
+        https://bugs.webkit.org/show_bug.cgi?id=110162
+
+        Reviewed by Mark Hahnenberg.
+        
+        Streamline the code, and make the 64 backend's optimizations make more sense
+        (i.e. not be dead code).
+
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::emitBranch):
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-18  Brent Fulgham  <bfulgham@webkit.org>
+
+        [Windows] Unreviewed VS2010 build correction after r143273.
+
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj: Add missing source
+        file SourceProvider.cpp.
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj.filters: Ditto.
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExports.def.in: Add missing exports.
+
+2013-02-18  Filip Pizlo  <fpizlo@apple.com>
+
+        Structure::flattenDictionaryStructure should compute max offset in a manner that soundly handles the case where the property list becomes empty
+        https://bugs.webkit.org/show_bug.cgi?id=110155
+        <rdar://problem/13233773>
+
+        Reviewed by Mark Rowe.
+        
+        This was a rookie mistake.  It was doing:
+        
+        for (blah) {
+            m_offset = foo // foo's monotonically increase in the loop
+        }
+        
+        as a way of computing max offset for all of the properties.  Except what if the loop doesn't
+        execute because there are no properties?  Well, then, you're going to have a bogus m_offset.
+        
+        The solution is to initialize m_offset at the top of the loop.
+
+        * runtime/Structure.cpp:
+        (JSC::Structure::flattenDictionaryStructure):
+
+2013-02-18  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        MIPS DFG implementation.
+        https://bugs.webkit.org/show_bug.cgi?id=101328
+
+        Reviewed by Oliver Hunt.
+
+        DFG implementation for MIPS.
+
+        * assembler/MIPSAssembler.h:
+        (JSC::MIPSAssembler::MIPSAssembler):
+        (JSC::MIPSAssembler::sllv):
+        (JSC::MIPSAssembler::movd):
+        (MIPSAssembler):
+        (JSC::MIPSAssembler::negd):
+        (JSC::MIPSAssembler::labelForWatchpoint):
+        (JSC::MIPSAssembler::label):
+        (JSC::MIPSAssembler::vmov):
+        (JSC::MIPSAssembler::linkDirectJump):
+        (JSC::MIPSAssembler::maxJumpReplacementSize):
+        (JSC::MIPSAssembler::revertJumpToMove):
+        (JSC::MIPSAssembler::replaceWithJump):
+        * assembler/MacroAssembler.h:
+        (MacroAssembler):
+        (JSC::MacroAssembler::poke):
+        * assembler/MacroAssemblerMIPS.h:
+        (JSC::MacroAssemblerMIPS::add32):
+        (MacroAssemblerMIPS):
+        (JSC::MacroAssemblerMIPS::and32):
+        (JSC::MacroAssemblerMIPS::lshift32):
+        (JSC::MacroAssemblerMIPS::mul32):
+        (JSC::MacroAssemblerMIPS::or32):
+        (JSC::MacroAssemblerMIPS::rshift32):
+        (JSC::MacroAssemblerMIPS::urshift32):
+        (JSC::MacroAssemblerMIPS::sub32):
+        (JSC::MacroAssemblerMIPS::xor32):
+        (JSC::MacroAssemblerMIPS::store32):
+        (JSC::MacroAssemblerMIPS::jump):
+        (JSC::MacroAssemblerMIPS::branchAdd32):
+        (JSC::MacroAssemblerMIPS::branchMul32):
+        (JSC::MacroAssemblerMIPS::branchSub32):
+        (JSC::MacroAssemblerMIPS::branchNeg32):
+        (JSC::MacroAssemblerMIPS::call):
+        (JSC::MacroAssemblerMIPS::loadDouble):
+        (JSC::MacroAssemblerMIPS::moveDouble):
+        (JSC::MacroAssemblerMIPS::swapDouble):
+        (JSC::MacroAssemblerMIPS::subDouble):
+        (JSC::MacroAssemblerMIPS::mulDouble):
+        (JSC::MacroAssemblerMIPS::divDouble):
+        (JSC::MacroAssemblerMIPS::negateDouble):
+        (JSC::MacroAssemblerMIPS::branchEqual):
+        (JSC::MacroAssemblerMIPS::branchNotEqual):
+        (JSC::MacroAssemblerMIPS::branchTruncateDoubleToInt32):
+        (JSC::MacroAssemblerMIPS::branchTruncateDoubleToUint32):
+        (JSC::MacroAssemblerMIPS::truncateDoubleToInt32):
+        (JSC::MacroAssemblerMIPS::truncateDoubleToUint32):
+        (JSC::MacroAssemblerMIPS::branchDoubleNonZero):
+        (JSC::MacroAssemblerMIPS::branchDoubleZeroOrNaN):
+        (JSC::MacroAssemblerMIPS::invert):
+        (JSC::MacroAssemblerMIPS::replaceWithJump):
+        (JSC::MacroAssemblerMIPS::maxJumpReplacementSize):
+        * dfg/DFGAssemblyHelpers.h:
+        (AssemblyHelpers):
+        (JSC::DFG::AssemblyHelpers::preserveReturnAddressAfterCall):
+        (JSC::DFG::AssemblyHelpers::restoreReturnAddressBeforeReturn):
+        (JSC::DFG::AssemblyHelpers::debugCall):
+        * dfg/DFGCCallHelpers.h:
+        (CCallHelpers):
+        (JSC::DFG::CCallHelpers::setupArguments):
+        (JSC::DFG::CCallHelpers::setupArgumentsWithExecState):
+        * dfg/DFGFPRInfo.h:
+        (DFG):
+        (FPRInfo):
+        (JSC::DFG::FPRInfo::toRegister):
+        (JSC::DFG::FPRInfo::toIndex):
+        (JSC::DFG::FPRInfo::debugName):
+        * dfg/DFGGPRInfo.h:
+        (DFG):
+        (GPRInfo):
+        (JSC::DFG::GPRInfo::toRegister):
+        (JSC::DFG::GPRInfo::toIndex):
+        (JSC::DFG::GPRInfo::debugName):
+        * dfg/DFGSpeculativeJIT.h:
+        (SpeculativeJIT):
+        * jit/JSInterfaceJIT.h:
+        (JSInterfaceJIT):
+        * runtime/JSGlobalData.h:
+        (JSC::ScratchBuffer::allocationSize):
+        (ScratchBuffer):
+
+2013-02-18  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG::SpeculativeJIT::isKnownXYZ methods should use CFA rather than other things
+        https://bugs.webkit.org/show_bug.cgi?id=110092
+
+        Reviewed by Geoffrey Garen.
+        
+        These methods were previously using GenerationInfo and other things to try to
+        gain information that the CFA could give away for free, if you asked kindly
+        enough.
+        
+        Also fixed CallLinkStatus's dump() method since it was making an invalid
+        assertion: we most certainly can have a status where the structure is non-null
+        and the executable is null, like if we're dealing with an InternalFunction.
+        
+        Also removed calls to isKnownNotXYZ from fillSpeculateABC methods in 32_64. I
+        don't know why that was there. But it was causing asserts if the value was
+        empty - i.e. we had already exited unconditionally but we didn't know it. I
+        could have fixed this by introducing another form of isKnownNotXYZ which was
+        tolerant of empty values, but I didn't feel like fixing code that I knew to be
+        unnecessary. (More deeply, isKnownNotCell, for example, really asks: "do you
+        know that this value can never be a cell?" while some of the previous uses
+        wanted to ask: "do you know that this is a value that is not a cell?". The
+        former is "true" if the value is a contradiction [i.e. BOTTOM], while the
+        latter is "false" for contradictions, since contradictions are not values.)
+
+        * bytecode/CallLinkStatus.cpp:
+        (JSC::CallLinkStatus::dump):
+        * bytecode/CallLinkStatus.h:
+        (JSC::CallLinkStatus::CallLinkStatus):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (DFG):
+        * dfg/DFGSpeculativeJIT.h:
+        (JSC::DFG::SpeculativeJIT::isKnownInteger):
+        (JSC::DFG::SpeculativeJIT::isKnownCell):
+        (JSC::DFG::SpeculativeJIT::isKnownNotInteger):
+        (JSC::DFG::SpeculativeJIT::isKnownNotNumber):
+        (JSC::DFG::SpeculativeJIT::isKnownNotCell):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntInternal):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateDouble):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateCell):
+        * dfg/DFGStructureAbstractValue.h:
+        (JSC::DFG::StructureAbstractValue::dump):
+
+2013-02-17  Filip Pizlo  <fpizlo@apple.com>
+
+        Get rid of DFG::DoubleOperand and simplify ValueToInt32
+        https://bugs.webkit.org/show_bug.cgi?id=110072
+
+        Reviewed by Geoffrey Garen.
+        
+        ValueToInt32 had a side-effecting path, which was not OSR-friendly: an OSR after
+        the side-effect would lead to the side-effect re-executing. I got rid of that path
+        and replaced it with an optimization for the case where the input is speculated
+        number-or-other. This makes idioms like null|0 and true|0 work as expected, and
+        get optimized appropriately.
+        
+        Also got rid of DoubleOperand. Replaced all remaining uses of it with
+        SpeculateDoubleOperand. Because the latter asserts that the Edge is a DoubleUse
+        edge and the remaining uses of DoubleOperand are all for untyped uses, I worked
+        around the assertion by setting the UseKind to DoubleUse by force. This is sound,
+        since all existing assertions for DoubleUse are actually asserting that we're not
+        converting a value to double unexpectedly. But all of these calls to
+        SpeculateDoubleOperand are when the operand is already known to be represented as
+        double, so there is no conversion.
+        
+        This is neutral on benchmarks, except stanford-crypto-ccm, which speeds up a
+        little. Mostly, this is intended to delete a bunch of code. DoubleOperand was
+        equivalent to the replace-edge-with-DoubleUse trick that I'm using now, except it
+        involved a _lot_ more code.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (DFG):
+        (JSC::DFG::SpeculativeJIT::compileValueToInt32):
+        * dfg/DFGSpeculativeJIT.h:
+        (SpeculativeJIT):
+        (DFG):
+        (FPRTemporary):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (DFG):
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (DFG):
+
+2013-02-18  Ádám Kallai  <kadam@inf.u-szeged.hu>
+
+        [Qt] Mountain Lion buildfix after r143147.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * runtime/DateConstructor.cpp:
+
+2013-02-18  Zan Dobersek  <zdobersek@igalia.com>
+
+        Stop placing std::isfinite and std::signbit inside the global scope
+        https://bugs.webkit.org/show_bug.cgi?id=109817
+
+        Reviewed by Darin Adler.
+
+        Prefix calls to the isfinite and signbit methods with std:: as the two
+        methods are no longer being imported into the global scope.
+
+        * assembler/MacroAssembler.h:
+        (JSC::MacroAssembler::shouldBlindDouble):
+        * offlineasm/cloop.rb:
+        * runtime/BigInteger.h:
+        (JSC::BigInteger::BigInteger):
+        * runtime/DateConstructor.cpp:
+        (JSC::constructDate):
+        * runtime/DatePrototype.cpp:
+        (JSC::fillStructuresUsingTimeArgs):
+        (JSC::fillStructuresUsingDateArgs):
+        (JSC::dateProtoFuncToISOString):
+        (JSC::dateProtoFuncSetYear):
+        * runtime/JSCJSValueInlines.h:
+        (JSC::JSValue::JSValue):
+        * runtime/JSGlobalObjectFunctions.cpp:
+        (JSC::globalFuncIsFinite):
+        * runtime/JSONObject.cpp:
+        (JSC::Stringifier::appendStringifiedValue):
+        * runtime/MathObject.cpp:
+        (JSC::mathProtoFuncMax): Also include an opportunistic style fix.
+        (JSC::mathProtoFuncMin): Ditto.
+        * runtime/NumberPrototype.cpp:
+        (JSC::toStringWithRadix):
+        (JSC::numberProtoFuncToExponential):
+        (JSC::numberProtoFuncToFixed):
+        (JSC::numberProtoFuncToPrecision):
+        (JSC::numberProtoFuncToString):
+        * runtime/Uint16WithFraction.h:
+        (JSC::Uint16WithFraction::Uint16WithFraction):
+
+2013-02-18  Ádám Kallai  <kadam@inf.u-szeged.hu>
+
+        [Qt] Mountain Lion buildfix after r143147.
+
+        Reviewed by Csaba Osztrogonác.
+
+        * runtime/DateInstance.cpp:
+
 2013-02-18  Ilya Tikhonovsky  <loislo@chromium.org>
 
         Unreviewed speculative build fix for Apple Win bots.

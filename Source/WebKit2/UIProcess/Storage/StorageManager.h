@@ -43,6 +43,10 @@ public:
     static PassRefPtr<StorageManager> create();
     ~StorageManager();
 
+    void createSessionStorageNamespace(uint64_t storageNamespaceID);
+    void destroySessionStorageNamespace(uint64_t storageNamespaceID);
+    void cloneSessionStorageNamespace(uint64_t storageNamespaceID, uint64_t newStorageNamespaceID);
+
     void processWillOpenConnection(WebProcessProxy*);
     void processWillCloseConnection(WebProcessProxy*);
 
@@ -54,11 +58,20 @@ private:
     virtual void didReceiveSyncMessage(CoreIPC::Connection*, CoreIPC::MessageDecoder&, OwnPtr<CoreIPC::MessageEncoder>& replyEncoder) OVERRIDE;
 
     // Message handlers.
-    void createStorageArea(uint64_t storageAreaID, uint64_t storageNamespaceID, const SecurityOriginData&);
-    void destroyStorageArea(uint64_t storageAreaID);
-    void getValues(uint64_t storageAreaID, HashMap<String, String>& values);
+    void createStorageArea(CoreIPC::Connection*, uint64_t storageAreaID, uint64_t storageNamespaceID, const SecurityOriginData&);
+    void destroyStorageArea(CoreIPC::Connection*, uint64_t storageAreaID);
+    void getValues(CoreIPC::Connection*, uint64_t storageAreaID, HashMap<String, String>& values);
+
+    void createSessionStorageNamespaceInternal(uint64_t storageNamespaceID);
+    void destroySessionStorageNamespaceInternal(uint64_t storageNamespaceID);
+    void cloneSessionStorageNamespaceInternal(uint64_t storageNamespaceID, uint64_t newStorageNamespaceID);
 
     RefPtr<WorkQueue> m_queue;
+
+    class SessionStorageNamespace;
+    HashMap<uint64_t, RefPtr<SessionStorageNamespace> > m_sessionStorageNamespaces;
+
+    class StorageArea;
 };
 
 } // namespace WebKit

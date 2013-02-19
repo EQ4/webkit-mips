@@ -59,13 +59,6 @@ namespace WebCore {
 
 class DOMStringList;
 
-enum ParameterDefaultPolicy {
-    DefaultIsUndefined,
-    DefaultIsNullString
-};
-
-#define MAYBE_MISSING_PARAMETER(exec, index, policy) (((policy) == DefaultIsNullString && (index) >= (exec)->argumentCount()) ? (JSValue()) : ((exec)->argument(index)))
-
     class CachedScript;
     class Frame;
     class KURL;
@@ -261,6 +254,11 @@ enum ParameterDefaultPolicy {
         return mediaList;
     }
 
+    inline JSC::JSValue argumentOrNull(JSC::ExecState* exec, unsigned index)
+    {
+        return index >= exec->argumentCount() ? JSC::JSValue() : exec->argument(index);
+    }
+
     const JSC::HashTable* getHashTableForGlobalData(JSC::JSGlobalData&, const JSC::HashTable* staticTable);
 
     void reportException(JSC::ExecState*, JSC::JSValue exception, CachedScript* = 0);
@@ -297,7 +295,7 @@ enum ParameterDefaultPolicy {
     inline int32_t finiteInt32Value(JSC::JSValue value, JSC::ExecState* exec, bool& okay)
     {
         double number = value.toNumber(exec);
-        okay = isfinite(number);
+        okay = std::isfinite(number);
         return JSC::toInt32(number);
     }
 

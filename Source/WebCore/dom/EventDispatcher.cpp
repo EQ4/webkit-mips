@@ -50,7 +50,8 @@ static HashSet<Node*>* gNodesDispatchingSimulatedClicks = 0;
 bool EventDispatcher::dispatchEvent(Node* node, PassRefPtr<EventDispatchMediator> mediator)
 {
     ASSERT(!NoEventDispatchAssertion::isEventDispatchForbidden());
-
+    if (!mediator->event())
+        return true;
     EventDispatcher dispatcher(node, mediator->event());
     return mediator->dispatchEvent(&dispatcher);
 }

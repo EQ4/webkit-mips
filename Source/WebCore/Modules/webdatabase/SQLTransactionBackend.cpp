@@ -39,10 +39,7 @@
 #include "ExceptionCode.h"
 #include "Logging.h"
 #include "SQLError.h"
-#include "SQLStatement.h"
 #include "SQLStatementBackend.h"
-#include "SQLStatementCallback.h" // FIXME: remove when SQLStatement has been refactored.
-#include "SQLStatementErrorCallback.h" // FIXME: remove when SQLStatement has been refactored.
 #include "SQLTransaction.h"
 #include "SQLTransactionClient.h"
 #include "SQLTransactionCoordinator.h"
@@ -245,9 +242,11 @@
 //
 //     Note: there's a circular reference between the SQLTransaction front-end and
 //     back-end. This circular reference is established in the constructor of the
-//     SQLTransactionBackend. The circular reference will only be broken at the end
-//     of the transaction's clean up state i.e. when the transaction should no
-//     longer be in use thereafter.
+//     SQLTransactionBackend. The circular reference will be broken by calling
+//     doCleanup() to nullify m_frontend. This is done at the end of the transaction's
+//     clean up state (i.e. when the transaction should no longer be in use thereafter),
+//     or if the database was interrupted. See comments on "What happens if a transaction
+//     is interrupted?" below for details.
 //
 //     After scheduling the transaction with the DatabaseThread (DatabaseBackendAsync::scheduleTransaction()):
 //     ======================================================================================================
@@ -288,15 +287,58 @@
 //     What happens if a transaction is interrupted?
 //     ============================================
 //     If the transaction is interrupted half way, it won't get to run to state
-//     CleanupAndTerminate, and hence, would not have called doCleanup(). doCleanup() is
-//     where we nullify SQLTransactionBackend::m_frontend to break the reference cycle
-//     between the frontend and backend. Hence, that transaction will never get cleaned
-//     up, unless ...
+//     CleanupAndTerminate, and hence, would not have called SQLTransactionBackend's
+//     doCleanup(). doCleanup() is where we nullify SQLTransactionBackend::m_frontend
+//     to break the reference cycle between the frontend and backend. Hence, we need
+//     to cleanup the transaction by other means.
 //
-//     ... unless we have a cleanup mechanism for interruptions. That is, during the
-//     shutdown of the DatabaseThread, the SQLTransactionCoordinator will discover this
-//     interrupted transaction and invoke its notifyDatabaseThreadIsShuttingDown(),
-//     which in turn will call doCleanup(). With that, all is well again.
+//     Note: calling SQLTransactionBackend::notifyDatabaseThreadIsShuttingDown()
+//     is effectively the same as calling SQLTransactionBackend::doClean().
+//
+//     In terms of who needs to call doCleanup(), there are 5 phases in the
+//     SQLTransactionBackend life-cycle. These are the phases and how the clean
+//     up is done:
+//
+//     Phase 1. After Birth, before scheduling
+//
+//     - To clean up, DatabaseThread::databaseThread() will call
+//       DatabaseBackendAsync::close() during its shutdown.
+//     - DatabaseBackendAsync::close() will iterate
+//       DatabaseBackendAsync::m_transactionQueue and call
+//       notifyDatabaseThreadIsShuttingDown() on each transaction there.
+//        
+//     Phase 2. After scheduling, before state AcquireLock
+//
+//     - If the interruption occures before the DatabaseTransactionTask is
+//       scheduled in DatabaseThread::m_queue but hasn't gotten to execute
+//       (i.e. DatabaseTransactionTask::performTask() has not been called),
+//       then the DatabaseTransactionTask may get destructed before it ever
+//       gets to execute.
+//     - To clean up, the destructor will check if the task's m_wasExecuted is
+//       set. If not, it will call notifyDatabaseThreadIsShuttingDown() on
+//       the task's transaction.
+//
+//     Phase 3. After state AcquireLock, before "lockAcquired"
+//
+//     - In this phase, the transaction would have been added to the
+//       SQLTransactionCoordinator's CoordinationInfo's pendingTransactions.
+//     - To clean up, during shutdown, DatabaseThread::databaseThread() calls
+//       SQLTransactionCoordinator::shutdown(), which calls
+//       notifyDatabaseThreadIsShuttingDown().
+//
+//     Phase 4: After "lockAcquired", before state CleanupAndTerminate
+//
+//     - In this phase, the transaction would have been added either to the
+//       SQLTransactionCoordinator's CoordinationInfo's activeWriteTransaction
+//       or activeReadTransactions.
+//     - To clean up, during shutdown, DatabaseThread::databaseThread() calls
+//       SQLTransactionCoordinator::shutdown(), which calls
+//       notifyDatabaseThreadIsShuttingDown().
+//
+//     Phase 5: After state CleanupAndTerminate
+//
+//     - This is how a transaction ends normally.
+//     - state CleanupAndTerminate calls doCleanup().
 
 
 // There's no way of knowing exactly how much more space will be required when a statement hits the quota limit.
@@ -338,6 +380,10 @@ SQLTransactionBackend::~SQLTransactionBackend()
 
 void SQLTransactionBackend::doCleanup()
 {
+    if (!m_frontend)
+        return;
+    m_frontend = 0; // Break the reference cycle. See comment about the life-cycle above.
+
     ASSERT(currentThread() == database()->databaseContext()->databaseThread()->getThreadID());
 
     MutexLocker locker(m_statementMutex);
@@ -356,10 +402,6 @@ void SQLTransactionBackend::doCleanup()
     if (m_lockAcquired)
         m_database->transactionCoordinator()->releaseLock(this);
 
-    // Now that we're done, break the reference cycle that keeps us alive.
-    // See comment about the life-cycle above.
-    m_frontend = 0;
-
     // Do some aggresive clean up here except for m_database.
     //
     // We can't clear m_database here because the frontend may asynchronously
@@ -377,7 +419,7 @@ void SQLTransactionBackend::doCleanup()
     m_transactionError = 0;
 }
 
-SQLStatement* SQLTransactionBackend::currentStatement()
+AbstractSQLStatement* SQLTransactionBackend::currentStatement()
 {
     return m_currentStatementBackend->frontend();
 }
@@ -463,7 +505,7 @@ void SQLTransactionBackend::performNextStep()
     runStateMachine();
 }
 
-void SQLTransactionBackend::executeSQL(PassOwnPtr<SQLStatement> statement,
+void SQLTransactionBackend::executeSQL(PassOwnPtr<AbstractSQLStatement> statement,
     const String& sqlStatement, const Vector<SQLValue>& arguments, int permissions)
 {
     RefPtr<SQLStatementBackend> statementBackend;
@@ -484,11 +526,7 @@ void SQLTransactionBackend::notifyDatabaseThreadIsShuttingDown()
     // DB thread. Amongst other work, doCleanup() will clear m_sqliteTransaction
     // which invokes SQLiteTransaction's destructor, which will do the roll back
     // if necessary.
-
-    // Note: if doCleanup() has already been invoked, then m_frontend would have
-    // been nullified.
-    if (m_frontend)
-        doCleanup();
+    doCleanup();
 }
 
 SQLTransactionState SQLTransactionBackend::acquireLock()
@@ -722,6 +760,7 @@ SQLTransactionState SQLTransactionBackend::cleanupAndTerminate()
     LOG(StorageAPI, "Transaction %p is complete\n", this);
     ASSERT(!m_database->sqliteDatabase().transactionInProgress());
 
+    // Phase 5 cleanup. See comment on the SQLTransaction life-cycle above.
     doCleanup();
     m_database->inProgressTransactionCompleted();
     return SQLTransactionState::End;

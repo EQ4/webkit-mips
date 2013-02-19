@@ -30,6 +30,7 @@
 
 #if ENABLE(SQL_DATABASE)
 
+#include "AbstractSQLStatement.h"
 #include "DatabaseBasicTypes.h"
 #include "SQLTransactionStateMachine.h"
 #include <wtf/Deque.h>
@@ -41,7 +42,6 @@ namespace WebCore {
 class DatabaseBackendAsync;
 class SQLError;
 class SQLiteTransaction;
-class SQLStatement;
 class SQLStatementBackend;
 class SQLTransaction;
 class SQLTransactionBackend;
@@ -71,11 +71,11 @@ public:
     void notifyDatabaseThreadIsShuttingDown();
 
     // APIs for the frontend:
-    SQLStatement* currentStatement();
+    AbstractSQLStatement* currentStatement();
     PassRefPtr<SQLError> transactionError();
     void setShouldRetryCurrentStatement(bool);
 
-    void executeSQL(PassOwnPtr<SQLStatement>, const String& statement,
+    void executeSQL(PassOwnPtr<AbstractSQLStatement>, const String& statement,
         const Vector<SQLValue>& arguments, int permissions);
 
 private:
@@ -109,7 +109,7 @@ private:
 
     void getNextStatement();
 
-    RefPtr<SQLTransaction> m_frontend;
+    RefPtr<SQLTransaction> m_frontend; // Has a reference cycle, and will break in doCleanup().
     RefPtr<SQLStatementBackend> m_currentStatementBackend;
 
     RefPtr<DatabaseBackendAsync> m_database;

@@ -1572,7 +1572,8 @@ crbug.com/10361 [ Win ] http/tests/misc/single-character-pi-stylesheet.xhtml [ F
 # Windows is missing the green box. Started to pass in roll to WebKit r50313
 crbug.com/8729 [ Win ] http/tests/multipart/invalid-image-data.html [ Failure ]
 
-webkit.org/b/110076 compositing/geometry/limit-layer-bounds-fixed.html [ Failure ]
+webkit.org/b/110138 compositing/geometry/limit-layer-bounds-fixed.html [ Failure ]
+webkit.org/b/110138 platform/chromium/virtual/softwarecompositing/geometry/limit-layer-bounds-fixed.html [ Failure ]
 
 webkit.org/b/110079 [ Win Debug ] storage/websql/sql-data-types.html [ Crash ]
 
@@ -2839,6 +2840,9 @@ webkit.org/b/98315 css3/compositing/blend-mode-property.html [ Failure ]
 webkit.org/b/98315 css3/compositing/should-have-compositing-layer.html [ Failure ]
 
 webkit.org/b/96267 fast/regions/autoheight-regions-mark.html [ Pass ]
+
+#something is hosed with seamless iframe repainting
+webkit.org/b/106125 fast/regions/seamless-iframe-flowed-into-regions.html [ ImageOnlyFailure ]
 
 webkit.org/b/74137 [ SnowLeopard ] fast/regions/outline-sides-in-region.html [ Pass Timeout ]
 webkit.org/b/74137 fast/regions/float-pushed-width-change.html [ ImageOnlyFailure Pass ]
@@ -4349,8 +4353,8 @@ webkit.org/b/107341 [ Debug ] inspector/profiler/memory-instrumentation-cached-i
 webkit.org/b/108163 [ Debug ] platform/chromium/virtual/deferred/fast/images/icon-0colors.html [ Crash ]
 
 # New test cases added to these tests will require rebaselines.
-webkit.org/b/109831 css3/filters/effect-reference.html
-webkit.org/b/109831 css3/filters/effect-reference-hw.html
+webkit.org/b/109831 css3/filters/effect-reference.html [ Failure ImageOnlyFailure ]
+webkit.org/b/109831 css3/filters/effect-reference-hw.html [ Failure ImageOnlyFailure ]
 
 # New clamping logic in the tile shader will causes slight diffs. These images must be rebaselined.
 crbug.com/170722 [ Mac Win Linux ] compositing/color-matching/image-color-matching.html [ ImageOnlyFailure ]
@@ -4383,6 +4387,39 @@ webkit.org/b/107893 [ MountainLion ] fast/exclusions/shape-inside/shape-inside-f
 # Needs rebaseline after https://bugs.webkit.org/show_bug.cgi?id=9221
 webkit.org/b/9221 [ Mac ] fast/css/resize-corner-tracking-transformed.html [ Failure ]
 
+# Needs rebaseline after https://webkit.org/b/109985
+webkit.org/b/109985 svg/W3C-SVG-1.1/filters-offset-01-b.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/custom/visibility-override-filter.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-in-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-in2-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k1-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k2-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k3-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k4-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-operator-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-in-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-in2-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k1-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k2-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k3-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k4-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-operator-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-dom-flood-color-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-dom-flood-opacity-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-inherit-flood-color.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-svgdom-flood-color-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-svgdom-flood-opacity-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFETileElement-dom-in-attr.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/dynamic-updates/SVGFETileElement-svgdom-in-prop.html [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/big-sized-filter-2.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/feImage-reference-svg-primitive.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/filter-on-tspan.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/filterRes1.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/filterRes3.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/parent-children-with-same-filter.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/shadow-on-filter.svg [ ImageOnlyFailure ]
+webkit.org/b/109985 svg/filters/shadow-on-rect-with-filter.svg [ ImageOnlyFailure ]
+
 # The test is flaky on chromium-ews
 webkit.org/b/107953 inspector-protocol/debugger-terminate-dedicated-worker-while-paused.html [ Pass Failure ]
 
@@ -4414,3 +4451,5 @@ webkit.org/b/109416 [ Mac ] inspector/editor/text-editor-home-button.html [ Fail
 webkit.org/b/109963 [ Debug ] inspector/profiler/heap-snapshot-get-profile-crash.html [ Pass Crash ]
 
 webkit.org/b/109581 [ Win ] inspector/debugger/debugger-script-preprocessor.html [ Pass Crash ]
+
+crbug.com/176843 fast/filesystem/op-restricted-names.html [ Failure ]

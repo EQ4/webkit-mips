@@ -39,13 +39,13 @@
 #include "WKGeometry.h"
 #include "WKNumber.h"
 #include "WKPageGroup.h"
+#include "WKPopupItem.h"
 #include "WKString.h"
 #include "WKView.h"
 #include "WebContext.h"
 #include "WebImage.h"
 #include "WebPageGroup.h"
 #include "WebPageProxy.h"
-#include "WebPopupMenuProxyEfl.h"
 #include "WebPreferences.h"
 #include "ewk_back_forward_list_private.h"
 #include "ewk_color_picker_private.h"
@@ -616,7 +616,7 @@ void EwkView::enterFullScreen()
 {
     Ewk_View_Smart_Data* sd = smartData();
 
-    RefPtr<EwkSecurityOrigin> origin = EwkSecurityOrigin::create(KURL(ParsedURLString, String::fromUTF8(m_url)));
+    RefPtr<EwkSecurityOrigin> origin = EwkSecurityOrigin::create(m_url);
 
     if (!sd->api->fullscreen_enter || !sd->api->fullscreen_enter(sd, origin.get())) {
         Ecore_Evas* ecoreEvas = ecore_evas_ecore_evas_get(sd->base.evas);
@@ -914,12 +914,15 @@ void EwkView::hideContextMenu()
     m_contextMenu.clear();
 }
 
-void EwkView::requestPopupMenu(WebPopupMenuProxyEfl* popupMenuProxy, const IntRect& rect, TextDirection textDirection, double pageScaleFactor, const Vector<WebPopupItem>& items, int32_t selectedIndex)
+COMPILE_ASSERT_MATCHING_ENUM(EWK_TEXT_DIRECTION_RIGHT_TO_LEFT, kWKPopupItemTextDirectionRTL);
+COMPILE_ASSERT_MATCHING_ENUM(EWK_TEXT_DIRECTION_LEFT_TO_RIGHT, kWKPopupItemTextDirectionLTR);
+
+void EwkView::requestPopupMenu(WKPopupMenuListenerRef popupMenuListener, const WKRect& rect, WKPopupItemTextDirection textDirection, double pageScaleFactor, WKArrayRef items, int32_t selectedIndex)
 {
     Ewk_View_Smart_Data* sd = smartData();
     ASSERT(sd->api);
 
-    ASSERT(popupMenuProxy);
+    ASSERT(popupMenuListener);
 
     if (!sd->api->popup_menu_show)
         return;
@@ -927,9 +930,12 @@ void EwkView::requestPopupMenu(WebPopupMenuProxyEfl* popupMenuProxy, const IntRe
     if (m_popupMenu)
         closePopupMenu();
 
-    m_popupMenu = EwkPopupMenu::create(this, popupMenuProxy, items, selectedIndex);
+    m_popupMenu = EwkPopupMenu::create(this, popupMenuListener, items, selectedIndex);
 
-    sd->api->popup_menu_show(sd, rect, static_cast<Ewk_Text_Direction>(textDirection), pageScaleFactor, m_popupMenu.get());
+    Eina_Rectangle einaRect;
+    EINA_RECTANGLE_SET(&einaRect, rect.origin.x, rect.origin.y, rect.size.width, rect.size.height);
+
+    sd->api->popup_menu_show(sd, einaRect, static_cast<Ewk_Text_Direction>(textDirection), pageScaleFactor, m_popupMenu.get());
 }
 
 void EwkView::closePopupMenu()

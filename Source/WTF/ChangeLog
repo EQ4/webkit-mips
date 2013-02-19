@@ -1,3 +1,110 @@
+2013-02-18  Darin Adler  <darin@apple.com>
+
+        Style tweaks to StringHasher.h
+        https://bugs.webkit.org/show_bug.cgi?id=110042
+
+        Reviewed by Alexey Proskuryakov.
+
+        I have a bug fix coming soon, but figured I'd separate out style tweaks and land them
+        first to make that patch easier to undrestand.
+
+        * wtf/StringHasher.h: Tweak and rearrange comments a bit.
+        (WTF::StringHasher::addCharacter): Use character instead of ch.
+        (WTF::StringHasher::addCharacters): Use remainder instead of rem. Also capitalize the U
+        that we use to make an unsigned 1 constant.
+        (WTF::StringHasher::computeHashAndMaskTop8Bits): Ditto.
+        (WTF::StringHasher::hashMemory): Change version that takes size as a template argument
+        to call the version that takes the size at runtime, since both generate the same code
+        anyway. Added a FIXME questioning why this function uses the "mask top 8 bits" version
+        of the hash. Fix incorrect compile assertion that required sizes that are multiples
+        of four. This function works on sizes that are multiples of two. Also fixed a spelling
+        error where we called it a "multible".
+        (WTF::StringHasher::defaultConverter): Use character instead of ch.
+        (WTF::StringHasher::addCharactersToHash): Eliminated unnecessary local variable.
+
+2013-02-18  Alexey Proskuryakov  <ap@apple.com>
+
+        Make HexNumber functions return 8-bit strings
+        https://bugs.webkit.org/show_bug.cgi?id=110152
+
+        Reviewed by Michael Saboff.
+
+        * wtf/HexNumber.h:
+        (Internal):
+        (WTF::Internal::hexDigitsForMode):
+        (WTF::appendByteAsHex):
+        (WTF::placeByteAsHexCompressIfPossible):
+        (WTF::placeByteAsHex):
+        (WTF::appendUnsignedAsHex):
+        (WTF::appendUnsignedAsHexFixedSize):
+        Use LChar everywhere.
+
+2013-02-18  Benjamin Poulain  <bpoulain@apple.com>
+
+        Remove Vector::dataSlot(), it has no implementation
+        https://bugs.webkit.org/show_bug.cgi?id=109999
+
+        Reviewed by Andreas Kling.
+
+        VectorBufferBase does not implement any function bufferSlot().
+        The file only compiles because that part of the template is never
+        instantiated.
+
+        * wtf/Vector.h:
+
+2013-02-18  Laszlo Gombos  <l.gombos@samsung.com>
+
+        Move ENABLE macros for WebCore out from Platform.h
+        https://bugs.webkit.org/show_bug.cgi?id=105735
+
+        Unreviewed, build fix when NETSCAPE_PLUGIN_API is disabled.
+
+        Enable ENABLE_PLUGIN_PACKAGE_SIMPLE_HASH even if
+        NETSCAPE_PLUGIN_API is disabled (Qt, Efl, GTK, WX ports).
+
+        * wtf/FeatureDefines.h:
+
+2013-02-18  Balazs Kilvady  <kilvadyb@homejinni.com>
+
+        MIPS DFG implementation.
+        https://bugs.webkit.org/show_bug.cgi?id=101328
+
+        Reviewed by Oliver Hunt.
+
+        DFG implementation for MIPS.
+
+        * wtf/Platform.h:
+
+2013-02-18  Zan Dobersek  <zdobersek@igalia.com>
+
+        Stop placing std::isfinite and std::signbit inside the global scope
+        https://bugs.webkit.org/show_bug.cgi?id=109817
+
+        Reviewed by Darin Adler.
+
+        Prefix calls to the isfinite and signbit methods with std:: as the two
+        methods are no longer being imported into the global scope.
+
+        On Solaris and OpenBSD platforms or when using Visual C++ the two methods
+        are now defined (as incompatibility workarounds) inside the std namespace.
+
+        * wtf/DateMath.cpp:
+        (WTF::timeClip):
+        * wtf/DecimalNumber.h:
+        (WTF::DecimalNumber::DecimalNumber):
+        * wtf/MathExtras.h:
+        (std):
+        (std::isfinite):
+        (std::signbit):
+        (lrint):
+        (wtf_pow):
+        (decomposeDouble):
+        * wtf/MediaTime.cpp:
+        (WTF::MediaTime::createWithFloat):
+        (WTF::MediaTime::createWithDouble):
+        * wtf/dtoa.cpp:
+        (WTF::dtoa):
+
 2013-02-18  Laszlo Gombos  <l.gombos@samsung.com>
 
         Move ENABLE macros for WebCore out from Platform.h

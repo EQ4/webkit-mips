@@ -931,51 +931,6 @@ void SpeculativeJIT::useChildren(Node* node)
     }
 }
 
-bool SpeculativeJIT::isKnownInteger(Node* node)
-{
-    if (isInt32Constant(node))
-        return true;
-
-    if (node->hasInt32Result())
-        return true;
-    
-    GenerationInfo& info = m_generationInfo[node->virtualRegister()];
-
-    return info.isJSInteger();
-}
-
-bool SpeculativeJIT::isKnownCell(Node* node)
-{
-    return m_generationInfo[node->virtualRegister()].isJSCell();
-}
-
-bool SpeculativeJIT::isKnownNotCell(Node* node)
-{
-    VirtualRegister virtualRegister = node->virtualRegister();
-    GenerationInfo& info = m_generationInfo[virtualRegister];
-    if (node->hasConstant() && !valueOfJSConstant(node).isCell())
-        return true;
-    return !(info.isJSCell() || info.isUnknownJS());
-}
-
-bool SpeculativeJIT::isKnownNotInteger(Node* node)
-{
-    VirtualRegister virtualRegister = node->virtualRegister();
-    GenerationInfo& info = m_generationInfo[virtualRegister];
-    
-    return info.isJSDouble() || info.isJSCell() || info.isJSBoolean()
-        || (node->hasConstant() && !valueOfJSConstant(node).isInt32());
-}
-
-bool SpeculativeJIT::isKnownNotNumber(Node* node)
-{
-    VirtualRegister virtualRegister = node->virtualRegister();
-    GenerationInfo& info = m_generationInfo[virtualRegister];
-    
-    return (!info.isJSDouble() && !info.isJSInteger() && !info.isUnknownJS())
-        || (node->hasConstant() && !isNumberConstant(node));
-}
-
 void SpeculativeJIT::writeBarrier(MacroAssembler& jit, GPRReg owner, GPRReg scratch1, GPRReg scratch2, WriteBarrierUseKind useKind)
 {
     UNUSED_PARAM(jit);
@@ -1386,28 +1341,6 @@ FPRTemporary::FPRTemporary(SpeculativeJIT* jit)
     , m_fpr(InvalidFPRReg)
 {
     m_fpr = m_jit->fprAllocate();
-}
-
-FPRTemporary::FPRTemporary(SpeculativeJIT* jit, DoubleOperand& op1)
-    : m_jit(jit)
-    , m_fpr(InvalidFPRReg)
-{
-    if (m_jit->canReuse(op1.node()))
-        m_fpr = m_jit->reuse(op1.fpr());
-    else
-        m_fpr = m_jit->fprAllocate();
-}
-
-FPRTemporary::FPRTemporary(SpeculativeJIT* jit, DoubleOperand& op1, DoubleOperand& op2)
-    : m_jit(jit)
-    , m_fpr(InvalidFPRReg)
-{
-    if (m_jit->canReuse(op1.node()))
-        m_fpr = m_jit->reuse(op1.fpr());
-    else if (m_jit->canReuse(op2.node()))
-        m_fpr = m_jit->reuse(op2.fpr());
-    else
-        m_fpr = m_jit->fprAllocate();
 }
 
 FPRTemporary::FPRTemporary(SpeculativeJIT* jit, SpeculateDoubleOperand& op1)
@@ -2141,10 +2074,10 @@ GeneratedOperandType SpeculativeJIT::checkGeneratedTypeForToInt32(Node* node)
     }
 
     switch (info.registerFormat()) {
-    case DataFormatBoolean: // This type never occurs.
     case DataFormatStorage:
         RELEASE_ASSERT_NOT_REACHED();
 
+    case DataFormatBoolean:
     case DataFormatCell:
         terminateSpeculativeExecution(Uncountable, JSValueRegs(), 0);
         return GeneratedOperandTypeUnknown;
@@ -2179,102 +2112,6 @@ void SpeculativeJIT::compileValueToInt32(Node* node)
         return;
     }
     
-    if (node->child1()->shouldSpeculateNumber()) {
-        switch (checkGeneratedTypeForToInt32(node->child1().node())) {
-        case GeneratedOperandInteger: {
-            SpeculateIntegerOperand op1(this, node->child1());
-            GPRTemporary result(this, op1);
-            m_jit.move(op1.gpr(), result.gpr());
-            integerResult(result.gpr(), node, op1.format());
-            return;
-        }
-        case GeneratedOperandDouble: {
-            GPRTemporary result(this);
-            DoubleOperand op1(this, node->child1());
-            FPRReg fpr = op1.fpr();
-            GPRReg gpr = result.gpr();
-            JITCompiler::Jump notTruncatedToInteger = m_jit.branchTruncateDoubleToInt32(fpr, gpr, JITCompiler::BranchIfTruncateFailed);
-            
-            addSlowPathGenerator(slowPathCall(notTruncatedToInteger, this, toInt32, gpr, fpr));
-
-            integerResult(gpr, node);
-            return;
-        }
-        case GeneratedOperandJSValue: {
-            GPRTemporary result(this);
-#if USE(JSVALUE64)
-            JSValueOperand op1(this, node->child1());
-
-            GPRReg gpr = op1.gpr();
-            GPRReg resultGpr = result.gpr();
-            FPRTemporary tempFpr(this);
-            FPRReg fpr = tempFpr.fpr();
-
-            JITCompiler::Jump isInteger = m_jit.branch64(MacroAssembler::AboveOrEqual, gpr, GPRInfo::tagTypeNumberRegister);
-
-            if (!isNumberSpeculation(m_state.forNode(node->child1()).m_type))
-                speculationCheck(BadType, JSValueRegs(gpr), node->child1(), m_jit.branchTest64(MacroAssembler::Zero, gpr, GPRInfo::tagTypeNumberRegister));
-
-            // First, if we get here we have a double encoded as a JSValue
-            m_jit.move(gpr, resultGpr);
-            unboxDouble(resultGpr, fpr);
-
-            silentSpillAllRegisters(resultGpr);
-            callOperation(toInt32, resultGpr, fpr);
-            silentFillAllRegisters(resultGpr);
-
-            JITCompiler::Jump converted = m_jit.jump();
-
-            isInteger.link(&m_jit);
-            m_jit.zeroExtend32ToPtr(gpr, resultGpr);
-
-            converted.link(&m_jit);
-#else
-            Node* childNode = node->child1().node();
-            VirtualRegister virtualRegister = childNode->virtualRegister();
-            GenerationInfo& info = m_generationInfo[virtualRegister];
-
-            JSValueOperand op1(this, node->child1());
-
-            GPRReg payloadGPR = op1.payloadGPR();
-            GPRReg resultGpr = result.gpr();
-
-            if (info.registerFormat() == DataFormatJSInteger)
-                m_jit.move(payloadGPR, resultGpr);
-            else {
-                GPRReg tagGPR = op1.tagGPR();
-                FPRTemporary tempFpr(this);
-                FPRReg fpr = tempFpr.fpr();
-                FPRTemporary scratch(this);
-
-                JITCompiler::Jump isInteger = m_jit.branch32(MacroAssembler::Equal, tagGPR, TrustedImm32(JSValue::Int32Tag));
-
-                if (!isNumberSpeculation(m_state.forNode(node->child1()).m_type))
-                    speculationCheck(BadType, JSValueRegs(tagGPR, payloadGPR), node->child1(), m_jit.branch32(MacroAssembler::AboveOrEqual, tagGPR, TrustedImm32(JSValue::LowestTag)));
-
-                unboxDouble(tagGPR, payloadGPR, fpr, scratch.fpr());
-
-                silentSpillAllRegisters(resultGpr);
-                callOperation(toInt32, resultGpr, fpr);
-                silentFillAllRegisters(resultGpr);
-
-                JITCompiler::Jump converted = m_jit.jump();
-
-                isInteger.link(&m_jit);
-                m_jit.move(payloadGPR, resultGpr);
-
-                converted.link(&m_jit);
-            }
-#endif
-            integerResult(resultGpr, node);
-            return;
-        }
-        case GeneratedOperandTypeUnknown:
-            RELEASE_ASSERT_NOT_REACHED();
-            break;
-        }
-    }
-    
     if (node->child1()->shouldSpeculateBoolean()) {
         SpeculateBooleanOperand op1(this, node->child1());
         GPRTemporary result(this, op1);
@@ -2286,9 +2123,135 @@ void SpeculativeJIT::compileValueToInt32(Node* node)
         return;
     }
     
-    // Do it the safe way.
-    nonSpeculativeValueToInt32(node);
-    return;
+    switch (checkGeneratedTypeForToInt32(node->child1().node())) {
+    case GeneratedOperandInteger: {
+        SpeculateIntegerOperand op1(this, node->child1());
+        GPRTemporary result(this, op1);
+        m_jit.move(op1.gpr(), result.gpr());
+        integerResult(result.gpr(), node, op1.format());
+        return;
+    }
+    case GeneratedOperandDouble: {
+        GPRTemporary result(this);
+        SpeculateDoubleOperand op1(this, Edge(node->child1().node(), DoubleUse)); // SpeculateDoubleOperand will assert that this is a double use. We force it to think that it was a double use, since we are inferring that we ought to emit a double use quite late.
+        FPRReg fpr = op1.fpr();
+        GPRReg gpr = result.gpr();
+        JITCompiler::Jump notTruncatedToInteger = m_jit.branchTruncateDoubleToInt32(fpr, gpr, JITCompiler::BranchIfTruncateFailed);
+            
+        addSlowPathGenerator(slowPathCall(notTruncatedToInteger, this, toInt32, gpr, fpr));
+
+        integerResult(gpr, node);
+        return;
+    }
+    case GeneratedOperandJSValue: {
+        GPRTemporary result(this);
+#if USE(JSVALUE64)
+        JSValueOperand op1(this, node->child1());
+
+        GPRReg gpr = op1.gpr();
+        GPRReg resultGpr = result.gpr();
+        FPRTemporary tempFpr(this);
+        FPRReg fpr = tempFpr.fpr();
+
+        JITCompiler::Jump isInteger = m_jit.branch64(MacroAssembler::AboveOrEqual, gpr, GPRInfo::tagTypeNumberRegister);
+        JITCompiler::JumpList converted;
+
+        if (!isNumberSpeculation(m_state.forNode(node->child1()).m_type)) {
+            if (node->child1()->shouldSpeculateNumber())
+                speculationCheck(BadType, JSValueRegs(gpr), node->child1(), m_jit.branchTest64(MacroAssembler::Zero, gpr, GPRInfo::tagTypeNumberRegister));
+            else {
+                JITCompiler::Jump isNumber = m_jit.branchTest64(MacroAssembler::NonZero, gpr, GPRInfo::tagTypeNumberRegister);
+                
+                if (m_state.forNode(node->child1()).m_type & SpecCell)
+                    speculationCheck(BadType, JSValueRegs(gpr), node->child1(), m_jit.branchTest64(JITCompiler::Zero, gpr, GPRInfo::tagMaskRegister));
+                
+                // It's not a cell: so true turns into 1 and all else turns into 0.
+                m_jit.compare64(JITCompiler::Equal, gpr, TrustedImm32(ValueTrue), resultGpr);
+                converted.append(m_jit.jump());
+                
+                isNumber.link(&m_jit);
+            }
+        }
+
+        // First, if we get here we have a double encoded as a JSValue
+        m_jit.move(gpr, resultGpr);
+        unboxDouble(resultGpr, fpr);
+
+        silentSpillAllRegisters(resultGpr);
+        callOperation(toInt32, resultGpr, fpr);
+        silentFillAllRegisters(resultGpr);
+
+        converted.append(m_jit.jump());
+
+        isInteger.link(&m_jit);
+        m_jit.zeroExtend32ToPtr(gpr, resultGpr);
+
+        converted.link(&m_jit);
+#else
+        Node* childNode = node->child1().node();
+        VirtualRegister virtualRegister = childNode->virtualRegister();
+        GenerationInfo& info = m_generationInfo[virtualRegister];
+
+        JSValueOperand op1(this, node->child1());
+
+        GPRReg payloadGPR = op1.payloadGPR();
+        GPRReg resultGpr = result.gpr();
+        
+        JITCompiler::JumpList converted;
+
+        if (info.registerFormat() == DataFormatJSInteger)
+            m_jit.move(payloadGPR, resultGpr);
+        else {
+            GPRReg tagGPR = op1.tagGPR();
+            FPRTemporary tempFpr(this);
+            FPRReg fpr = tempFpr.fpr();
+            FPRTemporary scratch(this);
+
+            JITCompiler::Jump isInteger = m_jit.branch32(MacroAssembler::Equal, tagGPR, TrustedImm32(JSValue::Int32Tag));
+
+            if (!isNumberSpeculation(m_state.forNode(node->child1()).m_type)) {
+                if (node->child1()->shouldSpeculateNumber())
+                    speculationCheck(BadType, JSValueRegs(tagGPR, payloadGPR), node->child1(), m_jit.branch32(MacroAssembler::AboveOrEqual, tagGPR, TrustedImm32(JSValue::LowestTag)));
+                else {
+                    JITCompiler::Jump isNumber = m_jit.branch32(MacroAssembler::Below, tagGPR, TrustedImm32(JSValue::LowestTag));
+                    
+                    if (m_state.forNode(node->child1()).m_type & SpecCell)
+                        speculationCheck(BadType, JSValueRegs(tagGPR, payloadGPR), node->child1(), m_jit.branch32(JITCompiler::Equal, tagGPR, TrustedImm32(JSValue::CellTag)));
+                    
+                    // It's not a cell: so true turns into 1 and all else turns into 0.
+                    JITCompiler::Jump isBoolean = m_jit.branch32(JITCompiler::Equal, tagGPR, TrustedImm32(JSValue::BooleanTag));
+                    m_jit.move(TrustedImm32(0), resultGpr);
+                    converted.append(m_jit.jump());
+                    
+                    isBoolean.link(&m_jit);
+                    m_jit.move(payloadGPR, resultGpr);
+                    converted.append(m_jit.jump());
+                    
+                    isNumber.link(&m_jit);
+                }
+            }
+
+            unboxDouble(tagGPR, payloadGPR, fpr, scratch.fpr());
+
+            silentSpillAllRegisters(resultGpr);
+            callOperation(toInt32, resultGpr, fpr);
+            silentFillAllRegisters(resultGpr);
+
+            converted.append(m_jit.jump());
+
+            isInteger.link(&m_jit);
+            m_jit.move(payloadGPR, resultGpr);
+
+            converted.link(&m_jit);
+        }
+#endif
+        integerResult(resultGpr, node);
+        return;
+    }
+    case GeneratedOperandTypeUnknown:
+        ASSERT(!m_compileOkay);
+        break;
+    }
 }
 
 void SpeculativeJIT::compileUInt32ToNumber(Node* node)
