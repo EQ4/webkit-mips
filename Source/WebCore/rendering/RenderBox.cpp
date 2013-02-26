@@ -1151,6 +1151,35 @@ void RenderBox::paintBackground(const PaintInfo& paintInfo, const LayoutRect& pa
     }
 }
 
+bool RenderBox::backgroundIsOpaqueInRect(const LayoutRect& localRect) const
+{
+    Color backgroundColor = style()->visitedDependentColor(CSSPropertyBackgroundColor);
+    if (!backgroundColor.isValid() || backgroundColor.hasAlpha())
+        return false;
+
+    // FIXME: Check the opaqueness of background images.
+
+    // FIXME: Use rounded rect if border radius is present.
+    if (style()->hasBorderRadius())
+        return false;
+
+    LayoutRect backgroundRect;
+    switch (style()->backgroundClip()) {
+    case BorderFillBox:
+        backgroundRect = borderBoxRect();
+        break;
+    case PaddingFillBox:
+        backgroundRect = paddingBoxRect();
+        break;
+    case ContentFillBox:
+        backgroundRect = contentBoxRect();
+        break;
+    default:
+        break;
+    }
+    return backgroundRect.contains(localRect);
+}
+
 bool RenderBox::backgroundHasOpaqueTopLayer() const
 {
     const FillLayer* fillLayer = style()->backgroundLayers();
@@ -2008,10 +2037,6 @@ void RenderBox::computeLogicalWidthInRegion(LogicalExtentComputedValues& compute
         computedValues.m_extent = constrainLogicalWidthInRegionByMinMax(preferredWidth, containerWidthInInlineDirection, cb, region, offsetFromLogicalTopOfFirstPage);
     }
 
-    // Fieldsets are currently the only objects that stretch to their minimum width.
-    if (stretchesToMinIntrinsicLogicalWidth())
-        computedValues.m_extent = max(computedValues.m_extent, minPreferredLogicalWidth());
-
     // Margin calculations.
     if (hasPerpendicularContainingBlock || isFloating() || isInline()) {
         RenderView* renderView = view();
@@ -2038,6 +2063,32 @@ void RenderBox::computeLogicalWidthInRegion(LogicalExtentComputedValues& compute
     }
 }
 
+LayoutUnit RenderBox::computeIntrinsicLogicalWidthUsing(Length logicalWidthLength, LayoutUnit availableLogicalWidth) const
+{
+    if (logicalWidthLength.type() == MinContent)
+        return minIntrinsicLogicalWidth();
+    if (logicalWidthLength.type() == MaxContent)
+        return maxIntrinsicLogicalWidth();
+
+    RenderView* renderView = view();
+    LayoutUnit marginStart = minimumValueForLength(style()->marginStart(), availableLogicalWidth, renderView);
+    LayoutUnit marginEnd = minimumValueForLength(style()->marginEnd(), availableLogicalWidth, renderView);
+    LayoutUnit fillAvailableMeasure = availableLogicalWidth - marginStart - marginEnd;
+
+    if (logicalWidthLength.type() == FillAvailable)
+        return fillAvailableMeasure;
+    if (logicalWidthLength.type() == FitContent) {
+        LayoutUnit minLogicalWidth = 0;
+        LayoutUnit maxLogicalWidth = 0;
+        computeIntrinsicLogicalWidths(minLogicalWidth, maxLogicalWidth);
+        minLogicalWidth += borderAndPaddingLogicalWidth();
+        maxLogicalWidth += borderAndPaddingLogicalWidth();
+        return max(minLogicalWidth, min(maxLogicalWidth, fillAvailableMeasure));
+    }
+    ASSERT_NOT_REACHED();
+    return 0;
+}
+
 LayoutUnit RenderBox::computeLogicalWidthInRegionUsing(SizeType widthType, LayoutUnit availableLogicalWidth,
     const RenderBlock* cb, RenderRegion* region, LayoutUnit offsetFromLogicalTopOfFirstPage) const
 {
@@ -2060,32 +2111,16 @@ LayoutUnit RenderBox::computeLogicalWidthInRegionUsing(SizeType widthType, Layou
         return adjustBorderBoxLogicalWidthForBoxSizing(valueForLength(logicalWidth, availableLogicalWidth, view()));
     }
 
-    if (logicalWidth.type() == MinContent)
-        return minIntrinsicLogicalWidth();
-    if (logicalWidth.type() == MaxContent)
-        return maxIntrinsicLogicalWidth();
+    if (logicalWidth.isIntrinsic())
+        return computeIntrinsicLogicalWidthUsing(logicalWidth, availableLogicalWidth);
 
     RenderView* renderView = view();
     LayoutUnit marginStart = minimumValueForLength(styleToUse->marginStart(), availableLogicalWidth, renderView);
     LayoutUnit marginEnd = minimumValueForLength(styleToUse->marginEnd(), availableLogicalWidth, renderView);
     LayoutUnit logicalWidthResult = availableLogicalWidth - marginStart - marginEnd;
 
-    // shrinkToAvoidFloats() is only true for width: auto so the below code works correctly for
-    // width: fill-available since no case matches and it returns the logicalWidthResult from above.
     if (shrinkToAvoidFloats() && cb->containsFloats())
         logicalWidthResult = min(logicalWidthResult, shrinkLogicalWidthToAvoidFloats(marginStart, marginEnd, cb, region, offsetFromLogicalTopOfFirstPage));
-
-    if (logicalWidth.type() == FitContent) {
-        LayoutUnit minLogicalWidth = 0;
-        LayoutUnit maxLogicalWidth = 0;
-        computeIntrinsicLogicalWidths(minLogicalWidth, maxLogicalWidth);
-        minLogicalWidth += borderAndPaddingLogicalWidth();
-        maxLogicalWidth += borderAndPaddingLogicalWidth();
-        return max(minLogicalWidth, min(maxLogicalWidth, logicalWidthResult));
-    }
-
-    if (logicalWidth.type() == FillAvailable)
-        return logicalWidthResult;
 
     if (widthType == MainOrPreferredSize && sizesLogicalWidthToFitContent(widthType))
         return max(minPreferredLogicalWidth(), min(maxPreferredLogicalWidth(), logicalWidthResult));
@@ -2582,11 +2617,19 @@ LayoutUnit RenderBox::computeReplacedLogicalWidthUsing(SizeType sizeType, Length
     switch (logicalWidth.type()) {
         case Fixed:
             return adjustContentBoxLogicalWidthForBoxSizing(logicalWidth.value());
+        case MinContent:
+        case MaxContent: {
+            // MinContent/MaxContent don't need the availableLogicalWidth argument.
+            LayoutUnit availableLogicalWidth = 0;
+            return computeIntrinsicLogicalWidthUsing(logicalWidth, availableLogicalWidth) - borderAndPaddingLogicalWidth();
+        }
         case ViewportPercentageWidth:
         case ViewportPercentageHeight:
         case ViewportPercentageMin:
         case ViewportPercentageMax:
             return adjustContentBoxLogicalWidthForBoxSizing(valueForLength(logicalWidth, 0, view()));
+        case FitContent:
+        case FillAvailable:
         case Percent: 
         case Calculated: {
             // FIXME: containingBlockLogicalWidthForContent() is wrong if the replaced element's block-flow is perpendicular to the
@@ -2596,13 +2639,22 @@ LayoutUnit RenderBox::computeReplacedLogicalWidthUsing(SizeType sizeType, Length
             Length containerLogicalWidth = containingBlock()->style()->logicalWidth();
             // FIXME: Handle cases when containing block width is calculated or viewport percent.
             // https://bugs.webkit.org/show_bug.cgi?id=91071
+            if (logicalWidth.isIntrinsic())
+                return computeIntrinsicLogicalWidthUsing(logicalWidth, cw) - borderAndPaddingLogicalWidth();
             if (cw > 0 || (!cw && (containerLogicalWidth.isFixed() || containerLogicalWidth.isPercent())))
                 return adjustContentBoxLogicalWidthForBoxSizing(minimumValueForLength(logicalWidth, cw));
         }
         // fall through
-        default:
+        case Intrinsic:
+        case MinIntrinsic:
+        case Auto:
+        case Relative:
+        case Undefined:
             return intrinsicLogicalWidth();
-     }
+    }
+
+    ASSERT_NOT_REACHED();
+    return 0;
 }
 
 LayoutUnit RenderBox::computeReplacedLogicalHeight() const
@@ -3000,7 +3052,7 @@ void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& compu
     }
 
     // Calculate constraint equation values for 'min-width' case.
-    if (!style()->logicalMinWidth().isZero()) {
+    if (!style()->logicalMinWidth().isZero() || style()->logicalMinWidth().isIntrinsic()) {
         LogicalExtentComputedValues minValues;
 
         computePositionedLogicalWidthUsing(MinSize, style()->logicalMinWidth(), containerBlock, containerDirection,
@@ -3014,13 +3066,6 @@ void RenderBox::computePositionedLogicalWidth(LogicalExtentComputedValues& compu
             computedValues.m_margins.m_start = minValues.m_margins.m_start;
             computedValues.m_margins.m_end = minValues.m_margins.m_end;
         }
-    }
-
-    if (stretchesToMinIntrinsicLogicalWidth() && computedValues.m_extent < minPreferredLogicalWidth() - bordersPlusPadding) {
-        computePositionedLogicalWidthUsing(MainOrPreferredSize, Length(minPreferredLogicalWidth() - bordersPlusPadding, Fixed), containerBlock, containerDirection,
-                                           containerLogicalWidth, bordersPlusPadding,
-                                           logicalLeftLength, logicalRightLength, marginLogicalLeft, marginLogicalRight,
-                                           computedValues);
     }
 
     computedValues.m_extent += bordersPlusPadding;
@@ -3062,6 +3107,8 @@ void RenderBox::computePositionedLogicalWidthUsing(SizeType widthSizeType, Lengt
 {
     if (widthSizeType == MinSize && logicalWidth.isAuto())
         logicalWidth = Length(0, Fixed);
+    else if (logicalWidth.isIntrinsic())
+        logicalWidth = Length(computeIntrinsicLogicalWidthUsing(logicalWidth, containerLogicalWidth) - bordersPlusPadding, Fixed);
 
     // 'left' and 'right' cannot both be 'auto' because one would of been
     // converted to the static position already
@@ -4010,6 +4057,10 @@ void RenderBox::addVisualEffectOverflow()
 
 void RenderBox::addOverflowFromChild(RenderBox* child, const LayoutSize& delta)
 {
+    // Never allow flow threads to propagate overflow up to a parent.
+    if (child->isRenderFlowThread())
+        return;
+
     // Only propagate layout overflow from the child if the child isn't clipping its overflow.  If it is, then
     // its overflow is internal to it, and we don't care about it.  layoutOverflowRectForPropagation takes care of this
     // and just propagates the border box rect instead.

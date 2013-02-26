@@ -210,7 +210,7 @@ fast/css/cursor-parsing-image-set.html
 
 # ENABLE(TEMPLATE_ELEMENT) is disabled.
 fast/dom/HTMLTemplateElement
-html5lib/run-template.html
+html5lib/generated/run-template.html
 fast/xsl/xslt-xhtml-template.xml
 fast/xpath/xpath-template-element.html
 fast/xsl/xslt-processor-template.html
@@ -420,6 +420,9 @@ fast/dom/HTMLAnchorElement/anchor-nodownload.html
 fast/dom/HTMLAnchorElement/anchor-download.html
 fast/dom/HTMLAnchorElement/anchor-nodownload-set.html
 fast/dom/HTMLAnchorElement/anchor-download-unset.html
+
+# Require ENABLE(CUSTOM_ELEMENTS) support
+webkit.org/b/110735 fast/dom/custom [ Skip ]
 
 # For now, Web Audio API is disabled
 webaudio/
@@ -831,6 +834,7 @@ editing/spelling/spelling-subword-selection.html
 editing/spelling/spelling-with-punctuation-selection.html
 editing/spelling/spelling-with-underscore-selection.html
 editing/spelling/spelling-with-whitespace-selection.html
+webkit.org/b/108370 editing/spelling/spelling-changed-text.html [ Failure ]
 
 # =========================================================================== #
 #       Failing plugins tests.                                                #
@@ -1373,6 +1377,12 @@ fast/regions/autoheight-singleregion-breakbeforealways-minheight.html
 # [Qt] svg/css/text-gradient-shadow.svg fails
 # https://bugs.webkit.org/show_bug.cgi?id=92734
 svg/css/text-gradient-shadow.svg
+
+# These tests need to be rebaselined after https://bugs.webkit.org/show_bug.cgi?id=99984
+webkit.org/b/99984 svg/as-image/image-preserveAspectRatio-all.svg [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/filters/feImage-preserveAspectRatio-all.svg [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/dynamic-updates/SVGFEImageElement-dom-preserveAspectRatio-attr.html [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/dynamic-updates/SVGFEImageElement-svgdom-preserveAspectRatio-prop.html [ ImageOnlyFailure Pass ]
 
 # Need rebaseline after https://bugs.webkit.org/show_bug.cgi?id=105437
 webkit.org/b/105437 svg/W3C-SVG-1.1-SE/filters-image-03-f.svg [ ImageOnlyFailure Pass ]
@@ -2110,7 +2120,8 @@ http/tests/loading/preload-slow-loading.php
 http/tests/security/contentSecurityPolicy/media-src-allowed.html
 http/tests/security/contentSecurityPolicy/media-src-blocked.html
 
-# [Qt] Migrate to Ubuntu 12.04. Maybe rebaseline needed.
+# [Qt] Migrate to Ubuntu 12.04.
+compositing/visibility/visibility-simple-webgl-layer.html
 css2.1/t0805-c5519-brdr-r-01-e.html
 css2.1/t0905-c5525-fltblck-00-d-ag.html
 
@@ -2249,6 +2260,7 @@ fast/css/empty-cell-baseline.html
 fast/forms/datalist/input-appearance-range-with-datalist-rtl.html
 fast/forms/datalist/update-range-with-datalist.html
 fast/multicol/cell-shrinkback.html
+fast/multicol/newmulticol/column-rules-fixed-height.html
 fast/multicol/overflow-into-columngap.html
 fast/overflow/line-clamp-and-columns.html
 fast/table/td-width-fifty-percent-regression.html
@@ -2262,6 +2274,9 @@ svg/transforms/transformed-text-fill-gradient.html
 fast/regions/floats-basic-in-variable-width-regions.html
 fast/regions/region-style-rule-position.html
 fast/forms/select/intrinsic-min-width-applies-with-fixed-width.html
+webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-circle.html [ ImageOnlyFailure ]
+webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-ellipse.html [ ImageOnlyFailure ]
+webkit.org/b/110447 fast/regions/shape-inside-on-regions.html [ Skip ]
 
 # Failing fast/css/sticky/ tests with minor pixel differences
 # https://bugs.webkit.org/show_bug.cgi?id=92080
@@ -2561,7 +2576,7 @@ webkit.org/b/102675 [ Debug ] fast/block/float/overhanging-tall-block.html
 webkit.org/b/102877 fast/frames/frame-unload-crash2.html
 
 # Fails until we enable the Resource Timing API.
-webkit.org/b/61138 http/tests/w3c/webperf/submission/resource-timing [ Skip ]
+webkit.org/b/61138 http/tests/w3c/webperf/submission/Google/resource-timing [ Skip ]
 
 # [Qt] A new compositing bug uncovered by r135859
 webkit.org/b/103424 fast/backgrounds/background-opaque-images-over-color.html
@@ -2619,6 +2634,12 @@ inspector/editor/text-editor-word-jumps.html
 inspector/editor/text-editor-home-button.html
 inspector/editor/text-editor-smart-braces.html
 
+# [Qt] REGRESSION(143400): It made all inspector tests crash on Qt 64 bit release.
+webkit.org/b/110440 http/tests/inspector-enabled
+webkit.org/b/110440 http/tests/inspector
+webkit.org/b/110440 http/tests/xmlhttprequest/access-control-repeated-failed-preflight-crash.html
+webkit.org/b/110440 inspector
+
 # [Qt] REGRESSION(r141634) test failing
 webkit.org/b/108813 compositing/visibility/visibility-image-layers-dynamic.html [ Skip ]
 
@@ -2630,6 +2651,11 @@ webkit.org/b/91665 fast/dynamic/absolute-positioned-to-static-positioned.html [ 
 webkit.org/b/91665 fast/dynamic/floating-to-non-floating.html [ Skip ]
 webkit.org/b/91665 fast/dynamic/static-positioned-to-absolute-positioned.html [ Skip ]
 
+# Needs rebaseline after https://bugs.webkit.org/show_bug.cgi?id=70634
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-background-color.html [ Failure ]
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-layer-opacity.html [ Failure ]
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-layer-transform.html [ Failure ]
+
 # Need rebaseline after https://bugs.webkit.org/show_bug.cgi?id=109775
 webkit.org/b/109775 media/audio-controls-rendering.html [ Failure ]
 webkit.org/b/109775 media/controls-after-reload.html [ Failure ]
@@ -2640,9 +2666,10 @@ webkit.org/b/109775 media/video-controls-rendering.html [ Failure ]
 webkit.org/b/109775 media/video-display-toggle.html [ Failure ]
 webkit.org/b/109775 media/video-playing-and-pause.html [ Failure ]
 
-webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-circle.html [ ImageOnlyFailure ]
-
 webkit.org/b/110090 fast/events/clientXY-in-zoom-and-scroll.html [ Failure ]
 
 # New test introduced in r143073 that never passed on Qt and EFL.
 webkit.org/b/110054 compositing/geometry/limit-layer-bounds-fixed.html [ Failure ]
+
+# [Qt] newly added svg/as-background-image/svg-transformed-background.html fails
+webkit.org/b/110442 svg/as-background-image/svg-transformed-background.html [ Skip ]

@@ -270,19 +270,12 @@ http/tests/misc/submit-post-keygen.html
 http/tests/navigation/no-referrer-reset.html
 http/tests/navigation/no-referrer-target-blank.html
 http/tests/navigation/target-frame-from-window.html
-http/tests/security/contentSecurityPolicy/media-src-allowed.html
-http/tests/security/aboutBlank/xss-DENIED-navigate-opener-document-write.html
-http/tests/security/aboutBlank/xss-DENIED-navigate-opener-javascript-url.html
-http/tests/security/aboutBlank/xss-DENIED-set-opener.html
-http/tests/security/cross-origin-xsl-BLOCKED.html
-http/tests/security/cross-origin-xsl-redirect-BLOCKED.html
 http/tests/security/drag-drop-same-unique-origin.html
 http/tests/security/frameNavigation/not-opener.html
 http/tests/security/originHeader/origin-header-for-empty.html
 http/tests/security/redirect-BLOCKED-to-localURL.html
 http/tests/security/xss-DENIED-xsl-document-redirect.xml
 http/tests/security/xss-DENIED-xsl-external-entity-redirect.xml
-http/tests/workers/terminate-during-sync-operation.html
 http/tests/xmlhttprequest/access-control-basic-whitelist-request-headers.html
 http/tests/xmlhttprequest/cross-origin-cookie-storage.html
 http/tests/xmlhttprequest/cross-origin-no-authorization.html
@@ -344,9 +337,6 @@ webkit.org/b/89056 inspector/debugger/xhr-breakpoints.html [ Failure Timeout ]
 fast/css/draggable-region-parser.html
 
 webkit.org/b/99096 fast/canvas/webgl/arraybuffer-transfer-of-control.html [ Failure Pass ]
-
-# Expected to fail until OES_element_index_uint extension is implemented
-webkit.org/b/98257 fast/canvas/webgl/oes-element-index-uint.html [ Failure Pass ]
 
 #////////////////////////////////////////////////////////////////////////////////////////
 # TESTS EXPECTED TO FAIL
@@ -593,6 +583,12 @@ webkit.org/b/98895 perf/accessibility-title-ui-element.html [ Skip ]
 # not SKIP, just WONTFIX.
 webkit.org/b/66218 fast/harness/sample-fail-mismatch-reftest.html [ WontFix ImageOnlyFailure ]
 
+# These tests need to be rebaselined after https://bugs.webkit.org/show_bug.cgi?id=99984
+webkit.org/b/99984 svg/as-image/image-preserveAspectRatio-all.svg [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/filters/feImage-preserveAspectRatio-all.svg [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/dynamic-updates/SVGFEImageElement-dom-preserveAspectRatio-attr.html [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/dynamic-updates/SVGFEImageElement-svgdom-preserveAspectRatio-prop.html [ ImageOnlyFailure Pass ]
+
 # Need rebaseline after https://bugs.webkit.org/show_bug.cgi?id=105437
 webkit.org/b/105437 svg/W3C-SVG-1.1-SE/filters-image-03-f.svg [ ImageOnlyFailure Pass ]
 webkit.org/b/105437 svg/W3C-SVG-1.1-SE/filters-image-05-f.svg [ ImageOnlyFailure Pass ]
@@ -707,7 +703,7 @@ webkit.org/b/104809 media/video-src-change.html [ Crash Pass ]
 webkit.org/b/104809 media/remove-from-document.html [ Crash Pass ]
 webkit.org/b/104809 media/video-timeupdate-during-playback.html [ Crash Pass ]
 
-webkit.org/b/107237 [ Debug ] html5lib/run-template.html [ Crash ]
+webkit.org/b/107237 [ Debug ] html5lib/generated/run-template.html [ Crash ]
 
 #////////////////////////////////////////////////////////////////////////////////////////
 # FLAKY TESTS
@@ -760,7 +756,7 @@ webkit.org/b/77631 fast/multicol/span/span-as-immediate-child-property-removal.h
 webkit.org/b/77631 fast/multicol/span/span-as-immediate-columns-child-removal.html [ Failure Pass ]
 
 webkit.org/b/93213 fast/text/international/text-spliced-font.html [ Failure Pass ]
-webkit.org/b/93214 http/tests/loading/307-after-303-after-post.html [ Crash Failure Pass Timeout ]
+webkit.org/b/93214 http/tests/loading/307-after-303-after-post.html [ Crash Pass Timeout ]
 webkit.org/b/93212 http/tests/incremental/slow-utf8-text.pl [ Pass Timeout ]
 
 webkit.org/b/85180 media/audio-delete-while-step-button-clicked.html [ Failure Pass ]
@@ -847,7 +843,6 @@ webkit.org/b/94877 fast/forms/listbox-hit-test-zoomed.html [ Pass ]
 # Intrusive theming overrides collide with style-related LayoutTests.
 webkit.org/b/85877 fast/forms/menulist-narrow-width.html [ Pass ]
 webkit.org/b/85877 fast/forms/menulist-style-color.html [ Pass ]
-webkit.org/b/85877 fast/forms/select-baseline.html [ Pass ]
 webkit.org/b/85877 fast/forms/select-style.html [ Pass ]
 
 # EFL port needs Pasteboard implementation, needs baselines.
@@ -1698,7 +1693,7 @@ webkit.org/b/101670 media/video-controls-captions-trackmenu-hide-on-click.html [
 webkit.org/b/101670 media/track/track-user-preferences.html [ Skip ]
 
 # Fails until we enable the Resource Timing API.
-webkit.org/b/61138 http/tests/w3c/webperf/submission/resource-timing [ Skip ]
+webkit.org/b/61138 http/tests/w3c/webperf/submission/Google/resource-timing [ Skip ]
 
 # No support for exposing in-band text tracks
 Bug(EFL) media/track/track-in-band.html [ Skip ]
@@ -1721,7 +1716,6 @@ webkit.org/b/104571 http/tests/xmlhttprequest/origin-exact-matching.html [ Failu
 
 # Rendering failure, also missing expected results:
 webkit.org/b/105093 compositing/webgl/webgl-background-color.html [ Skip ]
-webkit.org/b/105093 compositing/webgl/webgl-no-alpha.html [ Skip ]
 webkit.org/b/105093 compositing/webgl/webgl-nonpremultiplied-blend.html [ Skip ]
 webkit.org/b/105093 compositing/webgl/webgl-reflection.html [ Skip ]
 
@@ -1778,9 +1772,6 @@ webkit.org/b/106316 accessibility/render-counter-text.html [ Failure ]
 # Newly added test at r139111 is failing.
 webkit.org/b/106439 editing/pasteboard/paste-noplugin.html [ Failure ]
 
-# Failing after r139140.
-webkit.org/b/106441 http/tests/misc/authentication-redirect-3/authentication-sent-to-redirect-same-origin-with-location-credentials.html [ Failure ]
-
 # Mark as missing image result, same as other ports. Test should be updated to text-based repaint test.
 webkit.org/b/103955 fast/repaint/caret-with-transformation.html [ Missing ]
 
@@ -1790,10 +1781,6 @@ inspector/editor/text-editor-formatter.html
 inspector/editor/text-editor-word-jumps.html
 inspector/editor/text-editor-home-button.html
 inspector/editor/text-editor-smart-braces.html
-
-# Remove from list after enabling CANVAS_PATH
-webkit.org/b/108508 fast/canvas/canvas-path-constructors.html [ Failure ]
-webkit.org/b/108508 fast/canvas/canvas-currentPath.html [ Failure ]
 
 # Test fails on JSC platforms due to GC timing problems
 webkit.org/b/106957 svg/dom/SVGViewSpec-invalid-ref-crash.html [ Failure ]
@@ -1859,3 +1846,23 @@ webkit.org/b/109949 fast/dom/shadow/distributed-pseudo-element-scoped.html [ Ima
 
 # Newly added test in r142979 is failing.
 webkit.org/b/109951 compositing/transitions/transform-on-large-layer.html [ ImageOnlyFailure ]
+
+# Needs rebaseline after https://bugs.webkit.org/show_bug.cgi?id=70634
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-background-color.html [ Failure ]
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-layer-opacity.html [ Failure ]
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-layer-transform.html [ Failure ]
+webkit.org/b/109507 compositing/layer-creation/fixed-position-change-out-of-view-in-view.html [ Failure ]
+
+# Failing after r143256.
+webkit.org/b/110282 fast/regions/seamless-iframe-flowed-into-regions.html [ ImageOnlyFailure ]
+
+webkit.org/b/110316 svg/as-background-image/tiled-background-image.html [ ImageOnlyFailure ]
+
+webkit.org/b/110338 fast/events/touch/emulate-touch-events.html [ Failure ]
+
+# REGRESSION(r143470): editing/spelling/spelling-changed-text.html fails on Qt, GTK, EFL 
+webkit.org/b/110447 editing/spelling/spelling-changed-text.html [ Failure ]
+
+webkit.org/b/110446 svg/as-background-image/svg-transformed-background.html [ ImageOnlyFailure ]
+
+webkit.org/b/110694 html5lib/runner.html [ Failure ]

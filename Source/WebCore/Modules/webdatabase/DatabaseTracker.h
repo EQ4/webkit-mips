@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007, 2008 Apple Inc. All rights reserved.
+ * Copyright (C) 2007, 2008, 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -46,7 +46,7 @@
 
 namespace WebCore {
 
-class DatabaseBackend;
+class DatabaseBackendBase;
 class DatabaseBackendContext;
 class SecurityOrigin;
 
@@ -75,12 +75,11 @@ public:
     void setDatabaseDetails(SecurityOrigin*, const String& name, const String& displayName, unsigned long estimatedSize);
     String fullPathForDatabase(SecurityOrigin*, const String& name, bool createIfDoesNotExist = true);
 
-    void addOpenDatabase(DatabaseBackend*);
-    void removeOpenDatabase(DatabaseBackend*);
-    void getOpenDatabases(SecurityOrigin*, const String& name, HashSet<RefPtr<DatabaseBackend> >* databases);
+    void addOpenDatabase(DatabaseBackendBase*);
+    void removeOpenDatabase(DatabaseBackendBase*);
+    void getOpenDatabases(SecurityOrigin*, const String& name, HashSet<RefPtr<DatabaseBackendBase> >* databases);
 
-    unsigned long long getMaxSizeForDatabase(const DatabaseBackend*);
-    void databaseChanged(DatabaseBackend*);
+    unsigned long long getMaxSizeForDatabase(const DatabaseBackendBase*);
 
     void interruptAllDatabasesForContext(const DatabaseBackendContext*);
 
@@ -115,13 +114,12 @@ public:
 
     bool hasEntryForOrigin(SecurityOrigin*);
 
-    void doneCreatingDatabase(DatabaseBackend*);
+    void doneCreatingDatabase(DatabaseBackendBase*);
 
 private:
     bool hasEntryForOriginNoLock(SecurityOrigin* origin);
     String fullPathForDatabaseNoLock(SecurityOrigin*, const String& name, bool createIfDoesNotExist);
     bool databaseNamesForOriginNoLock(SecurityOrigin* origin, Vector<String>& resultVector);
-    unsigned long long usageForOriginNoLock(SecurityOrigin* origin);
     unsigned long long quotaForOriginNoLock(SecurityOrigin* origin);
 
     String trackerDatabasePath() const;
@@ -141,7 +139,7 @@ private:
 
     bool deleteDatabaseFile(SecurityOrigin*, const String& name);
 
-    typedef HashSet<DatabaseBackend*> DatabaseSet;
+    typedef HashSet<DatabaseBackendBase*> DatabaseSet;
     typedef HashMap<String, DatabaseSet*> DatabaseNameMap;
     typedef HashMap<RefPtr<SecurityOrigin>, DatabaseNameMap*> DatabaseOriginMap;
 
@@ -184,16 +182,16 @@ private:
 public:
     void closeDatabasesImmediately(const String& originIdentifier, const String& name);
 
-    void prepareToOpenDatabase(DatabaseBackend*);
-    void failedToOpenDatabase(DatabaseBackend*);
+    void prepareToOpenDatabase(DatabaseBackendBase*);
+    void failedToOpenDatabase(DatabaseBackendBase*);
 
 private:
-    typedef HashSet<DatabaseBackend*> DatabaseSet;
+    typedef HashSet<DatabaseBackendBase*> DatabaseSet;
     typedef HashMap<String, DatabaseSet*> DatabaseNameMap;
     typedef HashMap<String, DatabaseNameMap*> DatabaseOriginMap;
     class CloseOneDatabaseImmediatelyTask;
 
-    void closeOneDatabaseImmediately(const String& originIdentifier, const String& name, DatabaseBackend*);
+    void closeOneDatabaseImmediately(const String& originIdentifier, const String& name, DatabaseBackendBase*);
 
     Mutex m_openDatabaseMapGuard;
     mutable OwnPtr<DatabaseOriginMap> m_openDatabaseMap;

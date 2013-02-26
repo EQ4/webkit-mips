@@ -29,7 +29,6 @@
 #include "EventHandler.h"
 
 #include "AXObjectCache.h"
-#include "AncestorChainWalker.h"
 #include "AutoscrollController.h"
 #include "CachedImage.h"
 #include "Chrome.h"
@@ -43,6 +42,7 @@
 #include "Editor.h"
 #include "EditorClient.h"
 #include "EventNames.h"
+#include "EventPathWalker.h"
 #include "ExceptionCodePlaceholder.h"
 #include "FloatPoint.h"
 #include "FloatRect.h"
@@ -707,7 +707,11 @@ bool EventHandler::handleMouseDraggedEvent(const MouseEventWithHitTestResults& e
 
     RenderObject* renderer = targetNode->renderer();
     if (!renderer) {
-        renderer = targetNode->parentNode() ? targetNode->parentNode()->renderer() : 0;
+        Node* parent = EventPathWalker::parent(targetNode);
+        if (!parent)
+            return false;
+
+        renderer = parent->renderer();
         if (!renderer || !renderer->isListBox())
             return false;
     }
@@ -1022,34 +1026,9 @@ HitTestResult EventHandler::hitTestResultAtPoint(const LayoutPoint& point, HitTe
     if (!m_frame->contentRenderer())
         return result;
 
-    HitTestRequest request(hitType);
+    // hitTestResultAtPoint is specifically used to hitTest into all frames, thus it always allows child frame content.
+    HitTestRequest request(hitType | HitTestRequest::AllowChildFrameContent);
     m_frame->contentRenderer()->hitTest(request, result);
-
-    while (true) {
-        Node* n = result.innerNode();
-        if (!result.isOverWidget() || !n || !n->renderer() || !n->renderer()->isWidget())
-            break;
-        RenderWidget* renderWidget = toRenderWidget(n->renderer());
-        Widget* widget = renderWidget->widget();
-        if (!widget || !widget->isFrameView())
-            break;
-        Frame* frame = static_cast<HTMLFrameElementBase*>(n)->contentFrame();
-        if (!frame || !frame->contentRenderer())
-            break;
-        FrameView* view = static_cast<FrameView*>(widget);
-        LayoutPoint widgetPoint(result.localPoint().x() + view->scrollX() - renderWidget->borderLeft() - renderWidget->paddingLeft(), 
-            result.localPoint().y() + view->scrollY() - renderWidget->borderTop() - renderWidget->paddingTop());
-        HitTestResult widgetHitTestResult(widgetPoint, padding.height(), padding.width(), padding.height(), padding.width());
-        widgetHitTestResult.setPointInMainFrame(result.pointInMainFrame());
-        frame->contentRenderer()->hitTest(request, widgetHitTestResult);
-        result = widgetHitTestResult;
-
-        if (request.allowsFrameScrollbars()) {
-            Scrollbar* eventScrollbar = view->scrollbarAtPoint(roundedIntPoint(point));
-            if (eventScrollbar)
-                result.setScrollbar(eventScrollbar);
-        }
-    }
 
     if (!request.allowsShadowContent())
         result.setToNonShadowAncestor();
@@ -1825,7 +1804,10 @@ bool EventHandler::handleMouseReleaseEvent(const PlatformMouseEvent& mouseEvent)
 
     if (m_lastScrollbarUnderMouse) {
         invalidateClick();
-        return m_lastScrollbarUnderMouse->mouseUp(mouseEvent);
+        m_lastScrollbarUnderMouse->mouseUp(mouseEvent);
+        bool cancelable = true;
+        bool setUnder = false;
+        return !dispatchMouseEvent(eventNames().mouseupEvent, m_lastNodeUnderMouse.get(), cancelable, m_clickCount, mouseEvent, setUnder);
     }
 
     HitTestRequest request(HitTestRequest::Release);
@@ -1981,7 +1963,7 @@ bool EventHandler::updateDragAndDrop(const PlatformMouseEvent& event, Clipboard*
     // Drag events should never go to text nodes (following IE, and proper mouseover/out dispatch)
     RefPtr<Node> newTarget = mev.targetNode();
     if (newTarget && newTarget->isTextNode())
-        newTarget = newTarget->parentNode();
+        newTarget = EventPathWalker::parent(newTarget.get());
 
     m_autoscrollController->updateDragAndDrop(newTarget.get(), event.position(), event.timestamp());
 
@@ -2119,11 +2101,8 @@ void EventHandler::updateMouseEventTargetNode(Node* targetNode, const PlatformMo
         result = m_capturingMouseEventsNode.get();
     else {
         // If the target node is a text node, dispatch on the parent node - rdar://4196646
-        if (result && result->isTextNode()) {
-            AncestorChainWalker walker(result);
-            walker.parent();
-            result = walker.get();
-        }
+        if (result && result->isTextNode())
+            result = EventPathWalker::parent(result);
     }
     m_nodeUnderMouse = result;
 #if ENABLE(SVG)
@@ -2331,11 +2310,8 @@ bool EventHandler::handleWheelEvent(const PlatformWheelEvent& e)
 
     Node* node = result.innerNode();
     // Wheel events should not dispatch to text nodes.
-    if (node && node->isTextNode()) {
-        AncestorChainWalker walker(node);
-        walker.parent();
-        node = walker.get();
-    }
+    if (node && node->isTextNode())
+        node = EventPathWalker::parent(node);
 
     bool isOverWidget;
     if (useLatchedWheelEventNode) {
@@ -2640,7 +2616,8 @@ bool EventHandler::passGestureEventToWidgetIfPossible(const PlatformGestureEvent
 
 static const Node* closestScrollableNodeCandidate(const Node* node)
 {
-    for (const Node* scrollableNode = node; scrollableNode; scrollableNode = scrollableNode->parentNode()) {
+    for (EventPathWalker walker(node); walker.node(); walker.moveToParent()) {
+        Node* scrollableNode = walker.node();
         if (scrollableNode->isDocumentNode())
             return scrollableNode;
         RenderObject* renderer = scrollableNode->renderer();
@@ -3875,7 +3852,7 @@ bool EventHandler::handleTouchEvent(const PlatformTouchEvent& event)
 
             // Touch events should not go to text nodes
             if (node->isTextNode())
-                node = node->parentNode();
+                node = EventPathWalker::parent(node);
 
             if (InspectorInstrumentation::handleTouchEvent(m_frame->page(), node))
                 return true;

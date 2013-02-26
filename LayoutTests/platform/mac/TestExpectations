@@ -144,11 +144,6 @@ http/tests/security/cross-origin-worker-indexeddb-allowed.html
 http/tests/security/cross-origin-worker-indexeddb.html
 http/tests/security/no-indexeddb-from-sandbox.html
 
-# Remove from list after enabling CANVAS_PATH
-fast/canvas/canvas-currentPath.html
-fast/canvas/canvas-path-constructors.html
-fast/canvas/canvas-currentPath-crash.html
-
 # This port doesn't support DeviceMotion or DeviceOrientation.
 fast/dom/DeviceMotion
 fast/dom/DeviceOrientation
@@ -458,7 +453,7 @@ accessibility/corresponding-control-deleted-crash.html
 
 # ENABLE(TEMPLATE_ELEMENT) is disabled.
 fast/dom/HTMLTemplateElement
-html5lib/run-template.html
+html5lib/generated/run-template.html
 fast/xsl/xslt-xhtml-template.xml
 fast/xpath/xpath-template-element.html
 fast/xsl/xslt-processor-template.html
@@ -810,9 +805,6 @@ svg/filters/color-space-conversion.svg
 svg/filters/container-with-filters.svg
 svg/filters/feSpecularLight-premultiplied.svg
 
-# New test, needs platform results
-webkit.org/b/106221 svg/filters/filter-hidden-content.svg [ Failure Pass ]
-
 # https://bugs.webkit.org/show_bug.cgi?id=89680
 fast/canvas/canvas-imageSmoothingEnabled-repaint.html
 
@@ -1120,6 +1112,9 @@ webkit.org/b/76489 compositing/webgl/webgl-reflection.html [ ImageOnlyFailure ]
 webkit.org/b/76439 [ Debug ] fast/dom/shadow/content-element-api.html [ Failure ]
 webkit.org/b/76439 [ Debug ] fast/dom/shadow/content-element-outside-shadow.html [ Failure ]
 
+# ENABLE(CUSTOM_ELEMENTS) is disabled.
+fast/dom/custom
+
 # CSS Variables are not yet enabled.
 webkit.org/b/85580 fast/css/variables
 webkit.org/b/85580 inspector/styles/variables
@@ -1240,6 +1235,12 @@ webkit.org/b/90951 fast/text/shaping
 webkit.org/b/101177 svg/dynamic-updates/SVGUseElement-dom-requiredFeatures.html [ ImageOnlyFailure Pass ]
 webkit.org/b/101177 svg/repaint/inner-svg-change-viewBox.svg [ ImageOnlyFailure Pass ]
 
+# These tests need to be rebaselined after https://bugs.webkit.org/show_bug.cgi?id=99984
+webkit.org/b/99984 svg/as-image/image-preserveAspectRatio-all.svg [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/filters/feImage-preserveAspectRatio-all.svg [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/dynamic-updates/SVGFEImageElement-dom-preserveAspectRatio-attr.html [ ImageOnlyFailure Pass ]
+webkit.org/b/99984 svg/dynamic-updates/SVGFEImageElement-svgdom-preserveAspectRatio-prop.html [ ImageOnlyFailure Pass ]
+
 # Needs rebaseline after bug https://bugs.webkit.org/show_bug.cgi?id=104462
 webkit.org/b/98687 fast/css-generated-content/table-row-group-to-inline.html [ Failure ]
 webkit.org/b/104595 fast/css/empty-generated-content.html [ Failure ]
@@ -1297,6 +1298,9 @@ webkit.org/b/99221 fast/js/random-array-gc-stress.html [ Pass Timeout ]
 
 # User Timing is not enable yet. so skip it.
 webkit.org/b/84893 http/tests/w3c/webperf/submission/Intel/user-timing [ Skip ]
+
+# Verified passing, so override generic skip
+webkit.org/b/89235 css3/line-break [ Pass ]
 
 # Expected to fail until WebGL extension implementation lands
 webkit.org/b/98257 fast/canvas/webgl/oes-element-index-uint.html [ Failure Pass ]
@@ -1397,6 +1401,13 @@ webkit.org/b/106415 fast/workers/worker-close-more.html [ Pass Failure ]
 webkit.org/b/106415 fast/workers/worker-document-leak.html [ Pass Failure ] 
 webkit.org/b/106415 fast/workers/worker-lifecycle.html [ Pass Failure ]
 
+# Needs rebaseline after https://bugs.webkit.org/show_bug.cgi?id=70634
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-background-color.html [ Failure ]
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-layer-opacity.html [ Failure ]
+webkit.org/b/109507 compositing/contents-opaque/contents-opaque-layer-transform.html [ Failure ]
+webkit.org/b/109507 compositing/rtl/rtl-fixed.html [ Failure ]
+webkit.org/b/109507 compositing/rtl/rtl-fixed-overflow.html [ Failure ]
+
 # Spellchecker behavior tests.
 webkit.org/b/108370 editing/spelling/spelling-double-clicked-word.html [ Skip ]
 webkit.org/b/108370 editing/spelling/spelling-double-clicked-word-with-underscores.html [ Skip ]
@@ -1409,43 +1420,10 @@ webkit.org/b/108370 editing/spelling/spelling-subword-selection.html [ Skip ]
 webkit.org/b/108370 editing/spelling/spelling-with-punctuation-selection.html [ Skip ]
 webkit.org/b/108370 editing/spelling/spelling-with-underscore-selection.html [ Skip ]
 webkit.org/b/108370 editing/spelling/spelling-with-whitespace-selection.html [ Skip ]
+webkit.org/b/108370 editing/spelling/spelling-changed-text.html [ Skip ]
 
 webkit.org/b/108257 [ Debug ] compositing/overflow/composited-scrolling-creates-a-stacking-container.html [ Crash ]
 webkit.org/b/108257 [ Debug ] compositing/overflow/automatically-opt-into-composited-scrolling.html [ Crash ]
-
-# Needs rebaseline after https://webkit.org/b/109985
-webkit.org/b/109985 svg/W3C-SVG-1.1/filters-offset-01-b.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/custom/visibility-override-filter.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-in-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-in2-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k1-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k2-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k3-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-k4-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-dom-operator-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-in-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-in2-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k1-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k2-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k3-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-k4-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFECompositeElement-svgdom-operator-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-dom-flood-color-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-dom-flood-opacity-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-inherit-flood-color.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-svgdom-flood-color-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFEFloodElement-svgdom-flood-opacity-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFETileElement-dom-in-attr.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/dynamic-updates/SVGFETileElement-svgdom-in-prop.html [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/big-sized-filter-2.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/feImage-reference-svg-primitive.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/filter-on-tspan.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/filterRes1.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/filterRes3.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/parent-children-with-same-filter.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/shadow-on-filter.svg [ ImageOnlyFailure ]
-webkit.org/b/109985 svg/filters/shadow-on-rect-with-filter.svg [ ImageOnlyFailure ]
-
 
 # Rebaseline required after https://webkit.org/b/95772
 webkit.org/b/109209 fast/text/international/bidi-ignored-for-first-child-inline.html [ Failure ]
@@ -1457,4 +1435,8 @@ webkit.org/b/110027 compositing/transitions/transform-on-large-layer.html [ Pass
 
 webkit.org/b/110173 media/video-controls-captions-trackmenu.html [ Crash Pass ]
 
-webkit.org/b/110186 inspector/editor/brace-matcher.html [ Pass Failure ]
+webkit.org/b/110186 inspector-protocol/page/javascriptDialogEvents.html [ Skip ]
+
+webkit.org/b/110554 http/tests/security/feed-urls-from-remote.html [ Failure ]
+webkit.org/b/110555 fast/canvas/canvas-currentPath.html [ Failure ]
+webkit.org/b/110555 fast/canvas/canvas-path-constructors.html [ Failure ]

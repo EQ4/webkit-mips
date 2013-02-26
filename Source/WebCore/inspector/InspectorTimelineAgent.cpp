@@ -111,6 +111,11 @@ static const char GCEvent[] = "GCEvent";
 static const char RequestAnimationFrame[] = "RequestAnimationFrame";
 static const char CancelAnimationFrame[] = "CancelAnimationFrame";
 static const char FireAnimationFrame[] = "FireAnimationFrame";
+
+static const char WebSocketCreate[] = "WebSocketCreate";
+static const char WebSocketSendHandshakeRequest[] = "WebSocketSendHandshakeRequest";
+static const char WebSocketReceiveHandshakeResponse[] = "WebSocketReceiveHandshakeResponse";
+static const char WebSocketDestroy[] = "WebSocketDestroy";
 }
 
 void InspectorTimelineAgent::pushGCEventRecords()
@@ -491,6 +496,45 @@ void InspectorTimelineAgent::didProcessTask()
     didCompleteCurrentRecord(TimelineRecordType::Program);
 }
 
+#if ENABLE(WEB_SOCKETS)
+void InspectorTimelineAgent::didCreateWebSocket(unsigned long identifier, const KURL& url, const String& protocol, Frame* frame)
+{
+    pushGCEventRecords();
+    RefPtr<InspectorObject> record = TimelineRecordFactory::createGenericRecord(WTF::currentTimeMS(), m_maxCallStackDepth);
+    record->setObject("data", TimelineRecordFactory::createWebSocketCreateData(identifier, url, protocol));
+    String frameId;
+    if (frame && m_pageAgent)
+        frameId = m_pageAgent->frameId(frame);
+    addRecordToTimeline(record.release(), TimelineRecordType::WebSocketCreate, frameId);
+}
+
+void InspectorTimelineAgent::addWebSocketRecord(unsigned long identifier, Frame* frame, const String& type)
+{
+    pushGCEventRecords();
+    RefPtr<InspectorObject> record = TimelineRecordFactory::createGenericRecord(WTF::currentTimeMS(), m_maxCallStackDepth);
+    record->setObject("data", TimelineRecordFactory::createGenericWebSocketData(identifier));
+    String frameId;
+    if (frame && m_pageAgent)
+        frameId = m_pageAgent->frameId(frame);
+    addRecordToTimeline(record.release(), type, frameId);
+}
+
+void InspectorTimelineAgent::willSendWebSocketHandshakeRequest(unsigned long identifier, Frame* frame)
+{
+    addWebSocketRecord(identifier, frame, TimelineRecordType::WebSocketSendHandshakeRequest);
+}
+
+void InspectorTimelineAgent::didReceiveWebSocketHandshakeResponse(unsigned long identifier, Frame* frame)
+{
+    addWebSocketRecord(identifier, frame, TimelineRecordType::WebSocketReceiveHandshakeResponse);
+}
+
+void InspectorTimelineAgent::didDestroyWebSocket(unsigned long identifier, Frame* frame)
+{
+    addWebSocketRecord(identifier, frame, TimelineRecordType::WebSocketDestroy);
+}
+#endif // ENABLE(WEB_SOCKETS)
+
 void InspectorTimelineAgent::addRecordToTimeline(PassRefPtr<InspectorObject> record, const String& type, const String& frameId)
 {
     commitFrameRecord();
@@ -604,6 +648,17 @@ void InspectorTimelineAgent::appendRecord(PassRefPtr<InspectorObject> data, cons
     if (frame && m_pageAgent)
         frameId = m_pageAgent->frameId(frame);
     addRecordToTimeline(record.release(), type, frameId);
+}
+
+void InspectorTimelineAgent::appendBackgroundThreadRecord(PassRefPtr<InspectorObject> data, const String& type, double startTime, double endTime, const String& threadName)
+{
+    RefPtr<InspectorObject> record = TimelineRecordFactory::createGenericRecord(timestampFromMicroseconds(startTime), 0);
+    record->setObject("data", data);
+    record->setString("type", type);
+    record->setString("thread", threadName);
+    record->setNumber("endTime", timestampFromMicroseconds(endTime));
+    RefPtr<TypeBuilder::Timeline::TimelineEvent> recordChecked = TypeBuilder::Timeline::TimelineEvent::runtimeCast(record.release());
+    m_frontend->eventRecorded(recordChecked.release());
 }
 
 void InspectorTimelineAgent::pushCurrentRecord(PassRefPtr<InspectorObject> data, const String& type, bool captureCallStack, Frame* frame, bool hasLowLevelDetails)

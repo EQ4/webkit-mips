@@ -25422,11 +25422,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\Modules\webdatabase\DatabaseBackendAsync.cpp"
+					RelativePath="..\Modules\webdatabase\DatabaseBackendBase.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\Modules\webdatabase\DatabaseBackendAsync.h"
+					RelativePath="..\Modules\webdatabase\DatabaseBackendBase.h"
 					>
 				</File>
 				<File
@@ -25527,22 +25527,6 @@
 				</File>
 				<File
 					RelativePath="..\Modules\webdatabase\DOMWindowWebDatabase.h"
-					>
-				</File>
-				<File
-					RelativePath="..\Modules\webdatabase\OriginQuotaManager.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\Modules\webdatabase\OriginQuotaManager.h"
-					>
-				</File>
-				<File
-					RelativePath="..\Modules\webdatabase\OriginUsageRecord.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\Modules\webdatabase\OriginUsageRecord.h"
 					>
 				</File>
 				<File
@@ -76100,30 +76084,6 @@
 			</File>
 			<File
 				RelativePath="..\inspector\InspectorDOMStorageAgent.h"
-				>
-			</File>
-			<File
-				RelativePath="..\inspector\InspectorDOMStorageResource.cpp"
-				>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Production|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\inspector\InspectorDOMStorageResource.h"
 				>
 			</File>
 			<File

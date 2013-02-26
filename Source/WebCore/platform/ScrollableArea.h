@@ -167,6 +167,9 @@ public:
     // NOTE: Only called from Internals for testing.
     void setScrollOffsetFromInternals(const IntPoint&);
 
+    static IntPoint constrainScrollPositionForOverhang(const IntRect& visibleContentRect, const IntSize& contentsSize, const IntPoint& scrollPosition, const IntPoint& scrollOrigin);
+    IntPoint constrainScrollPositionForOverhang(const IntPoint& scrollPosition);
+
     // Let subclasses provide a way of asking for and servicing scroll
     // animations.
     virtual bool scheduleAnimation() { return false; }
@@ -190,6 +193,8 @@ protected:
     virtual void invalidateScrollCornerRect(const IntRect&) = 0;
 
 #if USE(ACCELERATED_COMPOSITING)
+    friend class ScrollingCoordinator;
+    virtual GraphicsLayer* layerForScrolling() const { return 0; }
     virtual GraphicsLayer* layerForHorizontalScrollbar() const { return 0; }
     virtual GraphicsLayer* layerForVerticalScrollbar() const { return 0; }
     virtual GraphicsLayer* layerForScrollCorner() const { return 0; }

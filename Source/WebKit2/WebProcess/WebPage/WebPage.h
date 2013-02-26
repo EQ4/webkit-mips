@@ -315,6 +315,9 @@ public:
 
     void setSuppressScrollbarAnimations(bool);
 
+    void setRubberBandsAtBottom(bool);
+    void setRubberBandsAtTop(bool);
+
     void setPaginationMode(uint32_t /* WebCore::Pagination::Mode */);
     void setPaginationBehavesLikeColumns(bool);
     void setPageLength(double);
@@ -374,10 +377,7 @@ public:
 #if USE(TILED_BACKING_STORE)
     void pageDidRequestScroll(const WebCore::IntPoint&);
     void setFixedVisibleContentRect(const WebCore::IntRect&);
-    void resizeToContentsIfNeeded();
     void sendViewportAttributesChanged();
-    void setViewportSize(const WebCore::IntSize&);
-    WebCore::IntSize viewportSize() const { return m_viewportSize; }
 #endif
 
 #if ENABLE(CONTEXT_MENUS)
@@ -721,7 +721,7 @@ private:
     void drawPagesToPDFFromPDFDocument(CGContextRef, PDFDocument *, const PrintInfo&, uint32_t first, uint32_t count);
 #endif
 
-    void viewExposedRectChanged(const WebCore::IntRect& exposedRect);
+    void viewExposedRectChanged(const WebCore::FloatRect& exposedRect);
     void setMainFrameIsScrollable(bool);
 
     void unapplyEditCommand(uint64_t commandID);
@@ -870,10 +870,6 @@ private:
     InjectedBundlePageFullScreenClient m_fullScreenClient;
 #endif
     InjectedBundlePageDiagnosticLoggingClient m_logDiagnosticMessageClient;
-
-#if USE(TILED_BACKING_STORE)
-    WebCore::IntSize m_viewportSize;
-#endif
 
     FindController m_findController;
 #if ENABLE(TOUCH_EVENTS) && PLATFORM(QT)

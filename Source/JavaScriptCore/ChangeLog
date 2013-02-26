@@ -1,3 +1,1163 @@
+2013-02-26  Andreas Kling  <akling@apple.com>
+
+        Unused Structure property tables waste 14MB on Membuster.
+        <http://webkit.org/b/110854>
+        <rdar://problem/13292104>
+
+        Reviewed by Filip Pizlo.
+
+        Turn PropertyTable into a GC object and have Structure drop unpinned tables when marking.
+        14 MB progression on Membuster3.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.gypi:
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCore.vcproj:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * Target.pri:
+
+            Added PropertyTable.cpp.
+
+        * runtime/PropertyTable.cpp: Added.
+        (JSC::PropertyTable::create):
+        (JSC::PropertyTable::clone):
+        (JSC::PropertyTable::PropertyTable):
+        (JSC::PropertyTable::destroy):
+        (JSC::PropertyTable::~PropertyTable):
+        (JSC::PropertyTable::visitChildren):
+
+            Moved marking of property table values here from Structure::visitChildren().
+
+        * runtime/StructureInlines.h:
+        (JSC::Structure::putWillGrowOutOfLineStorage):
+        (JSC::Structure::checkOffsetConsistency):
+
+            Moved these to StructureInlines.h to break header dependency cycle between Structure/PropertyTable.
+
+        * runtime/Structure.cpp:
+        (JSC::Structure::visitChildren):
+
+            Null out m_propertyTable if the table is unpinned. This'll cause the table to get GC'd.
+
+        (JSC::Structure::materializePropertyMap):
+        (JSC::Structure::addPropertyTransition):
+        (JSC::Structure::changePrototypeTransition):
+        (JSC::Structure::despecifyFunctionTransition):
+        (JSC::Structure::attributeChangeTransition):
+        (JSC::Structure::toDictionaryTransition):
+        (JSC::Structure::preventExtensionsTransition):
+        (JSC::Structure::nonPropertyTransition):
+        (JSC::Structure::copyPropertyTable):
+        (JSC::Structure::copyPropertyTableForPinning):
+        (JSC::Structure::putSpecificValue):
+        (JSC::Structure::createPropertyMap):
+        * runtime/Structure.h:
+        (Structure):
+        * runtime/JSGlobalData.cpp:
+        (JSC::JSGlobalData::JSGlobalData):
+        * runtime/JSGlobalData.h:
+        (JSGlobalData):
+        * runtime/PropertyMapHashTable.h:
+        (PropertyTable):
+        (JSC::PropertyTable::createStructure):
+        (JSC::PropertyTable::copy):
+
+2013-02-26  Jocelyn Turcotte  <jocelyn.turcotte@digia.com>
+
+        Implement JIT on Windows 64 bits
+        https://bugs.webkit.org/show_bug.cgi?id=107965
+
+        Reviewed by Simon Hausmann.
+
+        1. MSVC doesn't support inline assembly for 64 bits, implements the trampoline in a separate ASM file.
+
+        2. Windows 64 bits has a different calling convention than other OSes following the AMD64 ABI.
+        Differences that we have to handle here:
+        - Registers passed parameters are RCX, RDX, R8 and R9 instead of RDI, RSI, RDX, RCX, R8 and R9
+        - RDI and RSI must be preserved by callee
+        - Only return values <= 8 bytes can be returned by register (RDX can't be used to return a second word)
+        - There is no red-zone after RIP on the stack, but instead 4 reserved words before it
+
+        * Target.pri:
+        * jit/JITStubs.cpp:
+        * jit/JITStubs.h:
+        (JSC):
+        (JITStackFrame):
+        (JSC::JITStackFrame::returnAddressSlot):
+        * jit/JITStubsMSVC64.asm: Added.
+        * jit/JSInterfaceJIT.h:
+        (JSInterfaceJIT):
+        * jit/ThunkGenerators.cpp:
+        (JSC::nativeForGenerator):
+        * yarr/YarrJIT.cpp:
+        (YarrGenerator):
+        (JSC::Yarr::YarrGenerator::generateEnter):
+        (JSC::Yarr::YarrGenerator::generateReturn):
+
+2013-02-26  Oliver Hunt  <oliver@apple.com>
+
+        Kill another analyzer warning in javascriptcore
+        https://bugs.webkit.org/show_bug.cgi?id=110802
+
+        Reviewed by Benjamin Poulain.
+
+        Add null checks.
+        
+        * profiler/LegacyProfiler.cpp:
+        (JSC::LegacyProfiler::startProfiling):
+        (JSC::LegacyProfiler::stopProfiling):
+
+2013-02-26  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144004.
+        http://trac.webkit.org/changeset/144004
+        https://bugs.webkit.org/show_bug.cgi?id=110858
+
+        This iOS change is outdated (Requested by notbenjamin on
+        #webkit).
+
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::BytecodeGenerator):
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::BytecodeGenerator::emitNode):
+        (JSC::BytecodeGenerator::emitNodeInConditionContext):
+        (BytecodeGenerator):
+        * parser/Parser.cpp:
+        (JSC::::Parser):
+        * parser/Parser.h:
+        (JSC::Parser::canRecurse):
+        (Parser):
+
+2013-02-25  Filip Pizlo  <fpizlo@apple.com>
+
+        REGRESSION(r143654): some jquery test asserts on 32 bit debug build
+        https://bugs.webkit.org/show_bug.cgi?id=110756
+
+        Reviewed by Geoffrey Garen.
+        
+        TypeOf does speculations manually, so it should mark its JSValueOperand as doing ManualOperandSpeculation.
+
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-25  Benjamin Poulain  <bpoulain@apple.com>
+
+        [JSC] Upstream iOS Stack bound checking
+        https://bugs.webkit.org/show_bug.cgi?id=110813
+
+        Reviewed by Filip Pizlo.
+
+        On iOS, the StackBounds cannot be cached because the stack
+        can be in one of two threads (the web thread or the UI thread).
+
+        We simply always consider the current stack bound when testing
+        stack boundaries.
+
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::BytecodeGenerator):
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::BytecodeGenerator::emitNode):
+        (JSC::BytecodeGenerator::emitNodeInConditionContext):
+        (BytecodeGenerator):
+        * parser/Parser.cpp:
+        (JSC::::Parser):
+        * parser/Parser.h:
+        (JSC::Parser::canRecurse):
+        (Parser):
+
+2013-02-25  Michael Saboff  <msaboff@apple.com>
+
+        For JSVALUE32_64, maxOffsetRelativeToPatchedStorage() doesn't compute the maximum negative offset
+        https://bugs.webkit.org/show_bug.cgi?id=110828
+
+        Reviewed by Oliver Hunt.
+
+        * runtime/JSObject.h:
+        (JSC::maxOffsetRelativeToPatchedStorage): Only add the OBJECT_OFFSETOF(tag) for positive offsets.
+        That way this function will return the offset farthest from 0 needed to access either the payload
+        or tag.
+
+2013-02-25  Jeffrey Pfau  <jpfau@apple.com>
+
+        Optionally partition cache to prevent using cache for tracking
+        https://bugs.webkit.org/show_bug.cgi?id=110269
+
+        Reviewed by Maciej Stachowiak.
+
+        * Configurations/FeatureDefines.xcconfig: Add defines for cache partitioning and public suffix list usage
+
+2013-02-25  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. VS2010 solution build fix.
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorCommon.props:
+
+2013-02-24  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG::Edge should have more bits for UseKind, and DFG::Allocator should be simpler
+        https://bugs.webkit.org/show_bug.cgi?id=110722
+
+        Reviewed by Oliver Hunt.
+        
+        This rolls out the DFG::Allocator part of http://trac.webkit.org/changeset/143654,
+        and changes Edge to have more room for UseKinds and possibly other things.
+        
+        This is performance-neutral on both 32-bit and 64-bit. It reduces the size of
+        DFG::Node on 64-bit (by virtue of getting rid of the 16-byte alignment of Node)
+        and increases it slightly on 32-bit (by 4 bytes total - 16-byte alignment led to
+        80 bytes, but the base size of Node plus the 12 bytes of new m_encodedWords in
+        Edge gets 84 bytes). But, it will mean that we don't have to increase Node by
+        another 16 bytes if we ever want to add more UseKinds or other things to Edge.
+
+        * dfg/DFGAllocator.h:
+        (DFG):
+        (Allocator):
+        (JSC::DFG::Allocator::Region::headerSize):
+        (JSC::DFG::Allocator::Region::numberOfThingsPerRegion):
+        (JSC::DFG::Allocator::Region::data):
+        (JSC::DFG::Allocator::Region::isInThisRegion):
+        (JSC::DFG::::Allocator):
+        (JSC::DFG::::~Allocator):
+        (JSC::DFG::::allocate):
+        (JSC::DFG::::free):
+        (JSC::DFG::::freeAll):
+        (JSC::DFG::::reset):
+        (JSC::DFG::::indexOf):
+        (JSC::DFG::::allocatorOf):
+        (JSC::DFG::::bumpAllocate):
+        (JSC::DFG::::freeListAllocate):
+        (JSC::DFG::::allocateSlow):
+        (JSC::DFG::::freeRegionsStartingAt):
+        (JSC::DFG::::startBumpingIn):
+        * dfg/DFGEdge.h:
+        (JSC::DFG::Edge::Edge):
+        (Edge):
+        (JSC::DFG::Edge::node):
+        (JSC::DFG::Edge::setNode):
+        (JSC::DFG::Edge::useKindUnchecked):
+        (JSC::DFG::Edge::setUseKind):
+        (JSC::DFG::Edge::operator==):
+        (JSC::DFG::Edge::operator!=):
+        (JSC::DFG::Edge::makeWord):
+        * dfg/DFGNodeAllocator.h:
+        (DFG):
+
+2013-02-22  Filip Pizlo  <fpizlo@apple.com>
+
+        The DFG special case checks for isCreatedThisArgument are fragile
+        https://bugs.webkit.org/show_bug.cgi?id=110535
+
+        Reviewed by Oliver Hunt.
+        
+        There may be many situations in which we want to force a variable to never be
+        unboxed. Capturing is one such case, and the created this argument is another.
+        Previously all code that dealt with this issue had to query both scenarios.
+        
+        Now DFG::VariableAccessData knows these things. You just have to ask
+        VariableAccessData for whether a variable should be unboxed. Anyone wishing to
+        force a variable to never be unboxed just tells VariableAccessData.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::initialize):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        (DFG):
+        * dfg/DFGCFGSimplificationPhase.cpp:
+        (CFGSimplificationPhase):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        * dfg/DFGGraph.h:
+        (Graph):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::doRoundOfDoubleVoting):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGUnificationPhase.cpp:
+        (JSC::DFG::UnificationPhase::run):
+        * dfg/DFGVariableAccessData.h:
+        (JSC::DFG::VariableAccessData::VariableAccessData):
+        (JSC::DFG::VariableAccessData::mergeIsCaptured):
+        (JSC::DFG::VariableAccessData::mergeShouldNeverUnbox):
+        (VariableAccessData):
+        (JSC::DFG::VariableAccessData::shouldNeverUnbox):
+        (JSC::DFG::VariableAccessData::shouldUnboxIfPossible):
+        (JSC::DFG::VariableAccessData::shouldUseDoubleFormat):
+        (JSC::DFG::VariableAccessData::tallyVotesForShouldUseDoubleFormat):
+
+2013-02-25  Geoffrey Garen  <ggaren@apple.com>
+
+        Do one lookup per code cache insertion instead of two
+        https://bugs.webkit.org/show_bug.cgi?id=110674
+
+        Reviewed by Sam Weinig.
+
+        Deployed the idiomatic "add null value" trick to avoid a second hash
+        lookup when inserting an item.
+
+        * runtime/CodeCache.cpp:
+        (JSC::CodeCacheMap::pruneSlowCase): Factored this into a helper function
+        to improve clarity and get some code off the hot path.
+
+        (JSC::CodeCache::getCodeBlock):
+        (JSC::CodeCache::getFunctionExecutableFromGlobalCode): Use the add() API
+        to avoid two hash lookups. Be sure to remove items if parsing fails,
+        otherwise we'll leave nulls in the table. (I'm guessing that caching parse
+        errors is not a win.)
+
+        * runtime/CodeCache.h:
+        (JSC::SourceCodeValue::SourceCodeValue):
+        (CodeCacheMap):
+        (JSC::CodeCacheMap::add): Combined find() and set() into add().
+
+        (JSC::CodeCacheMap::remove):
+        (JSC::CodeCacheMap::age):
+        (JSC::CodeCacheMap::prune): Refactored to support above changes.
+
+2013-02-25  Carlos Garcia Campos  <cgarcia@igalia.com>
+
+        [BlackBerry][ARM] Fix cast-align warnings in JavaScriptCore
+        https://bugs.webkit.org/show_bug.cgi?id=110738
+
+        Reviewed by Rob Buis.
+
+        Use reinterpret_cast_ptr instead of reinterpret_cast for
+        pointers.
+
+        * dfg/DFGOperations.cpp:
+        * heap/CopiedBlock.h:
+        (JSC::CopiedBlock::zeroFillWilderness):
+        * heap/WeakBlock.h:
+        (JSC::WeakBlock::asWeakImpl):
+        (JSC::WeakBlock::asFreeCell):
+        (JSC::WeakBlock::weakImpls):
+        * heap/WeakImpl.h:
+        (JSC::WeakImpl::asWeakImpl):
+        * interpreter/JSStack.cpp:
+        (JSC::JSStack::disableErrorStackReserve):
+        * interpreter/JSStack.h:
+        (JSC::JSStack::reservationEnd):
+        * runtime/ArrayStorage.h:
+        (JSC::ArrayStorage::from):
+        * runtime/Butterfly.h:
+        (JSC::Butterfly::indexingPayload):
+        * runtime/IndexingHeader.h:
+        (JSC::IndexingHeader::propertyStorage):
+        * runtime/JSActivation.h:
+        (JSC::JSActivation::tearOff):
+        (JSC::JSActivation::isTornOff):
+        (JSC::JSActivation::storage):
+
+2013-02-22  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG::SpeculativeJIT::speculateNumber() should just use SpeculateDoubleOperand instead of doing its own thing
+        https://bugs.webkit.org/show_bug.cgi?id=110659
+
+        Reviewed by Oliver Hunt and Mark Hahnenberg.
+        
+        This simplifies the code, and also has the effect that if speculateNumber() is called
+        prior to someone actually using the number in a double context, then the number will
+        already be up-converted to double and ready to go.
+
+        Previously if this ever came up, the subsequent use would have to again branch to see
+        if the value is tagged as int or tagged as double.
+
+        On the other hand, if you ever did speculateNumber() and then used the value as a
+        JSValue, this will be a slow down now.
+
+        I suspect that the former (speculateNumber() and then use as number) is more likely
+        than the latter (speculateNumber() and then use as JSValue).
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::speculateNumber):
+
+2013-02-22  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG FixupPhase should have one common hook for knowing if a node is ever being speculated a certain way
+        https://bugs.webkit.org/show_bug.cgi?id=110650
+
+        Reviewed by Mark Hahnenberg.
+        
+        Changes almost all calls to edge.setUseKind(kind) to be
+        setUseKindAndUnboxIfProfitable<kind>(edge). This will allow us to use the latter
+        as a hook for deciding which locals to unbox (webkit.org/b/110433).
+
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        (FixupPhase):
+        (JSC::DFG::FixupPhase::setUseKindAndUnboxIfProfitable):
+        (JSC::DFG::FixupPhase::fixIntEdge):
+        (JSC::DFG::FixupPhase::fixDoubleEdge):
+        (JSC::DFG::FixupPhase::attemptToMakeIntegerAdd):
+
+2013-02-22  Filip Pizlo  <fpizlo@apple.com>
+
+        REGRESSION(r143654): some fast/js test crashes on 32 bit build
+        https://bugs.webkit.org/show_bug.cgi?id=110590
+
+        Reviewed by Mark Hahnenberg.
+        
+        In compileValueToInt32, the refactoring in r143654 undid one of the fixes from
+        r143314 due to a merge goof.
+        
+        In speculateNumber, we were simply forgetting to indicate that we need a
+        ManualOperandSpeculation on a JSValueOperand. ManualOperandSpeculation should
+        be passed whenever you will be performing the type checks yourself rather than
+        using the operand class to do it for you.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileValueToInt32):
+        (JSC::DFG::SpeculativeJIT::speculateNumber):
+
+2013-02-22  Geoffrey Garen  <ggaren@apple.com>
+
+        Not reviewed.
+
+        Fix the 32-bit build by using the right data type in more places.
+
+        * runtime/CodeCache.h:
+        (CodeCacheMap):
+
+2013-02-22  Geoffrey Garen  <ggaren@apple.com>
+
+        Not reviewed.
+
+        Fix the 32-bit build by using the right data type.
+
+        * runtime/CodeCache.h:
+        (JSC::CodeCacheMap::find):
+
+2013-02-21  Geoffrey Garen  <ggaren@apple.com>
+
+        Code cache size should adapt to workload
+        https://bugs.webkit.org/show_bug.cgi?id=110560
+
+        Reviewed by Antti Koivisto.
+
+        (*) 5% PLT arithmetic mean speedup
+        (*) 10% PLT geometric mean speedup
+        (*) 3.4X microbenchmark speedup
+        (*) Reduces initial cache capacity by 16X
+
+        * runtime/CodeCache.cpp:
+        (JSC::CodeCache::CodeCache): Updated for interface change.
+
+        * runtime/CodeCache.h:
+        (JSC::SourceCodeValue::SourceCodeValue):
+        (SourceCodeValue): Turned the cache value into a struct so it can track its age.
+
+        (CodeCacheMap):
+        (JSC::CodeCacheMap::CodeCacheMap):
+        (JSC::CodeCacheMap::find):
+        (JSC::CodeCacheMap::set):
+        (JSC::CodeCacheMap::clear):
+        (JSC::CodeCacheMap::pruneIfNeeded):
+        (CodeCache): Grow and shrink in response to usage.
+
+2013-02-21  Jessie Berlin  <jberlin@apple.com>
+
+        Fix a typo that broke the 32 bit build.
+
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-21  Michael Saboff  <msaboff@apple.com>
+
+        25-30% regression in V8 RayTrace test in 32 bit builds with JIT disabled
+        https://bugs.webkit.org/show_bug.cgi?id=110539
+
+        Reviewed by Filip Pizlo.
+
+        Change the scale used to lookup pointers in JSGlobalObject::m_specialPointers to be 4 bytes for
+        the 32 bit version of the interpreter.
+
+        * llint/LowLevelInterpreter32_64.asm:
+
+2013-02-21  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Add executable property to cmd file.
+        Required for executable files to maintain their executable permissions over svn.
+
+        * JavaScriptCore.vcxproj/copy-files.cmd: Added property svn:executable.
+
+2013-02-21  Filip Pizlo  <fpizlo@apple.com>
+
+        Object allocation profiling will refuse to create objects with more than JSFinalObject::maxInlineCapacity() inline slots, but JSFunction::allocationProfile() asserts that the number of inline slots is always what it asked for
+        https://bugs.webkit.org/show_bug.cgi?id=110519
+        <rdar://problem/13218566>
+
+        Reviewed by Geoffrey Garen.
+        
+        * runtime/JSFunction.h:
+        (JSC::JSFunction::allocationProfile):
+
+2013-02-21  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Build fix for VS2010 WebKit solution.
+
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExports.def.in:
+
+2013-02-20  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG should not change its mind about what type speculations a node does, by encoding the checks in the NodeType, UseKind, and ArrayMode
+        https://bugs.webkit.org/show_bug.cgi?id=109371
+
+        Reviewed by Oliver Hunt.
+        
+        FixupPhase now locks in the speculations that each node will do. The DFG then
+        remembers those speculations, and doesn't change its mind about them even if the
+        graph is transformed - for example if a node's child is repointed to a different
+        node as part of CSE, CFG simplification, or folding. Each node ensures that it
+        executes the speculations promised by its edges. This is true even for Phantom
+        nodes.
+        
+        This still leaves some craziness on the table for future work, like the
+        elimination of speculating SetLocal's due to CFG simplification
+        (webkit.org/b/109388) and elimination of nodes via DCE (webkit.org/b/109389).
+        
+        In all, this allows for a huge simplification of the DFG. Instead of having to
+        execute the right speculation heuristic each time you want to decide what a node
+        does (for example Node::shouldSpeculateInteger(child1, child2) &&
+        node->canSpeculateInteger()), you just ask for the use kinds of its children
+        (typically node->binaryUseKind() == Int32Use). Because the use kinds are
+        discrete, you can often just switch over them. This makes many parts of the code
+        more clear than they were before.
+        
+        Having UseKinds describe the speculations being performed also makes it far
+        easier to perform analyses that need to know what speculations are done. This is
+        so far only used to simplify large parts of the CFA.
+        
+        To have a larger vocabulary of UseKinds, this also changes the node allocator to
+        be able to round up Node sizes to the nearest multiple of 16.
+        
+        This appears to be neutral on benchmarks, except for some goofy speed-ups, like
+        8% on Octane/box2d.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * Target.pri:
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::startExecuting):
+        (DFG):
+        (JSC::DFG::AbstractState::executeEdges):
+        (JSC::DFG::AbstractState::verifyEdge):
+        (JSC::DFG::AbstractState::verifyEdges):
+        (JSC::DFG::AbstractState::executeEffects):
+        (JSC::DFG::AbstractState::execute):
+        * dfg/DFGAbstractState.h:
+        (AbstractState):
+        (JSC::DFG::AbstractState::filterEdgeByUse):
+        (JSC::DFG::AbstractState::filterByType):
+        * dfg/DFGAbstractValue.h:
+        (JSC::DFG::AbstractValue::filter):
+        * dfg/DFGAdjacencyList.h:
+        (JSC::DFG::AdjacencyList::AdjacencyList):
+        (JSC::DFG::AdjacencyList::child):
+        (JSC::DFG::AdjacencyList::setChild):
+        (JSC::DFG::AdjacencyList::reset):
+        (JSC::DFG::AdjacencyList::firstChild):
+        (JSC::DFG::AdjacencyList::setFirstChild):
+        (JSC::DFG::AdjacencyList::numChildren):
+        (JSC::DFG::AdjacencyList::setNumChildren):
+        (AdjacencyList):
+        * dfg/DFGAllocator.h:
+        (DFG):
+        (Allocator):
+        (JSC::DFG::Allocator::cellSize):
+        (JSC::DFG::Allocator::Region::headerSize):
+        (JSC::DFG::Allocator::Region::numberOfThingsPerRegion):
+        (JSC::DFG::Allocator::Region::payloadSize):
+        (JSC::DFG::Allocator::Region::payloadBegin):
+        (JSC::DFG::Allocator::Region::payloadEnd):
+        (JSC::DFG::Allocator::Region::isInThisRegion):
+        (JSC::DFG::::Allocator):
+        (JSC::DFG::::~Allocator):
+        (JSC::DFG::::allocate):
+        (JSC::DFG::::free):
+        (JSC::DFG::::freeAll):
+        (JSC::DFG::::reset):
+        (JSC::DFG::::indexOf):
+        (JSC::DFG::::allocatorOf):
+        (JSC::DFG::::bumpAllocate):
+        (JSC::DFG::::freeListAllocate):
+        (JSC::DFG::::allocateSlow):
+        (JSC::DFG::::freeRegionsStartingAt):
+        (JSC::DFG::::startBumpingIn):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::addToGraph):
+        (JSC::DFG::ByteCodeParser::handleMinMax):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::setLocalStoreElimination):
+        (JSC::DFG::CSEPhase::eliminateIrrelevantPhantomChildren):
+        (JSC::DFG::CSEPhase::setReplacement):
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGCommon.h:
+        (DFG):
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+        (JSC::DFG::ConstantFoldingPhase::addStructureTransitionCheck):
+        * dfg/DFGDriver.cpp:
+        (JSC::DFG::compile):
+        * dfg/DFGEdge.cpp:
+        (JSC::DFG::Edge::dump):
+        * dfg/DFGEdge.h:
+        (JSC::DFG::Edge::useKindUnchecked):
+        (JSC::DFG::Edge::useKind):
+        (JSC::DFG::Edge::shift):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::run):
+        (JSC::DFG::FixupPhase::fixupNode):
+        (JSC::DFG::FixupPhase::checkArray):
+        (JSC::DFG::FixupPhase::blessArrayOperation):
+        (JSC::DFG::FixupPhase::fixIntEdge):
+        (JSC::DFG::FixupPhase::fixDoubleEdge):
+        (JSC::DFG::FixupPhase::injectInt32ToDoubleNode):
+        (FixupPhase):
+        (JSC::DFG::FixupPhase::truncateConstantToInt32):
+        (JSC::DFG::FixupPhase::truncateConstantsIfNecessary):
+        (JSC::DFG::FixupPhase::attemptToMakeIntegerAdd):
+        * dfg/DFGGraph.cpp:
+        (DFG):
+        (JSC::DFG::Graph::refChildren):
+        (JSC::DFG::Graph::derefChildren):
+        * dfg/DFGGraph.h:
+        (JSC::DFG::Graph::ref):
+        (JSC::DFG::Graph::deref):
+        (JSC::DFG::Graph::performSubstitution):
+        (JSC::DFG::Graph::isPredictedNumerical):
+        (JSC::DFG::Graph::addImmediateShouldSpeculateInteger):
+        (DFG):
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::Node):
+        (JSC::DFG::Node::convertToGetByOffset):
+        (JSC::DFG::Node::convertToPutByOffset):
+        (JSC::DFG::Node::willHaveCodeGenOrOSR):
+        (JSC::DFG::Node::child1):
+        (JSC::DFG::Node::child2):
+        (JSC::DFG::Node::child3):
+        (JSC::DFG::Node::binaryUseKind):
+        (Node):
+        (JSC::DFG::Node::isBinaryUseKind):
+        * dfg/DFGNodeAllocator.h:
+        (DFG):
+        * dfg/DFGNodeFlags.cpp:
+        (JSC::DFG::nodeFlagsAsString):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        (JSC::DFG::PredictionPropagationPhase::propagate):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::speculationCheck):
+        (DFG):
+        (JSC::DFG::SpeculativeJIT::speculationWatchpoint):
+        (JSC::DFG::SpeculativeJIT::forwardSpeculationCheck):
+        (JSC::DFG::SpeculativeJIT::terminateSpeculativeExecution):
+        (JSC::DFG::SpeculativeJIT::typeCheck):
+        (JSC::DFG::SpeculativeJIT::forwardTypeCheck):
+        (JSC::DFG::SpeculativeJIT::fillStorage):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleBranch):
+        (JSC::DFG::SpeculativeJIT::compile):
+        (JSC::DFG::SpeculativeJIT::compileDoublePutByVal):
+        (JSC::DFG::SpeculativeJIT::compileValueToInt32):
+        (JSC::DFG::SpeculativeJIT::compileInt32ToDouble):
+        (JSC::DFG::SpeculativeJIT::compilePutByValForIntTypedArray):
+        (JSC::DFG::SpeculativeJIT::compileInstanceOf):
+        (JSC::DFG::SpeculativeJIT::compileAdd):
+        (JSC::DFG::SpeculativeJIT::compileArithSub):
+        (JSC::DFG::SpeculativeJIT::compileArithNegate):
+        (JSC::DFG::SpeculativeJIT::compileArithMul):
+        (JSC::DFG::SpeculativeJIT::compileArithMod):
+        (JSC::DFG::SpeculativeJIT::compare):
+        (JSC::DFG::SpeculativeJIT::compileStrictEq):
+        (JSC::DFG::SpeculativeJIT::speculateInt32):
+        (JSC::DFG::SpeculativeJIT::speculateNumber):
+        (JSC::DFG::SpeculativeJIT::speculateRealNumber):
+        (JSC::DFG::SpeculativeJIT::speculateBoolean):
+        (JSC::DFG::SpeculativeJIT::speculateCell):
+        (JSC::DFG::SpeculativeJIT::speculateObject):
+        (JSC::DFG::SpeculativeJIT::speculateObjectOrOther):
+        (JSC::DFG::SpeculativeJIT::speculateString):
+        (JSC::DFG::SpeculativeJIT::speculateNotCell):
+        (JSC::DFG::SpeculativeJIT::speculateOther):
+        (JSC::DFG::SpeculativeJIT::speculate):
+        * dfg/DFGSpeculativeJIT.h:
+        (SpeculativeJIT):
+        (JSC::DFG::SpeculativeJIT::valueOfNumberConstant):
+        (JSC::DFG::SpeculativeJIT::needsTypeCheck):
+        (JSC::DFG::IntegerOperand::IntegerOperand):
+        (JSC::DFG::IntegerOperand::edge):
+        (IntegerOperand):
+        (JSC::DFG::IntegerOperand::node):
+        (JSC::DFG::IntegerOperand::gpr):
+        (JSC::DFG::IntegerOperand::use):
+        (JSC::DFG::JSValueOperand::JSValueOperand):
+        (JSValueOperand):
+        (JSC::DFG::JSValueOperand::edge):
+        (JSC::DFG::JSValueOperand::node):
+        (JSC::DFG::JSValueOperand::gpr):
+        (JSC::DFG::JSValueOperand::fill):
+        (JSC::DFG::JSValueOperand::use):
+        (JSC::DFG::StorageOperand::StorageOperand):
+        (JSC::DFG::StorageOperand::edge):
+        (StorageOperand):
+        (JSC::DFG::StorageOperand::node):
+        (JSC::DFG::StorageOperand::gpr):
+        (JSC::DFG::StorageOperand::use):
+        (JSC::DFG::SpeculateIntegerOperand::SpeculateIntegerOperand):
+        (SpeculateIntegerOperand):
+        (JSC::DFG::SpeculateIntegerOperand::edge):
+        (JSC::DFG::SpeculateIntegerOperand::node):
+        (JSC::DFG::SpeculateIntegerOperand::gpr):
+        (JSC::DFG::SpeculateIntegerOperand::use):
+        (JSC::DFG::SpeculateStrictInt32Operand::SpeculateStrictInt32Operand):
+        (SpeculateStrictInt32Operand):
+        (JSC::DFG::SpeculateStrictInt32Operand::edge):
+        (JSC::DFG::SpeculateStrictInt32Operand::node):
+        (JSC::DFG::SpeculateStrictInt32Operand::gpr):
+        (JSC::DFG::SpeculateStrictInt32Operand::use):
+        (JSC::DFG::SpeculateDoubleOperand::SpeculateDoubleOperand):
+        (SpeculateDoubleOperand):
+        (JSC::DFG::SpeculateDoubleOperand::edge):
+        (JSC::DFG::SpeculateDoubleOperand::node):
+        (JSC::DFG::SpeculateDoubleOperand::fpr):
+        (JSC::DFG::SpeculateDoubleOperand::use):
+        (JSC::DFG::SpeculateCellOperand::SpeculateCellOperand):
+        (SpeculateCellOperand):
+        (JSC::DFG::SpeculateCellOperand::edge):
+        (JSC::DFG::SpeculateCellOperand::node):
+        (JSC::DFG::SpeculateCellOperand::gpr):
+        (JSC::DFG::SpeculateCellOperand::use):
+        (JSC::DFG::SpeculateBooleanOperand::SpeculateBooleanOperand):
+        (JSC::DFG::SpeculateBooleanOperand::edge):
+        (SpeculateBooleanOperand):
+        (JSC::DFG::SpeculateBooleanOperand::node):
+        (JSC::DFG::SpeculateBooleanOperand::gpr):
+        (JSC::DFG::SpeculateBooleanOperand::use):
+        (DFG):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::fillInteger):
+        (JSC::DFG::SpeculativeJIT::fillJSValue):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntInternal):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateInt):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntStrict):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateDouble):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateCell):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateBoolean):
+        (JSC::DFG::SpeculativeJIT::compileObjectEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectOrOtherLogicalNot):
+        (JSC::DFG::SpeculativeJIT::compileLogicalNot):
+        (JSC::DFG::SpeculativeJIT::emitObjectOrOtherBranch):
+        (JSC::DFG::SpeculativeJIT::emitBranch):
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::fillInteger):
+        (JSC::DFG::SpeculativeJIT::fillJSValue):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntInternal):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateInt):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntStrict):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateDouble):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateCell):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateBoolean):
+        (JSC::DFG::SpeculativeJIT::compileObjectEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compilePeepHoleObjectToObjectOrOtherEquality):
+        (JSC::DFG::SpeculativeJIT::compileObjectOrOtherLogicalNot):
+        (JSC::DFG::SpeculativeJIT::compileLogicalNot):
+        (JSC::DFG::SpeculativeJIT::emitObjectOrOtherBranch):
+        (JSC::DFG::SpeculativeJIT::emitBranch):
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGStructureCheckHoistingPhase.cpp:
+        (JSC::DFG::StructureCheckHoistingPhase::run):
+        * dfg/DFGUseKind.cpp: Added.
+        (WTF):
+        (WTF::printInternal):
+        * dfg/DFGUseKind.h: Added.
+        (DFG):
+        (JSC::DFG::typeFilterFor):
+        (JSC::DFG::isNumerical):
+        (WTF):
+        * dfg/DFGValidate.cpp:
+        (JSC::DFG::Validate::reportValidationContext):
+
+2013-02-20  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Need a way to use the Objective-C JavaScript API with WebKit
+        https://bugs.webkit.org/show_bug.cgi?id=106059
+
+        Reviewed by Geoffrey Garen.
+        
+        * API/JSBase.h: Renamed enable flag for API.
+        * API/JSBlockAdaptor.h: Using new flag.
+        * API/JSBlockAdaptor.mm: Ditto.
+        * API/JSContext.h: Add convenience C API conversion function for JSGlobalContextRef.
+        * API/JSContext.mm: 
+        (-[JSContext JSGlobalContextRef]): Implementation of C API convenience function.
+        (-[JSContext initWithVirtualMachine:]): We don't use the m_apiData field any more.
+        (-[JSContext initWithGlobalContextRef:]): init method for allocating new JSContexts given a JSGlobalContextRef.
+        (-[JSContext dealloc]): No more m_apiData.
+        (-[JSContext wrapperForObjCObject:]): Renamed wrapperForObject. 
+        (-[JSContext wrapperForJSObject:]): Fetches or allocates the JSValue for the specified JSValueRef in this JSContext.
+        (+[JSContext contextWithGlobalContextRef:]): Helper function to grab the lightweight JSContext wrapper for a given
+        JSGlobalContextRef from the global wrapper cache or allocate a new one if there isn't already one.
+        * API/JSContextInternal.h: New flag, new method declaration for initWithGlobalContextRef.
+        * API/JSExport.h: New flag.
+        * API/JSValue.h: New flag and new C API convenience method.
+        * API/JSValue.mm:
+        (-[JSValue JSValueRef]): Implementation of the C API convenience method.
+        (objectToValueWithoutCopy):
+        (+[JSValue valueWithValue:inContext:]): We now ask the JSContext for an Objective-C JSValue wrapper, which it can cache
+        in its internal JSWrapperMap.
+        * API/JSValueInternal.h:
+        * API/JSVirtualMachine.h:
+        * API/JSVirtualMachine.mm: Added global cache that maps JSContextGroupRef -> JSVirtualMachine lightweight wrappers.
+        (wrapperCacheLock):
+        (initWrapperCache):
+        (+[JSVMWrapperCache addWrapper:forJSContextGroupRef:]):
+        (+[JSVMWrapperCache wrapperForJSContextGroupRef:]):
+        (-[JSVirtualMachine init]):
+        (-[JSVirtualMachine initWithContextGroupRef:]):
+        (-[JSVirtualMachine dealloc]):
+        (+[JSVirtualMachine virtualMachineWithContextGroupRef:]):
+        (-[JSVirtualMachine contextForGlobalContextRef:]):
+        (-[JSVirtualMachine addContext:forGlobalContextRef:]):
+        * API/JSVirtualMachineInternal.h:
+        * API/JSWrapperMap.h:
+        * API/JSWrapperMap.mm:
+        (-[JSObjCClassInfo allocateConstructorAndPrototypeWithSuperClassInfo:]): We use the JSObjectSetPrototype C API call because 
+        setting the __proto__ property causes all sorts of bad things to happen behind the scenes, which can cause crashes based on 
+        when it gets called.
+        (-[JSWrapperMap initWithContext:]):
+        (-[JSWrapperMap jsWrapperForObject:]):
+        (-[JSWrapperMap objcWrapperForJSValueRef:]):
+        * API/JavaScriptCore.h:
+        * API/ObjCCallbackFunction.h:
+        * API/ObjCCallbackFunction.mm:
+        (ObjCCallbackFunction::ObjCCallbackFunction): We never actually should have retained the target in the case that we had a 
+        block as a callback. Blocks are initially allocated on the stack and are only moved to the heap if we call their copy method.
+        Retaining the block on the stack was a bad idea because if that stack frame ever went away and we called the block later, 
+        we'd crash and burn.
+        (ObjCCallbackFunction::setContext): We need a new setter for when the weak reference to a JSContext inside an ObjCCallbackFunction
+        disappears, we can allocate a new one in its place.
+        (ObjCCallbackFunction):
+        (objCCallbackFunctionCallAsFunction): Reset the callback's context if it's ever destroyed.
+        (objCCallbackFunctionForInvocation): Again, don't set the __proto__ property because it uses black magic that can cause us to crash
+        depending on when this is called.
+        (objCCallbackFunctionForBlock): Here is where we copy the block to the heap when we're first creating the callback object for it.
+        * API/tests/testapi.c:
+        (main):
+        * API/tests/testapi.mm: We're going to get rid of the automatic block conversion, since that is causing leaks. I changed it 
+        here in this test just so that it wouldn't mask any other potential leaks. Also modified some of the tests since JSContexts are 
+        just lightweight wrappers now, we're not guaranteed to get the same pointer back from the call to [JSValue context] as the one 
+        that the value was created in.
+        (-[TestObject callback:]):
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * runtime/JSGlobalData.cpp:
+        (JSC::JSGlobalData::JSGlobalData): No more m_apiData.
+        * runtime/JSGlobalData.h: Ditto.
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::JSGlobalObject): Ditto.
+        * runtime/JSGlobalObject.h:
+
+2013-02-19  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG::SpeculativeJIT::compileInt32ToDouble() has an unnecessary case for constant operands
+        https://bugs.webkit.org/show_bug.cgi?id=110309
+
+        Reviewed by Sam Weinig.
+        
+        It used to be necessary, back when we didn't have constant folding. Now we have
+        constant folding. So we don't need it.
+
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::compileInt32ToDouble):
+
+2013-02-20  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG inlines Resolves that it doesn't know how to handle correctly
+        https://bugs.webkit.org/show_bug.cgi?id=110405
+
+        Reviewed by Geoffrey Garen.
+        
+        Don't try to be clever: if there's a failing resolve, we can't inline it, period.
+
+        * dfg/DFGCapabilities.h:
+        (JSC::DFG::canInlineResolveOperations):
+        (JSC::DFG::canInlineOpcode):
+
+2013-02-20  Roger Fong  <roger_fong@apple.com>
+
+        Get VS2010 Solution B&I ready.
+        <rdar://problem/1322988>
+
+        Rubberstamped by Timothy Horton.        
+        
+        Add Production configuration. 
+        Add a JavaScriptCore submit solution with a DebugSuffix configuration. 
+        Modify JavaScriptCore.make as necessary.
+        
+        * JavaScriptCore.vcxproj/JavaScriptCore.make: Added.
+        * JavaScriptCore.vcxproj/JavaScriptCore.sln: Removed.
+        * JavaScriptCore.vcxproj/JavaScriptCore.submit.sln: Copied from Source/JavaScriptCore/JavaScriptCore.vcxproj/JavaScriptCore.sln.
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCoreCommon.props:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGenerator.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorCommon.props:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorPostBuild.cmd:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorPreBuild.cmd:
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorProduction.props: Added.
+        * JavaScriptCore.vcxproj/JavaScriptCoreExportGenerator/JavaScriptCoreExportGeneratorRelease.props:
+        * JavaScriptCore.vcxproj/JavaScriptCoreGenerated.vcxproj:
+        * JavaScriptCore.vcxproj/JavaScriptCoreGenerated.vcxproj.filters:
+        * JavaScriptCore.vcxproj/JavaScriptCoreGeneratedProduction.props: Added.
+        * JavaScriptCore.vcxproj/JavaScriptCoreGeneratedRelease.props:
+        * JavaScriptCore.vcxproj/JavaScriptCoreProduction.props: Added.
+        * JavaScriptCore.vcxproj/JavaScriptCoreRelease.props:
+        * JavaScriptCore.vcxproj/LLInt/LLIntAssembly/LLIntAssembly.vcxproj:
+        * JavaScriptCore.vcxproj/LLInt/LLIntDesiredOffsets/LLIntDesiredOffsets.vcxproj:
+        * JavaScriptCore.vcxproj/LLInt/LLIntOffsetsExtractor/LLIntOffsetsExtractor.vcxproj:
+        * JavaScriptCore.vcxproj/LLInt/LLIntOffsetsExtractor/LLIntOffsetsExtractorCommon.props:
+        * JavaScriptCore.vcxproj/LLInt/LLIntOffsetsExtractor/LLIntOffsetsExtractorDebug.props:
+        * JavaScriptCore.vcxproj/LLInt/LLIntOffsetsExtractor/LLIntOffsetsExtractorProduction.props: Added.
+        * JavaScriptCore.vcxproj/LLInt/LLIntOffsetsExtractor/LLIntOffsetsExtractorRelease.props:
+        * JavaScriptCore.vcxproj/jsc/jsc.vcxproj:
+        * JavaScriptCore.vcxproj/jsc/jscCommon.props:
+        * JavaScriptCore.vcxproj/jsc/jscProduction.props: Added.
+        * JavaScriptCore.vcxproj/jsc/jscRelease.props:
+        * JavaScriptCore.vcxproj/testRegExp/testRegExp.vcxproj:
+        * JavaScriptCore.vcxproj/testRegExp/testRegExpCommon.props:
+        * JavaScriptCore.vcxproj/testRegExp/testRegExpProduction.props: Added.
+        * JavaScriptCore.vcxproj/testRegExp/testRegExpRelease.props:
+        * JavaScriptCore.vcxproj/testapi/testapi.vcxproj:
+        * JavaScriptCore.vcxproj/testapi/testapiCommon.props:
+        * JavaScriptCore.vcxproj/testapi/testapiProduction.props: Added.
+        * JavaScriptCore.vcxproj/testapi/testapiRelease.props:
+
+2013-02-19  Jer Noble  <jer.noble@apple.com>
+
+        EME: Enable both ENCRYPTED_MEDIA and ENCRYPTED_MEDIA_V2 until clients transition to the new API.
+        https://bugs.webkit.org/show_bug.cgi?id=110284
+
+        Reviewed by Eric Carlson.
+
+        Re-enable the ENCRYPTED_MEDIA flag.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-20  Dirk Schulze  <krit@webkit.org>
+
+        Enable CANVAS_PATH flag
+        https://bugs.webkit.org/show_bug.cgi?id=108508
+
+        Reviewed by Simon Fraser.
+
+        Enable CANVAS_PATH flag on trunk.
+
+        Existing tests cover the feature.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-19  Mark Rowe  <mrowe@apple.com>
+
+        Unreviewed, uninteresting change to test a theory about bad dependency handling.
+
+        * API/JSStringRefCF.cpp:
+        (JSStringCreateWithCFString): Remove an unnecessary else clause.
+
+2013-02-19  Oliver Hunt  <oliver@apple.com>
+
+        Silence some analyzer warnings
+        https://bugs.webkit.org/show_bug.cgi?id=110281
+
+        Reviewed by Mark Hahnenberg.
+
+        The static analyzer believes that callerCodeBlock can be null,
+        based on other code performing null tests.  This should not
+        ever be the case, but we'll add RELEASE_ASSERTs to make it
+        obvious if we're ever wrong.
+
+        * interpreter/Interpreter.cpp:
+        (JSC::getCallerInfo):
+
+2013-02-19  Oliver Hunt  <oliver@apple.com>
+
+        Don't force everything to be blinded in debug builds
+        https://bugs.webkit.org/show_bug.cgi?id=110279
+
+        Reviewed by Mark Hahnenberg.
+
+        Switch to an explicit flag for indicating that we want
+        every constant to be blinded.
+
+        * assembler/MacroAssembler.h:
+        (JSC::MacroAssembler::shouldBlind):
+
+2013-02-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Fix indentation of Opcode.h
+
+        Rubber stamped by Mark Hahnenberg.
+
+        * bytecode/Opcode.h:
+
+2013-02-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Moved PolymorphicAccessStructureList into its own file.
+
+        Rubber stamped by Mark Hahnenberg.
+
+        * GNUmakefile.list.am:
+        * JavaScriptCore.vcproj/JavaScriptCore/JavaScriptCore.vcproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * bytecode/Instruction.h:
+        (JSC):
+        * bytecode/PolymorphicAccessStructureList.h: Added.
+        (JSC):
+        (PolymorphicAccessStructureList):
+        (PolymorphicStubInfo):
+        (JSC::PolymorphicAccessStructureList::PolymorphicStubInfo::PolymorphicStubInfo):
+        (JSC::PolymorphicAccessStructureList::PolymorphicStubInfo::set):
+        (JSC::PolymorphicAccessStructureList::PolymorphicAccessStructureList):
+        (JSC::PolymorphicAccessStructureList::visitWeak):
+        * bytecode/StructureStubInfo.h:
+
+2013-02-19  Filip Pizlo  <fpizlo@apple.com>
+
+        Fix indentation of Instruction.h
+
+        Rubber stamped by Mark Hahnenberg.
+
+        * bytecode/Instruction.h:
+
+2013-02-18  Geoffrey Garen  <ggaren@apple.com>
+
+        Unreviewed, rolling in r143348.
+        http://trac.webkit.org/changeset/143348
+        https://bugs.webkit.org/show_bug.cgi?id=110242
+
+        The bug was that isEmptyValue() was returning true for the deleted value.
+        Fixed this and simplified things further by delegating to m_sourceCode
+        for both isNull() and isHashTableDeletedValue(), so they can't be out of
+        sync.
+
+        * runtime/CodeCache.cpp:
+        (JSC::CodeCache::getFunctionExecutableFromGlobalCode):
+        * runtime/CodeCache.h:
+        (JSC::SourceCodeKey::SourceCodeKey):
+        (JSC::SourceCodeKey::isHashTableDeletedValue):
+        (JSC::SourceCodeKey::hash):
+        (JSC::SourceCodeKey::length):
+        (JSC::SourceCodeKey::isNull):
+        (JSC::SourceCodeKey::operator==):
+        (SourceCodeKey):
+
+2013-02-15  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Improve gyp build JavaScriptCore code generation
+        https://bugs.webkit.org/show_bug.cgi?id=109969
+
+        Reviewed by Dirk Pranke.
+
+        Switch away from using DerivedSources.make when building JavaScriptCore generated
+        sources. This bring a couple advantages, such as building the sources in parallel,
+        but requires us to list the generated sources more than once.
+
+        * JavaScriptCore.gyp/JavaScriptCoreGTK.gyp: Add rules for generating JavaScriptCore sources.
+        * JavaScriptCore.gyp/generate-derived-sources.sh: Added.
+        * JavaScriptCore.gyp/redirect-stdout.sh: Added.
+
+2013-02-19  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r143348.
+        http://trac.webkit.org/changeset/143348
+        https://bugs.webkit.org/show_bug.cgi?id=110242
+
+        "Caused a deleted value sentinel crash on the layout tests"
+        (Requested by ggaren on #webkit).
+
+        * runtime/CodeCache.cpp:
+        (JSC::CodeCache::getFunctionExecutableFromGlobalCode):
+        * runtime/CodeCache.h:
+        (JSC::SourceCodeKey::SourceCodeKey):
+        (JSC::SourceCodeKey::isHashTableDeletedValue):
+        (JSC::SourceCodeKey::hash):
+        (JSC::SourceCodeKey::length):
+        (JSC::SourceCodeKey::isNull):
+        (JSC::SourceCodeKey::operator==):
+        (SourceCodeKey):
+
+2013-02-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        HeapBlock::destroy should issue warning if result is unused
+        https://bugs.webkit.org/show_bug.cgi?id=110233
+
+        Reviewed by Oliver Hunt.
+
+        To enforce the fact that we need to return blocks to the BlockAllocator after calling destroy, 
+        we should add WARN_UNUSED_RETURN to HeapBlock::destroy and any other destroy functions in its subclasses.
+
+        * heap/HeapBlock.h:
+
+2013-02-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        WeakSet::removeAllocator leaks WeakBlocks
+        https://bugs.webkit.org/show_bug.cgi?id=110228
+
+        Reviewed by Geoffrey Garen.
+
+        We need to return the WeakBlock to the BlockAllocator after the call to WeakBlock::destroy.
+
+        * heap/WeakSet.cpp:
+        (JSC::WeakSet::removeAllocator):
+
+2013-02-18  Geoffrey Garen  <ggaren@apple.com>
+
+        Save space on keys in the CodeCache
+        https://bugs.webkit.org/show_bug.cgi?id=110179
+
+        Reviewed by Oliver Hunt.
+
+        Share the SourceProvider's string instead of making our own copy. This
+        chops off 16MB - 32MB from the CodeCache's memory footprint when full.
+        (It's 16MB when the strings are LChar, and 32MB when they're UChar.)
+
+        * runtime/CodeCache.cpp:
+        (JSC::CodeCache::getFunctionExecutableFromGlobalCode):
+        * runtime/CodeCache.h: Removed a defunct enum value.
+
+        (JSC::SourceCodeKey::SourceCodeKey):
+        (JSC::SourceCodeKey::isHashTableDeletedValue):
+        (SourceCodeKey):
+        (JSC::SourceCodeKey::hash):
+        (JSC::SourceCodeKey::length):
+        (JSC::SourceCodeKey::isNull):
+        (JSC::SourceCodeKey::string):
+        (JSC::SourceCodeKey::operator==): Store a SourceCode instead of a String
+        so we can share our string with our SourceProvider. Cache our hash so
+        we don't have to re-decode our string just to re-hash the table.
+
+2013-02-19  Zoltan Herczeg  <zherczeg@webkit.org>
+
+        revertBranchPtrWithPatch is incorrect on ARM traditional
+        https://bugs.webkit.org/show_bug.cgi?id=110201
+
+        Reviewed by Oliver Hunt.
+
+        Revert two instructions back to their original value.
+
+        * assembler/ARMAssembler.h:
+        (JSC::ARMAssembler::revertBranchPtrWithPatch):
+        (ARMAssembler):
+        * assembler/MacroAssemblerARM.h:
+        (JSC::MacroAssemblerARM::branchPtrWithPatch):
+        (JSC::MacroAssemblerARM::revertJumpReplacementToBranchPtrWithPatch):
+
 2013-02-19  Filip Pizlo  <fpizlo@apple.com>
 
         REGRESSION(r143241): It made 27 layout tests crash on 32 bit platforms

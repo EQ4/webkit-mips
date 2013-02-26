@@ -1067,6 +1067,12 @@ static PassRefPtr<CSSValue> valueForGridPosition(const GridPosition& position)
 
     return cssValuePool().createValue(position.integerPosition(), CSSPrimitiveValue::CSS_NUMBER);
 }
+
+static PassRefPtr<CSSValue> valueForGridPositions(const GridPositions& positions)
+{
+    return valueForGridPosition(positions.firstPosition());
+}
+
 static PassRefPtr<CSSValue> createTransitionPropertyValue(const Animation* animation)
 {
     RefPtr<CSSValue> propertyValue;
@@ -1925,9 +1931,9 @@ PassRefPtr<CSSValue> CSSComputedStyleDeclaration::getPropertyCSSValue(CSSPropert
             return valueForGridTrackList(style->gridRows(), style.get(), m_node->document()->renderView());
 
         case CSSPropertyWebkitGridColumn:
-            return valueForGridPosition(style->gridItemColumn());
+            return valueForGridPositions(style->gridItemColumn());
         case CSSPropertyWebkitGridRow:
-            return valueForGridPosition(style->gridItemRow());
+            return valueForGridPositions(style->gridItemRow());
 
         case CSSPropertyHeight:
             if (renderer) {
@@ -2859,20 +2865,20 @@ String CSSComputedStyleDeclaration::item(unsigned i) const
     return getPropertyNameString(computedProperties[i]);
 }
 
-bool CSSComputedStyleDeclaration::cssPropertyMatches(const StylePropertySet::PropertyReference& property) const
+bool CSSComputedStyleDeclaration::cssPropertyMatches(CSSPropertyID propertyID, const CSSValue* propertyValue) const
 {
-    if (property.id() == CSSPropertyFontSize && property.value()->isPrimitiveValue() && m_node) {
+    if (propertyID == CSSPropertyFontSize && propertyValue->isPrimitiveValue() && m_node) {
         m_node->document()->updateLayoutIgnorePendingStylesheets();
         RenderStyle* style = m_node->computedStyle(m_pseudoElementSpecifier);
         if (style && style->fontDescription().keywordSize()) {
             int sizeValue = cssIdentifierForFontSizeKeyword(style->fontDescription().keywordSize());
-            const CSSPrimitiveValue* primitiveValue = static_cast<const CSSPrimitiveValue*>(property.value());
+            const CSSPrimitiveValue* primitiveValue = static_cast<const CSSPrimitiveValue*>(propertyValue);
             if (primitiveValue->isIdent() && primitiveValue->getIdent() == sizeValue)
                 return true;
         }
     }
-    RefPtr<CSSValue> value = getPropertyCSSValue(property.id());
-    return value && property.value() && value->equals(*property.value());
+    RefPtr<CSSValue> value = getPropertyCSSValue(propertyID);
+    return value && propertyValue && value->equals(*propertyValue);
 }
 
 PassRefPtr<StylePropertySet> CSSComputedStyleDeclaration::copy() const

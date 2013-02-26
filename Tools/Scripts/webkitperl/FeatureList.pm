@@ -153,7 +153,7 @@ my (
 
 my @features = (
     { option => "3d-rendering", desc => "Toggle 3D Rendering support",
-      define => "ENABLE_3D_RENDERING", default => (isAppleMacWebKit() || isQt()), value => \$threeDRenderingSupport },
+      define => "ENABLE_3D_RENDERING", default => (isAppleMacWebKit() || isQt() || isGtk() || isEfl()), value => \$threeDRenderingSupport },
 
     { option => "accelerated-2d-canvas", desc => "Toggle Accelerated 2D Canvas support",
       define => "ENABLE_ACCELERATED_2D_CANVAS", default => 0, value => \$accelerated2DCanvasSupport },
@@ -165,7 +165,7 @@ my @features = (
       define => "ENABLE_BLOB", default => (isAppleMacWebKit() || isGtk() || isChromium() || isBlackBerry() || isEfl()), value => \$blobSupport },
 
     { option => "canvas-path", desc => "Toggle Canvas Path support",
-      define => "ENABLE_CANVAS_PATH", default => 0, value => \$canvasPathSupport },
+      define => "ENABLE_CANVAS_PATH", default => 1, value => \$canvasPathSupport },
 
     { option => "canvas-proxy", desc => "Toggle CanvasProxy support",
       define => "ENABLE_CANVAS_PROXY", default => 0, value => \$canvasProxySupport },

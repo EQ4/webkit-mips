@@ -55,7 +55,7 @@ public:
         Playing
     };
     DisplayState displayState() const { return m_displayState; }
-    void setDisplayState(DisplayState state) { m_displayState = state; }
+    virtual void setDisplayState(DisplayState state) { m_displayState = state; }
     virtual void updateSnapshot(PassRefPtr<Image>) { }
     virtual void dispatchPendingMouseClick() { }
 
@@ -79,7 +79,7 @@ protected:
 
     virtual void detach();
     virtual bool isPresentationAttribute(const QualifiedName&) const OVERRIDE;
-    virtual void collectStyleForPresentationAttribute(const Attribute&, StylePropertySet*) OVERRIDE;
+    virtual void collectStyleForPresentationAttribute(const QualifiedName&, const AtomicString&, MutableStylePropertySet*) OVERRIDE;
 
     // Subclasses should use guardedDispatchBeforeLoadEvent instead of calling dispatchBeforeLoadEvent directly.
     bool guardedDispatchBeforeLoadEvent(const String& sourceURL);

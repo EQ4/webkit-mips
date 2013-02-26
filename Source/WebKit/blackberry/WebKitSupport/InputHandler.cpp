@@ -597,14 +597,14 @@ void InputHandler::requestCheckingOfString(PassRefPtr<WebCore::TextCheckingReque
 {
     m_request = textCheckingRequest;
 
-    InputLog(Platform::LogLevelInfo, "InputHandler::requestCheckingOfString '%s'", m_request->text().latin1().data());
+    InputLog(Platform::LogLevelInfo, "InputHandler::requestCheckingOfString '%s'", m_request->data().text().latin1().data());
 
     if (!m_request) {
         SpellingLog(Platform::LogLevelWarn, "InputHandler::requestCheckingOfString did not receive a valid request.");
         return;
     }
 
-    unsigned requestLength = m_request->text().length();
+    unsigned requestLength = m_request->data().text().length();
 
     // Check if the field should be spellchecked.
     if (!isActiveTextEdit() || !shouldSpellCheckElement(m_currentFocusElement.get()) || requestLength < 2) {
@@ -612,17 +612,20 @@ void InputHandler::requestCheckingOfString(PassRefPtr<WebCore::TextCheckingReque
         return;
     }
 
-    if (requestLength > MaxSpellCheckingStringLength) {
+    if (requestLength >= MaxSpellCheckingStringLength) {
         // Batch requests which are generally created by us on focus, should not exceed this limit. Check that this is in fact of Incremental type.
         ASSERT(textCheckingRequest->processType() == TextCheckingProcessIncremental);
 
         // Cancel this request and send it off in newly created chunks.
         m_request->didCancel();
         if (m_currentFocusElement->document() && m_currentFocusElement->document()->frame() && m_currentFocusElement->document()->frame()->selection()) {
-            // Convert from position back to selection so we can expand the range to include the previous line. This should handle cases when the user hits
-            // enter to finish composing a word and create a new line.
             VisiblePosition caretPosition = m_currentFocusElement->document()->frame()->selection()->start();
-            VisibleSelection visibleSelection = VisibleSelection(previousLinePosition(caretPosition, caretPosition.lineDirectionPointForBlockDirectionNavigation()), caretPosition);
+            // Convert from position back to selection so we can expand the range to include the previous line. This should handle cases when the user hits
+            // enter to finish composing a word and create a new line. Account for word wrapping by jumping to the start of the previous line, then moving
+            // to the start of any word which might be there.
+            VisibleSelection visibleSelection = VisibleSelection(
+                startOfWord(startOfLine(previousLinePosition(caretPosition, caretPosition.lineDirectionPointForBlockDirectionNavigation()))),
+                endOfWord(endOfLine(caretPosition)));
             m_spellingHandler->spellCheckTextBlock(visibleSelection, TextCheckingProcessIncremental);
         }
         return;
@@ -636,7 +639,7 @@ void InputHandler::requestCheckingOfString(PassRefPtr<WebCore::TextCheckingReque
     }
 
     int paragraphLength = 0;
-    if (!convertStringToWchar(m_request->text(), checkingString, requestLength + 1, &paragraphLength)) {
+    if (!convertStringToWchar(m_request->data().text(), checkingString, requestLength + 1, &paragraphLength)) {
         Platform::logAlways(Platform::LogLevelCritical, "InputHandler::requestCheckingOfString Failed to convert String to wchar type.");
         free(checkingString);
         m_request->didCancel();
@@ -795,7 +798,7 @@ void InputHandler::requestSpellingCheckingOptions(imf_sp_text_t& spellCheckingOp
     if (!shouldMoveDialog && spellCheckingOptionRequest.startTextPosition == spellCheckingOptionRequest.endTextPosition)
         return;
 
-    if (screenOffset.isEmpty()) {
+    if (screenOffset.width() == -1 && screenOffset.height() == -1) {
         screenOffset.setWidth(m_screenOffset.width());
         screenOffset.setHeight(m_screenOffset.height());
     } else {
@@ -988,8 +991,13 @@ void InputHandler::submitForm()
     InputLog(Platform::LogLevelInfo, "InputHandler::submitForm triggered");
     if (elementType(m_currentFocusElement.get()) == InputTypeTextArea)
         formElement->submit();
-    else
+    else {
         handleKeyboardInput(Platform::KeyboardEvent(KEYCODE_RETURN, Platform::KeyboardEvent::KeyChar, 0), false /* changeIsPartOfComposition */);
+
+        // Confirm that implicit submission was accepted.
+        if (isActiveTextEdit())
+            formElement->submit();
+    }
 }
 
 static void addInputStyleMaskForKeyboardType(int64_t& inputMask, VirtualKeyboardType keyboardType)
@@ -1092,8 +1100,8 @@ void InputHandler::setElementFocused(Element* element)
         return;
 
     // Spellcheck the field in its entirety.
-    VisibleSelection focusedBlock = DOMSupport::visibleSelectionForInputElement(element);
-    m_spellingHandler->spellCheckTextBlock(focusedBlock, TextCheckingProcessBatch);
+    const VisibleSelection visibleSelection = DOMSupport::visibleSelectionForFocusedBlock(element);
+    m_spellingHandler->spellCheckTextBlock(visibleSelection, TextCheckingProcessBatch);
 
 #ifdef ENABLE_SPELLING_LOG
     SpellingLog(Platform::LogLevelInfo, "InputHandler::setElementFocused Spellchecking the field increased the total time to focus to %f seconds.", timer.elapsed());
@@ -1215,11 +1223,17 @@ WebCore::IntRect InputHandler::boundingBoxForInputField()
         return WebCore::IntRect();
 
     // type="search" can have a 'X', so take the inner block bounding box to not include it.
-    if (HTMLInputElement* element = m_currentFocusElement->toInputElement())
+    if (HTMLInputElement* element = m_currentFocusElement->toInputElement()) {
         if (element->isSearchField())
             return element->innerBlockElement()->renderer()->absoluteBoundingBoxRect();
+        return m_currentFocusElement->renderer()->absoluteBoundingBoxRect();
+    }
 
-    return m_currentFocusElement->renderer()->absoluteBoundingBoxRect();
+    if (m_currentFocusElement->hasTagName(HTMLNames::textareaTag))
+        return m_currentFocusElement->renderer()->absoluteBoundingBoxRect();
+
+    // Content Editable can't rely on the bounding box since it isn't fixed.
+    return WebCore::IntRect();
 }
 
 void InputHandler::ensureFocusTextElementVisible(CaretScrollType scrollType)
@@ -1683,7 +1697,7 @@ bool InputHandler::handleKeyboardInput(const Platform::KeyboardEvent& keyboardEv
     // while composing text. If IMF has failed, we should have already finished the
     // composition manually. There is a caveat for KeyUp which is explained above.
     if (!changeIsPartOfComposition && compositionActive())
-        return false;
+        removeAttributedTextMarker();
 
     ProcessingChangeGuard guard(this);
 

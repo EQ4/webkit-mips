@@ -744,6 +744,7 @@ bool FrameLoader::allAncestorsAreComplete() const
 
 void FrameLoader::checkCompleted()
 {
+    RefPtr<Frame> protect(m_frame);
     m_shouldCallCheckCompleted = false;
 
     if (m_frame->view())
@@ -774,7 +775,6 @@ void FrameLoader::checkCompleted()
     m_requestedHistoryItem = 0;
     m_frame->document()->setReadyState(Document::Complete);
 
-    RefPtr<Frame> protect(m_frame);
     checkCallImplicitClose(); // if we didn't do it before
 
     m_frame->navigationScheduler()->startTimer();
@@ -2899,7 +2899,7 @@ void FrameLoader::loadedResourceFromMemoryCache(CachedResource* resource)
 
     if (!page->areMemoryCacheClientCallsEnabled()) {
         InspectorInstrumentation::didLoadResourceFromMemoryCache(page, m_documentLoader.get(), resource);
-        m_documentLoader->recordMemoryCacheLoadForFutureClientNotification(resource->url());
+        m_documentLoader->recordMemoryCacheLoadForFutureClientNotification(resource->resourceRequest());
         m_documentLoader->didTellClientAboutLoad(resource->url());
         return;
     }
@@ -3264,6 +3264,10 @@ void FrameLoader::dispatchDidCommitLoad()
     }
 
     InspectorInstrumentation::didCommitLoad(m_frame, m_documentLoader.get());
+
+    if (m_frame->page()->mainFrame() == m_frame)
+        m_frame->page()->featureObserver()->didCommitLoad();
+
 }
 
 void FrameLoader::tellClientAboutPastMemoryCacheLoads()
@@ -3274,12 +3278,12 @@ void FrameLoader::tellClientAboutPastMemoryCacheLoads()
     if (!m_documentLoader)
         return;
 
-    Vector<String> pastLoads;
+    Vector<ResourceRequest> pastLoads;
     m_documentLoader->takeMemoryCacheLoadsForClientNotification(pastLoads);
 
     size_t size = pastLoads.size();
     for (size_t i = 0; i < size; ++i) {
-        CachedResource* resource = memoryCache()->resourceForURL(KURL(ParsedURLString, pastLoads[i]));
+        CachedResource* resource = memoryCache()->resourceForRequest(pastLoads[i]);
 
         // FIXME: These loads, loaded from cache, but now gone from the cache by the time
         // Page::setMemoryCacheClientCallsEnabled(true) is called, will not be seen by the client.

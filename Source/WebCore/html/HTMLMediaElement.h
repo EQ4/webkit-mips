@@ -316,7 +316,7 @@ public:
     static void getSitesInMediaCache(Vector<String>&);
     static void clearMediaCache();
     static void clearMediaCacheForSite(const String&);
-    static void requeryMediaEngines();
+    static void resetMediaEngines();
 
     bool isPlaying() const { return m_playing; }
 
@@ -441,11 +441,6 @@ private:
     
     virtual void mediaPlayerFirstVideoFrameAvailable(MediaPlayer*);
     virtual void mediaPlayerCharacteristicChanged(MediaPlayer*);
-
-#if ENABLE(MEDIA_SOURCE)
-    virtual void mediaPlayerSourceOpened();
-    virtual String mediaPlayerSourceURL() const;
-#endif
 
 #if ENABLE(ENCRYPTED_MEDIA)
     virtual void mediaPlayerKeyAdded(MediaPlayer*, const String& keySystem, const String& sessionId) OVERRIDE;
@@ -639,7 +634,6 @@ private:
     int m_processingMediaPlayerCallback;
 
 #if ENABLE(MEDIA_SOURCE)
-    KURL m_mediaSourceURL;
     RefPtr<MediaSource> m_mediaSource;
 #endif
 

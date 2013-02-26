@@ -65,7 +65,7 @@
 
 namespace WebCore {
 
-PassRefPtr<Database> Database::create(ScriptExecutionContext*, PassRefPtr<DatabaseBackend> backend)
+PassRefPtr<Database> Database::create(ScriptExecutionContext*, PassRefPtr<DatabaseBackendBase> backend)
 {
     // FIXME: Currently, we're only simulating the backend by return the
     // frontend database as its own the backend. When we split the 2 apart,
@@ -77,8 +77,8 @@ PassRefPtr<Database> Database::create(ScriptExecutionContext*, PassRefPtr<Databa
 Database::Database(PassRefPtr<DatabaseBackendContext> databaseContext,
     const String& name, const String& expectedVersion, const String& displayName, unsigned long estimatedSize)
     : DatabaseBase(databaseContext->scriptExecutionContext())
-    , DatabaseBackendAsync(databaseContext, name, expectedVersion, displayName, estimatedSize)
-    , m_databaseContext(DatabaseBackendAsync::databaseContext()->frontend())
+    , DatabaseBackend(databaseContext, name, expectedVersion, displayName, estimatedSize)
+    , m_databaseContext(DatabaseBackend::databaseContext()->frontend())
     , m_deleted(false)
 {
     m_databaseThreadSecurityOrigin = m_contextThreadSecurityOrigin->isolatedCopy();
@@ -123,12 +123,12 @@ Database::~Database()
     }
 }
 
-Database* Database::from(DatabaseBackendAsync* backend)
+Database* Database::from(DatabaseBackend* backend)
 {
     return static_cast<Database*>(backend->m_frontend);
 }
 
-PassRefPtr<DatabaseBackendAsync> Database::backend()
+PassRefPtr<DatabaseBackend> Database::backend()
 {
     return this;
 }
@@ -137,7 +137,7 @@ String Database::version() const
 {
     if (m_deleted)
         return String();
-    return DatabaseBackend::version();
+    return DatabaseBackendBase::version();
 }
 
 void Database::markAsDeletedAndClose()
@@ -167,11 +167,6 @@ void Database::closeImmediately()
         logErrorMessage("forcibly closing database");
         databaseThread->scheduleImmediateTask(DatabaseCloseTask::create(this, 0));
     }
-}
-
-unsigned long long Database::maximumSize() const
-{
-    return DatabaseManager::manager().getMaxSizeForDatabase(this);
 }
 
 void Database::changeVersion(const String& oldVersion, const String& newVersion,

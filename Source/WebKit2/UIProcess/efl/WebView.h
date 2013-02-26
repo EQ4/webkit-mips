@@ -31,17 +31,20 @@
 #include "DefaultUndoController.h"
 #include "PageClient.h"
 #include "WebContext.h"
+#include "WebGeometry.h"
 #include "WebPageGroup.h"
 #include "WebPageProxy.h"
 #include "WebPreferences.h"
 #include "WebViewClient.h"
+#include <WebCore/TransformationMatrix.h>
 
 class EwkView;
 
-namespace WebKit {
+namespace WebCore {
+class CoordinatedGraphicsScene;
+}
 
-class PageViewportController;
-class PageViewportControllerClientEfl;
+namespace WebKit {
 
 class WebView : public APIObject, public PageClient {
 public:
@@ -51,6 +54,12 @@ public:
     virtual ~WebView();
 
     void initialize();
+
+    void setUserViewportTranslation(double tx, double ty);
+    WebCore::IntPoint userViewportToContents(const WebCore::IntPoint&) const;
+
+    void paintToCurrentGLContext();
+    void paintToCairoSurface(cairo_surface_t*);
 
     WKPageRef pageRef() const { return toAPI(m_page.get()); }
 
@@ -64,6 +73,13 @@ public:
     void suspendActiveDOMObjectsAndAnimations();
     void resumeActiveDOMObjectsAndAnimations();
 
+    void setShowsAsSource(bool);
+    bool showsAsSource() const;
+
+#if ENABLE(FULLSCREEN_API)
+    void exitFullScreen();
+#endif
+
     // View client.
     void initializeClient(const WKViewClient*);
 
@@ -75,7 +91,13 @@ public:
     void updateViewportSize();
     void didChangeContentsSize(const WebCore::IntSize&);
 
+    // FIXME: Should become private when Web Events creation is moved to WebView.
+    WebCore::AffineTransform transformFromScene() const;
+    WebCore::AffineTransform transformToScene() const;
+
 private:
+    WebCore::CoordinatedGraphicsScene* coordinatedGraphicsScene();
+
     // PageClient
     PassOwnPtr<DrawingAreaProxy> createDrawingAreaProxy() OVERRIDE;
 
@@ -156,9 +178,7 @@ private:
     EwkView* m_ewkView;
     RefPtr<WebPageProxy> m_page;
     DefaultUndoController m_undoController;
-    // FIXME: Remove when possible.
-    OwnPtr<WebKit::PageViewportControllerClientEfl> m_pageViewportControllerClient;
-    OwnPtr<WebKit::PageViewportController> m_pageViewportController;
+    WebCore::TransformationMatrix m_userViewportTransform;
 };
 
 }

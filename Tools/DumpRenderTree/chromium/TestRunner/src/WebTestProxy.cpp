@@ -33,6 +33,8 @@
 
 #include "AccessibilityControllerChromium.h"
 #include "EventSender.h"
+#include "MockWebSpeechInputController.h"
+#include "MockWebSpeechRecognizer.h"
 #include "SpellCheckClient.h"
 #include "TestCommon.h"
 #include "TestInterfaces.h"
@@ -43,9 +45,11 @@
 #include "WebCachedURLRequest.h"
 #include "WebConsoleMessage.h"
 #include "WebDataSource.h"
+#include "WebDeviceOrientationClientMock.h"
 #include "WebDocument.h"
 #include "WebElement.h"
 #include "WebFrame.h"
+#include "WebGeolocationClientMock.h"
 #include "WebHistoryItem.h"
 #include "WebNode.h"
 #include "WebPluginParams.h"
@@ -396,14 +400,14 @@ void dumpBackForwardList(const WebVector<WebHistoryItem>& history, size_t curren
     result.append("===============================================\n");
 }
 
-string dumpAllBackForwardLists(WebTestDelegate* delegate)
+string dumpAllBackForwardLists(TestInterfaces* interfaces, WebTestDelegate* delegate)
 {
     string result;
-    unsigned windowCount = delegate->windowCount();
-    for (unsigned i = 0; i < windowCount; ++i) {
+    const vector<WebTestProxyBase*>& windowList = interfaces->windowList();
+    for (unsigned i = 0; i < windowList.size(); ++i) {
         size_t currentEntryIndex = 0;
         WebVector<WebHistoryItem> history;
-        delegate->captureHistoryForWindow(i, &history, &currentEntryIndex);
+        delegate->captureHistoryForWindow(windowList.at(i), &history, &currentEntryIndex);
         dumpBackForwardList(history, currentEntryIndex, result);
     }
     return result;
@@ -421,17 +425,25 @@ WebTestProxyBase::WebTestProxyBase()
 
 WebTestProxyBase::~WebTestProxyBase()
 {
+    m_testInterfaces->windowClosed(this);
 }
 
 void WebTestProxyBase::setInterfaces(WebTestInterfaces* interfaces)
 {
     m_testInterfaces = interfaces->testInterfaces();
+    m_testInterfaces->windowOpened(this);
 }
 
 void WebTestProxyBase::setDelegate(WebTestDelegate* delegate)
 {
     m_delegate = delegate;
     m_spellcheck->setDelegate(delegate);
+#if ENABLE_INPUT_SPEECH
+    if (m_speechInputController.get())
+        m_speechInputController->setDelegate(delegate);
+#endif
+    if (m_speechRecognizer.get())
+        m_speechRecognizer->setDelegate(delegate);
 }
 
 void WebTestProxyBase::reset()
@@ -441,6 +453,12 @@ void WebTestProxyBase::reset()
     m_isPainting = false;
     m_resourceIdentifierMap.clear();
     m_logConsoleOutput = true;
+    if (m_geolocationClient.get())
+        m_geolocationClient->resetMock();
+#if ENABLE_INPUT_SPEECH
+    if (m_speechInputController.get())
+        m_speechInputController->clearResults();
+#endif
 }
 
 WebSpellCheckClient* WebTestProxyBase::spellCheckClient() const
@@ -471,7 +489,7 @@ string WebTestProxyBase::captureTree(bool debugRenderTree)
     }
 
     if (m_testInterfaces->testRunner()->shouldDumpBackForwardList())
-        dataUtf8 += dumpAllBackForwardLists(m_delegate);
+        dataUtf8 += dumpAllBackForwardLists(m_testInterfaces, m_delegate);
 
     return dataUtf8;
 }
@@ -632,6 +650,37 @@ void WebTestProxyBase::displayInvalidatedRegion()
 void WebTestProxyBase::discardBackingStore()
 {
     m_canvas.reset();
+}
+
+WebGeolocationClientMock* WebTestProxyBase::geolocationClientMock()
+{
+    if (!m_geolocationClient.get())
+        m_geolocationClient.reset(WebGeolocationClientMock::create());
+    return m_geolocationClient.get();
+}
+
+WebDeviceOrientationClientMock* WebTestProxyBase::deviceOrientationClientMock()
+{
+    if (!m_deviceOrientationClient.get())
+        m_deviceOrientationClient.reset(WebDeviceOrientationClientMock::create());
+    return m_deviceOrientationClient.get();
+}
+
+#if ENABLE_INPUT_SPEECH
+MockWebSpeechInputController* WebTestProxyBase::speechInputControllerMock()
+{
+    WEBKIT_ASSERT(m_speechInputController.get());
+    return m_speechInputController.get();
+}
+#endif
+
+MockWebSpeechRecognizer* WebTestProxyBase::speechRecognizerMock()
+{
+    if (!m_speechRecognizer.get()) {
+        m_speechRecognizer.reset(new MockWebSpeechRecognizer());
+        m_speechRecognizer->setDelegate(m_delegate);
+    }
+    return m_speechRecognizer.get();
 }
 
 void WebTestProxyBase::didInvalidateRect(const WebRect& rect)
@@ -952,6 +1001,50 @@ WebNotificationPresenter* WebTestProxyBase::notificationPresenter()
 #else
     return 0;
 #endif
+}
+
+WebGeolocationClient* WebTestProxyBase::geolocationClient()
+{
+    return geolocationClientMock();
+}
+
+WebSpeechInputController* WebTestProxyBase::speechInputController(WebSpeechInputListener* listener)
+{
+#if ENABLE_INPUT_SPEECH
+    if (!m_speechInputController.get()) {
+        m_speechInputController.reset(new MockWebSpeechInputController(listener));
+        m_speechInputController->setDelegate(m_delegate);
+    }
+    return m_speechInputController.get();
+#else
+    WEBKIT_ASSERT(listener);
+    return 0;
+#endif
+}
+
+WebSpeechRecognizer* WebTestProxyBase::speechRecognizer()
+{
+    return speechRecognizerMock();
+}
+
+WebDeviceOrientationClient* WebTestProxyBase::deviceOrientationClient()
+{
+    return deviceOrientationClientMock();
+}
+
+bool WebTestProxyBase::requestPointerLock()
+{
+    return m_testInterfaces->testRunner()->requestPointerLock();
+}
+
+void WebTestProxyBase::requestPointerUnlock()
+{
+    m_testInterfaces->testRunner()->requestPointerUnlock();
+}
+
+bool WebTestProxyBase::isPointerLocked()
+{
+    return m_testInterfaces->testRunner()->isPointerLocked();
 }
 
 void WebTestProxyBase::willPerformClientRedirect(WebFrame* frame, const WebURL&, const WebURL& to, double, double)

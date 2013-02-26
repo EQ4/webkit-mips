@@ -31,6 +31,7 @@
 #if ENABLE(SQL_DATABASE)
 
 #include "AbstractSQLStatement.h"
+#include "AbstractSQLTransactionBackend.h"
 #include "DatabaseBasicTypes.h"
 #include "SQLTransactionStateMachine.h"
 #include <wtf/Deque.h>
@@ -39,11 +40,11 @@
 
 namespace WebCore {
 
-class DatabaseBackendAsync;
+class AbstractSQLTransaction;
+class DatabaseBackend;
 class SQLError;
 class SQLiteTransaction;
 class SQLStatementBackend;
-class SQLTransaction;
 class SQLTransactionBackend;
 class SQLValue;
 
@@ -56,41 +57,39 @@ public:
     virtual void handleCommitFailedAfterPostflight(SQLTransactionBackend*) = 0;
 };
 
-class SQLTransactionBackend : public SQLTransactionStateMachine<SQLTransactionBackend> {
+class SQLTransactionBackend : public SQLTransactionStateMachine<SQLTransactionBackend>, public AbstractSQLTransactionBackend {
 public:
-    static PassRefPtr<SQLTransactionBackend> create(DatabaseBackendAsync*,
-        PassRefPtr<SQLTransaction>, PassRefPtr<SQLTransactionWrapper>, bool readOnly);
+    static PassRefPtr<SQLTransactionBackend> create(DatabaseBackend*,
+        PassRefPtr<AbstractSQLTransaction>, PassRefPtr<SQLTransactionWrapper>, bool readOnly);
 
     virtual ~SQLTransactionBackend();
 
     void lockAcquired();
     void performNextStep();
 
-    DatabaseBackendAsync* database() { return m_database.get(); }
+    DatabaseBackend* database() { return m_database.get(); }
     bool isReadOnly() { return m_readOnly; }
     void notifyDatabaseThreadIsShuttingDown();
 
-    // APIs for the frontend:
-    AbstractSQLStatement* currentStatement();
-    PassRefPtr<SQLError> transactionError();
-    void setShouldRetryCurrentStatement(bool);
-
-    void executeSQL(PassOwnPtr<AbstractSQLStatement>, const String& statement,
-        const Vector<SQLValue>& arguments, int permissions);
-
 private:
-    SQLTransactionBackend(DatabaseBackendAsync*, PassRefPtr<SQLTransaction>,
+    SQLTransactionBackend(DatabaseBackend*, PassRefPtr<AbstractSQLTransaction>,
         PassRefPtr<SQLTransactionWrapper>, bool readOnly);
+
+    // APIs called from the frontend published via AbstractSQLTransactionBackend:
+    virtual void requestTransitToState(SQLTransactionState) OVERRIDE;
+    virtual PassRefPtr<SQLError> transactionError() OVERRIDE;
+    virtual AbstractSQLStatement* currentStatement() OVERRIDE;
+    virtual void setShouldRetryCurrentStatement(bool) OVERRIDE;
+    virtual void executeSQL(PassOwnPtr<AbstractSQLStatement>, const String& statement,
+        const Vector<SQLValue>& arguments, int permissions) OVERRIDE;
 
     void doCleanup();
 
     void enqueueStatementBackend(PassRefPtr<SQLStatementBackend>);
 
-    void checkAndHandleClosedOrInterruptedDatabase();
-
     // State Machine functions:
-    virtual StateFunction stateFunctionFor(SQLTransactionState);
-    void requestTransitToState(SQLTransactionState);
+    virtual StateFunction stateFunctionFor(SQLTransactionState) OVERRIDE;
+    void computeNextStateAndCleanupIfNeeded();
 
     // State functions:
     SQLTransactionState acquireLock();
@@ -109,10 +108,10 @@ private:
 
     void getNextStatement();
 
-    RefPtr<SQLTransaction> m_frontend; // Has a reference cycle, and will break in doCleanup().
+    RefPtr<AbstractSQLTransaction> m_frontend; // Has a reference cycle, and will break in doCleanup().
     RefPtr<SQLStatementBackend> m_currentStatementBackend;
 
-    RefPtr<DatabaseBackendAsync> m_database;
+    RefPtr<DatabaseBackend> m_database;
     RefPtr<SQLTransactionWrapper> m_wrapper;
     RefPtr<SQLError> m_transactionError;
 
@@ -129,8 +128,6 @@ private:
     Deque<RefPtr<SQLStatementBackend> > m_statementQueue;
 
     OwnPtr<SQLiteTransaction> m_sqliteTransaction;
-
-    friend class SQLTransaction;
 };
 
 } // namespace WebCore

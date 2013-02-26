@@ -397,7 +397,7 @@
     attribute NotationConstructor Notation;
     attribute EntityConstructor Entity;
     attribute EntityReferenceConstructor EntityReference;
-    [Conditional=CANVAS_PATH] attribute DOMPathConstructor Path;
+    [Conditional=CANVAS_PATH, V8EnabledAtRuntime=canvasPath] attribute DOMPathConstructor Path;
     attribute ProcessingInstructionConstructor ProcessingInstruction;
     [Conditional=SHADOW_DOM, V8EnabledAtRuntime=shadowDOM] attribute ShadowRootConstructor WebKitShadowRoot;
     [Conditional=SHADOW_DOM, V8EnabledAtRuntime=shadowDOM] attribute HTMLContentElementConstructor HTMLContentElement;
@@ -485,10 +485,9 @@
     [JSCustomGetter, CustomConstructor] attribute HTMLImageElementConstructorConstructor Image; // Usable with new operator
     [JSCustomGetter] attribute HTMLOptionElementConstructorConstructor Option; // Usable with new operator
 
-    [Conditional=ENCRYPTED_MEDIA, V8EnabledAtRuntime=encryptedMedia] attribute MediaKeyErrorConstructor MediaKeyError;
     [Conditional=ENCRYPTED_MEDIA, V8EnabledAtRuntime=encryptedMedia] attribute MediaKeyEventConstructor MediaKeyEvent;
     attribute [Conditional=ENCRYPTED_MEDIA_V2, V8EnabledAtRuntime=encryptedMedia] MediaKeysConstructor MediaKeys;
-    attribute [Conditional=ENCRYPTED_MEDIA_V2, V8EnabledAtRuntime=encryptedMedia] MediaKeyErrorConstructor MediaKeyError;
+    attribute [Conditional=ENCRYPTED_MEDIA_V2|ENCRYPTED_MEDIA, V8EnabledAtRuntime=encryptedMedia] MediaKeyErrorConstructor MediaKeyError;
     attribute [Conditional=ENCRYPTED_MEDIA_V2, V8EnabledAtRuntime=encryptedMedia] MediaKeyMessageEventConstructor MediaKeyMessageEvent;
     attribute [Conditional=ENCRYPTED_MEDIA_V2, V8EnabledAtRuntime=encryptedMedia] MediaKeyNeededEventConstructor MediaKeyNeededEvent;
 
@@ -797,7 +796,8 @@
     [Conditional=BLOB] attribute DOMURLConstructor URL;
     [Conditional=BLOB] attribute DOMURLConstructor webkitURL; // FIXME: deprecate this.
 
-    attribute MutationObserverConstructor WebKitMutationObserver;
+    attribute MutationObserverConstructor WebKitMutationObserver; // FIXME: Add metrics to determine when we can remove this.
+    attribute MutationObserverConstructor MutationObserver;
 
     [Conditional=MEDIA_SOURCE, V8EnabledAtRuntime=mediaSource] attribute MediaSourceConstructor WebKitMediaSource;
     [Conditional=MEDIA_SOURCE, V8EnabledAtRuntime=mediaSource] attribute SourceBufferConstructor WebKitSourceBuffer;

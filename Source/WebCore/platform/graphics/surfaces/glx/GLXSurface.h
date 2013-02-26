@@ -28,20 +28,21 @@
 
 #if USE(ACCELERATED_COMPOSITING) && USE(GLX)
 
-#include "GLPlatformSurface.h"
+#include "GLTransportSurface.h"
 #include "GLXConfigSelector.h"
 #include "X11Helper.h"
 
 namespace WebCore {
 
-class GLXTransportSurface : public GLPlatformSurface {
+class GLXTransportSurface : public GLTransportSurface {
 
 public:
-    GLXTransportSurface();
+    GLXTransportSurface(SurfaceAttributes);
     virtual ~GLXTransportSurface();
     virtual PlatformSurfaceConfig configuration() OVERRIDE;
     virtual void swapBuffers() OVERRIDE;
     virtual void setGeometry(const IntRect&) OVERRIDE;
+    virtual GLPlatformSurface::SurfaceAttributes attributes() const OVERRIDE;
     virtual void destroy() OVERRIDE;
 
 private:
@@ -52,13 +53,13 @@ private:
 class GLXOffScreenSurface : public GLPlatformSurface {
 
 public:
-    GLXOffScreenSurface();
+    GLXOffScreenSurface(SurfaceAttributes);
     virtual ~GLXOffScreenSurface();
     virtual PlatformSurfaceConfig configuration() OVERRIDE;
     virtual void destroy() OVERRIDE;
 
 private:
-    void initialize();
+    void initialize(SurfaceAttributes);
     void freeResources();
     OwnPtr<GLXConfigSelector> m_configSelector;
     Pixmap m_pixmap;

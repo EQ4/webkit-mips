@@ -1174,6 +1174,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\runtime\PropertyTable.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\runtime\PrototypeMap.cpp"
 				>
 			</File>
@@ -1874,7 +1878,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\bytecode\PolymorphicAccessStructureList.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\bytecode\PolymorphicPutByIdList.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\bytecode\PolymorphicPutByIdList.h"
 				>
 			</File>
 			<File

@@ -33,11 +33,12 @@
  * @implements {WebInspector.ProjectDelegate}
  * @extends {WebInspector.Object}
  * @param {WebInspector.IsolatedFileSystem} isolatedFileSystem
+ * @param {WebInspector.Workspace} workspace
  */
-WebInspector.FileSystemProjectDelegate = function(isolatedFileSystem)
+WebInspector.FileSystemProjectDelegate = function(isolatedFileSystem, workspace)
 {
     this._fileSystem = isolatedFileSystem;
-    this._populate();
+    this._workspace = workspace;
 }
 
 WebInspector.FileSystemProjectDelegate._scriptExtensions = ["js", "java", "cc", "cpp", "h", "cs", "py", "php"].keySet();
@@ -68,16 +69,16 @@ WebInspector.FileSystemProjectDelegate.prototype = {
     },
 
     /**
-     * @param {string} path
+     * @param {Array.<string>} path
      * @return {string}
      */
     _filePathForPath: function(path)
     {
-        return "/" + path;
+        return "/" + path.join("/");
     },
 
     /**
-     * @param {string} path
+     * @param {Array.<string>} path
      * @param {function(?string,boolean,string)} callback
      */
     requestFileContent: function(path, callback)
@@ -90,13 +91,13 @@ WebInspector.FileSystemProjectDelegate.prototype = {
          */
         function innerCallback(content)
         {
-            var contentType = this._contentTypeForPath(filePath);
+            var contentType = this._contentTypeForPath(path);
             callback(content, false, contentType.canonicalMimeType());
         }
     },
 
     /**
-     * @param {string} path
+     * @param {Array.<string>} path
      * @param {string} newContent
      * @param {function(?string)} callback
      */
@@ -107,7 +108,7 @@ WebInspector.FileSystemProjectDelegate.prototype = {
     },
 
     /**
-     * @param {string} path
+     * @param {Array.<string>} path
      * @param {string} query
      * @param {boolean} caseSensitive
      * @param {boolean} isRegex
@@ -132,13 +133,12 @@ WebInspector.FileSystemProjectDelegate.prototype = {
     },
 
     /**
-     * @param {string} path
+     * @param {Array.<string>} path
      * @return {WebInspector.ResourceType}
      */
     _contentTypeForPath: function(path)
     {
-        var splittedPath = path.split("/");
-        var fileName = splittedPath[splittedPath.length - 1];
+        var fileName = path[path.length - 1];
         var extensionIndex = fileName.lastIndexOf(".");
         var extension = "";
         if (extensionIndex !== -1)
@@ -153,19 +153,20 @@ WebInspector.FileSystemProjectDelegate.prototype = {
         return WebInspector.resourceTypes.Other;
     },
 
-    _populate: function()
+    populate: function()
     {
         this._fileSystem.requestFilesRecursive("", filesLoaded.bind(this));
 
         function filesLoaded(files)
         {
             for (var i = 0; i < files.length; ++i) {
-                var path = files[i].substr(1);
-                // FIXME: FileSystemProject delegate should know nothing about UISourceCode.
-                var uri = WebInspector.UISourceCode.uri(this.id(), path);
-                var contentType = this._contentTypeForPath(files[i]);
-                var url = WebInspector.fileMapping.urlForURI(uri);
-                var fileDescriptor = new WebInspector.FileDescriptor(path, "file://" + this._fileSystem.path() + files[i], url, contentType, true);
+                var path = files[i].split("/");
+                path.shift();
+                console.assert(path.length);
+                var fullPath = this._fileSystem.path() + files[i];
+                var url = this._workspace.urlForPath(fullPath);
+                var contentType = this._contentTypeForPath(path);
+                var fileDescriptor = new WebInspector.FileDescriptor(path, "file://" + fullPath, url, contentType, true);
                 this._addFile(fileDescriptor);
             } 
         }
@@ -180,7 +181,7 @@ WebInspector.FileSystemProjectDelegate.prototype = {
     },
 
     /**
-     * @param {string} path
+     * @param {Array.<string>} path
      */
     _removeFile: function(path)
     {
@@ -199,3 +200,45 @@ WebInspector.FileSystemProjectDelegate.prototype = {
  * @type {?WebInspector.FileSystemProjectDelegate}
  */
 WebInspector.fileSystemProjectDelegate = null;
+
+/**
+ * @constructor
+ * @param {WebInspector.IsolatedFileSystemManager} isolatedFileSystemManager
+ * @param {WebInspector.Workspace} workspace
+ */
+WebInspector.FileSystemWorkspaceProvider = function(isolatedFileSystemManager, workspace)
+{
+    this._isolatedFileSystemManager = isolatedFileSystemManager;
+    this._workspace = workspace;
+    this._isolatedFileSystemManager.addEventListener(WebInspector.IsolatedFileSystemManager.Events.FileSystemAdded, this._fileSystemAdded, this);
+    this._isolatedFileSystemManager.addEventListener(WebInspector.IsolatedFileSystemManager.Events.FileSystemRemoved, this._fileSystemRemoved, this);
+}
+
+WebInspector.FileSystemWorkspaceProvider.prototype = {
+    /**
+     * @param {WebInspector.Event} event
+     */
+    _fileSystemAdded: function(event)
+    {
+        var fileSystem = /** @type {WebInspector.IsolatedFileSystem} */ (event.data);
+        console.assert(!this._workspace.project(fileSystem.id()));
+        var projectDelegate = new WebInspector.FileSystemProjectDelegate(fileSystem, this._workspace)
+        this._workspace.addProject(projectDelegate);
+        projectDelegate.populate();
+    },
+
+    /**
+     * @param {WebInspector.Event} event
+     */
+    _fileSystemRemoved: function(event)
+    {
+        var fileSystem = /** @type {WebInspector.IsolatedFileSystem} */ (event.data);
+        if (fileSystem.id())
+            this._workspace.removeProject(fileSystem.id());
+    }
+}
+
+/**
+ * @type {?WebInspector.FileSystemWorkspaceProvider}
+ */
+WebInspector.fileSystemWorkspaceProvider = null;

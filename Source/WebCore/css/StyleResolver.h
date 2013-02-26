@@ -22,7 +22,6 @@
 #ifndef StyleResolver_h
 #define StyleResolver_h
 
-#include "CSSRule.h"
 #include "CSSRuleList.h"
 #include "CSSToStyleMap.h"
 #include "CSSValueList.h"
@@ -34,6 +33,7 @@
 #include "RuleFeature.h"
 #include "RuleSet.h"
 #include "RuntimeEnabledFeatures.h"
+#include "ScrollTypes.h"
 #include "SelectorChecker.h"
 #include "SelectorFilter.h"
 #include "StyleInheritedData.h"
@@ -81,6 +81,7 @@ class KeyframeValue;
 class MediaQueryEvaluator;
 class Node;
 class RenderRegion;
+class RenderScrollbar;
 class RuleData;
 class RuleSet;
 class Settings;
@@ -136,6 +137,20 @@ enum RuleMatchingBehavior {
     MatchOnlyUserAgentRules,
 };
 
+class PseudoStyleRequest {
+public:
+    PseudoStyleRequest(PseudoId pseudoId, RenderScrollbar* scrollbar = 0, ScrollbarPart scrollbarPart = NoPart)
+        : pseudoId(pseudoId)
+        , scrollbarPart(scrollbarPart)
+        , scrollbar(scrollbar)
+    {
+    }
+
+    PseudoId pseudoId;
+    ScrollbarPart scrollbarPart;
+    RenderScrollbar* scrollbar;
+};
+
 class MatchRequest {
 public:
     MatchRequest(RuleSet* ruleSet, bool includeEmptyRules = false, const ContainerNode* scope = 0, SelectorChecker::BehaviorAtBoundary behaviorAtBoundary = SelectorChecker::DoesNotCrossBoundary)
@@ -170,7 +185,7 @@ public:
 
     void keyframeStylesForAnimation(Element*, const RenderStyle*, KeyframeList&);
 
-    PassRefPtr<RenderStyle> pseudoStyleForElement(PseudoId, Element*, RenderStyle* parentStyle);
+    PassRefPtr<RenderStyle> pseudoStyleForElement(Element*, const PseudoStyleRequest&, RenderStyle* parentStyle);
 
     PassRefPtr<RenderStyle> styleForPage(int pageIndex);
     PassRefPtr<RenderStyle> defaultStyleForElement();
@@ -338,7 +353,8 @@ private:
     };
 
     struct MatchedProperties {
-        MatchedProperties() : possiblyPaddedMember(0) { }
+        MatchedProperties();
+        ~MatchedProperties();
         void reportMemoryUsage(MemoryObjectInfo*) const;
         
         RefPtr<StylePropertySet> properties;
@@ -431,7 +447,7 @@ public:
         , m_rootElementStyle(0)
         , m_regionForStyling(0)
         , m_sameOriginOnly(false)
-        , m_pseudoStyle(NOPSEUDO)
+        , m_pseudoStyleRequest(NOPSEUDO)
         , m_elementLinkState(NotInsideLink)
         , m_distributedToInsertionPoint(false)
         , m_elementAffectedByClassRules(false)
@@ -448,7 +464,7 @@ public:
 
     public:
         void initElement(Element*);
-        void initForStyleResolve(Document*, Element*, RenderStyle* parentStyle = 0, PseudoId = NOPSEUDO, RenderRegion* regionForStyling = 0);
+        void initForStyleResolve(Document*, Element*, RenderStyle* parentStyle = 0, const PseudoStyleRequest& = PseudoStyleRequest(NOPSEUDO), RenderRegion* regionForStyling = 0);
         void clear();
 
         Document* document() const { return m_element->document(); }
@@ -469,7 +485,7 @@ public:
         const RenderRegion* regionForStyling() const { return m_regionForStyling; }
         void setSameOriginOnly(bool isSameOriginOnly) { m_sameOriginOnly = isSameOriginOnly; }
         bool isSameOriginOnly() const { return m_sameOriginOnly; }
-        PseudoId pseudoStyle() const { return m_pseudoStyle; }
+        const PseudoStyleRequest& pseudoStyleRequest() const { return m_pseudoStyleRequest; }
         EInsideLink elementLinkState() const { return m_elementLinkState; }
         bool distributedToInsertionPoint() const { return m_distributedToInsertionPoint; }
         void setElementAffectedByClassRules(bool isAffected) { m_elementAffectedByClassRules = isAffected; }
@@ -526,7 +542,7 @@ public:
         
         RenderRegion* m_regionForStyling;
         bool m_sameOriginOnly;
-        PseudoId m_pseudoStyle;
+        PseudoStyleRequest m_pseudoStyleRequest;
 
         EInsideLink m_elementLinkState;
 

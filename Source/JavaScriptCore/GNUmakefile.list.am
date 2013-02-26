@@ -130,6 +130,7 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/bytecode/Opcode.cpp \
 	Source/JavaScriptCore/bytecode/Opcode.h \
 	Source/JavaScriptCore/bytecode/Operands.h \
+	Source/JavaScriptCore/bytecode/PolymorphicAccessStructureList.h \
 	Source/JavaScriptCore/bytecode/PolymorphicPutByIdList.cpp \
 	Source/JavaScriptCore/bytecode/PolymorphicPutByIdList.h \
 	Source/JavaScriptCore/bytecode/PreciseJumpTargets.cpp \
@@ -271,6 +272,8 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/dfg/DFGThunks.h \
 	Source/JavaScriptCore/dfg/DFGUnificationPhase.cpp \
 	Source/JavaScriptCore/dfg/DFGUnificationPhase.h \
+	Source/JavaScriptCore/dfg/DFGUseKind.cpp \
+	Source/JavaScriptCore/dfg/DFGUseKind.h \
 	Source/JavaScriptCore/dfg/DFGValueRecoveryOverride.h \
 	Source/JavaScriptCore/dfg/DFGValueSource.cpp \
 	Source/JavaScriptCore/dfg/DFGValueSource.h \
@@ -719,6 +722,7 @@ javascriptcore_sources += \
 	Source/JavaScriptCore/runtime/PropertyOffset.h \
 	Source/JavaScriptCore/runtime/PropertySlot.cpp \
 	Source/JavaScriptCore/runtime/PropertySlot.h \
+	Source/JavaScriptCore/runtime/PropertyTable.cpp \
 	Source/JavaScriptCore/runtime/PrototypeMap.cpp \
 	Source/JavaScriptCore/runtime/PrototypeMap.h \
 	Source/JavaScriptCore/runtime/PropertyStorage.h \

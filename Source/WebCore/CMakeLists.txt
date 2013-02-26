@@ -940,7 +940,7 @@ set(WebCore_SOURCES
     Modules/webdatabase/Database.cpp
     Modules/webdatabase/DatabaseAuthorizer.cpp
     Modules/webdatabase/DatabaseBackend.cpp
-    Modules/webdatabase/DatabaseBackendAsync.cpp
+    Modules/webdatabase/DatabaseBackendBase.cpp
     Modules/webdatabase/DatabaseBackendContext.cpp
     Modules/webdatabase/DatabaseBackendSync.cpp
     Modules/webdatabase/DatabaseBase.cpp
@@ -951,8 +951,6 @@ set(WebCore_SOURCES
     Modules/webdatabase/DatabaseTask.cpp
     Modules/webdatabase/DatabaseThread.cpp
     Modules/webdatabase/DatabaseTracker.cpp
-    Modules/webdatabase/OriginQuotaManager.cpp
-    Modules/webdatabase/OriginUsageRecord.cpp
     Modules/webdatabase/SQLException.cpp
     Modules/webdatabase/SQLResultSet.cpp
     Modules/webdatabase/SQLResultSetRowList.cpp
@@ -1087,6 +1085,7 @@ set(WebCore_SOURCES
     css/RuleSet.h
     css/RuleSet.cpp
     css/SelectorChecker.cpp
+    css/SelectorCheckerFastPath.cpp
     css/SelectorFilter.cpp
     css/ShadowValue.cpp
     css/StyleBuilder.cpp
@@ -1117,7 +1116,6 @@ set(WebCore_SOURCES
     css/WebKitCSSViewportRule.cpp
 
     dom/ActiveDOMObject.cpp
-    dom/AncestorChainWalker.cpp
     dom/Attr.cpp
     dom/BeforeTextInsertedEvent.cpp
     dom/BeforeUnloadEvent.cpp
@@ -1176,6 +1174,7 @@ set(WebCore_SOURCES
     dom/EventException.cpp
     dom/EventListenerMap.cpp
     dom/EventNames.cpp
+    dom/EventPathWalker.cpp
     dom/EventRetargeter.cpp
     dom/EventTarget.cpp
     dom/ExceptionBase.cpp
@@ -1623,7 +1622,6 @@ set(WebCore_SOURCES
     inspector/InspectorDOMAgent.cpp
     inspector/InspectorDOMDebuggerAgent.cpp
     inspector/InspectorDOMStorageAgent.cpp
-    inspector/InspectorDOMStorageResource.cpp
     inspector/InspectorDatabaseAgent.cpp
     inspector/InspectorDatabaseResource.cpp
     inspector/InspectorDebuggerAgent.cpp
@@ -2763,7 +2761,6 @@ if (WTF_USE_3D_GRAPHICS)
     endif ()
 
     list(APPEND ANGLESupport_SOURCES
-        ${THIRDPARTY_DIR}/ANGLE/src/compiler/ArrayBoundsClamper.cpp
         ${THIRDPARTY_DIR}/ANGLE/src/compiler/BuiltInFunctionEmulator.cpp
         ${THIRDPARTY_DIR}/ANGLE/src/compiler/CodeGenGLSL.cpp
         ${THIRDPARTY_DIR}/ANGLE/src/compiler/Compiler.cpp
@@ -2820,6 +2817,7 @@ if (WTF_USE_3D_GRAPHICS)
         ${THIRDPARTY_DIR}/ANGLE/src/compiler/VariableInfo.cpp
         ${THIRDPARTY_DIR}/ANGLE/src/compiler/VariablePacker.cpp
         ${THIRDPARTY_DIR}/ANGLE/src/compiler/VersionGLSL.cpp
+        ${THIRDPARTY_DIR}/ANGLE/src/third_party/compiler/ArrayBoundsClamper.cpp
     )
 
     list(APPEND WebCore_SOURCES

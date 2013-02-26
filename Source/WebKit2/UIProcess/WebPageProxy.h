@@ -382,7 +382,7 @@ public:
 #if PLATFORM(MAC)
     void updateWindowIsVisible(bool windowIsVisible);
     void windowAndViewFramesChanged(const WebCore::IntRect& windowFrameInScreenCoordinates, const WebCore::IntRect& viewFrameInWindowCoordinates, const WebCore::IntPoint& accessibilityViewCoordinates);
-    void viewExposedRectChanged(const WebCore::IntRect& exposedRect);
+    void viewExposedRectChanged(const WebCore::FloatRect& exposedRect);
     void setMainFrameIsScrollable(bool);
 
     void setComposition(const String& text, Vector<WebCore::CompositionUnderline> underlines, uint64_t selectionStart, uint64_t selectionEnd, uint64_t replacementRangeStart, uint64_t replacementRangeEnd);
@@ -419,7 +419,6 @@ public:
     PlatformWidget viewWidget();
 #endif
 #if USE(TILED_BACKING_STORE)
-    void setViewportSize(const WebCore::IntSize&);
     void commitPageTransitionViewport();
 #endif
 
@@ -501,6 +500,11 @@ public:
     bool isPinnedToRightSide() const { return m_mainFrameIsPinnedToRightSide; }
     bool isPinnedToTopSide() const { return m_mainFrameIsPinnedToTopSide; }
     bool isPinnedToBottomSide() const { return m_mainFrameIsPinnedToBottomSide; }
+
+    bool rubberBandsAtBottom() const { return m_rubberBandsAtBottom; }
+    void setRubberBandsAtBottom(bool);
+    bool rubberBandsAtTop() const { return m_rubberBandsAtTop; }
+    void setRubberBandsAtTop(bool);
 
     void setPaginationMode(WebCore::Pagination::Mode);
     WebCore::Pagination::Mode paginationMode() const { return m_paginationMode; }
@@ -749,6 +753,16 @@ public:
 
     void didReceiveAuthenticationChallengeProxy(uint64_t frameID, PassRefPtr<AuthenticationChallengeProxy>);
 
+    static String pluginInformationBundleIdentifierKey();
+    static String pluginInformationBundleVersionKey();
+    static String pluginInformationDisplayNameKey();
+    static String pluginInformationFrameURLKey();
+    static String pluginInformationMIMETypeKey();
+    static String pluginInformationPageURLKey();
+    static String pluginInformationPluginspageAttributeURLKey();
+    static String pluginInformationPluginURLKey();
+    static PassRefPtr<ImmutableDictionary> pluginInformationDictionary(const String& bundleIdentifier, const String& bundleVersion, const String& displayName, const String& frameURLString, const String& mimeType, const String& pageURLString, const String& pluginspageAttributeURLString, const String& pluginURLString);
+
 private:
     WebPageProxy(PageClient*, PassRefPtr<WebProcessProxy>, WebPageGroup*, uint64_t pageID);
 
@@ -815,7 +829,7 @@ private:
     void shouldInterruptJavaScript(bool& result);
     void setStatusText(const String&);
     void mouseDidMoveOverElement(const WebHitTestResult::Data& hitTestResultData, uint32_t modifiers, CoreIPC::MessageDecoder&);
-    void unavailablePluginButtonClicked(uint32_t opaquePluginUnavailabilityReason, const String& mimeType, const String& url, const String& pluginsPageURL);
+    void unavailablePluginButtonClicked(uint32_t opaquePluginUnavailabilityReason, const String& mimeType, const String& pluginURLString, const String& pluginsPageURLString, const String& frameURLString, const String& pageURLString);
     void setToolbarsAreVisible(bool toolbarsAreVisible);
     void getToolbarsAreVisible(bool& toolbarsAreVisible);
     void setMenuBarIsVisible(bool menuBarIsVisible);
@@ -841,8 +855,8 @@ private:
     void didChangeScrollbarsForMainFrame(bool hasHorizontalScrollbar, bool hasVerticalScrollbar);
     void didChangeScrollOffsetPinningForMainFrame(bool pinnedToLeftSide, bool pinnedToRightSide, bool pinnedToTopSide, bool pinnedToBottomSide);
     void didChangePageCount(unsigned);
-    void didFailToInitializePlugin(const String& mimeType);
-    void didBlockInsecurePluginVersion(const String& mimeType, const String& urlString);
+    void didFailToInitializePlugin(const String& mimeType, const String& frameURLString, const String& pageURLString);
+    void didBlockInsecurePluginVersion(const String& mimeType, const String& pluginURLString, const String& frameURLString, const String& pageURLString);
     void setCanShortCircuitHorizontalWheelEvents(bool canShortCircuitHorizontalWheelEvents) { m_canShortCircuitHorizontalWheelEvents = canShortCircuitHorizontalWheelEvents; }
 
     void reattachToWebProcess();
@@ -1021,7 +1035,7 @@ private:
     void sendWheelEvent(const WebWheelEvent&);
 
 #if ENABLE(NETSCAPE_PLUGIN_API)
-    void getPluginPath(const String& mimeType, const String& urlString, const String& documentURLString, String& pluginPath, uint32_t& pluginLoadPolicy);
+    void getPluginPath(const String& mimeType, const String& urlString, const String& frameURLString, const String& pageURLString, String& pluginPath, uint32_t& pluginLoadPolicy);
 #endif
 
     PageClient* m_pageClient;
@@ -1208,6 +1222,9 @@ private:
     bool m_mainFrameIsPinnedToRightSide;
     bool m_mainFrameIsPinnedToTopSide;
     bool m_mainFrameIsPinnedToBottomSide;
+
+    bool m_rubberBandsAtBottom;
+    bool m_rubberBandsAtTop;
 
     bool m_mainFrameInViewSourceMode;
 

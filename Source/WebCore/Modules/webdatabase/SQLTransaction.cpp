@@ -31,6 +31,7 @@
 
 #if ENABLE(SQL_DATABASE)
 
+#include "AbstractSQLTransactionBackend.h"
 #include "Database.h"
 #include "DatabaseAuthorizer.h"
 #include "DatabaseContext.h"
@@ -39,9 +40,8 @@
 #include "SQLError.h"
 #include "SQLStatementCallback.h"
 #include "SQLStatementErrorCallback.h"
-#include "SQLTransactionBackend.h"
 #include "SQLTransactionCallback.h"
-#include "SQLTransactionClient.h"
+#include "SQLTransactionClient.h" // FIXME: Should be used in the backend only.
 #include "SQLTransactionErrorCallback.h"
 #include "VoidCallback.h"
 #include <wtf/StdLibExtras.h>
@@ -69,7 +69,22 @@ SQLTransaction::SQLTransaction(Database* db, PassRefPtr<SQLTransactionCallback> 
     ASSERT(m_database);
 }
 
-void SQLTransaction::setBackend(SQLTransactionBackend* backend)
+bool SQLTransaction::hasCallback() const
+{
+    return m_callbackWrapper.hasCallback();
+}
+
+bool SQLTransaction::hasSuccessCallback() const
+{
+    return m_successCallbackWrapper.hasCallback();
+}
+
+bool SQLTransaction::hasErrorCallback() const
+{
+    return m_errorCallbackWrapper.hasCallback();
+}
+
+void SQLTransaction::setBackend(AbstractSQLTransactionBackend* backend)
 {
     ASSERT(!m_backend);
     m_backend = backend;
@@ -232,17 +247,7 @@ SQLTransactionState SQLTransaction::sendToBackendState()
 
 void SQLTransaction::performPendingCallback()
 {
-    LOG(StorageAPI, "Callback %s\n", nameForSQLTransactionState(m_nextState));
-
-    setStateToRequestedState();
-    ASSERT(m_nextState == SQLTransactionState::End
-        || m_nextState == SQLTransactionState::DeliverTransactionCallback
-        || m_nextState == SQLTransactionState::DeliverTransactionErrorCallback
-        || m_nextState == SQLTransactionState::DeliverStatementCallback
-        || m_nextState == SQLTransactionState::DeliverQuotaIncreaseCallback
-        || m_nextState == SQLTransactionState::DeliverSuccessCallback);
-
-    checkAndHandleClosedOrInterruptedDatabase();
+    computeNextStateAndCleanupIfNeeded();
     runStateMachine();
 }
 
@@ -263,10 +268,22 @@ void SQLTransaction::executeSQL(const String& sqlStatement, const Vector<SQLValu
     m_backend->executeSQL(statement.release(), sqlStatement, arguments, permissions);
 }
 
-bool SQLTransaction::checkAndHandleClosedOrInterruptedDatabase()
+bool SQLTransaction::computeNextStateAndCleanupIfNeeded()
 {
-    if (m_database->opened() && !m_database->isInterrupted())
+    // Only honor the requested state transition if we're not supposed to be
+    // cleaning up and shutting down:
+    if (m_database->opened() && !m_database->isInterrupted()) {
+        setStateToRequestedState();
+        ASSERT(m_nextState == SQLTransactionState::End
+            || m_nextState == SQLTransactionState::DeliverTransactionCallback
+            || m_nextState == SQLTransactionState::DeliverTransactionErrorCallback
+            || m_nextState == SQLTransactionState::DeliverStatementCallback
+            || m_nextState == SQLTransactionState::DeliverQuotaIncreaseCallback
+            || m_nextState == SQLTransactionState::DeliverSuccessCallback);
+
+        LOG(StorageAPI, "Callback %s\n", nameForSQLTransactionState(m_nextState));
         return false;
+    }
 
     clearCallbackWrappers();
     m_nextState = SQLTransactionState::CleanupAndTerminate;

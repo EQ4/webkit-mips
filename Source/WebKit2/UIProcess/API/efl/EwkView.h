@@ -47,7 +47,6 @@
 #include "ewk_touch.h"
 #endif
 
-
 #include "WebContext.h"
 #include "WebPageGroup.h"
 #include "WebPreferences.h"
@@ -63,6 +62,8 @@ class PageLoadClientEfl;
 class PagePolicyClientEfl;
 class PageUIClientEfl;
 class ViewClientEfl;
+class PageViewportController;
+class PageViewportControllerClientEfl;
 class WebContextMenuItemData;
 class WebContextMenuProxyEfl;
 class WebPageGroup;
@@ -122,6 +123,7 @@ public:
     EwkSettings* settings() { return m_settings.get(); }
     EwkBackForwardList* backForwardList() { return m_backForwardList.get(); }
     EwkWindowFeatures* windowFeatures();
+    WebKit::PageViewportController* pageViewportController() { return m_pageViewportController.get(); }
 
     bool isFocused() const;
     bool isVisible() const;
@@ -132,16 +134,7 @@ public:
     void setSize(const WebCore::IntSize&);
     WebCore::IntSize size() const { return m_size; }
 
-    void setUserViewportTransform(const WebCore::TransformationMatrix& transform) { m_userViewportTransform = transform; }
-    WebCore::TransformationMatrix userViewportTransform() const { return m_userViewportTransform; }
-
-    // FIXME: Convert to TransformationMatrix.
-    WebCore::AffineTransform transformToScene() const;
-    WebCore::AffineTransform transformFromScene() const;
     WebCore::AffineTransform transformToScreen() const;
-
-    void paintToCurrentGLContext();
-    void paintToCairoSurface(cairo_surface_t*);
 
     const char* url() const { return m_url; }
     Evas_Object* createFavicon() const;
@@ -156,6 +149,7 @@ public:
     bool mouseEventsEnabled() const { return m_mouseEventsEnabled; }
     void setMouseEventsEnabled(bool enabled);
 #if ENABLE(TOUCH_EVENTS)
+    void feedTouchEvent(Ewk_Touch_Event_Type type, const Eina_List* points, const Evas_Modifier* modifiers);
     bool touchEventsEnabled() const { return m_touchEventsEnabled; }
     void setTouchEventsEnabled(bool enabled);
 #endif
@@ -174,8 +168,6 @@ public:
     void setWindowGeometry(const WKRect&);
 
     bool createGLSurface();
-    bool enterAcceleratedCompositingMode();
-    bool exitAcceleratedCompositingMode();
     void setNeedsSurfaceResize() { m_pendingSurfaceResize = true; }
 
 #if ENABLE(INPUT_TYPE_COLOR)
@@ -227,8 +219,6 @@ private:
     Ewk_View_Smart_Data* smartData() const;
 
     void displayTimerFired(WebCore::Timer<EwkView>*);
-
-    WebCore::CoordinatedGraphicsScene* coordinatedGraphicsScene();
 
     // Evas_Smart_Class callback interface:
     static void handleEvasObjectAdd(Evas_Object*);
@@ -300,6 +290,8 @@ private:
 #if ENABLE(INPUT_TYPE_COLOR)
     OwnPtr<EwkColorPicker> m_colorPicker;
 #endif
+    OwnPtr<WebKit::PageViewportControllerClientEfl> m_pageViewportControllerClient;
+    OwnPtr<WebKit::PageViewportController> m_pageViewportController;
     bool m_isAccelerated;
 
     static Evas_Smart_Class parentSmartClass;

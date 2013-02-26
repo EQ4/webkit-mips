@@ -55,13 +55,14 @@ class WebView;
 namespace WebTestRunner {
 
 class NotificationPresenter;
+class TestInterfaces;
 class WebPermissions;
 class WebTestDelegate;
 class WebTestProxyBase;
 
 class TestRunner : public WebTestRunner, public CppBoundClass {
 public:
-    TestRunner();
+    explicit TestRunner(TestInterfaces*);
     virtual ~TestRunner();
 
     void setDelegate(WebTestDelegate*);
@@ -77,6 +78,7 @@ public:
     virtual bool shouldGeneratePixelResults() OVERRIDE;
     virtual bool shouldDumpAsAudio() const OVERRIDE;
     virtual const WebKit::WebArrayBufferView* audioData() const OVERRIDE;
+    virtual bool shouldDumpBackForwardList() const OVERRIDE;
     virtual WebKit::WebPermissionClient* webPermissions() const OVERRIDE;
 
     // Methods used by WebTestProxyBase.
@@ -85,7 +87,6 @@ public:
     bool sweepHorizontally() const;
     bool isPrinting() const;
     bool shouldDumpAsText();
-    bool shouldDumpBackForwardList() const;
     bool shouldDumpChildFrameScrollPositions() const;
     bool shouldDumpChildFramesAsText() const;
     void showDevTools();
@@ -122,6 +123,9 @@ public:
 #if ENABLE_NOTIFICATIONS
     WebKit::WebNotificationPresenter* notificationPresenter() const;
 #endif
+    bool requestPointerLock();
+    void requestPointerUnlock();
+    bool isPointerLocked();
 
     // A single item in the work queue.
     class WorkItem {
@@ -236,10 +240,6 @@ private:
 
     void markerTextForListItem(const CppArgumentList&, CppVariant*);
     void findString(const CppArgumentList&, CppVariant*);
-
-    // Expects the first argument to be an input element and the second argument to be a boolean.
-    // Forwards the setAutofilled() call to the element.
-    void setAutofilled(const CppArgumentList&, CppVariant*);
 
     // Expects the first argument to be an input element and the second argument to be a string value.
     // Forwards the setValueForUser() call to the element.
@@ -502,6 +502,23 @@ private:
         virtual void runIfValid() { m_object->completeNotifyDone(true); }
     };
 
+    class HostMethodTask : public WebMethodTask<TestRunner> {
+    public:
+        typedef void (TestRunner::*CallbackMethodType)();
+        HostMethodTask(TestRunner* object, CallbackMethodType callback)
+            : WebMethodTask<TestRunner>(object)
+            , m_callback(callback)
+        { }
+
+        virtual void runIfValid() { (m_object->*m_callback)(); }
+
+    private:
+        CallbackMethodType m_callback;
+    };
+    void didAcquirePointerLockInternal();
+    void didNotAcquirePointerLockInternal();
+    void didLosePointerLockInternal();
+
     bool elementDoesAutoCompleteForElementWithId(const WebKit::WebString&);
     bool cppVariantToBool(const CppVariant&);
     int32_t cppVariantToInt32(const CppVariant&);
@@ -660,6 +677,7 @@ private:
     // Used for test timeouts.
     WebTaskList m_taskList;
 
+    TestInterfaces* m_testInterfaces;
     WebTestDelegate* m_delegate;
     WebKit::WebView* m_webView;
     WebTestProxyBase* m_proxy;
@@ -673,6 +691,13 @@ private:
 #if ENABLE_NOTIFICATIONS
     std::auto_ptr<NotificationPresenter> m_notificationPresenter;
 #endif
+
+    bool m_pointerLocked;
+    enum {
+        PointerLockWillSucceed,
+        PointerLockWillRespondAsync,
+        PointerLockWillFailSync,
+    } m_pointerLockPlannedResult;
 };
 
 }

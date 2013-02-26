@@ -138,6 +138,7 @@ public:
     virtual void setPageTitle(const unsigned short* title, unsigned titleLength) = 0;
 
     virtual Platform::Graphics::Window* window() const = 0;
+    virtual void postToSurface(const Platform::IntRect&) = 0;
 
     virtual void notifyPixelContentRendered(const Platform::IntRect&) = 0;
 
@@ -153,7 +154,7 @@ public:
     virtual void requestSpellingCheckingOptions(imf_sp_text_t&, const BlackBerry::Platform::IntRect& documentCaretRect, const BlackBerry::Platform::IntSize& screenOffset, const bool shouldMoveDialog) = 0;
     virtual int32_t checkSpellingOfStringAsync(wchar_t* text, const unsigned length) = 0;
 
-    virtual void notifySelectionDetailsChanged(const Platform::IntRect& documentStartRect, const Platform::IntRect& documentEndRect, const Platform::IntRectRegion& documentRegion, bool overrideTouchHandling = false) = 0;
+    virtual void notifySelectionDetailsChanged(const Platform::IntRect& documentStartRect, const Platform::IntRect& documentEndRect, const Platform::IntRectRegion& documentRegion, bool overrideTouchHandling = false, BlackBerry::Platform::RequestedHandlePosition = BlackBerry::Platform::SmartPlacement) = 0;
     virtual void cancelSelectionVisuals() = 0;
     virtual void notifySelectionHandlesReversed() = 0;
     virtual void notifyCaretChanged(const Platform::IntRect& documentCaretRect, bool userTouchTriggered, bool isSingleLineInput = false, const Platform::IntRect& singleLineDocumentBoundingBox = Platform::IntRect(), bool textFieldIsEmpty = false) = 0;
@@ -236,8 +237,6 @@ public:
 
     virtual int fullscreenSetWindowRect(const BlackBerry::Platform::IntRect& newWindowScreenRect) = 0;
 
-    virtual void drawVerticalScrollbar() = 0;
-    virtual void drawHorizontalScrollbar() = 0;
     virtual void populateCustomHeaders(Platform::NetworkRequest&) = 0;
 
     virtual void notifyWillUpdateApplicationCache() = 0;

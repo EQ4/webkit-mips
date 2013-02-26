@@ -383,8 +383,9 @@ void WebFrameLoaderClient::dispatchDidStartProvisionalLoad()
         return;
 
 #if ENABLE(FULLSCREEN_API)
-    if (m_frame->coreFrame()->document()->webkitIsFullScreen())
-        webPage->fullScreenManager()->close();
+    Element* documentElement = m_frame->coreFrame()->document()->documentElement();
+    if (documentElement && documentElement->containsFullScreenElement())
+        webPage->fullScreenManager()->exitFullScreenForElement(webPage->fullScreenManager()->element());
 #endif
 
     webPage->findController().hideFindUI();
@@ -1129,7 +1130,7 @@ void WebFrameLoaderClient::restoreViewState()
     // FIXME: This should not be necessary. WebCore should be correctly invalidating
     // the view on restores from the back/forward cache.
     if (m_frame == m_frame->page()->mainWebFrame())
-        m_frame->page()->drawingArea()->setNeedsDisplay(m_frame->page()->bounds());
+        m_frame->page()->drawingArea()->setNeedsDisplay();
 }
 
 void WebFrameLoaderClient::provisionalLoadStarted()
@@ -1354,8 +1355,11 @@ PassRefPtr<Widget> WebFrameLoaderClient::createJavaAppletWidget(const IntSize& p
 {
     RefPtr<Widget> plugin = createPlugin(pluginSize, appletElement, KURL(), paramNames, paramValues, appletElement->serviceType(), false);
     if (!plugin) {
-        if (WebPage* webPage = m_frame->page())
-            webPage->send(Messages::WebPageProxy::DidFailToInitializePlugin(appletElement->serviceType()));
+        if (WebPage* webPage = m_frame->page()) {
+            String frameURLString = m_frame->coreFrame()->loader()->documentLoader()->responseURL().string();
+            String pageURLString = webPage->corePage()->mainFrame()->loader()->documentLoader()->responseURL().string();
+            webPage->send(Messages::WebPageProxy::DidFailToInitializePlugin(appletElement->serviceType(), frameURLString, pageURLString));
+        }
     }
     return plugin.release();
 }

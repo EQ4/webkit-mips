@@ -220,9 +220,7 @@ WebInspector.TimelinePanel.prototype = {
     get statusBarItems()
     {
         return this._statusBarItems.select("element").concat([
-            this._miscStatusBarItems,
-            this.recordsCounter,
-            this.frameStatistics
+            this._miscStatusBarItems
         ]);
     },
 
@@ -282,11 +280,15 @@ WebInspector.TimelinePanel.prototype = {
             this._statusBarFilters.appendChild(this._createTimelineCategoryStatusBarCheckbox(category, this._onCategoryCheckboxClicked.bind(this, category)));
         }
 
-        this.recordsCounter = document.createElement("span");
+        var statsContainer = this._statusBarFilters.createChild("div");
+        statsContainer.className = "timeline-records-stats-container";
+
+        this.recordsCounter = statsContainer.createChild("div");
         this.recordsCounter.className = "timeline-records-stats";
 
-        this.frameStatistics = document.createElement("span");
+        this.frameStatistics = statsContainer.createChild("div");
         this.frameStatistics.className = "timeline-records-stats hidden";
+
         function getAnchor()
         {
             return this.frameStatistics;
@@ -1370,6 +1372,8 @@ WebInspector.TimelineRecordListRow.prototype = {
             this.element.addStyleClass("warning");
         else if (record.childHasWarning)
             this.element.addStyleClass("child-warning");
+        if (record.isBackground)
+            this.element.addStyleClass("background");
 
         this._typeElement.textContent = record.title;
 
@@ -1442,7 +1446,12 @@ WebInspector.TimelineRecordGraphRow.prototype = {
     update: function(record, isEven, calculator, expandOffset, index)
     {
         this._record = record;
-        this.element.className = "timeline-graph-side timeline-category-" + record.category.name + (isEven ? " even" : "");
+        this.element.className = "timeline-graph-side timeline-category-" + record.category.name;
+        if (isEven)
+            this.element.addStyleClass("even");
+        if (record.isBackground)
+            this.element.addStyleClass("background");
+
         var barPosition = calculator.computeBarGraphWindowPosition(record);
         this._barWithChildrenElement.style.left = barPosition.left + "px";
         this._barWithChildrenElement.style.width = barPosition.widthWithChildren + "px";

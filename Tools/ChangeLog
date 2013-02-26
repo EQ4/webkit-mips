@@ -1,3 +1,1160 @@
+2013-02-26  Vivek Galatage  <vivek.vg@samsung.com>
+
+        new-commit-bot: Some IRC clients doesn't linkify rollout messages
+        https://bugs.webkit.org/show_bug.cgi?id=110861
+
+        Reviewed by Ryosuke Niwa.
+
+        Adding the space before ':' in order to fix the links shown for the rollout message.
+
+        * Scripts/webkitpy/tool/commands/newcommitbot.py:
+        (NewCommitBot._summarize_commit_log):
+
+2013-02-26  Joone Hur  <joone.hur@intel.com>
+
+        [GTK] Add Clutter to jhbuild
+        https://bugs.webkit.org/show_bug.cgi?id=110245
+
+        Reviewed by Martin Robinson.
+
+        Add clutter, cogl, clutter-gtk, and atk to the optional moduleset.
+        This allows to build WebKitGtk+ with clutter as an acceleration backend
+        within the jhbuild environment. 
+
+        * gtk/jhbuild-optional.modules:
+
+2013-02-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Another fix attempt after r143991 since having \r? after a greedy match doesn't help.
+
+        * Scripts/webkitpy/common/checkout/scm/svn.py:
+        (SVN.value_from_svn_info):
+
+2013-02-25  Alan Cutter  <alancutter@chromium.org>
+
+        GCE EWS bots failing intermittently on HTTP 502 error while updating their status
+        https://bugs.webkit.org/show_bug.cgi?id=110845
+
+        Unreviewed EWS bot fix.
+
+        Switch the Queue Status Server address the EWS bots use to a more direct URL that
+        doesn't seem to be having problems from GCE like queues.webkit.org.
+
+        * Scripts/webkitpy/common/net/statusserver.py:
+        (StatusServer):
+
+2013-02-25  Dirk Pranke  <dpranke@chromium.org>
+
+        Forgot to delete a no-longer-needed unit test after r143980.
+
+        Unreviewed, build fix.
+
+        * Scripts/webkitpy/layout_tests/port/chromium_win_unittest.py:
+        (ChromiumWinTest.test_path_to_image_diff):
+
+2013-02-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Build fix. run-perf-tests was reporting with revision numbers ending with \r.
+        Don't include \r at the end of svn info lines on Windows.
+
+        This is similar to r143839.
+
+        * Scripts/webkitpy/common/checkout/scm/svn.py:
+        (SVN.value_from_svn_info):
+
+2013-02-25  James Simonsen  <simonjam@chromium.org>
+
+        [Resource Timing] Update test suite so it can be exported to the W3C
+        https://bugs.webkit.org/show_bug.cgi?id=107343
+
+        Reviewed by Tony Gentilcore.
+
+        * Scripts/export-w3c-performance-wg-tests: Clean up output.
+        * Scripts/import-w3c-performance-wg-tests:
+
+2013-02-25  Anders Carlsson  <andersca@apple.com>
+
+        Add a new unavailablePluginButtonClicked callback that takes a WKDictionary of plug-in information
+        https://bugs.webkit.org/show_bug.cgi?id=110821
+        <rdar://problem/13265303>
+
+        Reviewed by Beth Dakin.
+
+        Update for WebKit2 changes.
+
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (-[WK2BrowserWindowController awakeFromNib]):
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::createOtherPage):
+        (WTR::TestController::createWebViewWithOptions):
+        (WTR::TestController::unavailablePluginButtonClicked):
+        * WebKitTestRunner/TestController.h:
+        (TestController):
+
+2013-02-21  Jeffrey Pfau  <jpfau@apple.com>
+
+        Optionally partition cache to prevent using cache for tracking
+        https://bugs.webkit.org/show_bug.cgi?id=110269
+
+        Reviewed by Maciej Stachowiak.
+
+        Add test suite for public suffix functions on Mac.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/mac/PublicSuffix.mm: Added.
+        (TestWebKitAPI):
+        (TestWebKitAPI::TEST_F):
+
+2013-02-25  Dirk Pranke  <dpranke@chromium.org>
+
+        nrwt: reenable multiple http shards on chromium win
+        https://bugs.webkit.org/show_bug.cgi?id=110814
+
+        Reviewed by Tony Chang.
+
+        The underlying bug in DumpRenderTree that was causing us to look for a
+        pac file and timeout under load was fixed a while ago.
+
+        * Scripts/webkitpy/layout_tests/port/chromium_win.py:
+        (ChromiumWinPort.relative_test_filename):
+
+2013-02-25  Dirk Pranke  <dpranke@chromium.org>
+
+        Make ninja the default w/ build-webkit --chromium on windows.
+        https://bugs.webkit.org/show_bug.cgi?id=110731
+
+        Unreviewed - TBR'ing thakis :).
+
+        * Scripts/update-webkit-chromium:
+
+2013-02-25  Anders Carlsson  <andersca@apple.com>
+
+        Add a new pluginDidFail callback that takes a WKDictionary of plug-in information
+        https://bugs.webkit.org/show_bug.cgi?id=110793
+        <rdar://problem/13265303>
+
+        Reviewed by Sam Weinig.
+
+        Update for WebKit2 API changes.
+
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (-[WK2BrowserWindowController awakeFromNib]):
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::createWebViewWithOptions):
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        Fix python unit tests after yoli's email address update in http://trac.webkit.org/changeset/143922
+        https://bugs.webkit.org/show_bug.cgi?id=110775
+
+        Unreviewed, basically a rebaseline.
+
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        [chromium] Try to get the webkit builder to use msvs again
+        https://bugs.webkit.org/show_bug.cgi?id=110771
+
+        Reviewed by Eric Seidel.
+
+        The msvs gyp generator apparently doesn't write the sln file on every
+        run, so check the vcxproj file instead.
+
+        * Scripts/webkitdirs.pm:
+        (determineIsChromiumNinja):
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        [chromium] try to unbreak run-chromium-webkit-unit-tests on the mac bots
+        https://bugs.webkit.org/show_bug.cgi?id=110767
+
+        Reviewed by Eric Seidel.
+
+        The tester runs gyp, which generates out/Release/build.ninja. The bot
+        scripts use existence (and timestamp) of that file to decide if the
+        current build is supposed to be ninja or xcodebuild. The file exists,
+        so the snapshot is extracted to out/Release. The snapshot doesn't
+        contain build.ninja however due to
+        http://trac.webkit.org/changeset/140375 , so after extracting the
+        snapshot the scripts think that this is an xcodebuild build. So remove
+        the part of that revision that removed ninja files from the archive,
+        and the bots should be happy again.
+
+        * BuildSlaveSupport/built-product-archive:
+        (archiveBuiltProduct):
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        Fix tests after r143910
+        https://bugs.webkit.org/show_bug.cgi?id=110757
+
+        Reviewed by Andreas Kling.
+
+        While here, also add a test for the bug r143910 fixed.
+
+        * Scripts/webkitpy/common/system/executive_unittest.py:
+        (ScriptErrorTest.test_message_with_output):
+        (ScriptErrorTest):
+        (ScriptErrorTest.test_message_with_tuple):
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        [chromium] Apparently built-product-archive is written in Python, not Perl :-/
+        https://bugs.webkit.org/show_bug.cgi?id=110755
+
+        Reviewed by Jochen Eisinger.
+
+        * BuildSlaveSupport/built-product-archive:
+        (archiveBuiltProduct):
+        (extractBuiltProduct):
+
+2013-02-25  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r143895.
+        http://trac.webkit.org/changeset/143895
+        https://bugs.webkit.org/show_bug.cgi?id=110758
+
+        broke a bunch of tests (Requested by thakis__ on #webkit).
+
+        * Scripts/update-webkit-chromium:
+
+2013-02-25  Andreas Kling  <akling@apple.com>
+
+        Unreviewed, fix simple mistake in r143903.
+        <http://webkit.org/b/110746>
+
+        Reviewed by Andreas Kling.
+
+        Pass git revision, not svn revision, to git shell command.
+
+        * Scripts/webkitpy/common/checkout/scm/git.py:
+        (Git.timestamp_of_latest_commit):
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        [chromium] Let built-product-archive log which directory it's archiving from and extracting to
+        https://bugs.webkit.org/show_bug.cgi?id=110748
+
+        Reviewed by Jochen Eisinger.
+
+        One of the mac testers runs DRT from out/ but WebKitUnitTests from
+        xcodebuild. I'm trying to understand what's going on.
+
+        * BuildSlaveSupport/built-product-archive:
+        (archiveBuiltProduct):
+        (extractBuiltProduct):
+
+2013-02-23  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Web Inspector: Native Memory Instrumentation: replace String with const char* in MemoryObjectInfo
+        https://bugs.webkit.org/show_bug.cgi?id=110599
+
+        Reviewed by Yury Semikhatsky.
+
+        Due to potentially dynamic nature of names and classNames we need to make a copy of the strings
+        that were given us via MemoryInstrumentation calls.
+        So I extended client api with registerString method that pushes the strings
+        down to the serializer.
+
+        * TestWebKitAPI/Tests/WTF/MemoryInstrumentationTest.cpp:
+        * TestWebKitAPI/Tests/WebCore/HeapGraphSerializerTest.cpp:
+        (TestWebKitAPI::Helper::Helper):
+        (Helper):
+        (TestWebKitAPI::Helper::addNode):
+        (TestWebKitAPI::TEST):
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        Make ScriptError not crash when args is a tuple
+        https://bugs.webkit.org/show_bug.cgi?id=110747
+
+        Reviewed by Jochen Eisinger.
+
+        I'm trying to understand the error on
+        http://build.webkit.org/builders/Chromium%20Win%20Release%20%28Tests%29/builds/34563/steps/layout-test/logs/stdio
+        better. I'll likely have to revert the ninja switch on windows, but
+        having error reporting code that doesn't itself crash sounds like a
+        good thing to have anyways.
+
+        The problem is that '%s' % (1, 2) errors out, and args is sometimes a
+        tuple not a list.
+
+        * Scripts/run-chromium-webkit-unit-tests:
+        * Scripts/webkitpy/common/system/executive.py:
+        (ScriptError.__init__):
+
+2013-02-25  Laszlo Gombos  <l.gombos@samsung.com>
+
+        [EFL] Align feature defaults
+        https://bugs.webkit.org/show_bug.cgi?id=110715
+
+        Enable 3D_RENDERING in FeatureList.pm as it is enabled by default in
+        OptionsEfl.cmake.
+
+        Reviewed by Gyuyoung Kim.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-02-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        run-perf-tests reports wrong commit time
+        https://bugs.webkit.org/show_bug.cgi?id=110746
+
+        Reviewed by Andreas Kling.
+
+        The bug was caused by running "svn info" on a subdirectory, which returns a timestamp
+        of when the subdirectory was last modified.
+
+        Run "svn info -r <revision> <repository root>" instead. Specifying revision number is
+        insufficient since running "svn log -r <revision>" on a partial checkout only returns
+        an empty result if the revision didn't modify the subdirectory.
+
+        For git, there is no partial checkout, so we just need to pass in "-r" option to keep
+        the interface compatible with svn.
+
+        * Scripts/webkitpy/common/checkout/scm/git.py:
+        (Git.timestamp_of_latest_commit):
+        * Scripts/webkitpy/common/checkout/scm/scm.py:
+        (SCM.timestamp_of_latest_commit):
+        * Scripts/webkitpy/common/checkout/scm/scm_mock.py:
+        (MockSCM.timestamp_of_latest_commit):
+        * Scripts/webkitpy/common/checkout/scm/scm_unittest.py:
+        (test_timestamp_of_latest_commit):
+        * Scripts/webkitpy/common/checkout/scm/svn.py:
+        (SVN.timestamp_of_latest_commit):
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner._generate_results_dict):
+
+2013-02-25  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move WebRuntimeFeatures configuration to TestRunner library
+        https://bugs.webkit.org/show_bug.cgi?id=110712
+
+        Reviewed by Nico Weber.
+
+        * DumpRenderTree/chromium/TestRunner/src/TestInterfaces.cpp:
+        (WebTestRunner::TestInterfaces::TestInterfaces):
+        * DumpRenderTree/chromium/TestShell.cpp:
+        (TestShell::TestShell):
+
+2013-02-25  Nico Weber  <thakis@chromium.org>
+
+        Make ninja the default build system for build-webkit --chromium on windows
+        https://bugs.webkit.org/show_bug.cgi?id=110731
+
+        Reviewed by Jochen Eisinger.
+
+        With http://crbug.com/169945 fixed, this should now work.
+
+        * Scripts/update-webkit-chromium:
+
+2013-02-24  Gustavo Noronha Silva  <gns@gnome.org>
+
+        [GTK] GTK+ 2 build broken since GTK_API_VERSION_2 moved to autoconfig.h
+        https://bugs.webkit.org/show_bug.cgi?id=110702
+
+        Reviewed by Martin Robinson.
+
+        * GtkLauncher/main.c: include autotoolsconfig.h.
+        * Scripts/webkitpy/style/checker.py: make GtkLauncher/main.c exempt of
+        the include ordering check, since it uses autotoolsconfig.h which needs to
+        come first.
+
+2013-02-24  Hajime Morrita  <morrita@google.com>
+
+        [Custom Elements] Implement bare-bone document.register()
+        https://bugs.webkit.org/show_bug.cgi?id=100229
+
+        Reviewed by Adam Barth.
+
+        Added enableCustomDOMElements flag.
+
+        * DumpRenderTree/chromium/TestShell.cpp:
+        (TestShell::TestShell):
+
+2013-02-23  Mark Pilgrim  <pilgrim@chromium.org>
+
+        [Chromium] DumpRenderTree TestShell::initialize should take Platform* now that WebKitPlatformSupport is empty
+        https://bugs.webkit.org/show_bug.cgi?id=110606
+
+        Reviewed by Adam Barth.
+
+        Part of a larger refactoring series; see tracking bug 82948.
+
+        * DumpRenderTree/DumpRenderTree.gypi:
+        * DumpRenderTree/chromium/DumpRenderTree.cpp:
+        (WebKitSupportTestEnvironment::WebKitSupportTestEnvironment):
+        (WebKitSupportTestEnvironment::mockPlatform):
+        (WebKitSupportTestEnvironment):
+        * DumpRenderTree/chromium/MockPlatform.cpp: Copied from Tools/DumpRenderTree/chromium/MockWebKitPlatformSupport.cpp.
+        (MockPlatform::create):
+        (MockPlatform::MockPlatform):
+        (MockPlatform::~MockPlatform):
+        (MockPlatform::setInterfaces):
+        (MockPlatform::cryptographicallyRandomValues):
+        (MockPlatform::createMediaStreamCenter):
+        (MockPlatform::createRTCPeerConnectionHandler):
+        * DumpRenderTree/chromium/MockPlatform.h: Copied from Tools/DumpRenderTree/chromium/MockWebKitPlatformSupport.h.
+        (MockPlatform):
+        * DumpRenderTree/chromium/MockWebKitPlatformSupport.cpp: Removed.
+        * DumpRenderTree/chromium/MockWebKitPlatformSupport.h: Removed.
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestDelegate):
+        * DumpRenderTree/chromium/TestShell.cpp:
+        (TestShell::initialize):
+        * DumpRenderTree/chromium/TestShell.h:
+        (TestShell):
+
+2013-02-23  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Chromium Windows Perf bot fix. Tolerate CR at the end of the line that contains the timestamp.
+
+        * Scripts/webkitpy/common/checkout/scm/svn.py:
+        (SVN.timestamp_of_latest_commit):
+
+2013-02-23  Jason Anderssen  <janderssen@gmail.com>
+
+        Move setAutofilled from TestRunner to WebCore
+        https://bugs.webkit.org/show_bug.cgi?id=110521
+
+        Reviewed by Benjamin Poulain.
+
+        * DumpRenderTree/TestRunner.cpp:
+        (TestRunner::staticFunctions):
+        * DumpRenderTree/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/efl/TestRunnerEfl.cpp:
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp:
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        * DumpRenderTree/qt/TestRunnerQt.cpp:
+        * DumpRenderTree/qt/TestRunnerQt.h:
+        (TestRunnerQt):
+        * DumpRenderTree/win/TestRunnerWin.cpp:
+        * DumpRenderTree/wx/TestRunnerWx.cpp:
+
+2013-02-22  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Upload results to perf.webkit.org in addition to the one specified by --test-results-server
+        https://bugs.webkit.org/show_bug.cgi?id=108577
+
+        Reviewed by Dirk Pranke.
+
+        Upload results to perf.webkit.org using new JSON format as well as the host specified by
+        --test-results-server. The new format is needed to provide extra information perf.webkit.org
+        need such as the subversion commit time and test URLs. This is a temporarily measure until
+        we complete the transition and the old JSON format and the code to upload results to
+        webkit-perf.appspot.com can be deleted.
+
+        This patch adds scm.timestamp_of_latest_commit to obtain the timestamp of the latest commit present
+        in a svn checkout or a git clone. This information is embedded in JSON submitted to perf.webkit.org
+        so that the app can sort performance test results based on the timestamp of the last commit.
+
+        It also changes the repository names returned by port objects to be properly capitalized
+        human readable names such as WebKit instead of lowercased names such as webkit since these names
+        are displayed on perf.webkit.org for humans. Several users of this feature has been updated
+        to explicitly lowercase the names.
+
+
+        * Scripts/webkitpy/common/checkout/scm/git.py:
+        (Git.timestamp_of_latest_commit): Added. Obtains the timestamp of the last commit. Unfortunately,
+        git's timestamp granularity is seconds so we're losing some information compared to using a regular
+        subversion client. To make matters worse, git doesn't have any option to show ISO-format timestamp in
+        UTC so we're going to manually fiddle with timezone.
+
+        * Scripts/webkitpy/common/checkout/scm/scm.py:
+        (SCM.timestamp_of_latest_commit): Added.
+
+        * Scripts/webkitpy/common/checkout/scm/scm_mock.py:
+        (MockSCM.timestamp_of_latest_commit): Added.
+
+        * Scripts/webkitpy/common/checkout/scm/scm_unittest.py:
+        (test_timestamp_of_latest_commit): Added a test for Git.timestamp_of_latest_commit.
+
+        * Scripts/webkitpy/common/checkout/scm/svn.py:
+        (SVN.timestamp_of_latest_commit): Added. With svn, all we need to do is to use --xml option and parse
+        the timestamp which is always in UTC.
+
+        * Scripts/webkitpy/layout_tests/layout_package/json_results_generator.py:
+        (JSONResultsGeneratorBase._insert_generic_metadata): Lowercase the name. Note that the name
+        'chromium' needs to be substituted by 'chrome' for historical reasons.
+
+        * Scripts/webkitpy/layout_tests/port/base.py:
+        (Port.repository_paths): Return WebKit instead of webkit as noted above.
+
+        * Scripts/webkitpy/layout_tests/port/chromium.py:
+        (ChromiumPort.repository_paths): Return Chromium instead of chromium as noted above.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner.__init__): Store the current time in UTC as well as in local time.
+        (PerfTestsRunner._collect_tests):
+
+        (PerfTestsRunner._generate_and_show_results): Retrieve both regular output and one for perf.webkit.org,
+        and upload them appropriately.
+
+        (PerfTestsRunner._generate_results_dict): Store WebKit and Chromium revisions at which tests were ran
+        in revisions_for_perf_webkit and construct an output for perf.webkit.org.
+
+        (PerfTestsRunner._datetime_in_ES5_compatible_iso_format): Added.
+
+        (PerfTestsRunner._merge_slave_config_json): Merge slave configuration files into both regular output
+        and one for perf.webkit.org. Here, we prefix each key with "builder" for perf.webkit.org.
+        e.g. "processor" would be renamed to "builderProcessor".
+
+        (PerfTestsRunner._generate_output_files):
+
+        (PerfTestsRunner._upload_json): Added a remote path as an argument since we upload JSONs to /api/report
+        on perf.webkit.org whereas we upload it to /api/test/report on webkit-perf.appspot.com. Also added the code
+        to parse response as JSON when possible since perf.webkit.org returns a JSON response as opposed to
+        webkit-perf.appspot.com which spits out a plaintext response.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner_integrationtest.py:
+        (MainTest._test_run_with_json_output.mock_upload_json): Tolerate perf.webkit.org/api/report for now.
+        (MainTest._test_run_with_json_output): Store a UTC time as perftestrunner would do.
+        (MainTest.test_run_with_upload_json_should_generate_perf_webkit_json): Added.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner_unittest.py:
+        (MainTest.test_upload_json): Moved from itegrationtest.py since it really is a unit test. Also added test
+        cases to parse JSON responses.
+        (MainTest.test_upload_json.MockFileUploader): Refactored.
+        (MainTest.test_upload_json.MockFileUploader.reset): Added.
+        (MainTest.test_upload_json.MockFileUploader.__init__):
+        (MainTest.test_upload_json.MockFileUploader.upload_single_text_file):
+
+2013-02-22  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Update bot config for OpenSource bots to add two new Win7 Debug testers and get rid of WinXP Debug testers.
+
+        * BuildSlaveSupport/build.webkit.org-config/config.json:
+
+2013-02-22  Dirk Pranke  <dpranke@chromium.org>
+
+        Unreviewed, rolling out r143794.
+        http://trac.webkit.org/changeset/143794
+        https://bugs.webkit.org/show_bug.cgi?id=110542
+
+        debug linux builds broken?
+
+        * DumpRenderTree/DumpRenderTree.gyp/DumpRenderTree.gyp:
+
+2013-02-22  Dirk Pranke  <dpranke@chromium.org>
+
+        [chromium] enable the fixed version of freetype on linux
+        https://bugs.webkit.org/show_bug.cgi?id=110542
+
+        Reviewed by Tony Chang.
+
+        Switch to building with a fixed version of FreeType for
+        just DumpRenderTree. This allows us to share one version
+        of pixel baselines for both Lucid and Precise, and run
+        the layout tests in a stock Precise install (instead of a Lucid
+        chroot). Going forward, this approach isolates us from os-level
+        changes to the version of FreeType. Note that Chromium itself
+        still uses the system FreeType and is unaffected by this change.
+        
+        This setting can still be turned off (at compile/gyp-time) by
+        manually setting use_custom_freetype=0.
+
+        * DumpRenderTree/DumpRenderTree.gyp/DumpRenderTree.gyp:
+
+2013-02-22  Anders Carlsson  <andersca@apple.com>
+
+        Move pluginLoadPolicy to the page loader client
+        https://bugs.webkit.org/show_bug.cgi?id=110635
+
+        Reviewed by Sam Weinig.
+
+        * MiniBrowser/mac/WK2BrowserWindowController.m:
+        (-[WK2BrowserWindowController awakeFromNib]):
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::createOtherPage):
+        (WTR::TestController::createWebViewWithOptions):
+
+2013-02-22  Kenneth Russell  <kbr@google.com>
+
+        Unreviewed. Changed gman's primary address for auto-complete in Bugzilla.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-22  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        [WTR] Do not dump information about empty subframes.
+        https://bugs.webkit.org/show_bug.cgi?id=110585
+
+        Reviewed by Simon Fraser.
+
+        Follow DumpRenderTree more closely by skipping empty frames
+        (frames which have no document). We are not really interested in
+        showing anything about them.
+
+        * WebKitTestRunner/InjectedBundle/InjectedBundlePage.cpp:
+        (WTR::dumpDescendantFramesText): Do not print subframe names when they
+        have no associated Document.
+
+2013-02-21  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        [EFL][DRT] Do not dump empty frames.
+        https://bugs.webkit.org/show_bug.cgi?id=110474
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Follow the original Mac implementation more closely by skipping
+        empty frames (frames which have no document). We are not really
+        interested in showing anything about them.
+
+        * DumpRenderTree/efl/DumpRenderTree.cpp:
+        (dumpFramesAsText):
+
+2013-02-21  Dirk Pranke  <dpranke@chromium.org>
+
+        [chromium] support the lucid version of freetype on precise in DRT
+        https://bugs.webkit.org/show_bug.cgi?id=107338
+
+        Reviewed by Tony Chang.
+
+        Modify the DRT build so that we can optionally link against
+        a fixed version of Freetype2. This allows us to share pixel test
+        results across multiple versions of Ubuntu without having to
+        worry about differences in font rendering.
+
+        At the moment this feature is off by default. Eventually it will
+        be on by default on linux.
+
+        Note that this only affects DRT; the regular Chromium binary
+        (and, for now, content_shell) will still use the system version
+        of Freetype.
+
+        * DumpRenderTree/DumpRenderTree.gyp/DumpRenderTree.gyp:
+
+2013-02-21  Rouslan Solomakhin  <rouslan@chromium.org>
+
+        [Chromium] Remove the word "cheher" from the list of misspelled words
+        https://bugs.webkit.org/show_bug.cgi?id=110447
+
+        Reviewed by Tony Chang.
+
+        Other platforms do not mark "cheher" as a misspelled word in layout tests.
+        This change is to bring Chromium platform in line with the rest of the
+        platforms.
+
+        * DumpRenderTree/chromium/TestRunner/src/MockSpellCheck.cpp:
+        (WebTestRunner::MockSpellCheck::hasInCache): Changed "cheher" to "wellcome".
+        (WebTestRunner::MockSpellCheck::fillSuggestionList): Removed "cheher" misspelling and "checker" suggestion.
+        (WebTestRunner::MockSpellCheck::initializeIfNeeded): Removed "cheher" misspelling.
+
+2013-02-21  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] document WebTestDelegate and WebTestRunner interfaces
+        https://bugs.webkit.org/show_bug.cgi?id=110472
+
+        Reviewed by Adam Barth.
+
+        Also remove the default implementation of the remaining WebTestDelegate
+        methods now that all embedders provide this interface.
+
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestDelegate):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestRunner.h:
+        (WebTestRunner):
+
+2013-02-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Need a way to use the Objective-C JavaScript API with WebKit
+        https://bugs.webkit.org/show_bug.cgi?id=106059
+
+        Reviewed by Geoffrey Garen.
+
+        Added new tests for the WebKit API portion of the JSC Objective-C API.
+
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/mac/JSContextBackForwardCache1.html: Added.
+        * TestWebKitAPI/Tests/mac/JSContextBackForwardCache2.html: Added.
+        * TestWebKitAPI/Tests/mac/WebViewDidCreateJavaScriptContext.mm: Added.
+        (-[MyConsole log:]):
+        (-[MyConsole printHelloWorld]):
+        (-[MyConsole add:to:]):
+        (-[DidCreateJavaScriptContextFrameLoadDelegate webView:didFinishLoadForFrame:]):
+        (-[DidCreateJavaScriptContextFrameLoadDelegate webView:didCreateJavaScriptContext:forFrame:]):
+        (TestWebKitAPI):
+        (TestWebKitAPI::TEST):
+
+2013-02-21  Stephen Chenney  <schenney@chromium.org>
+
+        Unreviewed, add myself as a reviewer
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-21  Jer Noble  <jer.noble@apple.com>
+
+        Unreviewed; add myself to the Media watchlist and update my committers.py setting to Reviewer.
+
+        * Scripts/webkitpy/common/config/committers.py:
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-02-21  Martin Robinson  <mrobinson@igalia.com>
+
+        gtk/DumpRenderTree.cpp is missing <locale.h> include
+        https://bugs.webkit.org/show_bug.cgi?id=109386
+
+        * DumpRenderTree/gtk/DumpRenderTree.cpp: Fix the WebKitGTK+ Mac build
+        by include locale.h when we use setlocale.
+
+2013-02-21  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Move feature overriding to the configure phase
+        https://bugs.webkit.org/show_bug.cgi?id=110293
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * Scripts/webkitdirs.pm:
+        (runAutogenForAutotoolsProjectIfNecessary): Rename the feature file to
+        WebKitFeatureOverrides.txt to better match the other filenames used in
+        the new feature processing.
+        * gtk/generate-feature-defines-files: Added. A script which takes as an argument
+        the default features, overrides them with the contents of WebKitFeatureOverrrides.txt
+        and writes WebKitFeatures.txt and WebKitFeatures.h.
+        * gtk/override-feature-defines: Removed.
+
+2013-02-21  Oswald Buddenhagen  <oswald.buddenhagen@digia.com>
+
+        [Qt] Remove obsolete DEPENDPATH assignment
+
+        Reviewed by Simon Hausmann
+
+        qmake now adds CONFIG+=depend_includepath by default, making manual
+        DEPENDPATH setup unnecessary.
+
+        * qmake/mkspecs/features/default_post.prf:
+
+2013-02-20  Vivek Galatage  <vivekg@webkit.org>
+
+        Unreviewed. Changing primary email id.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-14  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Request WebLayerTreeView for DumpRenderTree via explicit testing path
+        https://bugs.webkit.org/show_bug.cgi?id=109634
+
+        Reviewed by Adrienne Walker.
+
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::createOutputSurface):
+        (WebViewHost::initializeLayerTreeView):
+
+2013-02-20  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Re-enable 3D CSS transforms when using build-webkit
+        https://bugs.webkit.org/show_bug.cgi?id=110402
+
+        Reviewed by Xan Lopez.
+
+        * Scripts/webkitperl/FeatureList.pm: Enable 3D rendering by default
+        when building WebKitGTK+.
+
+2013-02-20  Roger Fong  <roger_fong@apple.com>
+
+        Get VS2010 Solution B&I ready.
+        <rdar://problem/1322988>
+
+        Rubberstamped by Timothy Horton.        
+        
+        Add Production configurations.
+        
+        * DumpRenderTree/DumpRenderTree.vcxproj/DumpRenderTree/DumpRenderTree.vcxproj:
+        * DumpRenderTree/DumpRenderTree.vcxproj/DumpRenderTree/DumpRenderTreeLauncher.vcxproj:
+        * DumpRenderTree/DumpRenderTree.vcxproj/DumpRenderTree/DumpRenderTreeLauncherProduction.props: Added.
+        * DumpRenderTree/DumpRenderTree.vcxproj/DumpRenderTree/DumpRenderTreeLauncherRelease.props:
+        * DumpRenderTree/DumpRenderTree.vcxproj/DumpRenderTree/DumpRenderTreeProduction.props: Added.
+        * DumpRenderTree/DumpRenderTree.vcxproj/DumpRenderTree/DumpRenderTreeRelease.props:
+        * DumpRenderTree/DumpRenderTree.vcxproj/ImageDiff/ImageDiff.vcxproj:
+        * DumpRenderTree/DumpRenderTree.vcxproj/ImageDiff/ImageDiffLauncher.vcxproj:
+        * DumpRenderTree/DumpRenderTree.vcxproj/ImageDiff/ImageDiffLauncherProduction.props: Added.
+        * DumpRenderTree/DumpRenderTree.vcxproj/ImageDiff/ImageDiffLauncherRelease.props:
+        * DumpRenderTree/DumpRenderTree.vcxproj/ImageDiff/ImageDiffProduction.props: Added.
+        * DumpRenderTree/DumpRenderTree.vcxproj/ImageDiff/ImageDiffRelease.props:
+        * DumpRenderTree/DumpRenderTree.vcxproj/TestNetscapePlugin/TestNetscapePlugin.vcxproj:
+        * DumpRenderTree/DumpRenderTree.vcxproj/TestNetscapePlugin/TestNetscapePluginProduction.props: Added.
+        * DumpRenderTree/DumpRenderTree.vcxproj/TestNetscapePlugin/TestNetscapePluginRelease.props:
+        * TestWebKitAPI/TestWebKitAPI.vcxproj/TestWebKitAPI.vcxproj:
+        * TestWebKitAPI/TestWebKitAPI.vcxproj/TestWebKitAPIProduction.props: Added.
+        * TestWebKitAPI/TestWebKitAPI.vcxproj/TestWebKitAPIRelease.props:
+        * WinLauncher/WinLauncher.vcxproj/WinLauncher.vcxproj:
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherLib.vcxproj:
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherLibProduction.props: Added.
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherLibRelease.props:
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherProduction.props: Added.
+        * WinLauncher/WinLauncher.vcxproj/WinLauncherRelease.props:
+        * win/record-memory/record-memory.vcxproj:
+        * win/record-memory/record-memoryProduction.props: Added.
+        * win/record-memory/record-memoryRelease.props:
+
+2013-02-20  Dirk Schulze  <krit@webkit.org>
+
+        Enable CANVAS_PATH flag
+        https://bugs.webkit.org/show_bug.cgi?id=108508
+
+        Reviewed by Simon Fraser.
+
+        Enable CANVAS_PATH flag on trunk.
+
+        * Scripts/webkitperl/FeatureList.pm:
+
+2013-02-20  Tony Chang  <tony@chromium.org>
+
+        Parse author names with commas in ChangeLogs
+        https://bugs.webkit.org/show_bug.cgi?id=110356
+
+        Reviewed by Dirk Pranke.
+
+        Paweł's name has a comma in it, which was confusing the ChangeLog parser.
+
+        * Scripts/webkitpy/common/checkout/changelog.py:
+        (ChangeLogEntry): Move name splitting regexp into a constant.
+        (ChangeLogEntry._parse_reviewer_text): Use _split_reviewer_names.
+        (ChangeLogEntry._split_reviewer_names): Rename to be more specific.
+        (ChangeLogEntry._split_author_names_with_emails): Rename to be more specific and require emails.
+        (ChangeLogEntry._parse_author_text): Use _split_author_names_with_emails.
+        * Scripts/webkitpy/common/checkout/changelog_unittest.py:
+        (test_parse_authors): Test case with Paweł's name.
+
+2013-02-15  Dirk Schulze  <krit@webkit.org>
+
+        [Chromium] Add runtime flag for CanvasPath
+        https://bugs.webkit.org/show_bug.cgi?id=109997
+
+        Reviewed by Adam Barth.
+
+        Added runtime flag for Canvas Path. Enabled it by default for TestShell. Otherwise
+        the constructor for Path on DOMWindow would never be activatable, since the script
+        is running after creating the DOMWindow object.
+
+        * DumpRenderTree/chromium/TestShell.cpp:
+        (TestShell::TestShell):
+
+2013-02-20  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] use a WebTestProxyBase pointer to identify the window we need the history for
+        https://bugs.webkit.org/show_bug.cgi?id=110346
+
+        Reviewed by Adam Barth.
+
+        Using an index is very brittle, as the TestRunner API does not define
+        any ordering of windows.
+
+        Also, make TestRunner::shouldDumpBackForwardList() so content shell can
+        trigger the capturing in the browser process before generating the
+        text dump.
+
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestRunner):
+        (WebTestRunner::WebTestDelegate::captureHistoryForWindow):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestRunner.h:
+        (WebTestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner::WebTestProxyBase::captureTree):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::captureHistoryForWindow):
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebViewHost):
+
+2013-02-19  Rouslan Solomakhin  <rouslan@chromium.org>
+
+        [Chromium] Serve spellcheck suggestions for editing/spelling/spelling-changed-text.html from cache
+        https://bugs.webkit.org/show_bug.cgi?id=109220
+
+        Reviewed by Tony Chang.
+
+        * DumpRenderTree/chromium/TestRunner/src/MockSpellCheck.cpp:
+        (WebTestRunner::MockSpellCheck::hasInCache): Added a method to detect whether spellcheck results can be served from cache.
+        (WebTestRunner):
+        (WebTestRunner::MockSpellCheck::fillSuggestionList): Modified to suggest "checker" for the word "cheher".
+        (WebTestRunner::MockSpellCheck::initializeIfNeeded): Modified to mark "cheher" as misspelling.
+        * DumpRenderTree/chromium/TestRunner/src/MockSpellCheck.h:
+        (MockSpellCheck):
+        * DumpRenderTree/chromium/TestRunner/src/SpellCheckClient.cpp:
+        (WebTestRunner::SpellCheckClient::requestCheckingOfText): Modified to serve spellcheck suggestions from cache when possible.
+
+2013-02-20  Xabier Rodriguez Calvar  <calvaris@igalia.com>
+
+        [Gtk] HTML5 Media controls require a design refresh
+        https://bugs.webkit.org/show_bug.cgi?id=83869
+
+        Reviewed by Philippe Normand.
+
+        * DumpRenderTree/gtk/DumpRenderTree.cpp:
+        (initializeGtkFontSettings): Added gnome as default icon theme for
+        the DRT.
+        * WebKitTestRunner/InjectedBundle/gtk/ActivateFontsGtk.cpp:
+        (WTR::initializeGtkSettings): Added gnome as default icon theme for
+        the WTR.
+        * gtk/jhbuild.modules: Added gnome-icon-theme-symbolic as external
+        dependency.
+
+2013-02-20  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] move most of the remaining mocks to TestRunner library
+        https://bugs.webkit.org/show_bug.cgi?id=110217
+
+        Reviewed by Nico Weber.
+
+        While most of the functionality provided by these mocks is also
+        available in the content module, there is no straight forward way to
+        inject the mock results required for layout tests.
+
+        * DumpRenderTree/DumpRenderTree.gypi:
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        * DumpRenderTree/chromium/TestRunner/public/WebTestProxy.h:
+        (WebKit):
+        (WebTestRunner):
+        (WebTestRunner::WebTestProxy::geolocationClient):
+        (WebTestRunner::WebTestProxy::speechInputController):
+        (WebTestRunner::WebTestProxy::speechRecognizer):
+        (WebTestRunner::WebTestProxy::deviceOrientationClient):
+        (WebTestRunner::WebTestProxy::requestPointerLock):
+        (WebTestRunner::WebTestProxy::requestPointerUnlock):
+        (WebTestRunner::WebTestProxy::isPointerLocked):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebSpeechInputController.cpp: Renamed from Tools/DumpRenderTree/chromium/MockWebSpeechInputController.cpp.
+        (WebTestRunner::MockWebSpeechInputController::MockWebSpeechInputController):
+        (WebTestRunner):
+        (WebTestRunner::MockWebSpeechInputController::~MockWebSpeechInputController):
+        (WebTestRunner::MockWebSpeechInputController::setDelegate):
+        (WebTestRunner::MockWebSpeechInputController::addMockRecognitionResult):
+        (WebTestRunner::MockWebSpeechInputController::setDumpRect):
+        (WebTestRunner::MockWebSpeechInputController::clearResults):
+        (WebTestRunner::MockWebSpeechInputController::startRecognition):
+        (WebTestRunner::MockWebSpeechInputController::cancelRecognition):
+        (WebTestRunner::MockWebSpeechInputController::stopRecording):
+        (WebTestRunner::MockWebSpeechInputController::speechTaskFired):
+        (WebTestRunner::MockWebSpeechInputController::SpeechTask::SpeechTask):
+        (WebTestRunner::MockWebSpeechInputController::SpeechTask::stop):
+        (WebTestRunner::MockWebSpeechInputController::SpeechTask::runIfValid):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebSpeechInputController.h: Renamed from Tools/DumpRenderTree/chromium/MockWebSpeechInputController.h.
+        (WebKit):
+        (WebTestRunner):
+        (MockWebSpeechInputController):
+        (WebTestRunner::MockWebSpeechInputController::taskList):
+        (SpeechTask):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebSpeechRecognizer.cpp: Renamed from Tools/DumpRenderTree/chromium/MockWebSpeechRecognizer.cpp.
+        (WebTestRunner::MockWebSpeechRecognizer::MockWebSpeechRecognizer):
+        (WebTestRunner):
+        (WebTestRunner::MockWebSpeechRecognizer::~MockWebSpeechRecognizer):
+        (WebTestRunner::MockWebSpeechRecognizer::setDelegate):
+        (WebTestRunner::MockWebSpeechRecognizer::start):
+        (WebTestRunner::MockWebSpeechRecognizer::stop):
+        (WebTestRunner::MockWebSpeechRecognizer::abort):
+        (WebTestRunner::MockWebSpeechRecognizer::addMockResult):
+        (WebTestRunner::MockWebSpeechRecognizer::setError):
+        (WebTestRunner::MockWebSpeechRecognizer::startTaskQueue):
+        (WebTestRunner::MockWebSpeechRecognizer::clearTaskQueue):
+        (WebTestRunner::MockWebSpeechRecognizer::StepTask::runIfValid):
+        * DumpRenderTree/chromium/TestRunner/src/MockWebSpeechRecognizer.h: Renamed from Tools/DumpRenderTree/chromium/MockWebSpeechRecognizer.h.
+        (WebKit):
+        (WebTestRunner):
+        (MockWebSpeechRecognizer):
+        (WebTestRunner::MockWebSpeechRecognizer::wasAborted):
+        (WebTestRunner::MockWebSpeechRecognizer::client):
+        (WebTestRunner::MockWebSpeechRecognizer::handle):
+        (WebTestRunner::MockWebSpeechRecognizer::taskList):
+        (Task):
+        (WebTestRunner::MockWebSpeechRecognizer::Task::Task):
+        (WebTestRunner::MockWebSpeechRecognizer::Task::~Task):
+        (StepTask):
+        (WebTestRunner::MockWebSpeechRecognizer::StepTask::StepTask):
+        * DumpRenderTree/chromium/TestRunner/src/TestInterfaces.cpp:
+        (WebTestRunner::TestInterfaces::TestInterfaces):
+        (WebTestRunner::TestInterfaces::windowOpened):
+        (WebTestRunner):
+        (WebTestRunner::TestInterfaces::windowClosed):
+        (WebTestRunner::TestInterfaces::windowList):
+        * DumpRenderTree/chromium/TestRunner/src/TestInterfaces.h:
+        (TestInterfaces):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        (WebTestRunner::TestRunner::reset):
+        (WebTestRunner::TestRunner::requestPointerLock):
+        (WebTestRunner):
+        (WebTestRunner::TestRunner::requestPointerUnlock):
+        (WebTestRunner::TestRunner::isPointerLocked):
+        (WebTestRunner::TestRunner::didAcquirePointerLockInternal):
+        (WebTestRunner::TestRunner::didNotAcquirePointerLockInternal):
+        (WebTestRunner::TestRunner::didLosePointerLockInternal):
+        (WebTestRunner::TestRunner::windowCount):
+        (WebTestRunner::TestRunner::setMockDeviceOrientation):
+        (WebTestRunner::TestRunner::numberOfPendingGeolocationPermissionRequests):
+        (WebTestRunner::TestRunner::setGeolocationPermission):
+        (WebTestRunner::TestRunner::setMockGeolocationPosition):
+        (WebTestRunner::TestRunner::setMockGeolocationPositionUnavailableError):
+        (WebTestRunner::TestRunner::addMockSpeechInputResult):
+        (WebTestRunner::TestRunner::setMockSpeechInputDumpRect):
+        (WebTestRunner::TestRunner::addMockSpeechRecognitionResult):
+        (WebTestRunner::TestRunner::setMockSpeechRecognitionError):
+        (WebTestRunner::TestRunner::wasMockSpeechRecognitionAborted):
+        (WebTestRunner::TestRunner::didAcquirePointerLock):
+        (WebTestRunner::TestRunner::didNotAcquirePointerLock):
+        (WebTestRunner::TestRunner::didLosePointerLock):
+        (WebTestRunner::TestRunner::setPointerLockWillRespondAsynchronously):
+        (WebTestRunner::TestRunner::setPointerLockWillFailSynchronously):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (WebTestRunner):
+        (TestRunner):
+        (HostMethodTask):
+        (WebTestRunner::TestRunner::HostMethodTask::HostMethodTask):
+        (WebTestRunner::TestRunner::HostMethodTask::runIfValid):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner::WebTestProxyBase::~WebTestProxyBase):
+        (WebTestRunner::WebTestProxyBase::setInterfaces):
+        (WebTestRunner::WebTestProxyBase::setDelegate):
+        (WebTestRunner::WebTestProxyBase::reset):
+        (WebTestRunner::WebTestProxyBase::captureTree):
+        (WebTestRunner::WebTestProxyBase::geolocationClientMock):
+        (WebTestRunner):
+        (WebTestRunner::WebTestProxyBase::deviceOrientationClientMock):
+        (WebTestRunner::WebTestProxyBase::speechInputControllerMock):
+        (WebTestRunner::WebTestProxyBase::speechRecognizerMock):
+        (WebTestRunner::WebTestProxyBase::geolocationClient):
+        (WebTestRunner::WebTestProxyBase::speechInputController):
+        (WebTestRunner::WebTestProxyBase::speechRecognizer):
+        (WebTestRunner::WebTestProxyBase::deviceOrientationClient):
+        (WebTestRunner::WebTestProxyBase::requestPointerLock):
+        (WebTestRunner::WebTestProxyBase::requestPointerUnlock):
+        (WebTestRunner::WebTestProxyBase::isPointerLocked):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::reset):
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebKit):
+        (WebViewHost):
+
+2013-02-20  Andras Becsi  <andras.becsi@digia.com>
+
+        [Qt] Make debug builds possible on 32bit Linux
+        https://bugs.webkit.org/show_bug.cgi?id=110231
+
+        Reviewed by Tor Arne Vestbø.
+
+        Use the stabs format for debug builds to make the object files
+        a bit smaller so that they can be linked on a 32bit system.
+
+        * qmake/mkspecs/features/unix/default_post.prf:
+
+2013-02-20  Takashi Toyoshima  <toyoshim@chromium.org>
+
+        Unreviewed. Add myself to watch lists.
+
+        * Scripts/webkitpy/common/config/committers.py:
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-02-19  Joshua Bell  <jsbell@chromium.org>
+
+        Remove warning from run-bindings-tests
+        https://bugs.webkit.org/show_bug.cgi?id=110285
+
+        Reviewed by Kentaro Hara.
+
+        Since wkrev.com/139331 run-bindings-tests has been harmlessly emitting
+        "Unknown option: idlattributesfile". That option was removed from
+        bindings/scripts/preprocess-idls.pl but was still being passed by
+        the test script. Remove it.
+
+        * Scripts/webkitpy/bindings/main.py:
+        (BindingsTests.generate_supplemental_dependency): Remove unused arg.
+
+2013-02-19  Elliott Sprehn  <esprehn@chromium.org>
+
+        Unreviewed. Add myself to watch lists.
+
+        * Scripts/webkitpy/common/config/committers.py:
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-02-19  Hans Muller  <hmuller@adobe.com>
+
+        Unreviewed, corrected primary email.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-19  Hans Muller  <hmuller@adobe.com>
+
+        Unreviewed. Adding myself as a committer.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-19  Pravin D  <pravind@webkit.org>
+
+        Unreviewed, changing primary email.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-19  Alan Cutter  <alancutter@chromium.org>
+
+        REGRESSION: Sheriffbot is failing to process rollout requests
+        https://bugs.webkit.org/show_bug.cgi?id=106945
+
+        Reviewed by Adam Barth.
+
+        Modified Sheriffbot build script to track the svn repo from git and add bot user details to the git repo config file.
+        This resolves problems when Sheriffbot attempts to perform a rollout request.
+
+        * EWSTools/GoogleComputeEngine/build-feeder-style-sheriffbot.sh:
+        * EWSTools/configure-git-svn.sh: Copied from Tools/EWSTools/create-webkit-git.
+        * EWSTools/configure-git-user.sh: Renamed from Tools/EWSTools/create-webkit-git.
+
+2013-02-19  Claudio Saavedra  <csaavedra@igalia.com>
+
+        Unreviewed build fix.
+
+        * efl/jhbuild.modules:
+        * gtk/jhbuild.modules:
+
+        Bump harfbuzz module to 0.9.7. See related bug 110145.
+
+2013-02-19  Simon Hausmann  <simon.hausmann@digia.com>
+
+        [Qt] Skip the build with a warning if certain tools cannot be found in the PATH
+        https://bugs.webkit.org/show_bug.cgi?id=110215
+
+        Reviewed by Tor Arne Vestbø.
+
+        Check that gperf, python, ruby, perl, bison and flex are in the PATH before
+        continuing the build. Otherwise skip with an error message explaining which
+        programs are missing from the build.
+
+        * qmake/mkspecs/features/configure.prf:
+        * qmake/mkspecs/features/functions.prf:
+
+2013-02-19  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r143319.
+        http://trac.webkit.org/changeset/143319
+        https://bugs.webkit.org/show_bug.cgi?id=110214
+
+        Causes build issues on win32 (Requested by carewolf on
+        #webkit).
+
+        * qmake/mkspecs/features/features.pri:
+
+2013-02-19  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt] Enable MathML
+        https://bugs.webkit.org/show_bug.cgi?id=110205
+
+        Reviewed by Simon Hausmann.
+
+        * qmake/mkspecs/features/features.pri:
+
+2013-02-17  Andrei Bucur  <abucur@adobe.com>
+
+        Unreviewed. Adding myself as a committer.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
 2013-02-19  Hajime Morrita  <morrita@google.com>
 
         Unreviewed, updated spelling of my name.

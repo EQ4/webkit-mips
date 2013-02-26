@@ -109,6 +109,9 @@
 		0F2C557014738F3500121E4F /* DFGCodeBlocks.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0F2C556D14738F2E00121E4F /* DFGCodeBlocks.cpp */; };
 		0F2E892C16D028AD009E4FD2 /* UnusedPointer.h in Headers */ = {isa = PBXBuildFile; fileRef = 65987F2F16828A7E003C2F8D /* UnusedPointer.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		0F2E892D16D02BAF009E4FD2 /* DFGMinifiedID.h in Headers */ = {isa = PBXBuildFile; fileRef = 0FB4B51016B3A964003F696B /* DFGMinifiedID.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		0F34B14916D42010001CDA5A /* DFGUseKind.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0F34B14716D4200E001CDA5A /* DFGUseKind.cpp */; };
+		0F34B14A16D42013001CDA5A /* DFGUseKind.h in Headers */ = {isa = PBXBuildFile; fileRef = 0F34B14816D4200E001CDA5A /* DFGUseKind.h */; settings = {ATTRIBUTES = (Private, ); }; };
+		0F34B14C16D43E0D001CDA5A /* PolymorphicAccessStructureList.h in Headers */ = {isa = PBXBuildFile; fileRef = 0F34B14B16D43E0C001CDA5A /* PolymorphicAccessStructureList.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		0F3B3A1A153E68F2003ED0FF /* DFGConstantFoldingPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0F3B3A17153E68EF003ED0FF /* DFGConstantFoldingPhase.cpp */; };
 		0F3B3A1B153E68F4003ED0FF /* DFGConstantFoldingPhase.h in Headers */ = {isa = PBXBuildFile; fileRef = 0F3B3A18153E68EF003ED0FF /* DFGConstantFoldingPhase.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		0F3B3A271544C995003ED0FF /* DFGCFGSimplificationPhase.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0F3B3A241544C991003ED0FF /* DFGCFGSimplificationPhase.cpp */; };
@@ -587,13 +590,13 @@
 		86E3C614167BABD7006D760A /* JSExport.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C60A167BAB87006D760A /* JSExport.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		86E3C615167BABD7006D760A /* JSVirtualMachine.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C60F167BAB87006D760A /* JSVirtualMachine.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		86E3C616167BABEE006D760A /* JSContext.mm in Sources */ = {isa = PBXBuildFile; fileRef = 86E3C608167BAB87006D760A /* JSContext.mm */; };
-		86E3C617167BABEE006D760A /* JSContextInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C609167BAB87006D760A /* JSContextInternal.h */; };
+		86E3C617167BABEE006D760A /* JSContextInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C609167BAB87006D760A /* JSContextInternal.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		86E3C618167BABEE006D760A /* JSWrapperMap.mm in Sources */ = {isa = PBXBuildFile; fileRef = 86E3C60B167BAB87006D760A /* JSWrapperMap.mm */; };
 		86E3C619167BABEE006D760A /* JSWrapperMap.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C60C167BAB87006D760A /* JSWrapperMap.h */; };
 		86E3C61A167BABEE006D760A /* JSValue.mm in Sources */ = {isa = PBXBuildFile; fileRef = 86E3C60D167BAB87006D760A /* JSValue.mm */; };
-		86E3C61B167BABEE006D760A /* JSValueInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C60E167BAB87006D760A /* JSValueInternal.h */; };
+		86E3C61B167BABEE006D760A /* JSValueInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C60E167BAB87006D760A /* JSValueInternal.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		86E3C61C167BABEE006D760A /* JSVirtualMachine.mm in Sources */ = {isa = PBXBuildFile; fileRef = 86E3C610167BAB87006D760A /* JSVirtualMachine.mm */; };
-		86E3C61D167BABEE006D760A /* JSVirtualMachineInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C611167BAB87006D760A /* JSVirtualMachineInternal.h */; };
+		86E3C61D167BABEE006D760A /* JSVirtualMachineInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E3C611167BAB87006D760A /* JSVirtualMachineInternal.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		86E85539111B9968001AF51E /* JSStringBuilder.h in Headers */ = {isa = PBXBuildFile; fileRef = 86E85538111B9968001AF51E /* JSStringBuilder.h */; };
 		86EBF2FF1560F06A008E9222 /* NameConstructor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 86EBF2F91560F036008E9222 /* NameConstructor.cpp */; };
 		86EBF3001560F06A008E9222 /* NameConstructor.h in Headers */ = {isa = PBXBuildFile; fileRef = 86EBF2FA1560F036008E9222 /* NameConstructor.h */; };
@@ -702,6 +705,7 @@
 		A7FB60A4103F7DC20017A286 /* PropertyDescriptor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A7FB60A3103F7DC20017A286 /* PropertyDescriptor.cpp */; };
 		A7FB61001040C38B0017A286 /* PropertyDescriptor.h in Headers */ = {isa = PBXBuildFile; fileRef = A7FB604B103F5EAB0017A286 /* PropertyDescriptor.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		A8A4748E151A8306004123FF /* libWTF.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8A4748D151A8306004123FF /* libWTF.a */; };
+		AD1CF06A16DCAD5B00B97123 /* PropertyTable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD1CF06816DCAB2D00B97123 /* PropertyTable.cpp */; };
 		BC02E90D0E1839DB000F9297 /* ErrorConstructor.h in Headers */ = {isa = PBXBuildFile; fileRef = BC02E9050E1839DB000F9297 /* ErrorConstructor.h */; };
 		BC02E90F0E1839DB000F9297 /* ErrorPrototype.h in Headers */ = {isa = PBXBuildFile; fileRef = BC02E9070E1839DB000F9297 /* ErrorPrototype.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		BC02E9110E1839DB000F9297 /* NativeErrorConstructor.h in Headers */ = {isa = PBXBuildFile; fileRef = BC02E9090E1839DB000F9297 /* NativeErrorConstructor.h */; };
@@ -1000,6 +1004,9 @@
 		0F2BDC5015228FFA00CD8910 /* DFGVariableEvent.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DFGVariableEvent.cpp; path = dfg/DFGVariableEvent.cpp; sourceTree = "<group>"; };
 		0F2C556D14738F2E00121E4F /* DFGCodeBlocks.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DFGCodeBlocks.cpp; sourceTree = "<group>"; };
 		0F2C556E14738F2E00121E4F /* DFGCodeBlocks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DFGCodeBlocks.h; sourceTree = "<group>"; };
+		0F34B14716D4200E001CDA5A /* DFGUseKind.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DFGUseKind.cpp; path = dfg/DFGUseKind.cpp; sourceTree = "<group>"; };
+		0F34B14816D4200E001CDA5A /* DFGUseKind.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DFGUseKind.h; path = dfg/DFGUseKind.h; sourceTree = "<group>"; };
+		0F34B14B16D43E0C001CDA5A /* PolymorphicAccessStructureList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PolymorphicAccessStructureList.h; sourceTree = "<group>"; };
 		0F3B3A17153E68EF003ED0FF /* DFGConstantFoldingPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DFGConstantFoldingPhase.cpp; path = dfg/DFGConstantFoldingPhase.cpp; sourceTree = "<group>"; };
 		0F3B3A18153E68EF003ED0FF /* DFGConstantFoldingPhase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = DFGConstantFoldingPhase.h; path = dfg/DFGConstantFoldingPhase.h; sourceTree = "<group>"; };
 		0F3B3A241544C991003ED0FF /* DFGCFGSimplificationPhase.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = DFGCFGSimplificationPhase.cpp; path = dfg/DFGCFGSimplificationPhase.cpp; sourceTree = "<group>"; };
@@ -1616,6 +1623,7 @@
 		A8A4748D151A8306004123FF /* libWTF.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libWTF.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8E894310CD0602400367179 /* JSCallbackObjectFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSCallbackObjectFunctions.h; sourceTree = "<group>"; };
 		A8E894330CD0603F00367179 /* JSGlobalObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JSGlobalObject.h; sourceTree = "<group>"; };
+		AD1CF06816DCAB2D00B97123 /* PropertyTable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyTable.cpp; sourceTree = "<group>"; };
 		BC021BF2136900C300FC5467 /* ToolExecutable.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = ToolExecutable.xcconfig; sourceTree = "<group>"; };
 		BC02E9040E1839DB000F9297 /* ErrorConstructor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ErrorConstructor.cpp; sourceTree = "<group>"; };
 		BC02E9050E1839DB000F9297 /* ErrorConstructor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ErrorConstructor.h; sourceTree = "<group>"; };
@@ -2506,6 +2514,7 @@
 				65621E6B089E859700760F35 /* PropertySlot.cpp */,
 				65621E6C089E859700760F35 /* PropertySlot.h */,
 				0FB7F39015ED8E3800F167B2 /* PropertyStorage.h */,
+				AD1CF06816DCAB2D00B97123 /* PropertyTable.cpp */,
 				65C02FBB0637462A003E7EE6 /* Protect.h */,
 				14D844A216AA2C7000A65AF0 /* PrototypeMap.cpp */,
 				14D844A316AA2C7000A65AF0 /* PrototypeMap.h */,
@@ -2707,6 +2716,8 @@
 				0FC097A0146B28C700CF2442 /* DFGThunks.h */,
 				0FBE0F6F16C1DB010082C5E8 /* DFGUnificationPhase.cpp */,
 				0FBE0F7016C1DB010082C5E8 /* DFGUnificationPhase.h */,
+				0F34B14716D4200E001CDA5A /* DFGUseKind.cpp */,
+				0F34B14816D4200E001CDA5A /* DFGUseKind.h */,
 				0F3B3A2915474FF4003ED0FF /* DFGValidate.cpp */,
 				0F3B3A2A15474FF4003ED0FF /* DFGValidate.h */,
 				0F2BDC3F1522801700CD8910 /* DFGValueRecoveryOverride.h */,
@@ -2859,6 +2870,7 @@
 				969A07940ED1D3AE00F1F681 /* Opcode.cpp */,
 				969A07950ED1D3AE00F1F681 /* Opcode.h */,
 				0F2BDC2B151FDE8B00CD8910 /* Operands.h */,
+				0F34B14B16D43E0C001CDA5A /* PolymorphicAccessStructureList.h */,
 				0F9FC8BF14E1B5FB00D52AE0 /* PolymorphicPutByIdList.cpp */,
 				0F9FC8C014E1B5FB00D52AE0 /* PolymorphicPutByIdList.h */,
 				0F98205D16BFE37F00240D02 /* PreciseJumpTargets.cpp */,
@@ -2925,7 +2937,10 @@
 				0FB7F39515ED8E4600F167B2 /* ArrayConventions.h in Headers */,
 				0F63945515D07057006A597C /* ArrayProfile.h in Headers */,
 				BC18C3E70E16F5CD00B34460 /* ArrayPrototype.h in Headers */,
+				86E3C61D167BABEE006D760A /* JSVirtualMachineInternal.h in Headers */,
 				BC18C5240E16FC8A00B34460 /* ArrayPrototype.lut.h in Headers */,
+				86E3C617167BABEE006D760A /* JSContextInternal.h in Headers */,
+				86E3C61B167BABEE006D760A /* JSValueInternal.h in Headers */,
 				0FB7F39615ED8E4600F167B2 /* ArrayStorage.h in Headers */,
 				9688CB150ED12B4E001D649F /* AssemblerBuffer.h in Headers */,
 				86D3B2C510156BDE002865E7 /* AssemblerBufferWithConstantPool.h in Headers */,
@@ -3122,7 +3137,6 @@
 				865A30F1135007E100CDB49E /* JSCJSValueInlines.h in Headers */,
 				BC18C41D0E16F5CD00B34460 /* JSClassRef.h in Headers */,
 				86E3C613167BABD7006D760A /* JSContext.h in Headers */,
-				86E3C617167BABEE006D760A /* JSContextInternal.h in Headers */,
 				BC18C41E0E16F5CD00B34460 /* JSContextRef.h in Headers */,
 				148CD1D8108CF902008163C6 /* JSContextRefPrivate.h in Headers */,
 				978801411471AD920041B016 /* JSDateMath.h in Headers */,
@@ -3157,11 +3171,9 @@
 				BC18C42A0E16F5CD00B34460 /* JSType.h in Headers */,
 				6507D29E0E871E5E00D7D896 /* JSTypeInfo.h in Headers */,
 				86E3C612167BABD7006D760A /* JSValue.h in Headers */,
-				86E3C61B167BABEE006D760A /* JSValueInternal.h in Headers */,
 				BC18C42C0E16F5CD00B34460 /* JSValueRef.h in Headers */,
 				BC18C42D0E16F5CD00B34460 /* JSVariableObject.h in Headers */,
 				86E3C615167BABD7006D760A /* JSVirtualMachine.h in Headers */,
-				86E3C61D167BABEE006D760A /* JSVirtualMachineInternal.h in Headers */,
 				A7482E93116A7CAD003B0712 /* JSWeakObjectMapRefInternal.h in Headers */,
 				A7482B9311671147003B0712 /* JSWeakObjectMapRefPrivate.h in Headers */,
 				1442566215EDE98D0066A49B /* JSWithScope.h in Headers */,
@@ -3198,6 +3210,7 @@
 				86C36EEA0EE1289D00B3DF59 /* MacroAssembler.h in Headers */,
 				86D3B2C610156BDE002865E7 /* MacroAssemblerARM.h in Headers */,
 				86ADD1460FDDEA980006EEC2 /* MacroAssemblerARMv7.h in Headers */,
+				0F34B14C16D43E0D001CDA5A /* PolymorphicAccessStructureList.h in Headers */,
 				863B23E00FC6118900703AA4 /* MacroAssemblerCodeRef.h in Headers */,
 				86C568E111A213EE0007F7F0 /* MacroAssemblerMIPS.h in Headers */,
 				86AE64A9135E5E1C00963012 /* MacroAssemblerSH4.h in Headers */,
@@ -3247,6 +3260,7 @@
 				868916B0155F286300CB2B9A /* PrivateName.h in Headers */,
 				BC18C4500E16F5CD00B34460 /* Profile.h in Headers */,
 				95CD45770E1C4FDD0085358E /* ProfileGenerator.h in Headers */,
+				0F34B14A16D42013001CDA5A /* DFGUseKind.h in Headers */,
 				BC18C4510E16F5CD00B34460 /* ProfileNode.h in Headers */,
 				0FF729A5166AD351000F5BA3 /* ProfilerBytecode.h in Headers */,
 				0FF729B9166AD360000F5BA3 /* ProfilerBytecodes.h in Headers */,
@@ -3953,6 +3967,7 @@
 				0FF729B0166AD35C000F5BA3 /* ProfilerCompilationKind.cpp in Sources */,
 				0FF729B1166AD35C000F5BA3 /* ProfilerCompiledBytecode.cpp in Sources */,
 				0FF729B2166AD35C000F5BA3 /* ProfilerDatabase.cpp in Sources */,
+				0F34B14916D42010001CDA5A /* DFGUseKind.cpp in Sources */,
 				0FF729B3166AD35C000F5BA3 /* ProfilerOrigin.cpp in Sources */,
 				0FF729B4166AD35C000F5BA3 /* ProfilerOriginStack.cpp in Sources */,
 				0FB1058B1675483100F8AB6E /* ProfilerOSRExit.cpp in Sources */,
@@ -4019,6 +4034,7 @@
 				0FBE0F7416C1DB090082C5E8 /* DFGPredictionInjectionPhase.cpp in Sources */,
 				0FBE0F7616C1DB0F0082C5E8 /* DFGUnificationPhase.cpp in Sources */,
 				0F493AFA16D0CAD30084508B /* SourceProvider.cpp in Sources */,
+				AD1CF06A16DCAD5B00B97123 /* PropertyTable.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

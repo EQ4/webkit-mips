@@ -1,3 +1,116 @@
+2013-02-21  Jeffrey Pfau  <jpfau@apple.com>
+
+        Optionally partition cache to prevent using cache for tracking
+        https://bugs.webkit.org/show_bug.cgi?id=110269
+
+        Reviewed by Maciej Stachowiak.
+
+        Update WKSI bindings and add feature defines.
+
+        * Configurations/FeatureDefines.xcconfig: Add defines for cache partitioning and public suffix list usage
+        * WebCoreSupport/WebSystemInterface.mm:
+        (InitWebCoreSystemInterface):
+
+2013-02-25  Jer Noble  <jer.noble@apple.com>
+
+        Normalize ENABLE_ENCRYPTED_MEDIA definitions across all FeatureDefines files.
+        https://bugs.webkit.org/show_bug.cgi?id=110806
+
+        Reviewed by Alexey Proskuryakov.
+    
+        Ensure both ENCRYPTED_MEDIA and ENCRYPTED_MEDIA_V2 are enabled on macosx_1090.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-25  Andreas Kling  <akling@apple.com>
+
+        Reduce amount of code that includes StylePropertySet.h
+        <http://webkit.org/b/101149>
+
+        Reviewed by Antti Koivisto.
+
+        * WebCoreSupport/WebEditorClient.mm:
+        * WebView/WebFrame.mm:
+        * WebView/WebView.mm:
+
+2013-02-24  Andreas Kling  <akling@apple.com>
+
+        Reduce include graph of JSDOMBinding.h
+        <http://webkit.org/b/110709>
+
+        Reviewed by Antti Koivisto.
+
+        * WebView/WebHTMLView.mm:
+
+2013-02-21  Grzegorz Czajkowski  <g.czajkowski@samsung.com>
+
+        Allow to retrieve the request data from abstract TextCheckingRequest to be accessible for WK2
+        https://bugs.webkit.org/show_bug.cgi?id=110208
+
+        Reviewed by Hajime Morrita.
+
+        * WebCoreSupport/WebEditorClient.mm:
+        (WebEditorClient::didCheckSucceed):
+        (WebEditorClient::requestCheckingOfString):
+        Extract the request data as it is the member of 'TextCheckingRequest'.
+
+2013-02-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Need a way to use the Objective-C JavaScript API with WebKit
+        https://bugs.webkit.org/show_bug.cgi?id=106059
+
+        Reviewed by Geoffrey Garen.
+
+        Addition of appropriate delegate callbacks and support to the WebKit API.
+
+        * WebCoreSupport/WebFrameLoaderClient.mm:
+        * WebView/WebDelegateImplementationCaching.h:
+        (WebFrameLoadDelegateImplementationCache):
+        * WebView/WebFrame.h:
+        * WebView/WebFrame.mm:
+        (-[WebFrame _stringByEvaluatingJavaScriptFromString:forceUserGesture:]):
+        (-[WebFrame _stringByEvaluatingJavaScriptFromString:withGlobalObject:inScriptWorld:]):
+        (-[WebFrame _javaScriptContextForScriptWorld:]):
+        (-[WebFrame javaScriptContext]):
+        * WebView/WebFrameLoadDelegate.h:
+        * WebView/WebFramePrivate.h:
+        * WebView/WebScriptDebugDelegate.mm:
+        (-[WebScriptCallFrame _convertValueToObjcValue:JSC::]):
+        (-[WebScriptCallFrame exception]):
+        (-[WebScriptCallFrame evaluateWebScript:]):
+        * WebView/WebScriptWorld.h:
+        * WebView/WebScriptWorld.mm:
+        (+[WebScriptWorld scriptWorldForJavaScriptContext:]):
+        * WebView/WebView.mm:
+        (-[WebView _cacheFrameLoadDelegateImplementations]):
+        (aeDescFromJSValue):
+        (-[WebView aeDescByEvaluatingJavaScriptFromString:]):
+        (-[WebView _computedStyleIncludingVisitedInfo:forElement:]):
+
+2013-02-20  Dirk Schulze  <krit@webkit.org>
+
+        Enable CANVAS_PATH flag
+        https://bugs.webkit.org/show_bug.cgi?id=108508
+
+        Reviewed by Simon Fraser.
+
+        Enable CANVAS_PATH flag on trunk.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-19  Tim Horton  <timothy_horton@apple.com>
+
+        Clarify isInWindow vs. isVisible path through to RenderLayerCompositor
+        https://bugs.webkit.org/show_bug.cgi?id=110261
+        <rdar://problem/13196122>
+
+        Reviewed by Simon Fraser.
+
+        * WebView/WebView.mm:
+        (-[WebView viewWillMoveToWindow:]):
+        (-[WebView viewDidMoveToWindow]):
+        Use Page::setIsInWindow in addition to willMoveOffscreen/didMoveOnscreen.
+
 2013-02-18  Anders Carlsson  <andersca@apple.com>
 
         Add a DefaultHash for RefPtr<SecurityOrigin>

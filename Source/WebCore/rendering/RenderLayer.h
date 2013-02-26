@@ -705,6 +705,7 @@ public:
     RenderLayerBacking* backing() const { return m_backing.get(); }
     RenderLayerBacking* ensureBacking();
     void clearBacking(bool layerBeingDestroyed = false);
+    virtual GraphicsLayer* layerForScrolling() const;
     virtual GraphicsLayer* layerForHorizontalScrollbar() const;
     virtual GraphicsLayer* layerForVerticalScrollbar() const;
     virtual GraphicsLayer* layerForScrollCorner() const;
@@ -723,6 +724,10 @@ public:
     }
 
     bool paintsWithTransform(PaintBehavior) const;
+
+    // Returns true if layer contents are painted opaque in the given rect.
+    // The query rect is given in local coordinates.
+    bool contentsOpaqueInRect(const LayoutRect&) const;
 
     bool containsDirtyOverlayScrollbars() const { return m_containsDirtyOverlayScrollbars; }
     void setContainsDirtyOverlayScrollbars(bool dirtyScrollbars) { m_containsDirtyOverlayScrollbars = dirtyScrollbars; }
@@ -907,6 +912,8 @@ private:
     
     bool hitTestContents(const HitTestRequest&, HitTestResult&, const LayoutRect& layerBounds, const HitTestLocation&, HitTestFilter) const;
 
+    bool listContentsOpaqueInRect(const Vector<RenderLayer*>*, const LayoutRect&) const;
+
     void computeScrollDimensions();
     bool hasHorizontalOverflow() const;
     bool hasVerticalOverflow() const;
@@ -997,6 +1004,9 @@ private:
     void drawPlatformResizerImage(GraphicsContext*, IntRect resizerCornerRect);
 
     void updatePagination();
+    
+    // FIXME: Temporary. Remove when new columns come online.
+    bool useRegionBasedColumns() const;
     
 #if USE(ACCELERATED_COMPOSITING)    
     bool hasCompositingDescendant() const { return m_hasCompositingDescendant; }

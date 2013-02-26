@@ -395,22 +395,7 @@ static CFDictionaryRef createConnectionProperties(bool shouldUseCredentialStorag
     return propertiesDictionary;
 }
 
-static bool shouldRelaxThirdPartyCookiePolicy(NetworkingContext* context, const KURL& url)
-{
-    // If a URL already has cookies, then we'll relax the 3rd party cookie policy and accept new cookies.
-
-    RetainPtr<CFHTTPCookieStorageRef> cfCookieStorage = context->storageSession().cookieStorage();
-    CFHTTPCookieStorageAcceptPolicy cookieAcceptPolicy = CFHTTPCookieStorageGetCookieAcceptPolicy(cfCookieStorage.get());
-
-    if (cookieAcceptPolicy != CFHTTPCookieStorageAcceptPolicyOnlyFromMainDocumentDomain)
-        return false;
-
-    RetainPtr<CFURLRef> cfURL = adoptCF(url.createCFURL());
-    RetainPtr<CFArrayRef> cookies = adoptCF(CFHTTPCookieStorageCopyCookiesForURL(cfCookieStorage.get(), cfURL.get(), false));
-    return CFArrayGetCount(cookies.get());
-}
-
-void ResourceHandle::createCFURLConnection(bool shouldUseCredentialStorage, bool shouldRelaxThirdPartyCookiePolicy, bool shouldContentSniff)
+void ResourceHandle::createCFURLConnection(bool shouldUseCredentialStorage, bool shouldContentSniff)
 {
     if ((!d->m_user.isEmpty() || !d->m_pass.isEmpty()) && !firstRequest().url().protocolIsInHTTPFamily()) {
         // Credentials for ftp can only be passed in URL, the didReceiveAuthenticationChallenge delegate call won't be made.
@@ -420,10 +405,7 @@ void ResourceHandle::createCFURLConnection(bool shouldUseCredentialStorage, bool
         firstRequest().setURL(urlWithCredentials);
     }
 
-    if (shouldRelaxThirdPartyCookiePolicy)
-        firstRequest().setFirstPartyForCookies(firstRequest().url());
-
-    // <rdar://problem/7174050> - For URLs that match the paths of those previously challenged for HTTP Basic authentication, 
+    // <rdar://problem/7174050> - For URLs that match the paths of those previously challenged for HTTP Basic authentication,
     // try and reuse the credential preemptively, as allowed by RFC 2617.
     if (shouldUseCredentialStorage && firstRequest().url().protocolIsInHTTPFamily()) {
         if (d->m_user.isEmpty() && d->m_pass.isEmpty()) {
@@ -510,7 +492,7 @@ bool ResourceHandle::start()
 
     bool shouldUseCredentialStorage = !client() || client()->shouldUseCredentialStorage(this);
 
-    createCFURLConnection(shouldUseCredentialStorage, shouldRelaxThirdPartyCookiePolicy(d->m_context.get(), firstRequest().url()), d->m_shouldContentSniff);
+    createCFURLConnection(shouldUseCredentialStorage, d->m_shouldContentSniff);
 
 #if PLATFORM(WIN)
     CFURLConnectionScheduleWithCurrentMessageQueue(d->m_connection.get());
@@ -727,9 +709,9 @@ CFStringRef ResourceHandle::synchronousLoadRunLoopMode()
     return CFSTR("WebCoreSynchronousLoaderRunLoopMode");
 }
 
-void ResourceHandle::loadResourceSynchronously(NetworkingContext* context, const ResourceRequest& request, StoredCredentials storedCredentials, ResourceError& error, ResourceResponse& response, Vector<char>& vector)
+void ResourceHandle::platformLoadResourceSynchronously(NetworkingContext* context, const ResourceRequest& request, StoredCredentials storedCredentials, ResourceError& error, ResourceResponse& response, Vector<char>& vector)
 {
-    LOG(Network, "ResourceHandle::loadResourceSynchronously:%s allowStoredCredentials:%u", request.url().string().utf8().data(), storedCredentials);
+    LOG(Network, "ResourceHandle::platformLoadResourceSynchronously:%s allowStoredCredentials:%u", request.url().string().utf8().data(), storedCredentials);
 
     ASSERT(!request.isEmpty());
 
@@ -748,7 +730,7 @@ void ResourceHandle::loadResourceSynchronously(NetworkingContext* context, const
         return;
     }
 
-    handle->createCFURLConnection(storedCredentials == AllowStoredCredentials, shouldRelaxThirdPartyCookiePolicy(context, request.url()), ResourceHandle::shouldContentSniffURL(request.url()));
+    handle->createCFURLConnection(storedCredentials == AllowStoredCredentials, ResourceHandle::shouldContentSniffURL(request.url()));
 
     CFURLConnectionScheduleWithRunLoop(handle->connection(), CFRunLoopGetCurrent(), synchronousLoadRunLoopMode());
     CFURLConnectionScheduleDownloadWithRunLoop(handle->connection(), CFRunLoopGetCurrent(), synchronousLoadRunLoopMode());

@@ -105,10 +105,24 @@ void RenderFlowThread::addRegionToThread(RenderRegion* renderRegion)
 void RenderFlowThread::removeRegionFromThread(RenderRegion* renderRegion)
 {
     ASSERT(renderRegion);
-    m_regionRangeMap.clear();
     m_regionList.remove(renderRegion);
     invalidateRegions();
     checkRegionsWithStyling();
+}
+
+void RenderFlowThread::invalidateRegions()
+{
+    if (m_regionsInvalidated) {
+        ASSERT(selfNeedsLayout());
+        return;
+    }
+
+    m_regionRangeMap.clear();
+    m_breakBeforeToRegionMap.clear();
+    m_breakAfterToRegionMap.clear();
+    setNeedsLayout(true);
+
+    m_regionsInvalidated = true;
 }
 
 class CurrentRenderFlowThreadDisabler {
@@ -141,9 +155,6 @@ void RenderFlowThread::layout()
         m_regionsInvalidated = false;
         m_regionsHaveUniformLogicalWidth = true;
         m_regionsHaveUniformLogicalHeight = true;
-        m_regionRangeMap.clear();
-        m_breakBeforeToRegionMap.clear();
-        m_breakAfterToRegionMap.clear();
 
         LayoutUnit previousRegionLogicalWidth = 0;
         LayoutUnit previousRegionLogicalHeight = 0;
@@ -152,7 +163,7 @@ void RenderFlowThread::layout()
             for (RenderRegionList::iterator iter = m_regionList.begin(); iter != m_regionList.end(); ++iter) {
                 RenderRegion* region = *iter;
                 ASSERT(!region->needsLayout());
-                
+
                 region->deleteAllRenderBoxRegionInfo();
 
                 // In the normal layout phase we need to initialize the overrideLogicalContentHeight for auto-height regions.
@@ -244,32 +255,39 @@ void RenderFlowThread::paintFlowThreadPortionInRegion(PaintInfo& paintInfo, Rend
     if (!context)
         return;
 
-    // Adjust the clipping rect for the region.
-    // paintOffset contains the offset where the painting should occur
-    // adjusted with the region padding and border.
-    LayoutRect regionClippingRect = computeRegionClippingRect(paintOffset, flowThreadPortionRect, flowThreadPortionOverflowRect);
+    // RenderFlowThread should start painting its content in a position that is offset
+    // from the region rect's current position. The amount of offset is equal to the location of
+    // the flow thread portion in the flow thread's local coordinates.
+    // Note that we have to pixel snap the location at which we're going to paint, since this is necessary
+    // to minimize the amount of incorrect snapping that would otherwise occur.
+    // If we tried to paint by applying a non-integral translation, then all the
+    // layout code that attempted to pixel snap would be incorrect.
+    IntPoint adjustedPaintOffset;
+    LayoutPoint portionLocation;
+    if (style()->isFlippedBlocksWritingMode()) {
+        LayoutRect flippedFlowThreadPortionRect(flowThreadPortionRect);
+        flipForWritingMode(flippedFlowThreadPortionRect);
+        portionLocation = flippedFlowThreadPortionRect.location();
+    } else
+        portionLocation = flowThreadPortionRect.location();
+    adjustedPaintOffset = roundedIntPoint(paintOffset - portionLocation);
+
+    // The clipping rect for the region is set up by assuming the flowThreadPortionRect is going to paint offset from adjustedPaintOffset.
+    // Remember that we pixel snapped and moved the paintOffset and stored the snapped result in adjustedPaintOffset. Now we add back in
+    // the flowThreadPortionRect's location to get the spot where we expect the portion to actually paint. This can be non-integral and
+    // that's ok. We then pixel snap the resulting clipping rect to account for snapping that will occur when the flow thread paints.
+    IntRect regionClippingRect = pixelSnappedIntRect(computeRegionClippingRect(adjustedPaintOffset + portionLocation, flowThreadPortionRect, flowThreadPortionOverflowRect));
 
     PaintInfo info(paintInfo);
-    info.rect.intersect(pixelSnappedIntRect(regionClippingRect));
+    info.rect.intersect(regionClippingRect);
 
     if (!info.rect.isEmpty()) {
         context->save();
 
         context->clip(regionClippingRect);
 
-        // RenderFlowThread should start painting its content in a position that is offset
-        // from the region rect's current position. The amount of offset is equal to the location of
-        // the flow thread portion in the flow thread's local coordinates.
-        IntPoint renderFlowThreadOffset;
-        if (style()->isFlippedBlocksWritingMode()) {
-            LayoutRect flippedFlowThreadPortionRect(flowThreadPortionRect);
-            flipForWritingMode(flippedFlowThreadPortionRect);
-            renderFlowThreadOffset = roundedIntPoint(paintOffset - flippedFlowThreadPortionRect.location());
-        } else
-            renderFlowThreadOffset = roundedIntPoint(paintOffset - flowThreadPortionRect.location());
-
-        context->translate(renderFlowThreadOffset.x(), renderFlowThreadOffset.y());
-        info.rect.moveBy(-renderFlowThreadOffset);
+        context->translate(adjustedPaintOffset.x(), adjustedPaintOffset.y());
+        info.rect.moveBy(-adjustedPaintOffset);
         
         layer()->paint(context, info.rect, 0, 0, region, RenderLayer::PaintLayerTemporaryClipRects);
 
@@ -435,6 +453,12 @@ void RenderFlowThread::removeRenderBoxRegionInfo(RenderBox* box)
 {
     if (!hasRegions())
         return;
+
+    // If the region chain was invalidated the next layout will clear the box information from all the regions.
+    if (m_regionsInvalidated) {
+        ASSERT(selfNeedsLayout());
+        return;
+    }
 
     RenderRegion* startRegion;
     RenderRegion* endRegion;

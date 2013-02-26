@@ -870,7 +870,6 @@ webcore_built_sources += \
 	DerivedSources/WebCore/MathMLNames.cpp \
 	DerivedSources/WebCore/MathMLNames.h \
 	DerivedSources/WebCore/SettingsMacros.h \
-	DerivedSources/WebCore/UserAgentGtk.h \
 	DerivedSources/WebCore/UserAgentStyleSheetsData.cpp \
 	DerivedSources/WebCore/UserAgentStyleSheets.h \
 	DerivedSources/WebCore/WebKitFontFamilyNames.cpp \
@@ -2102,6 +2101,8 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webdatabase/AbstractDatabaseServer.h \
 	Source/WebCore/Modules/webdatabase/AbstractSQLStatement.h \
 	Source/WebCore/Modules/webdatabase/AbstractSQLStatementBackend.h \
+	Source/WebCore/Modules/webdatabase/AbstractSQLTransaction.h \
+	Source/WebCore/Modules/webdatabase/AbstractSQLTransactionBackend.h \
 	Source/WebCore/Modules/webdatabase/ChangeVersionData.h \
 	Source/WebCore/Modules/webdatabase/ChangeVersionWrapper.cpp \
 	Source/WebCore/Modules/webdatabase/ChangeVersionWrapper.h \
@@ -2113,8 +2114,8 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webdatabase/DatabaseAuthorizer.h \
 	Source/WebCore/Modules/webdatabase/DatabaseBackend.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseBackend.h \
-	Source/WebCore/Modules/webdatabase/DatabaseBackendAsync.cpp \
-	Source/WebCore/Modules/webdatabase/DatabaseBackendAsync.h \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendBase.cpp \
+	Source/WebCore/Modules/webdatabase/DatabaseBackendBase.h \
 	Source/WebCore/Modules/webdatabase/DatabaseBackendContext.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseBackendContext.h \
 	Source/WebCore/Modules/webdatabase/DatabaseBackendSync.cpp \
@@ -2140,10 +2141,6 @@ webcore_modules_sources += \
 	Source/WebCore/Modules/webdatabase/DatabaseThread.h \
 	Source/WebCore/Modules/webdatabase/DatabaseTracker.cpp \
 	Source/WebCore/Modules/webdatabase/DatabaseTracker.h \
-	Source/WebCore/Modules/webdatabase/OriginQuotaManager.cpp \
-	Source/WebCore/Modules/webdatabase/OriginQuotaManager.h \
-	Source/WebCore/Modules/webdatabase/OriginUsageRecord.cpp \
-	Source/WebCore/Modules/webdatabase/OriginUsageRecord.h \
 	Source/WebCore/Modules/webdatabase/SQLCallbackWrapper.h \
 	Source/WebCore/Modules/webdatabase/SQLError.h \
 	Source/WebCore/Modules/webdatabase/SQLException.cpp \
@@ -2688,6 +2685,8 @@ webcore_sources += \
 	Source/WebCore/css/RuleSet.h \
 	Source/WebCore/css/SelectorChecker.cpp \
 	Source/WebCore/css/SelectorChecker.h \
+	Source/WebCore/css/SelectorCheckerFastPath.cpp \
+	Source/WebCore/css/SelectorCheckerFastPath.h \
 	Source/WebCore/css/SelectorFilter.cpp \
 	Source/WebCore/css/SelectorFilter.h \
 	Source/WebCore/css/ShadowValue.cpp \
@@ -2743,8 +2742,6 @@ webcore_sources += \
 	Source/WebCore/css/WebKitCSSViewportRule.h \
 	Source/WebCore/dom/ActiveDOMObject.cpp \
 	Source/WebCore/dom/ActiveDOMObject.h \
-	Source/WebCore/dom/AncestorChainWalker.cpp \
-	Source/WebCore/dom/AncestorChainWalker.h \
 	Source/WebCore/dom/Attr.cpp \
 	Source/WebCore/dom/Attr.h \
 	Source/WebCore/dom/Attribute.h \
@@ -2876,7 +2873,10 @@ webcore_sources += \
 	Source/WebCore/dom/EventListenerMap.h \
 	Source/WebCore/dom/EventNames.cpp \
 	Source/WebCore/dom/EventNames.h \
+	Source/WebCore/dom/EventPathWalker.cpp \
+	Source/WebCore/dom/EventPathWalker.h \
 	Source/WebCore/dom/EventRetargeter.cpp \
+	Source/WebCore/dom/EventRetargeter.h \
 	Source/WebCore/dom/EventTarget.cpp \
 	Source/WebCore/dom/EventTarget.h \
 	Source/WebCore/dom/EventQueue.h \
@@ -3670,8 +3670,8 @@ webcore_sources += \
 	Source/WebCore/html/shadow/MediaControlElementTypes.h \
 	Source/WebCore/html/shadow/MediaControls.cpp \
 	Source/WebCore/html/shadow/MediaControls.h \
-	Source/WebCore/html/shadow/MediaControlsApple.cpp \
-	Source/WebCore/html/shadow/MediaControlsApple.h \
+	Source/WebCore/html/shadow/MediaControlsGtk.cpp \
+	Source/WebCore/html/shadow/MediaControlsGtk.h \
 	Source/WebCore/html/shadow/MeterShadowElement.cpp \
 	Source/WebCore/html/shadow/MeterShadowElement.h \
 	Source/WebCore/html/shadow/ProgressShadowElement.cpp \
@@ -3838,8 +3838,6 @@ webcore_sources += \
 	Source/WebCore/inspector/InspectorDOMDebuggerAgent.h \
 	Source/WebCore/inspector/InspectorDOMStorageAgent.cpp \
 	Source/WebCore/inspector/InspectorDOMStorageAgent.h \
-	Source/WebCore/inspector/InspectorDOMStorageResource.cpp \
-	Source/WebCore/inspector/InspectorDOMStorageResource.h \
 	Source/WebCore/inspector/InspectorFileSystemAgent.cpp \
 	Source/WebCore/inspector/InspectorFileSystemAgent.h \
 	Source/WebCore/inspector/InspectorFrontendChannel.h \
@@ -4557,6 +4555,8 @@ webcore_sources += \
 	Source/WebCore/rendering/RootInlineBox.h \
 	Source/WebCore/rendering/ScrollBehavior.cpp \
 	Source/WebCore/rendering/ScrollBehavior.h \
+	Source/WebCore/rendering/TextAutosizer.cpp \
+	Source/WebCore/rendering/TextAutosizer.h \
 	Source/WebCore/rendering/VerticalPositionCache.h \
 	Source/WebCore/rendering/mathml/RenderMathMLBlock.cpp \
 	Source/WebCore/rendering/mathml/RenderMathMLBlock.h \
@@ -5383,6 +5383,7 @@ webcore_platform_sources += \
 	Source/WebCore/platform/Arena.h \
 	Source/WebCore/platform/AsyncFileSystem.cpp \
 	Source/WebCore/platform/AsyncFileSystem.h \
+	Source/WebCore/platform/AsyncFileSystemCallbacks.h \
 	Source/WebCore/platform/AutodrainedPool.h \
 	Source/WebCore/platform/CalculationValue.cpp \
 	Source/WebCore/platform/CalculationValue.h \
@@ -5734,6 +5735,7 @@ webcore_platform_sources += \
 	Source/WebCore/platform/gtk/MIMETypeRegistryGtk.cpp \
 	Source/WebCore/platform/gtk/SharedBufferGtk.cpp \
 	Source/WebCore/platform/gtk/UserAgentGtk.cpp \
+	Source/WebCore/platform/gtk/UserAgentGtk.h \
 	Source/WebCore/platform/gtk/TemporaryLinkStubs.cpp \
 	Source/WebCore/platform/HostWindow.h \
 	Source/WebCore/platform/KillRing.h \
@@ -6109,7 +6111,7 @@ webcoregtk_sources += \
 	Source/WebCore/accessibility/atk/WebKitAccessibleUtil.h \
 	Source/WebCore/accessibility/atk/WebKitAccessibleWrapperAtk.cpp \
 	Source/WebCore/accessibility/atk/WebKitAccessibleWrapperAtk.h \
-	Source/WebCore/editing/gtk/FrameSelectionGtk.cpp \
+	Source/WebCore/editing/atk/FrameSelectionAtk.cpp \
 	Source/WebCore/page/gtk/DragControllerGtk.cpp \
 	Source/WebCore/page/gtk/EventHandlerGtk.cpp \
 	Source/WebCore/platform/audio/gtk/AudioBusGtk.cpp \
@@ -6311,8 +6313,6 @@ webcore_sources += \
 	Source/ThirdParty/ANGLE/include/GLSLANG/ShaderLang.h \
 	Source/ThirdParty/ANGLE/include/KHR/khrplatform.h \
 	Source/ThirdParty/ANGLE/src/common/angleutils.h \
-	Source/ThirdParty/ANGLE/src/compiler/ArrayBoundsClamper.cpp \
-	Source/ThirdParty/ANGLE/src/compiler/ArrayBoundsClamper.h \
 	Source/ThirdParty/ANGLE/src/compiler/BaseTypes.h \
 	Source/ThirdParty/ANGLE/src/compiler/BuiltInFunctionEmulator.cpp \
 	Source/ThirdParty/ANGLE/src/compiler/BuiltInFunctionEmulator.h \
@@ -6434,7 +6434,9 @@ webcore_sources += \
 	Source/ThirdParty/ANGLE/src/compiler/ValidateLimitations.cpp \
 	Source/ThirdParty/ANGLE/src/compiler/ValidateLimitations.h \
 	Source/ThirdParty/ANGLE/src/compiler/VariableInfo.cpp \
-	Source/ThirdParty/ANGLE/src/compiler/VariableInfo.h
+	Source/ThirdParty/ANGLE/src/compiler/VariableInfo.h \
+	Source/ThirdParty/ANGLE/src/third_party/compiler/ArrayBoundsClamper.cpp \
+	Source/ThirdParty/ANGLE/src/third_party/compiler/ArrayBoundsClamper.h
 
 if USE_CLUTTER
 webcore_sources += \

@@ -1,3 +1,83 @@
+2013-02-24  Alexey Proskuryakov  <ap@apple.com>
+
+        Clarify meaning of default default encoding localizable string
+        https://bugs.webkit.org/show_bug.cgi?id=110714
+
+        Reviewed by Eric Carlson.
+
+        * WebPreferences.cpp: Updated a comment.
+
+2013-02-24  Benjamin Poulain  <benjamin@webkit.org>
+
+        REGRESSION(r143837): Broke build on AppleWin http://build.webkit.org/builders/Apple%20Win%20Release%20%28Build%29.
+        https://bugs.webkit.org/show_bug.cgi?id=110713
+
+        Unreviewed.
+
+        * WebKit.vcproj/WebKitExports.def.in: Add the missing symbol after r143837.
+
+2013-02-21  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r143536.
+        http://trac.webkit.org/changeset/143536
+        https://bugs.webkit.org/show_bug.cgi?id=110523
+
+        Causing a bunch of tests to fail on Windows, requires
+        rebaselining (Requested by rfong on #webkit).
+
+        * WebKitClassFactory.cpp:
+        (WebKitClassFactory::WebKitClassFactory):
+        * WebView.cpp:
+        (WebView::initWithFrame):
+        (WebView::notifyPreferencesChanged):
+
+2013-02-20  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Remove references to SAFARI_THEME from Windows Solution.
+        <rdar://problem/13258710>
+
+        * WebKitClassFactory.cpp:
+        * WebView.cpp:
+
+2013-02-19  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r143338.
+        http://trac.webkit.org/changeset/143338
+        https://bugs.webkit.org/show_bug.cgi?id=110301
+
+        False alarm, no need to export the symbol (Requested by
+        aandrey on #webkit).
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-02-19  Tony Chang  <tony@chromium.org>
+
+        Unreviewed, force file to recompile to fix win build.
+
+        * WebView.cpp:
+
+2013-02-19  Tony Chang  <tony@chromium.org>
+
+        Unreviewed, fix the Windows build after r143398.
+        Add new setters to the export list.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-02-19  Andrey Adaikin  <aandrey@chromium.org>
+
+        Unreviewed, adding external symbol ?didBeginFrame@InspectorCanvasAgent@WebCore@@QAEXXZ.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-02-19  Andrey Adaikin  <aandrey@chromium.org>
+
+        Unreviewed, Web Inspector: follow up to r143328 fixing Win Debug Build
+        https://bugs.webkit.org/show_bug.cgi?id=110227
+
+        Adding external symbol ?didBeginFrame@InspectorCanvasAgent@WebCore@@QAEXXZ.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
 2013-02-18  Simon Fraser  <simon.fraser@apple.com>
 
         Clean up the boolean argument to visibleContentRect

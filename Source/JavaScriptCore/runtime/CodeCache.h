@@ -55,44 +55,51 @@ class SourceProvider;
 
 class SourceCodeKey {
 public:
-    enum CodeType { EvalType, ProgramType, FunctionCallType, FunctionConstructType };
+    enum CodeType { EvalType, ProgramType, FunctionType };
 
     SourceCodeKey()
-        : m_flags(0)
     {
     }
 
     SourceCodeKey(const SourceCode& sourceCode, const String& name, CodeType codeType, JSParserStrictness jsParserStrictness)
-        : m_sourceString(sourceCode.toString())
+        : m_sourceCode(sourceCode)
         , m_name(name)
         , m_flags((codeType << 1) | jsParserStrictness)
+        , m_hash(string().impl()->hash())
     {
     }
 
     SourceCodeKey(WTF::HashTableDeletedValueType)
-        : m_sourceString(WTF::HashTableDeletedValue)
+        : m_sourceCode(WTF::HashTableDeletedValue)
     {
     }
 
-    bool isHashTableDeletedValue() const { return m_sourceString.isHashTableDeletedValue(); }
+    bool isHashTableDeletedValue() const { return m_sourceCode.isHashTableDeletedValue(); }
 
-    unsigned hash() const { return m_sourceString.impl()->hash(); }
+    unsigned hash() const { return m_hash; }
 
-    size_t length() const { return m_sourceString.length(); }
+    size_t length() const { return m_sourceCode.length(); }
 
-    bool isNull() const { return m_sourceString.isNull(); }
+    bool isNull() const { return m_sourceCode.isNull(); }
+
+    // To save memory, we compute our string on demand. It's expected that source
+    // providers cache their strings to make this efficient.
+    String string() const { return m_sourceCode.toString(); }
 
     bool operator==(const SourceCodeKey& other) const
     {
-        return m_flags == other.m_flags
+        return m_hash == other.m_hash
+            && length() == other.length()
+            && m_flags == other.m_flags
             && m_name == other.m_name
-            && m_sourceString == other.m_sourceString;
+            && string() == other.string();
     }
 
 private:
-    String m_sourceString;
+    SourceCode m_sourceCode;
     String m_name;
     unsigned m_flags;
+    unsigned m_hash;
 };
 
 struct SourceCodeKeyHash {
@@ -106,47 +113,105 @@ struct SourceCodeKeyHashTraits : SimpleClassHashTraits<SourceCodeKey> {
     static bool isEmptyValue(const SourceCodeKey& sourceCodeKey) { return sourceCodeKey.isNull(); }
 };
 
+struct SourceCodeValue {
+    SourceCodeValue()
+    {
+    }
+
+    SourceCodeValue(JSGlobalData& globalData, JSCell* cell, int64_t age)
+        : cell(globalData, cell)
+        , age(age)
+    {
+    }
+
+    Strong<JSCell> cell;
+    int64_t age;
+};
+
 class CodeCacheMap {
-    typedef HashMap<SourceCodeKey, Strong<JSCell>, SourceCodeKeyHash, SourceCodeKeyHashTraits> MapType;
-    typedef MapType::iterator iterator;
-
 public:
-    CodeCacheMap(size_t capacity)
+    typedef HashMap<SourceCodeKey, SourceCodeValue, SourceCodeKeyHash, SourceCodeKeyHashTraits> MapType;
+    typedef MapType::iterator iterator;
+    typedef MapType::AddResult AddResult;
+
+    enum { MinCacheCapacity = 1000000 }; // Size in characters
+
+    CodeCacheMap()
         : m_size(0)
-        , m_capacity(capacity)
+        , m_capacity(MinCacheCapacity)
+        , m_age(0)
     {
     }
 
-    const Strong<JSCell>* find(const SourceCodeKey& key)
-    {
-        iterator result = m_map.find(key);
-        if (result == m_map.end())
-            return 0;
-        return &result->value;
-    }
 
-    void set(const SourceCodeKey& key, const Strong<JSCell>& value)
+    AddResult add(const SourceCodeKey& key, const SourceCodeValue& value)
     {
-        while (m_size >= m_capacity) {
-            MapType::iterator it = m_map.begin();
-            m_size -= it->key.length();
-            m_map.remove(it);
+        prune();
+
+        AddResult addResult = m_map.add(key, value);
+        if (addResult.isNewEntry) {
+            m_size += key.length();
+            m_age += key.length();
+            return addResult;
         }
 
-        m_size += key.length();
-        m_map.set(key, value);
+        int64_t age = m_age - addResult.iterator->value.age;
+        if (age > m_capacity) {
+            // A requested object is older than the cache's capacity. We can
+            // infer that requested objects are subject to high eviction probability,
+            // so we grow the cache to improve our hit rate.
+            m_capacity += recencyBias * oldObjectSamplingMultiplier * key.length();
+        } else if (age < m_capacity / 2) {
+            // A requested object is much younger than the cache's capacity. We can
+            // infer that requested objects are subject to low eviction probability,
+            // so we shrink the cache to save memory.
+            m_capacity -= recencyBias * key.length();
+            if (m_capacity < MinCacheCapacity)
+                m_capacity = MinCacheCapacity;
+        }
+
+        addResult.iterator->value.age = m_age;
+        m_age += key.length();
+        return addResult;
+    }
+
+    void remove(iterator it)
+    {
+        m_size -= it->key.length();
+        m_map.remove(it);
     }
 
     void clear()
     {
         m_size = 0;
+        m_age = 0;
         m_map.clear();
     }
 
+    int64_t age() { return m_age; }
+
 private:
+    // This constant factor biases cache capacity toward recent activity. We
+    // want to adapt to changing workloads.
+    static const int64_t recencyBias = 4;
+
+    // This constant factor treats a sampled event for one old object as if it
+    // happened for many old objects. Most old objects are evicted before we can
+    // sample them, so we need to extrapolate from the ones we do sample.
+    static const int64_t oldObjectSamplingMultiplier = 32;
+
+    void pruneSlowCase();
+    void prune()
+    {
+        if (m_size < m_capacity)
+            return;
+        pruneSlowCase();
+    }
+
     MapType m_map;
-    size_t m_size;
-    size_t m_capacity;
+    int64_t m_size;
+    int64_t m_capacity;
+    int64_t m_age;
 };
 
 // Caches top-level code such as <script>, eval(), new Function, and JSEvaluateScript().
@@ -169,8 +234,6 @@ private:
 
     template <class UnlinkedCodeBlockType, class ExecutableType> 
     UnlinkedCodeBlockType* getCodeBlock(JSGlobalData&, ExecutableType*, const SourceCode&, JSParserStrictness, DebuggerMode, ProfilerMode, ParserError&);
-
-    enum { CacheSize = 16000000 }; // Size in characters
 
     CodeCacheMap m_sourceCode;
 };

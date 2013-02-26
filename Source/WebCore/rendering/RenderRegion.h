@@ -50,7 +50,7 @@ public:
 
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle);
 
-    void setFlowThreadPortionRect(const LayoutRect& rect) { m_flowThreadPortionRect = rect; }
+    virtual void setFlowThreadPortionRect(const LayoutRect& rect) { m_flowThreadPortionRect = rect; }
     LayoutRect flowThreadPortionRect() const { return m_flowThreadPortionRect; }
     LayoutRect flowThreadPortionOverflowRect() const;
 
@@ -135,17 +135,12 @@ protected:
     void repaintFlowThreadContentRectangle(const LayoutRect& repaintRect, bool immediate, const LayoutRect& flowThreadPortionRect,
         const LayoutRect& flowThreadPortionOverflowRect, const LayoutPoint& regionLocation) const;
 
+    virtual bool shouldHaveAutoLogicalHeight() const;
+
 private:
     virtual const char* renderName() const { return "RenderRegion"; }
 
     virtual bool canHaveChildren() const OVERRIDE { return false; }
-
-    bool shouldHaveAutoLogicalHeight() const
-    {
-        bool hasSpecifiedEndpointsForHeight = style()->logicalTop().isSpecified() && style()->logicalBottom().isSpecified();
-        bool hasAnchoredEndpointsForHeight = isOutOfFlowPositioned() && hasSpecifiedEndpointsForHeight;
-        return style()->logicalHeight().isAuto() && !hasAnchoredEndpointsForHeight;
-    }
 
     virtual void insertedIntoTree() OVERRIDE;
     virtual void willBeRemovedFromTree() OVERRIDE;

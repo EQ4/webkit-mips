@@ -89,15 +89,16 @@ public:
     struct ParsedChunk {
         OwnPtr<CompactHTMLTokenStream> tokens;
         PreloadRequestStream preloads;
-        HTMLInputCheckpoint checkpoint;
+        HTMLInputCheckpoint inputCheckpoint;
+        TokenPreloadScannerCheckpoint preloadScannerCheckpoint;
     };
     void didReceiveParsedChunkFromBackgroundParser(PassOwnPtr<ParsedChunk>);
 #endif
 
 protected:
-    virtual void insert(const SegmentedString&);
-    virtual void append(const SegmentedString&);
-    virtual void finish();
+    virtual void insert(const SegmentedString&) OVERRIDE;
+    virtual void append(const SegmentedString&) OVERRIDE;
+    virtual void finish() OVERRIDE;
 
     HTMLDocumentParser(HTMLDocument*, bool reportErrors);
     HTMLDocumentParser(DocumentFragment*, Element* contextElement, FragmentScriptingPermission);
@@ -113,21 +114,24 @@ private:
     }
 
     // DocumentParser
-    virtual void detach();
-    virtual bool hasInsertionPoint();
-    virtual bool processingData() const;
-    virtual void prepareToStopParsing();
-    virtual void stopParsing();
-    virtual bool isWaitingForScripts() const;
-    virtual bool isExecutingScript() const;
-    virtual void executeScriptsWaitingForStylesheets();
+#if ENABLE(THREADED_HTML_PARSER)
+    virtual void pinToMainThread() OVERRIDE;
+#endif
+    virtual void detach() OVERRIDE;
+    virtual bool hasInsertionPoint() OVERRIDE;
+    virtual bool processingData() const OVERRIDE;
+    virtual void prepareToStopParsing() OVERRIDE;
+    virtual void stopParsing() OVERRIDE;
+    virtual bool isWaitingForScripts() const OVERRIDE;
+    virtual bool isExecutingScript() const OVERRIDE;
+    virtual void executeScriptsWaitingForStylesheets() OVERRIDE;
 
     // HTMLScriptRunnerHost
-    virtual void watchForLoad(CachedResource*);
-    virtual void stopWatchingForLoad(CachedResource*);
+    virtual void watchForLoad(CachedResource*) OVERRIDE;
+    virtual void stopWatchingForLoad(CachedResource*) OVERRIDE;
     virtual HTMLInputStream& inputStream() { return m_input; }
     virtual bool hasPreloadScanner() const { return m_preloadScanner.get() && !shouldUseThreading(); }
-    virtual void appendCurrentInputStreamToPreloadScannerAndScan();
+    virtual void appendCurrentInputStreamToPreloadScannerAndScan() OVERRIDE;
 
     // CachedResourceClient
     virtual void notifyFinished(CachedResource*);
@@ -138,6 +142,7 @@ private:
     void checkForSpeculationFailure();
     void didFailSpeculation(PassOwnPtr<HTMLToken>, PassOwnPtr<HTMLTokenizer>);
     void processParsedChunkFromBackgroundParser(PassOwnPtr<ParsedChunk>);
+    void pumpPendingSpeculations();
 #endif
 
     Document* contextForParsingSession();
@@ -162,7 +167,7 @@ private:
     void attemptToRunDeferredScriptsAndEnd();
     void end();
 
-    bool shouldUseThreading() const { return m_options.useThreading && !isParsingFragment(); }
+    bool shouldUseThreading() const { return m_options.useThreading && !m_isPinnedToMainThread; }
 
     bool isParsingFragment() const;
     bool isScheduledForResume() const;
@@ -194,6 +199,7 @@ private:
 #endif
     OwnPtr<HTMLResourcePreloader> m_preloader;
 
+    bool m_isPinnedToMainThread;
     bool m_endWasDelayed;
     bool m_haveBackgroundParser;
     unsigned m_pumpSessionNestingLevel;

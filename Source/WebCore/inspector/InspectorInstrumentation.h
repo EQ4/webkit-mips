@@ -47,7 +47,6 @@
 #include "WebSocketHandshakeResponse.h"
 #include <wtf/RefPtr.h>
 #include <wtf/UnusedParam.h>
-#include <wtf/Vector.h>
 
 namespace WebCore {
 
@@ -83,7 +82,6 @@ class ShadowRoot;
 class StorageArea;
 class StyleResolver;
 class StyleRule;
-class StyleSheet;
 class ThreadableLoaderClient;
 class WorkerContext;
 class WorkerContextProxy;
@@ -124,7 +122,6 @@ public:
     static void didRemoveDOMAttr(Document*, Element*, const AtomicString& name);
     static void characterDataModified(Document*, CharacterData*);
     static void didInvalidateStyleAttr(Document*, Node*);
-    static void activeStyleSheetsUpdated(Document*, const Vector<RefPtr<StyleSheet> >&, const Vector<RefPtr<StyleSheet> >&);
     static void frameWindowDiscarded(Frame*, DOMWindow*);
     static void mediaQueryResultChanged(Document*);
     static void didPushShadowRoot(Element* host, ShadowRoot*);
@@ -255,7 +252,6 @@ public:
     static void didOpenDatabase(ScriptExecutionContext*, PassRefPtr<Database>, const String& domain, const String& name, const String& version);
 #endif
 
-    static void didUseDOMStorage(Page*, StorageArea*, bool isLocalStorage, Frame*);
     static void didDispatchDOMStorageEvent(const String& key, const String& oldValue, const String& newValue, StorageType, SecurityOrigin*, Page*);
 
 #if ENABLE(WORKERS)
@@ -266,7 +262,7 @@ public:
 #endif
 
 #if ENABLE(WEB_SOCKETS)
-    static void didCreateWebSocket(Document*, unsigned long identifier, const KURL& requestURL, const KURL& documentURL);
+    static void didCreateWebSocket(Document*, unsigned long identifier, const KURL& requestURL, const KURL& documentURL, const String& protocol);
     static void willSendWebSocketHandshakeRequest(Document*, unsigned long identifier, const WebSocketHandshakeRequest&);
     static void didReceiveWebSocketHandshakeResponse(Document*, unsigned long identifier, const WebSocketHandshakeResponse&);
     static void didCloseWebSocket(Document*, unsigned long identifier);
@@ -328,7 +324,6 @@ private:
     static void didRemoveDOMAttrImpl(InstrumentingAgents*, Element*, const AtomicString& name);
     static void characterDataModifiedImpl(InstrumentingAgents*, CharacterData*);
     static void didInvalidateStyleAttrImpl(InstrumentingAgents*, Node*);
-    static void activeStyleSheetsUpdatedImpl(InstrumentingAgents*, const Vector<RefPtr<StyleSheet> >&, const Vector<RefPtr<StyleSheet> >&);
     static void frameWindowDiscardedImpl(InstrumentingAgents*, DOMWindow*);
     static void mediaQueryResultChangedImpl(InstrumentingAgents*);
     static void didPushShadowRootImpl(InstrumentingAgents*, Element* host, ShadowRoot*);
@@ -455,7 +450,6 @@ private:
     static void didOpenDatabaseImpl(InstrumentingAgents*, PassRefPtr<Database>, const String& domain, const String& name, const String& version);
 #endif
 
-    static void didUseDOMStorageImpl(InstrumentingAgents*, StorageArea*, bool isLocalStorage, Frame*);
     static void didDispatchDOMStorageEventImpl(InstrumentingAgents*, const String& key, const String& oldValue, const String& newValue, StorageType, SecurityOrigin*, Page*);
 
 #if ENABLE(WORKERS)
@@ -465,10 +459,10 @@ private:
 #endif
 
 #if ENABLE(WEB_SOCKETS)
-    static void didCreateWebSocketImpl(InstrumentingAgents*, unsigned long identifier, const KURL& requestURL, const KURL& documentURL);
-    static void willSendWebSocketHandshakeRequestImpl(InstrumentingAgents*, unsigned long identifier, const WebSocketHandshakeRequest&);
-    static void didReceiveWebSocketHandshakeResponseImpl(InstrumentingAgents*, unsigned long identifier, const WebSocketHandshakeResponse&);
-    static void didCloseWebSocketImpl(InstrumentingAgents*, unsigned long identifier);
+    static void didCreateWebSocketImpl(InstrumentingAgents*, unsigned long identifier, const KURL& requestURL, const KURL& documentURL, const String& protocol, Document*);
+    static void willSendWebSocketHandshakeRequestImpl(InstrumentingAgents*, unsigned long identifier, const WebSocketHandshakeRequest&, Document*);
+    static void didReceiveWebSocketHandshakeResponseImpl(InstrumentingAgents*, unsigned long identifier, const WebSocketHandshakeResponse&, Document*);
+    static void didCloseWebSocketImpl(InstrumentingAgents*, unsigned long identifier, Document*);
     static void didReceiveWebSocketFrameImpl(InstrumentingAgents*, unsigned long identifier, const WebSocketFrame&);
     static void didSendWebSocketFrameImpl(InstrumentingAgents*, unsigned long identifier, const WebSocketFrame&);
     static void didReceiveWebSocketFrameErrorImpl(InstrumentingAgents*, unsigned long identifier, const String&);
@@ -617,19 +611,6 @@ inline void InspectorInstrumentation::didInvalidateStyleAttr(Document* document,
 #else
     UNUSED_PARAM(document);
     UNUSED_PARAM(node);
-#endif
-}
-
-inline void InspectorInstrumentation::activeStyleSheetsUpdated(Document* document, const Vector<RefPtr<StyleSheet> >& oldSheets, const Vector<RefPtr<StyleSheet> >& newSheets)
-{
-#if ENABLE(INSPECTOR)
-    FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
-        activeStyleSheetsUpdatedImpl(instrumentingAgents, oldSheets, newSheets);
-#else
-    UNUSED_PARAM(document);
-    UNUSED_PARAM(oldSheets);
-    UNUSED_PARAM(newSheets);
 #endif
 }
 
@@ -1767,19 +1748,6 @@ inline void InspectorInstrumentation::didWriteHTML(const InspectorInstrumentatio
 #endif
 }
 
-inline void InspectorInstrumentation::didUseDOMStorage(Page* page, StorageArea* storageArea, bool isLocalStorage, Frame* frame)
-{
-#if ENABLE(INSPECTOR)
-    if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForPage(page))
-        didUseDOMStorageImpl(instrumentingAgents, storageArea, isLocalStorage, frame);
-#else
-    UNUSED_PARAM(page);
-    UNUSED_PARAM(storageArea);
-    UNUSED_PARAM(isLocalStorage);
-    UNUSED_PARAM(frame);
-#endif
-}
-
 inline void InspectorInstrumentation::didDispatchDOMStorageEvent(const String& key, const String& oldValue, const String& newValue, StorageType storageType, SecurityOrigin* securityOrigin, Page* page)
 {
 #if ENABLE(INSPECTOR)
@@ -1836,16 +1804,17 @@ inline void InspectorInstrumentation::workerContextTerminated(ScriptExecutionCon
 
 
 #if ENABLE(WEB_SOCKETS)
-inline void InspectorInstrumentation::didCreateWebSocket(Document* document, unsigned long identifier, const KURL& requestURL, const KURL& documentURL)
+inline void InspectorInstrumentation::didCreateWebSocket(Document* document, unsigned long identifier, const KURL& requestURL, const KURL& documentURL, const String& protocol)
 {
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
-        didCreateWebSocketImpl(instrumentingAgents, identifier, requestURL, documentURL);
+        didCreateWebSocketImpl(instrumentingAgents, identifier, requestURL, documentURL, protocol, document);
 #else
     UNUSED_PARAM(document);
     UNUSED_PARAM(identifier);
     UNUSED_PARAM(requestURL);
     UNUSED_PARAM(documentURL);
+    UNUSED_PARAM(protocol);
 #endif
 }
 
@@ -1853,7 +1822,7 @@ inline void InspectorInstrumentation::willSendWebSocketHandshakeRequest(Document
 {
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
-        willSendWebSocketHandshakeRequestImpl(instrumentingAgents, identifier, request);
+        willSendWebSocketHandshakeRequestImpl(instrumentingAgents, identifier, request, document);
 #else
     UNUSED_PARAM(document);
     UNUSED_PARAM(identifier);
@@ -1865,7 +1834,7 @@ inline void InspectorInstrumentation::didReceiveWebSocketHandshakeResponse(Docum
 {
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
-        didReceiveWebSocketHandshakeResponseImpl(instrumentingAgents, identifier, response);
+        didReceiveWebSocketHandshakeResponseImpl(instrumentingAgents, identifier, response, document);
 #else
     UNUSED_PARAM(document);
     UNUSED_PARAM(identifier);
@@ -1877,7 +1846,7 @@ inline void InspectorInstrumentation::didCloseWebSocket(Document* document, unsi
 {
 #if ENABLE(INSPECTOR)
     if (InstrumentingAgents* instrumentingAgents = instrumentingAgentsForDocument(document))
-        didCloseWebSocketImpl(instrumentingAgents, identifier);
+        didCloseWebSocketImpl(instrumentingAgents, identifier, document);
 #else
     UNUSED_PARAM(document);
     UNUSED_PARAM(identifier);

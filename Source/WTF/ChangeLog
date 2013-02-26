@@ -1,3 +1,232 @@
+2013-02-26  Jocelyn Turcotte  <jocelyn.turcotte@digia.com>
+
+        Implement JIT on Windows 64 bits
+        https://bugs.webkit.org/show_bug.cgi?id=107965
+
+        Reviewed by Simon Hausmann.
+
+        * wtf/Platform.h:
+
+2013-02-26  Oliver Hunt  <oliver@apple.com>
+
+        Appease static analyzer warning about null string passed to strlen
+        https://bugs.webkit.org/show_bug.cgi?id=110658
+
+        Reviewed by Benjamin Poulain.
+
+        Add a null check before calling strlen
+
+        * wtf/Threading.cpp:
+        (WTF::createThread):
+
+2013-02-25  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Build fix attempt after r143996.
+
+        * wtf/FastMalloc.cpp:
+        (WTF):
+
+2013-02-25  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Fix script to use WEBKIT_SOURCE for VS2010 property sheets instead of WEBKIT_LIBRARIES.
+
+        * WTF.vcxproj/work-around-vs-dependency-tracking-bugs.py:
+
+2013-02-25  Oliver Hunt  <oliver@apple.com>
+
+        Add cookies to FastMalloc spans
+        https://bugs.webkit.org/show_bug.cgi?id=110827
+
+        Reviewed by Michael Saboff.
+
+        Add a cookie to spans, and move some of the hardening around so
+        that it's more useful.
+
+        * wtf/FastMalloc.cpp:
+        (WTF::internalEntropyValue):
+        (WTF::spanInitializerCookie):
+        (WTF::Span::initCookie):
+        (WTF::Span::clearCookie):
+        (WTF::Span::isValid):
+        (Span):
+        (WTF::NewSpan):
+        (WTF::DeleteSpan):
+        (WTF::TCMalloc_ThreadCache_FreeList::Validate):
+        (WTF::TCMalloc_Central_FreeList::Populate):
+        (WTF::TCMalloc_ThreadCache::Deallocate):
+        (WTF::TCMalloc_ThreadCache::CreateCacheIfNecessary):
+
+2013-02-25  Jer Noble  <jer.noble@apple.com>
+
+        Normalize ENABLE_ENCRYPTED_MEDIA definitions across all FeatureDefines files.
+        https://bugs.webkit.org/show_bug.cgi?id=110806
+
+        Reviewed by Alexey Proskuryakov.
+
+        Ensure both ENCRYPTED_MEDIA and ENCRYPTED_MEDIA_V2 are enabled on macosx_1090.
+
+        * wtf/FeatureDefines.h:
+
+2013-02-23  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Web Inspector: Native Memory Instrumentation: replace String with const char* in MemoryObjectInfo
+        https://bugs.webkit.org/show_bug.cgi?id=110599
+
+        Reviewed by Yury Semikhatsky.
+
+        Due to potentially dynamic nature of names and classNames we need to make a copy of the strings
+        that were given us via MemoryInstrumentation calls.
+        So I extended client api with registerString method that pushes the strings
+        down to the serializer.
+
+        * wtf/MemoryInstrumentation.h:
+        (MemoryInstrumentationClient):
+        * wtf/MemoryObjectInfo.h:
+        (WTF::MemoryObjectInfo::MemoryObjectInfo):
+        (WTF::MemoryObjectInfo::setClassName):
+        (WTF::MemoryObjectInfo::classNameId):
+        (WTF::MemoryObjectInfo::setName):
+        (WTF::MemoryObjectInfo::nameId):
+        (MemoryObjectInfo):
+
+2013-02-21  Brady Eidson  <beidson@apple.com>
+
+        Move fastlog2() to WTF/MathExtras.h so it can be used from multiple projects.
+
+        Rubberstamped by Geoff Garen.
+
+        * wtf/MathExtras.h:
+        (WTF::fastLog2):
+
+2013-02-21  Andy Estes  <aestes@apple.com>
+
+        TriState.h should be a Project header
+        https://bugs.webkit.org/show_bug.cgi?id=110543
+
+        Rubber-stamped by Dan Bernstein.
+
+        WTF uses a script to copy headers to the build destination, so it isn't
+        necessary to mark headers as Private/Public (and doing so can be problematic).
+
+        * WTF.xcodeproj/project.pbxproj: Mark TriState.h as a Project header.
+
+2013-02-21  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Add executable property to cmd file.
+        Required for executable files to maintain their executable permissions over svn.
+
+        * WTF.vcxproj/copy-files.cmd: Added property svn:executable.
+
+2013-02-19  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Need a way to use the Objective-C JavaScript API with WebKit
+        https://bugs.webkit.org/show_bug.cgi?id=106059
+
+        Reviewed by Geoffrey Garen.
+
+        * wtf/FeatureDefines.h: Added enable flag for JSC Objective-C API so it can be used in
+        export files.
+
+2013-02-21  Martin Robinson  <mrobinson@igalia.com>
+
+        A couple more 'make dist' fixes for WebKitGTK+.
+
+        * GNUmakefile.list.am: Add a missing file to the source list.
+
+2013-02-20  Roger Fong  <roger_fong@apple.com>
+
+        Get VS2010 Solution B&I ready.
+        <rdar://problem/1322988>
+
+        Rubberstamped by Timothy Horton.        
+        
+        Add Production configuration. 
+        Add a WTF submit solution with a DebugSuffix configuration. 
+        Modify WTF.make as necessary.
+        
+        * WTF.vcxproj: Added property svn:eol-style. Modified property svn:ignore.
+        * WTF.vcxproj/WTF.make: Added.
+        * WTF.vcxproj/WTF.submit.sln: Added.
+        * WTF.vcxproj/WTF.vcxproj:
+        * WTF.vcxproj/WTFCommon.props:
+        * WTF.vcxproj/WTFGenerated.vcxproj:
+        * WTF.vcxproj/WTFGeneratedProduction.props: Added.
+        * WTF.vcxproj/WTFGeneratedRelease.props:
+        * WTF.vcxproj/WTFProduction.props: Added.
+        * WTF.vcxproj/WTFRelease.props:
+        * WTF.vcxproj/copy-files.cmd:
+
+2013-02-20  Oliver Hunt  <oliver@apple.com>
+
+        Moar hardening
+        https://bugs.webkit.org/show_bug.cgi?id=110275
+
+        Reviewed by Mark Hahnenberg.
+
+        We now poison objects when they get freed, and verify that
+        any object that is being freed is not poisoned.  If the
+        object looks like it's poisoned we validate the freelist,
+        and ensure the object is not already present.  If it is
+        we crash.
+
+        On allocation, we ensure that the object being allocated
+        is poisoned, then clear the poisoning fields.
+
+        * wtf/FastMalloc.cpp:
+        (WTF::internalEntropyValue):
+        (WTF):
+        (WTF::freedObjectStartPoison):
+        (WTF::freedObjectEndPoison):
+        (TCMalloc_ThreadCache_FreeList):
+        (WTF::TCMalloc_ThreadCache_FreeList::Validate):
+        (WTF::TCMalloc_Central_FreeList::Populate):
+        (WTF::TCMalloc_ThreadCache::Allocate):
+        (WTF::TCMalloc_ThreadCache::Deallocate):
+        (WTF::TCMalloc_ThreadCache::CreateCacheIfNecessary):
+
+2013-02-19  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r143400.
+        http://trac.webkit.org/changeset/143400
+        https://bugs.webkit.org/show_bug.cgi?id=110290
+
+        breaks everything (instacrash launching Safari) (Requested by
+        thorton on #webkit).
+
+        * wtf/FastMalloc.cpp:
+        (WTF::internalEntropyValue):
+        (WTF):
+        (WTF::TCMalloc_Central_FreeList::Populate):
+        (WTF::TCMalloc_ThreadCache::Allocate):
+        (WTF::TCMalloc_ThreadCache::Deallocate):
+
+2013-02-19  Oliver Hunt  <oliver@apple.com>
+
+        Moar hardening
+        https://bugs.webkit.org/show_bug.cgi?id=110275
+
+        Reviewed by Anders Carlsson.
+
+        We now poison objects when they get freed, and verify that
+        any object that is being freed is not poisoned.  If the
+        object looks like it's poisoned we validate the freelist,
+        and ensure the object is not already present.  If it is
+        we crash.
+
+        On allocation, we ensure that the object being allocated
+        is poisoned, then clear the poisoning fields.
+
+        * wtf/FastMalloc.cpp:
+        (WTF::internalEntropyValue):
+        (WTF):
+        (WTF::freedObjectStartPoison):
+        (WTF::freedObjectEndPoison):
+        (TCMalloc_ThreadCache_FreeList):
+        (WTF::TCMalloc_ThreadCache_FreeList::Validate):
+        (WTF::TCMalloc_Central_FreeList::Populate):
+        (WTF::TCMalloc_ThreadCache::Allocate):
+        (WTF::TCMalloc_ThreadCache::Deallocate):
+
 2013-02-18  Darin Adler  <darin@apple.com>
 
         Style tweaks to StringHasher.h

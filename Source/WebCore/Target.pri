@@ -33,7 +33,7 @@ SOURCES += \
     Modules/webdatabase/DOMWindowWebDatabase.cpp \
     Modules/webdatabase/Database.cpp \
     Modules/webdatabase/DatabaseAuthorizer.cpp \
-    Modules/webdatabase/DatabaseBackend.cpp \
+    Modules/webdatabase/DatabaseBackendBase.cpp \
     Modules/webdatabase/DatabaseContext.cpp \
     Modules/webdatabase/DatabaseServer.cpp \
     Modules/webdatabase/DatabaseSync.cpp \
@@ -324,6 +324,7 @@ SOURCES += \
     css/RuleFeature.cpp \
     css/RuleSet.cpp \
     css/SelectorChecker.cpp \
+    css/SelectorCheckerFastPath.cpp \
     css/SelectorFilter.cpp \
     css/ShadowValue.cpp \
     css/StyleBuilder.cpp \
@@ -352,7 +353,6 @@ SOURCES += \
     css/WebKitCSSTransformValue.cpp \
     css/WebKitCSSViewportRule.cpp \
     dom/ActiveDOMObject.cpp \
-    dom/AncestorChainWalker.cpp \
     dom/Attr.cpp \
     dom/BeforeTextInsertedEvent.cpp \
     dom/BeforeUnloadEvent.cpp \
@@ -410,6 +410,7 @@ SOURCES += \
     dom/EventException.cpp \
     dom/EventListenerMap.cpp \
     dom/EventNames.cpp \
+    dom/EventPathWalker.cpp \
     dom/EventRetargeter.cpp \
     dom/EventTarget.cpp \
     dom/ExceptionBase.cpp \
@@ -798,7 +799,6 @@ SOURCES += \
     inspector/InspectorDOMAgent.cpp \
     inspector/InspectorDOMDebuggerAgent.cpp \
     inspector/InspectorDOMStorageAgent.cpp \
-    inspector/InspectorDOMStorageResource.cpp \
     inspector/InspectorFrontendClientLocal.cpp \
     inspector/InspectorFrontendHost.cpp \
     inspector/InspectorHeapProfilerAgent.cpp \
@@ -1465,7 +1465,7 @@ HEADERS += \
     Modules/webdatabase/DatabaseAuthorizer.h \
     Modules/webdatabase/Database.h \
     Modules/webdatabase/DatabaseBackend.h \
-    Modules/webdatabase/DatabaseBackendAsync.h \
+    Modules/webdatabase/DatabaseBackendBase.h \
     Modules/webdatabase/DatabaseBackendContext.h \
     Modules/webdatabase/DatabaseBackendSync.h \
     Modules/webdatabase/DatabaseBase.h \
@@ -1478,8 +1478,6 @@ HEADERS += \
     Modules/webdatabase/DatabaseTask.h \
     Modules/webdatabase/DatabaseThread.h \
     Modules/webdatabase/DatabaseTracker.h \
-    Modules/webdatabase/OriginQuotaManager.h \
-    Modules/webdatabase/OriginUsageRecord.h \
     Modules/webdatabase/SQLCallbackWrapper.h \
     Modules/webdatabase/SQLResultSet.h \
     Modules/webdatabase/SQLResultSetRowList.h \
@@ -1589,7 +1587,6 @@ HEADERS += \
     css/WebKitCSSTransformValue.h \
     css/WebKitCSSViewportRule.h \
     dom/ActiveDOMObject.h \
-    dom/AncestorChainWalker.h \
     dom/Attr.h \
     dom/Attribute.h \
     dom/BeforeTextInsertedEvent.h \
@@ -1640,6 +1637,7 @@ HEADERS += \
     dom/EventDispatchMediator.h \
     dom/EventListenerMap.h \
     dom/EventNames.h \
+    dom/EventPathWalker.h \
     dom/EventQueue.h \
     dom/EventSender.h \
     dom/EventTarget.h \
@@ -1999,7 +1997,6 @@ HEADERS += \
     inspector/InspectorDebuggerAgent.h \
     inspector/InspectorDOMDebuggerAgent.h \
     inspector/InspectorDOMStorageAgent.h \
-    inspector/InspectorDOMStorageResource.h \
     inspector/InspectorFrontendChannel.h \
     inspector/InspectorFrontendClient.h \
     inspector/InspectorFrontendClientLocal.h \
@@ -3063,7 +3060,7 @@ use?(PLUGIN_BACKEND_XLIB) {
 enable?(SQL_DATABASE) {
     SOURCES += \
         Modules/webdatabase/ChangeVersionWrapper.cpp \
-        Modules/webdatabase/DatabaseBackendAsync.cpp \
+        Modules/webdatabase/DatabaseBackend.cpp \
         Modules/webdatabase/DatabaseBackendContext.cpp \
         Modules/webdatabase/DatabaseBackendSync.cpp \
         Modules/webdatabase/DatabaseBase.cpp \
@@ -3071,8 +3068,6 @@ enable?(SQL_DATABASE) {
         Modules/webdatabase/DatabaseTask.cpp \
         Modules/webdatabase/DatabaseThread.cpp \
         Modules/webdatabase/DatabaseTracker.cpp \
-        Modules/webdatabase/OriginQuotaManager.cpp \
-        Modules/webdatabase/OriginUsageRecord.cpp \
         Modules/webdatabase/SQLException.cpp \
         Modules/webdatabase/SQLResultSet.cpp \
         Modules/webdatabase/SQLResultSetRowList.cpp \
@@ -4238,6 +4233,7 @@ contains(DEFINES, ENABLE_OPENCL=1) {
         platform/graphics/gpu/opencl/FilterContextOpenCL.cpp \
         platform/graphics/gpu/opencl/OpenCLFEColorMatrix.cpp \
         platform/graphics/gpu/opencl/OpenCLFEFlood.cpp \
+        platform/graphics/gpu/opencl/OpenCLFEMerge.cpp \
         platform/graphics/gpu/opencl/OpenCLFESourceAlpha.cpp \
         platform/graphics/gpu/opencl/OpenCLFESourceGraphic.cpp \
         platform/graphics/gpu/opencl/OpenCLFETurbulence.cpp

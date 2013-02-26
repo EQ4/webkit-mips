@@ -162,6 +162,7 @@ Page::Page(PageClients& pageClients)
     , m_timerAlignmentInterval(Settings::defaultDOMTimerAlignmentInterval())
     , m_isEditable(false)
     , m_isOnscreen(true)
+    , m_isInWindow(true)
 #if ENABLE(PAGE_VISIBILITY_API)
     , m_visibilityState(PageVisibilityStateVisible)
 #endif
@@ -815,6 +816,34 @@ void Page::setShouldSuppressScrollbarAnimations(bool suppressAnimations)
     m_suppressScrollbarAnimations = suppressAnimations;
 }
 
+bool Page::rubberBandsAtBottom()
+{
+    if (ScrollingCoordinator* scrollingCoordinator = this->scrollingCoordinator())
+        return scrollingCoordinator->rubberBandsAtBottom();
+
+    return false;
+}
+
+void Page::setRubberBandsAtBottom(bool rubberBandsAtBottom)
+{
+    if (ScrollingCoordinator* scrollingCoordinator = this->scrollingCoordinator())
+        scrollingCoordinator->setRubberBandsAtBottom(rubberBandsAtBottom);
+}
+
+bool Page::rubberBandsAtTop()
+{
+    if (ScrollingCoordinator* scrollingCoordinator = this->scrollingCoordinator())
+        return scrollingCoordinator->rubberBandsAtTop();
+
+    return false;
+}
+
+void Page::setRubberBandsAtTop(bool rubberBandsAtTop)
+{
+    if (ScrollingCoordinator* scrollingCoordinator = this->scrollingCoordinator())
+        scrollingCoordinator->setRubberBandsAtTop(rubberBandsAtTop);
+}
+
 void Page::setPagination(const Pagination& pagination)
 {
     if (m_pagination == pagination)
@@ -861,6 +890,19 @@ void Page::willMoveOffscreen()
     }
     
     suspendScriptedAnimations();
+}
+
+void Page::setIsInWindow(bool isInWindow)
+{
+    if (m_isInWindow == isInWindow)
+        return;
+
+    m_isInWindow = isInWindow;
+
+    for (Frame* frame = mainFrame(); frame; frame = frame->tree()->traverseNext()) {
+        if (FrameView* frameView = frame->view())
+            frameView->setIsInWindow(isInWindow);
+    }
 }
 
 void Page::windowScreenDidChange(PlatformDisplayID displayID)

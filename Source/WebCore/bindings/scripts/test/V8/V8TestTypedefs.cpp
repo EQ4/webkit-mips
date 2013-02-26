@@ -52,6 +52,15 @@ extern "C" { extern void* _ZTVN7WebCore12TestTypedefsE[]; }
 namespace WebCore {
 
 #if ENABLE(BINDING_INTEGRITY)
+// This checks if a DOM object that is about to be wrapped is valid.
+// Specifically, it checks that a vtable of the DOM object is equal to
+// a vtable of an expected class.
+// Due to a dangling pointer, the DOM object you are wrapping might be
+// already freed or realloced. If freed, the check will fail because
+// a free list pointer should be stored at the head of the DOM object.
+// If realloced, the check will fail because the vtable of the DOM object
+// differs from the expected vtable (unless the same class of DOM object
+// is realloced on the slot).
 inline void checkTypeOrDieTrying(TestTypedefs* object)
 {
     void* actualVTablePointer = *(reinterpret_cast<void**>(object));
@@ -77,6 +86,11 @@ static v8::Handle<v8::Value> unsignedLongLongAttrAttrGetter(v8::Local<v8::String
     return v8::Number::New(static_cast<double>(imp->unsignedLongLongAttr()));
 }
 
+static v8::Handle<v8::Value> unsignedLongLongAttrAttrGetterCallback(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    return TestTypedefsV8Internal::unsignedLongLongAttrAttrGetter(name, info);
+}
+
 static void unsignedLongLongAttrAttrSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(info.Holder());
@@ -85,10 +99,20 @@ static void unsignedLongLongAttrAttrSetter(v8::Local<v8::String> name, v8::Local
     return;
 }
 
+static void unsignedLongLongAttrAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    TestTypedefsV8Internal::unsignedLongLongAttrAttrSetter(name, value, info);
+}
+
 static v8::Handle<v8::Value> immutableSerializedScriptValueAttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(info.Holder());
     return imp->immutableSerializedScriptValue() ? imp->immutableSerializedScriptValue()->deserialize() : v8::Handle<v8::Value>(v8Null(info.GetIsolate()));
+}
+
+static v8::Handle<v8::Value> immutableSerializedScriptValueAttrGetterCallback(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    return TestTypedefsV8Internal::immutableSerializedScriptValueAttrGetter(name, info);
 }
 
 static void immutableSerializedScriptValueAttrSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
@@ -97,6 +121,11 @@ static void immutableSerializedScriptValueAttrSetter(v8::Local<v8::String> name,
     RefPtr<SerializedScriptValue> v = SerializedScriptValue::create(value, info.GetIsolate());
     imp->setImmutableSerializedScriptValue(WTF::getPtr(v));
     return;
+}
+
+static void immutableSerializedScriptValueAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    TestTypedefsV8Internal::immutableSerializedScriptValueAttrSetter(name, value, info);
 }
 
 static v8::Handle<v8::Value> attrWithGetterExceptionAttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
@@ -109,6 +138,11 @@ static v8::Handle<v8::Value> attrWithGetterExceptionAttrGetter(v8::Local<v8::Str
     return v8Integer(v, info.GetIsolate());
 }
 
+static v8::Handle<v8::Value> attrWithGetterExceptionAttrGetterCallback(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    return TestTypedefsV8Internal::attrWithGetterExceptionAttrGetter(name, info);
+}
+
 static void attrWithGetterExceptionAttrSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(info.Holder());
@@ -117,10 +151,20 @@ static void attrWithGetterExceptionAttrSetter(v8::Local<v8::String> name, v8::Lo
     return;
 }
 
+static void attrWithGetterExceptionAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    TestTypedefsV8Internal::attrWithGetterExceptionAttrSetter(name, value, info);
+}
+
 static v8::Handle<v8::Value> attrWithSetterExceptionAttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(info.Holder());
     return v8Integer(imp->attrWithSetterException(), info.GetIsolate());
+}
+
+static v8::Handle<v8::Value> attrWithSetterExceptionAttrGetterCallback(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    return TestTypedefsV8Internal::attrWithSetterExceptionAttrGetter(name, info);
 }
 
 static void attrWithSetterExceptionAttrSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
@@ -134,6 +178,11 @@ static void attrWithSetterExceptionAttrSetter(v8::Local<v8::String> name, v8::Lo
     return;
 }
 
+static void attrWithSetterExceptionAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    TestTypedefsV8Internal::attrWithSetterExceptionAttrSetter(name, value, info);
+}
+
 static v8::Handle<v8::Value> stringAttrWithGetterExceptionAttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(info.Holder());
@@ -144,6 +193,11 @@ static v8::Handle<v8::Value> stringAttrWithGetterExceptionAttrGetter(v8::Local<v
     return v8String(v, info.GetIsolate(), ReturnUnsafeHandle);
 }
 
+static v8::Handle<v8::Value> stringAttrWithGetterExceptionAttrGetterCallback(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    return TestTypedefsV8Internal::stringAttrWithGetterExceptionAttrGetter(name, info);
+}
+
 static void stringAttrWithGetterExceptionAttrSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(info.Holder());
@@ -152,10 +206,20 @@ static void stringAttrWithGetterExceptionAttrSetter(v8::Local<v8::String> name, 
     return;
 }
 
+static void stringAttrWithGetterExceptionAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    TestTypedefsV8Internal::stringAttrWithGetterExceptionAttrSetter(name, value, info);
+}
+
 static v8::Handle<v8::Value> stringAttrWithSetterExceptionAttrGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(info.Holder());
     return v8String(imp->stringAttrWithSetterException(), info.GetIsolate(), ReturnUnsafeHandle);
+}
+
+static v8::Handle<v8::Value> stringAttrWithSetterExceptionAttrGetterCallback(v8::Local<v8::String> name, const v8::AccessorInfo& info)
+{
+    return TestTypedefsV8Internal::stringAttrWithSetterExceptionAttrGetter(name, info);
 }
 
 static void stringAttrWithSetterExceptionAttrSetter(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
@@ -167,6 +231,11 @@ static void stringAttrWithSetterExceptionAttrSetter(v8::Local<v8::String> name, 
     if (UNLIKELY(ec))
         setDOMException(ec, info.GetIsolate());
     return;
+}
+
+static void stringAttrWithSetterExceptionAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    TestTypedefsV8Internal::stringAttrWithSetterExceptionAttrSetter(name, value, info);
 }
 
 static v8::Handle<v8::Value> TestTypedefsConstructorGetter(v8::Local<v8::String> name, const v8::AccessorInfo& info)
@@ -183,7 +252,7 @@ static void TestTypedefsReplaceableAttrSetter(v8::Local<v8::String> name, v8::Lo
     info.This()->ForceSet(name, value);
 }
 
-static v8::Handle<v8::Value> funcCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> funcMethod(const v8::Arguments& args)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(args.Holder());
     if (args.Length() <= 0) {
@@ -197,7 +266,12 @@ static v8::Handle<v8::Value> funcCallback(const v8::Arguments& args)
     return v8Undefined();
 }
 
-static v8::Handle<v8::Value> multiTransferListCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> funcMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::funcMethod(args);
+}
+
+static v8::Handle<v8::Value> multiTransferListMethod(const v8::Arguments& args)
 {
     if (args.Length() < 1)
         return throwNotEnoughArgumentsError(args.GetIsolate());
@@ -238,7 +312,12 @@ static v8::Handle<v8::Value> multiTransferListCallback(const v8::Arguments& args
     return v8Undefined();
 }
 
-static v8::Handle<v8::Value> setShadowCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> multiTransferListMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::multiTransferListMethod(args);
+}
+
+static v8::Handle<v8::Value> setShadowMethod(const v8::Arguments& args)
 {
     if (args.Length() < 3)
         return throwNotEnoughArgumentsError(args.GetIsolate());
@@ -260,7 +339,12 @@ static v8::Handle<v8::Value> setShadowCallback(const v8::Arguments& args)
     return v8Undefined();
 }
 
-static v8::Handle<v8::Value> methodWithSequenceArgCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> setShadowMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::setShadowMethod(args);
+}
+
+static v8::Handle<v8::Value> methodWithSequenceArgMethod(const v8::Arguments& args)
 {
     if (args.Length() < 1)
         return throwNotEnoughArgumentsError(args.GetIsolate());
@@ -269,7 +353,12 @@ static v8::Handle<v8::Value> methodWithSequenceArgCallback(const v8::Arguments& 
     return v8::Number::New(static_cast<double>(imp->methodWithSequenceArg(sequenceArg)));
 }
 
-static v8::Handle<v8::Value> nullableArrayArgCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> methodWithSequenceArgMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::methodWithSequenceArgMethod(args);
+}
+
+static v8::Handle<v8::Value> nullableArrayArgMethod(const v8::Arguments& args)
 {
     if (args.Length() < 1)
         return throwNotEnoughArgumentsError(args.GetIsolate());
@@ -279,7 +368,12 @@ static v8::Handle<v8::Value> nullableArrayArgCallback(const v8::Arguments& args)
     return v8Undefined();
 }
 
-static v8::Handle<v8::Value> funcWithClampCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> nullableArrayArgMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::nullableArrayArgMethod(args);
+}
+
+static v8::Handle<v8::Value> funcWithClampMethod(const v8::Arguments& args)
 {
     if (args.Length() < 1)
         return throwNotEnoughArgumentsError(args.GetIsolate());
@@ -300,13 +394,23 @@ static v8::Handle<v8::Value> funcWithClampCallback(const v8::Arguments& args)
     return v8Undefined();
 }
 
-static v8::Handle<v8::Value> immutablePointFunctionCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> funcWithClampMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::funcWithClampMethod(args);
+}
+
+static v8::Handle<v8::Value> immutablePointFunctionMethod(const v8::Arguments& args)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(args.Holder());
     return toV8(WTF::getPtr(SVGPropertyTearOff<FloatPoint>::create(imp->immutablePointFunction())), args.Holder(), args.GetIsolate());
 }
 
-static v8::Handle<v8::Value> stringArrayFunctionCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> immutablePointFunctionMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::immutablePointFunctionMethod(args);
+}
+
+static v8::Handle<v8::Value> stringArrayFunctionMethod(const v8::Arguments& args)
 {
     if (args.Length() < 1)
         return throwNotEnoughArgumentsError(args.GetIsolate());
@@ -323,7 +427,12 @@ static v8::Handle<v8::Value> stringArrayFunctionCallback(const v8::Arguments& ar
     return setDOMException(ec, args.GetIsolate());
 }
 
-static v8::Handle<v8::Value> stringArrayFunction2Callback(const v8::Arguments& args)
+static v8::Handle<v8::Value> stringArrayFunctionMethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::stringArrayFunctionMethod(args);
+}
+
+static v8::Handle<v8::Value> stringArrayFunction2Method(const v8::Arguments& args)
 {
     if (args.Length() < 1)
         return throwNotEnoughArgumentsError(args.GetIsolate());
@@ -340,7 +449,12 @@ static v8::Handle<v8::Value> stringArrayFunction2Callback(const v8::Arguments& a
     return setDOMException(ec, args.GetIsolate());
 }
 
-static v8::Handle<v8::Value> methodWithExceptionCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> stringArrayFunction2MethodCallback(const v8::Arguments& args)
+{
+    return TestTypedefsV8Internal::stringArrayFunction2Method(args);
+}
+
+static v8::Handle<v8::Value> methodWithExceptionMethod(const v8::Arguments& args)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(args.Holder());
     ExceptionCode ec = 0;
@@ -354,42 +468,13 @@ static v8::Handle<v8::Value> methodWithExceptionCallback(const v8::Arguments& ar
     return setDOMException(ec, args.GetIsolate());
 }
 
-} // namespace TestTypedefsV8Internal
-
-static const V8DOMConfiguration::BatchedAttribute V8TestTypedefsAttrs[] = {
-    // Attribute 'unsignedLongLongAttr' (Type: 'attribute' ExtAttr: '')
-    {"unsignedLongLongAttr", TestTypedefsV8Internal::unsignedLongLongAttrAttrGetter, TestTypedefsV8Internal::unsignedLongLongAttrAttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
-    // Attribute 'immutableSerializedScriptValue' (Type: 'attribute' ExtAttr: 'Immutable')
-    {"immutableSerializedScriptValue", TestTypedefsV8Internal::immutableSerializedScriptValueAttrGetter, TestTypedefsV8Internal::immutableSerializedScriptValueAttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
-    // Attribute 'TestSubObj' (Type: 'readonly attribute' ExtAttr: '')
-    {"TestSubObj", TestTypedefsV8Internal::TestTypedefsConstructorGetter, 0, &V8TestSubObj::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
-    // Attribute 'attrWithGetterException' (Type: 'attribute' ExtAttr: '')
-    {"attrWithGetterException", TestTypedefsV8Internal::attrWithGetterExceptionAttrGetter, TestTypedefsV8Internal::attrWithGetterExceptionAttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
-    // Attribute 'attrWithSetterException' (Type: 'attribute' ExtAttr: '')
-    {"attrWithSetterException", TestTypedefsV8Internal::attrWithSetterExceptionAttrGetter, TestTypedefsV8Internal::attrWithSetterExceptionAttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
-    // Attribute 'stringAttrWithGetterException' (Type: 'attribute' ExtAttr: '')
-    {"stringAttrWithGetterException", TestTypedefsV8Internal::stringAttrWithGetterExceptionAttrGetter, TestTypedefsV8Internal::stringAttrWithGetterExceptionAttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
-    // Attribute 'stringAttrWithSetterException' (Type: 'attribute' ExtAttr: '')
-    {"stringAttrWithSetterException", TestTypedefsV8Internal::stringAttrWithSetterExceptionAttrGetter, TestTypedefsV8Internal::stringAttrWithSetterExceptionAttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
-};
-
-static const V8DOMConfiguration::BatchedCallback V8TestTypedefsCallbacks[] = {
-    {"func", TestTypedefsV8Internal::funcCallback},
-    {"multiTransferList", TestTypedefsV8Internal::multiTransferListCallback},
-    {"setShadow", TestTypedefsV8Internal::setShadowCallback},
-    {"funcWithClamp", TestTypedefsV8Internal::funcWithClampCallback},
-    {"immutablePointFunction", TestTypedefsV8Internal::immutablePointFunctionCallback},
-    {"methodWithException", TestTypedefsV8Internal::methodWithExceptionCallback},
-};
-
-v8::Handle<v8::Value> V8TestTypedefs::constructorCallback(const v8::Arguments& args)
+static v8::Handle<v8::Value> methodWithExceptionMethodCallback(const v8::Arguments& args)
 {
-    
-    if (!args.IsConstructCall())
-        return throwTypeError("DOM object constructor cannot be called as a function.", args.GetIsolate());
+    return TestTypedefsV8Internal::methodWithExceptionMethod(args);
+}
 
-    if (ConstructorMode::current() == ConstructorMode::WrapExistingObject)
-        return args.Holder();
+static v8::Handle<v8::Value> constructor(const v8::Arguments& args)
+{
     if (args.Length() < 2)
         return throwNotEnoughArgumentsError(args.GetIsolate());
     V8TRYCATCH_FOR_V8STRINGRESOURCE(V8StringResource<>, hello, args[0]);
@@ -400,8 +485,47 @@ v8::Handle<v8::Value> V8TestTypedefs::constructorCallback(const v8::Arguments& a
     RefPtr<TestTypedefs> impl = TestTypedefs::create(hello, testCallback);
     v8::Handle<v8::Object> wrapper = args.Holder();
 
-    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
+    V8DOMWrapper::associateObjectWithWrapper(impl.release(), &V8TestTypedefs::info, wrapper, args.GetIsolate(), WrapperConfiguration::Dependent);
     return wrapper;
+}
+
+} // namespace TestTypedefsV8Internal
+
+static const V8DOMConfiguration::BatchedAttribute V8TestTypedefsAttrs[] = {
+    // Attribute 'unsignedLongLongAttr' (Type: 'attribute' ExtAttr: '')
+    {"unsignedLongLongAttr", TestTypedefsV8Internal::unsignedLongLongAttrAttrGetterCallback, TestTypedefsV8Internal::unsignedLongLongAttrAttrSetterCallback, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    // Attribute 'immutableSerializedScriptValue' (Type: 'attribute' ExtAttr: 'Immutable')
+    {"immutableSerializedScriptValue", TestTypedefsV8Internal::immutableSerializedScriptValueAttrGetterCallback, TestTypedefsV8Internal::immutableSerializedScriptValueAttrSetterCallback, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    // Attribute 'TestSubObj' (Type: 'readonly attribute' ExtAttr: '')
+    {"TestSubObj", TestTypedefsV8Internal::TestTypedefsConstructorGetter, 0, &V8TestSubObj::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    // Attribute 'attrWithGetterException' (Type: 'attribute' ExtAttr: '')
+    {"attrWithGetterException", TestTypedefsV8Internal::attrWithGetterExceptionAttrGetterCallback, TestTypedefsV8Internal::attrWithGetterExceptionAttrSetterCallback, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    // Attribute 'attrWithSetterException' (Type: 'attribute' ExtAttr: '')
+    {"attrWithSetterException", TestTypedefsV8Internal::attrWithSetterExceptionAttrGetterCallback, TestTypedefsV8Internal::attrWithSetterExceptionAttrSetterCallback, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    // Attribute 'stringAttrWithGetterException' (Type: 'attribute' ExtAttr: '')
+    {"stringAttrWithGetterException", TestTypedefsV8Internal::stringAttrWithGetterExceptionAttrGetterCallback, TestTypedefsV8Internal::stringAttrWithGetterExceptionAttrSetterCallback, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    // Attribute 'stringAttrWithSetterException' (Type: 'attribute' ExtAttr: '')
+    {"stringAttrWithSetterException", TestTypedefsV8Internal::stringAttrWithSetterExceptionAttrGetterCallback, TestTypedefsV8Internal::stringAttrWithSetterExceptionAttrSetterCallback, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+};
+
+static const V8DOMConfiguration::BatchedMethod V8TestTypedefsMethods[] = {
+    {"func", TestTypedefsV8Internal::funcMethodCallback},
+    {"multiTransferList", TestTypedefsV8Internal::multiTransferListMethodCallback},
+    {"setShadow", TestTypedefsV8Internal::setShadowMethodCallback},
+    {"funcWithClamp", TestTypedefsV8Internal::funcWithClampMethodCallback},
+    {"immutablePointFunction", TestTypedefsV8Internal::immutablePointFunctionMethodCallback},
+    {"methodWithException", TestTypedefsV8Internal::methodWithExceptionMethodCallback},
+};
+
+v8::Handle<v8::Value> V8TestTypedefs::constructorCallback(const v8::Arguments& args)
+{
+    if (!args.IsConstructCall())
+        return throwTypeError("DOM object constructor cannot be called as a function.", args.GetIsolate());
+
+    if (ConstructorMode::current() == ConstructorMode::WrapExistingObject)
+        return args.Holder();
+
+    return TestTypedefsV8Internal::constructor(args);
 }
 
 static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestTypedefsTemplate(v8::Persistent<v8::FunctionTemplate> desc, v8::Isolate* isolate)
@@ -411,7 +535,7 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestTypedefsTemplate(v8::
     v8::Local<v8::Signature> defaultSignature;
     defaultSignature = V8DOMConfiguration::configureTemplate(desc, "TestTypedefs", v8::Persistent<v8::FunctionTemplate>(), V8TestTypedefs::internalFieldCount,
         V8TestTypedefsAttrs, WTF_ARRAY_LENGTH(V8TestTypedefsAttrs),
-        V8TestTypedefsCallbacks, WTF_ARRAY_LENGTH(V8TestTypedefsCallbacks), isolate);
+        V8TestTypedefsMethods, WTF_ARRAY_LENGTH(V8TestTypedefsMethods), isolate);
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
     desc->SetCallHandler(V8TestTypedefs::constructorCallback);
     v8::Local<v8::ObjectTemplate> instance = desc->InstanceTemplate();
@@ -424,25 +548,25 @@ static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestTypedefsTemplate(v8::
     const int methodWithSequenceArgArgc = 1;
     v8::Handle<v8::FunctionTemplate> methodWithSequenceArgArgv[methodWithSequenceArgArgc] = { V8sequence<SerializedScriptValue>::GetRawTemplate(isolate) };
     v8::Handle<v8::Signature> methodWithSequenceArgSignature = v8::Signature::New(desc, methodWithSequenceArgArgc, methodWithSequenceArgArgv);
-    proto->Set(v8::String::NewSymbol("methodWithSequenceArg"), v8::FunctionTemplate::New(TestTypedefsV8Internal::methodWithSequenceArgCallback, v8Undefined(), methodWithSequenceArgSignature));
+    proto->Set(v8::String::NewSymbol("methodWithSequenceArg"), v8::FunctionTemplate::New(TestTypedefsV8Internal::methodWithSequenceArgMethodCallback, v8Undefined(), methodWithSequenceArgSignature));
 
     // Custom Signature 'nullableArrayArg'
     const int nullableArrayArgArgc = 1;
     v8::Handle<v8::FunctionTemplate> nullableArrayArgArgv[nullableArrayArgArgc] = { V8DOMString[]::GetRawTemplate(isolate) };
     v8::Handle<v8::Signature> nullableArrayArgSignature = v8::Signature::New(desc, nullableArrayArgArgc, nullableArrayArgArgv);
-    proto->Set(v8::String::NewSymbol("nullableArrayArg"), v8::FunctionTemplate::New(TestTypedefsV8Internal::nullableArrayArgCallback, v8Undefined(), nullableArrayArgSignature));
+    proto->Set(v8::String::NewSymbol("nullableArrayArg"), v8::FunctionTemplate::New(TestTypedefsV8Internal::nullableArrayArgMethodCallback, v8Undefined(), nullableArrayArgSignature));
 
     // Custom Signature 'stringArrayFunction'
     const int stringArrayFunctionArgc = 1;
     v8::Handle<v8::FunctionTemplate> stringArrayFunctionArgv[stringArrayFunctionArgc] = { V8DOMString[]::GetRawTemplate(isolate) };
     v8::Handle<v8::Signature> stringArrayFunctionSignature = v8::Signature::New(desc, stringArrayFunctionArgc, stringArrayFunctionArgv);
-    proto->Set(v8::String::NewSymbol("stringArrayFunction"), v8::FunctionTemplate::New(TestTypedefsV8Internal::stringArrayFunctionCallback, v8Undefined(), stringArrayFunctionSignature));
+    proto->Set(v8::String::NewSymbol("stringArrayFunction"), v8::FunctionTemplate::New(TestTypedefsV8Internal::stringArrayFunctionMethodCallback, v8Undefined(), stringArrayFunctionSignature));
 
     // Custom Signature 'stringArrayFunction2'
     const int stringArrayFunction2Argc = 1;
     v8::Handle<v8::FunctionTemplate> stringArrayFunction2Argv[stringArrayFunction2Argc] = { V8DOMString[]::GetRawTemplate(isolate) };
     v8::Handle<v8::Signature> stringArrayFunction2Signature = v8::Signature::New(desc, stringArrayFunction2Argc, stringArrayFunction2Argv);
-    proto->Set(v8::String::NewSymbol("stringArrayFunction2"), v8::FunctionTemplate::New(TestTypedefsV8Internal::stringArrayFunction2Callback, v8Undefined(), stringArrayFunction2Signature));
+    proto->Set(v8::String::NewSymbol("stringArrayFunction2"), v8::FunctionTemplate::New(TestTypedefsV8Internal::stringArrayFunction2MethodCallback, v8Undefined(), stringArrayFunction2Signature));
 
     // Custom toString template
     desc->Set(v8::String::NewSymbol("toString"), V8PerIsolateData::current()->toStringTemplate());

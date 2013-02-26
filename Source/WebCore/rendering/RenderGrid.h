@@ -75,8 +75,18 @@ private:
     LayoutUnit computeUsedBreadthOfMaxLength(TrackSizingDirection, const Length&) const;
     LayoutUnit computeUsedBreadthOfSpecifiedLength(TrackSizingDirection, const Length&) const;
     void resolveContentBasedTrackSizingFunctions(TrackSizingDirection, Vector<GridTrack>& columnTracks, Vector<GridTrack>& rowTracks, LayoutUnit& availableLogicalSpace);
+
+    void growGrid(TrackSizingDirection);
     void insertItemIntoGrid(RenderBox*, size_t rowTrack, size_t columnTrack);
     void placeItemsOnGrid();
+    void placeSpecifiedMajorAxisItemsOnGrid(Vector<RenderBox*>);
+    void placeAutoMajorAxisItemsOnGrid(Vector<RenderBox*>);
+    void placeAutoMajorAxisItemOnGrid(RenderBox*);
+    const GridPositions& autoPlacementMajorAxisPositionsForChild(const RenderBox*) const;
+    const GridPositions& autoPlacementMinorAxisPositionsForChild(const RenderBox*) const;
+    TrackSizingDirection autoPlacementMajorAxisDirection() const;
+    TrackSizingDirection autoPlacementMinorAxisDirection() const;
+
     void layoutGridItems();
     void clearGrid();
 
@@ -98,10 +108,19 @@ private:
 
 #ifndef NDEBUG
     bool tracksAreWiderThanMinTrackBreadth(TrackSizingDirection, const Vector<GridTrack>&);
+    bool gridWasPopulated() const { return !m_grid.isEmpty() && !m_grid[0].isEmpty(); }
 #endif
 
-    size_t gridColumnCount() const { return m_grid.isEmpty() ? 0 : m_grid[0].size(); }
-    size_t gridRowCount() const { return m_grid.size(); }
+    size_t gridColumnCount() const
+    {
+        ASSERT(gridWasPopulated());
+        return m_grid[0].size();
+    }
+    size_t gridRowCount() const
+    {
+        ASSERT(gridWasPopulated());
+        return m_grid.size();
+    }
 
     Vector<Vector<Vector<RenderBox*, 1> > > m_grid;
     HashMap<const RenderBox*, GridCoordinate> m_gridItemCoordinate;

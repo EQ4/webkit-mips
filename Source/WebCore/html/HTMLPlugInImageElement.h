@@ -52,6 +52,8 @@ public:
 
     RenderEmbeddedObject* renderEmbeddedObject() const;
 
+    virtual void setDisplayState(DisplayState) OVERRIDE;
+
     virtual void updateWidget(PluginCreationOption) = 0;
 
     const String& serviceType() const { return m_serviceType; }
@@ -109,12 +111,9 @@ private:
 
     void swapRendererTimerFired(Timer<HTMLPlugInImageElement>*);
 
-    void setShouldShowSnapshotLabelAutomatically() { m_shouldShowSnapshotLabelAutomatically = true; }
-
     bool m_needsWidgetUpdate;
     bool m_shouldPreferPlugInsForImages;
     bool m_needsDocumentActivationCallbacks;
-    bool m_shouldShowSnapshotLabelAutomatically;
     RefPtr<RenderStyle> m_customStyleForPageCache;
     RefPtr<MouseEvent> m_pendingClickEventFromSnapshot;
     DeferrableOneShotTimer<HTMLPlugInImageElement> m_simulatedMouseClickTimer;

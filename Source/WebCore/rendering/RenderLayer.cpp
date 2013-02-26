@@ -60,6 +60,7 @@
 #include "FloatRect.h"
 #include "FocusController.h"
 #include "Frame.h"
+#include "FrameLoaderClient.h"
 #include "FrameSelection.h"
 #include "FrameTree.h"
 #include "FrameView.h"
@@ -238,6 +239,11 @@ RenderLayer::~RenderLayer()
 
     destroyScrollbar(HorizontalScrollbar);
     destroyScrollbar(VerticalScrollbar);
+
+    if (renderer()->frame() && renderer()->frame()->page()) {
+        if (ScrollingCoordinator* scrollingCoordinator = renderer()->frame()->page()->scrollingCoordinator())
+            scrollingCoordinator->willDestroyScrollableArea(this);
+    }
 
     if (m_reflection)
         removeReflection();
@@ -448,6 +454,11 @@ void RenderLayer::updateLayerPositions(RenderGeometryMap* geometryMap, UpdateLay
         flags &= ~IsCompositingUpdateRoot;
 #endif
 
+    if (useRegionBasedColumns() && renderer()->isInFlowRenderFlowThread()) {
+        m_isPaginated = true;
+        flags |= UpdatePagination;
+    }
+    
     if (renderer()->hasColumns())
         flags |= UpdatePagination;
 
@@ -908,6 +919,12 @@ static bool checkContainingBlockChainForPagination(RenderLayerModelObject* rende
     return true;
 }
 
+bool RenderLayer::useRegionBasedColumns() const
+{
+    const Settings* settings = renderer()->document()->settings();
+    return settings && settings->regionBasedColumnsEnabled();
+}
+
 void RenderLayer::updatePagination()
 {
     m_isPaginated = false;
@@ -915,8 +932,39 @@ void RenderLayer::updatePagination()
         return; // FIXME: We will have to deal with paginated compositing layers someday.
                 // FIXME: For now the RenderView can't be paginated.  Eventually printing will move to a model where it is though.
     
+    // The main difference between the paginated booleans for the old column code and the new column code
+    // is that each paginated layer has to paint on its own with the new code. There is no
+    // recurring into child layers. This means that the m_isPaginated bits for the new column code can't just be set on
+    // "roots" that get split and paint all their descendants. Instead each layer has to be checked individually and
+    // genuinely know if it is going to have to split itself up when painting only its contents (and not any other descendant
+    // layers).
+    bool newColumnsUsed = useRegionBasedColumns();
+    if (newColumnsUsed && renderer()->isInFlowRenderFlowThread()) {
+        m_isPaginated = true;
+        return;
+    }
+
     if (isNormalFlowOnly()) {
-        m_isPaginated = parent()->renderer()->hasColumns();
+        if (newColumnsUsed)
+            m_isPaginated = parent()->isPaginated();
+        else
+            m_isPaginated = parent()->renderer()->hasColumns();
+        return;
+    }
+
+    // For the new columns code, we want to walk up our containing block chain looking for an enclosing layer. Once
+    // we find one, then we just check its pagination status.
+    if (newColumnsUsed) {
+        RenderView* view = renderer()->view();
+        RenderBlock* containingBlock;
+        for (containingBlock = renderer()->containingBlock();
+             containingBlock && containingBlock != view;
+             containingBlock = containingBlock->containingBlock()) {
+            if (containingBlock->hasLayer()) {
+                m_isPaginated = containingBlock->layer()->isPaginated();
+                return;
+            }
+        }
         return;
     }
 
@@ -2123,6 +2171,7 @@ void RenderLayer::scrollTo(int x, int y)
         renderer()->node()->document()->eventQueue()->enqueueOrDispatchScrollEvent(renderer()->node(), DocumentEventQueue::ScrollEventElementTarget);
 
     InspectorInstrumentation::didScrollLayer(frame);
+    frame->loader()->client()->didChangeScrollOffset();
 }
 
 static inline bool frameElementAndViewPermitScroll(HTMLFrameElement* frameElement, FrameView* frameView) 
@@ -3724,7 +3773,14 @@ void RenderLayer::paintLayerContents(GraphicsContext* context, const LayerPainti
     // We want to paint our layer, but only if we intersect the damage rect.
     if (this != localPaintingInfo.rootLayer || !(localPaintFlags & PaintLayerPaintingOverflowContents))
         shouldPaintContent &= intersectsDamageRect(layerBounds, damageRect.rect(), localPaintingInfo.rootLayer, &offsetFromRoot);
-    
+
+#if ENABLE(CSS_FILTERS)
+    if (filterPainter.hasStartedFilterEffect() && haveTransparency) {
+        // If we have a filter and transparency, we have to eagerly start a transparency layer here, rather than risk a child layer lazily starts one with the wrong context.
+        beginTransparencyLayers(transparencyLayerContext, localPaintingInfo.rootLayer, paintingInfo.paintDirtyRect, localPaintingInfo.paintBehavior);
+    }
+#endif
+
     if (localPaintFlags & PaintLayerPaintingCompositingBackgroundPhase) {
         if (shouldPaintContent && !selectionOnly) {
             // Begin transparency layers lazily now that we know we have to paint something.
@@ -3853,7 +3909,7 @@ void RenderLayer::paintList(Vector<RenderLayer*>* list, GraphicsContext* context
 
     for (size_t i = 0; i < list->size(); ++i) {
         RenderLayer* childLayer = list->at(i);
-        if (!childLayer->isPaginated())
+        if (!childLayer->isPaginated() || useRegionBasedColumns())
             childLayer->paintLayer(context, paintingInfo, paintFlags);
         else
             paintPaginatedChildLayer(childLayer, context, paintingInfo, paintFlags);
@@ -4006,7 +4062,7 @@ bool RenderLayer::hitTest(const HitTestRequest& request, const HitTestLocation& 
         // We didn't hit any layer. If we are the root layer and the mouse is -- or just was -- down, 
         // return ourselves. We do this so mouse events continue getting delivered after a drag has 
         // exited the WebView, and so hit testing over a scrollbar hits the content document.
-        if ((request.active() || request.release()) && isRootLayer()) {
+        if (!request.isChildFrameHitTest() && (request.active() || request.release()) && isRootLayer()) {
             renderer()->updateHitTestResult(result, toRenderView(renderer())->flipForWritingMode(hitTestLocation.point()));
             insideLayer = this;
         }
@@ -4358,7 +4414,7 @@ RenderLayer* RenderLayer::hitTestList(Vector<RenderLayer*>* list, RenderLayer* r
         RenderLayer* childLayer = list->at(i);
         RenderLayer* hitLayer = 0;
         HitTestResult tempResult(result.hitTestLocation());
-        if (childLayer->isPaginated())
+        if (childLayer->isPaginated() && !useRegionBasedColumns())
             hitLayer = hitTestPaginatedChildLayer(childLayer, rootLayer, request, tempResult, hitTestRect, hitTestLocation, transformState, zOffsetForDescendants);
         else
             hitLayer = childLayer->hitTestLayer(rootLayer, this, request, tempResult, hitTestRect, hitTestLocation, false, transformState, zOffsetForDescendants);
@@ -5067,6 +5123,11 @@ bool RenderLayer::hasCompositedMask() const
     return m_backing && m_backing->hasMaskLayer();
 }
 
+GraphicsLayer* RenderLayer::layerForScrolling() const
+{
+    return m_backing ? m_backing->scrollingContentsLayer() : 0;
+}
+
 GraphicsLayer* RenderLayer::layerForHorizontalScrollbar() const
 {
     return m_backing ? m_backing->layerForHorizontalScrollbar() : 0;
@@ -5091,6 +5152,56 @@ bool RenderLayer::paintsWithTransform(PaintBehavior paintBehavior) const
     bool paintsToWindow = true;
 #endif    
     return transform() && ((paintBehavior & PaintBehaviorFlattenCompositingLayers) || paintsToWindow);
+}
+
+bool RenderLayer::contentsOpaqueInRect(const LayoutRect& localRect) const
+{
+    if (!isSelfPaintingLayer() && !hasSelfPaintingLayerDescendant())
+        return false;
+
+    if (paintsWithTransparency(PaintBehaviorNormal))
+        return false;
+
+    // FIXME: Handle simple transforms.
+    if (paintsWithTransform(PaintBehaviorNormal))
+        return false;
+
+    // FIXME: Remove this check.
+    // This function should not be called when layer-lists are dirty.
+    // It is somehow getting triggered during style update.
+    if (m_zOrderListsDirty || m_normalFlowListDirty)
+        return false;
+
+    // FIXME: We currently only check the immediate renderer,
+    // which will miss many cases.
+    return renderer()->isOpaqueInRect(localRect)
+        || listContentsOpaqueInRect(posZOrderList(), localRect)
+        || listContentsOpaqueInRect(negZOrderList(), localRect)
+        || listContentsOpaqueInRect(normalFlowList(), localRect);
+}
+
+bool RenderLayer::listContentsOpaqueInRect(const Vector<RenderLayer*>* list, const LayoutRect& localRect) const
+{
+    if (!list || list->isEmpty())
+        return false;
+
+    for (Vector<RenderLayer*>::const_reverse_iterator iter = list->rbegin(); iter != list->rend(); ++iter) {
+        const RenderLayer* childLayer = *iter;
+        if (childLayer->isComposited())
+            continue;
+
+        if (!childLayer->canUseConvertToLayerCoords())
+            continue;
+
+        LayoutPoint childOffset;
+        LayoutRect childLocalRect(localRect);
+        childLayer->convertToLayerCoords(this, childOffset);
+        childLocalRect.moveBy(-childOffset);
+
+        if (childLayer->contentsOpaqueInRect(childLocalRect))
+            return true;
+    }
+    return false;
 }
 
 void RenderLayer::setParent(RenderLayer* parent)
@@ -5660,7 +5771,7 @@ void RenderLayer::updateScrollableAreaSet(bool hasOverflow)
 void RenderLayer::updateScrollCornerStyle()
 {
     RenderObject* actualRenderer = rendererForScrollbar(renderer());
-    RefPtr<RenderStyle> corner = renderer()->hasOverflowClip() ? actualRenderer->getUncachedPseudoStyle(SCROLLBAR_CORNER, actualRenderer->style()) : PassRefPtr<RenderStyle>(0);
+    RefPtr<RenderStyle> corner = renderer()->hasOverflowClip() ? actualRenderer->getUncachedPseudoStyle(PseudoStyleRequest(SCROLLBAR_CORNER), actualRenderer->style()) : PassRefPtr<RenderStyle>(0);
     if (corner) {
         if (!m_scrollCorner) {
             m_scrollCorner = RenderScrollbarPart::createAnonymous(renderer()->document());
@@ -5676,7 +5787,7 @@ void RenderLayer::updateScrollCornerStyle()
 void RenderLayer::updateResizerStyle()
 {
     RenderObject* actualRenderer = rendererForScrollbar(renderer());
-    RefPtr<RenderStyle> resizer = renderer()->hasOverflowClip() ? actualRenderer->getUncachedPseudoStyle(RESIZER, actualRenderer->style()) : PassRefPtr<RenderStyle>(0);
+    RefPtr<RenderStyle> resizer = renderer()->hasOverflowClip() ? actualRenderer->getUncachedPseudoStyle(PseudoStyleRequest(RESIZER), actualRenderer->style()) : PassRefPtr<RenderStyle>(0);
     if (resizer) {
         if (!m_resizer) {
             m_resizer = RenderScrollbarPart::createAnonymous(renderer()->document());

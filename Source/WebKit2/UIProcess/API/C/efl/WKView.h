@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2012 Samsung Electronics
+ * Copyright (C) 2013 Intel Corporation. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -31,6 +32,8 @@ typedef struct _Evas Evas;
 typedef struct _Evas_Object Evas_Object;
 #endif
 
+typedef struct _cairo_surface cairo_surface_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +60,12 @@ WK_EXPORT WKViewRef WKViewCreateWithFixedLayout(Evas* canvas, WKContextRef conte
 WK_EXPORT void WKViewInitialize(WKViewRef);
 WK_EXPORT void WKViewSetViewClient(WKViewRef, const WKViewClient*);
 
+WK_EXPORT void WKViewSetUserViewportTranslation(WKViewRef, double tx, double ty);
+WK_EXPORT WKPoint WKViewUserViewportToContents(WKViewRef, WKPoint);
+
+WK_EXPORT void WKViewPaintToCurrentGLContext(WKViewRef);
+WK_EXPORT void WKViewPaintToCairoSurface(WKViewRef, cairo_surface_t*);
+
 WK_EXPORT WKPageRef WKViewGetPage(WKViewRef);
 
 WK_EXPORT void WKViewSetThemePath(WKViewRef, WKStringRef);
@@ -69,6 +78,11 @@ WK_EXPORT bool WKViewGetDrawsTransparentBackground(WKViewRef);
 
 WK_EXPORT void WKViewSuspendActiveDOMObjectsAndAnimations(WKViewRef);
 WK_EXPORT void WKViewResumeActiveDOMObjectsAndAnimations(WKViewRef);
+
+WK_EXPORT void WKViewSetShowsAsSource(WKViewRef, bool);
+WK_EXPORT bool WKViewGetShowsAsSource(WKViewRef);
+
+WK_EXPORT void WKViewExitFullScreen(WKViewRef);
 
 // FIXME: The long term plan is to get rid of this, so keep usage to a bare minimum.
 WK_EXPORT Evas_Object* WKViewGetEvasObject(WKViewRef);

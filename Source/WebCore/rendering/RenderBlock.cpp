@@ -46,6 +46,7 @@
 #include "RenderBoxRegionInfo.h"
 #include "RenderCombineText.h"
 #include "RenderDeprecatedFlexibleBox.h"
+#include "RenderFlexibleBox.h"
 #include "RenderImage.h"
 #include "RenderInline.h"
 #include "RenderLayer.h"
@@ -175,8 +176,8 @@ RenderBlock::MarginInfo::MarginInfo(RenderBlock* block, LayoutUnit beforeBorderP
     ASSERT(block->isRenderView() || block->parent());
     m_canCollapseWithChildren = !block->isRenderView() && !block->isRoot() && !block->isOutOfFlowPositioned()
         && !block->isFloating() && !block->isTableCell() && !block->hasOverflowClip() && !block->isInlineBlockOrInlineTable()
-        && !block->isWritingModeRoot() && !block->parent()->isFlexibleBox() && blockStyle->hasAutoColumnCount() && blockStyle->hasAutoColumnWidth()
-        && !blockStyle->columnSpan();
+        && !block->isRenderFlowThread() && !block->isWritingModeRoot() && !block->parent()->isFlexibleBox()
+        && blockStyle->hasAutoColumnCount() && blockStyle->hasAutoColumnWidth() && !blockStyle->columnSpan();
 
     m_canCollapseMarginBeforeWithChildren = m_canCollapseWithChildren && !beforeBorderPadding && blockStyle->marginBeforeCollapse() != MSEPARATE;
 
@@ -198,10 +199,11 @@ RenderBlock::MarginInfo::MarginInfo(RenderBlock* block, LayoutUnit beforeBorderP
 // -------------------------------------------------------------------------------------------------------
 
 RenderBlock::RenderBlock(ContainerNode* node)
-      : RenderBox(node)
-      , m_lineHeight(-1)
-      , m_beingDestroyed(false)
-      , m_hasMarkupTruncation(false)
+    : RenderBox(node)
+    , m_lineHeight(-1)
+    , m_beingDestroyed(false)
+    , m_hasMarkupTruncation(false)
+    , m_hasBorderOrPaddingLogicalWidthChanged(false)
 {
     setChildrenInline(true);
     COMPILE_ASSERT(sizeof(RenderBlock::FloatingObject) == sizeof(SameSizeAsFloatingObject), FloatingObject_should_stay_small);
@@ -407,36 +409,8 @@ void RenderBlock::styleDidChange(StyleDifference diff, const RenderStyle* oldSty
     }
     
     // It's possible for our border/padding to change, but for the overall logical width of the block to
-    // end up being the same. When this happens, we won't understand to set |relayoutChildren| to true
-    // in layoutBlock. Longer-term, we should be figuring this stuff out over in layoutBlock, since
-    // we need to be able to handle the same situation in RenderRegions when we have distinct borders in
-    // those regions. For now, though, we just mark the children for relayout right here.
-    if (oldStyle && diff == StyleDifferenceLayout && needsLayout() && borderOrPaddingLogicalWidthChanged(oldStyle, newStyle)) {
-        // First walk our normal flow objects and see if there is any change.
-        if (!childrenInline()) {
-            for (RenderBox* childBox = firstChildBox(); childBox; childBox = childBox->nextSiblingBox()) {
-                // Positioned objects are checked below, since we only care about those objects for which we
-                // are the containing block. We skip floats completely, since this matches the behavior of
-                // the |relayoutChildren| boolean in layoutBlock. It is entirely possible there are bugs
-                // related to floats here, but for now we'll be consistent with layoutBlock, since those
-                // bugs would exist even without border/padding changes.
-                if (childBox->isFloatingOrOutOfFlowPositioned())
-                    continue;
-                childBox->setChildNeedsLayout(true, MarkOnlyThis);
-            }
-        }
-
-        // Now walk the positioned objects for which we are the containing block.
-        TrackedRendererListHashSet* positionedDescendants = positionedObjects();
-        if (positionedDescendants) {
-            RenderBox* positionedBox;
-            TrackedRendererListHashSet::iterator end = positionedDescendants->end();
-            for (TrackedRendererListHashSet::iterator it = positionedDescendants->begin(); it != end; ++it) {
-                positionedBox = *it;
-                positionedBox->setChildNeedsLayout(true, MarkContainingBlockChain);
-            }
-        }
-    }
+    // end up being the same. We keep track of this change so in layoutBlock, we can know to set relayoutChildren=true.
+    m_hasBorderOrPaddingLogicalWidthChanged = oldStyle && diff == StyleDifferenceLayout && needsLayout() && borderOrPaddingLogicalWidthChanged(oldStyle, newStyle);
 }
 
 RenderBlock* RenderBlock::continuationBefore(RenderObject* beforeChild)
@@ -1492,7 +1466,10 @@ bool RenderBlock::updateLogicalWidthAndColumnWidth()
     updateLogicalWidth();
     calcColumnWidth();
 
-    return oldWidth != logicalWidth() || oldColumnWidth != desiredColumnWidth();
+    bool hasBorderOrPaddingLogicalWidthChanged = m_hasBorderOrPaddingLogicalWidthChanged;
+    m_hasBorderOrPaddingLogicalWidthChanged = false;
+
+    return oldWidth != logicalWidth() || oldColumnWidth != desiredColumnWidth() || hasBorderOrPaddingLogicalWidthChanged;
 }
 
 void RenderBlock::checkForPaginationLogicalHeightChange(LayoutUnit& pageLogicalHeight, bool& pageLogicalHeightChanged, bool& hasSpecifiedPageLogicalHeight)
@@ -1539,8 +1516,6 @@ void RenderBlock::layoutBlock(bool relayoutChildren, LayoutUnit pageLogicalHeigh
 
     if (updateLogicalWidthAndColumnWidth())
         relayoutChildren = true;
-
-    m_overflow.clear();
 
     clearFloats();
 
@@ -1704,6 +1679,8 @@ void RenderBlock::addOverflowFromChildren()
 
 void RenderBlock::computeOverflow(LayoutUnit oldClientAfterEdge, bool recomputeFloats)
 {
+    m_overflow.clear();
+
     // Add overflow from children.
     addOverflowFromChildren();
 
@@ -1728,6 +1705,14 @@ void RenderBlock::computeOverflow(LayoutUnit oldClientAfterEdge, bool recomputeF
             m_overflow->setLayoutClientAfterEdge(oldClientAfterEdge);
     }
         
+    // Allow our overflow to catch cases where the caret in an empty editable element with negative text indent needs to get painted.
+    LayoutUnit textIndent = textIndentOffset();
+    if (textIndent < 0) {
+        LayoutRect clientRect(clientBoxRect());
+        LayoutRect rectToApply = LayoutRect(clientRect.x() + min<LayoutUnit>(0, textIndent), clientRect.y(), clientRect.width() - min<LayoutUnit>(0, textIndent), clientRect.height());
+        addVisualOverflow(rectToApply);
+    }
+
     // Add visual overflow from box-shadow and border-image-outset.
     addVisualEffectOverflow();
 
@@ -2070,7 +2055,11 @@ LayoutUnit RenderBlock::collapseMargins(RenderBox* child, MarginInfo& marginInfo
     } else {
         if (mustSeparateMarginBeforeForChild(child)) {
             ASSERT(!marginInfo.discardMargin() || (marginInfo.discardMargin() && !marginInfo.margin()));
-            setLogicalHeight(logicalHeight() + marginInfo.margin() + marginBeforeForChild(child));
+            // If we are at the before side of the block and we collapse, ignore the computed margin
+            // and just add the child margin to the container height. This will correctly position
+            // the child inside the container.
+            LayoutUnit separateMargin = !marginInfo.canCollapseWithMarginBefore() ? marginInfo.margin() : LayoutUnit(0);
+            setLogicalHeight(logicalHeight() + separateMargin + marginBeforeForChild(child));
             logicalTop = logicalHeight();
         } else if (!marginInfo.discardMargin() && (!marginInfo.atBeforeSideOfBlock()
             || (!marginInfo.canCollapseMarginBeforeWithChildren()
@@ -2687,7 +2676,6 @@ bool RenderBlock::simplifiedLayout()
     // computeOverflow expects the bottom edge before we clamp our height. Since this information isn't available during
     // simplifiedLayout, we cache the value in m_overflow.
     LayoutUnit oldClientAfterEdge = hasRenderOverflow() ? m_overflow->layoutClientAfterEdge() : clientLogicalBottom();
-    m_overflow.clear();
     computeOverflow(oldClientAfterEdge, true);
 
     statePusher.pop();
@@ -3996,8 +3984,7 @@ LayoutPoint RenderBlock::computeLogicalLocationForFloat(const FloatingObject* fl
         LayoutUnit heightRemainingLeft = 1;
         LayoutUnit heightRemainingRight = 1;
         floatLogicalLeft = logicalLeftOffsetForLine(logicalTopOffset, logicalLeftOffset, false, &heightRemainingLeft);
-        // FIXME: LayoutUnit::epsilon is probably only necessary here due to lost precision elsewhere https://bugs.webkit.org/show_bug.cgi?id=94000
-        while (logicalRightOffsetForLine(logicalTopOffset, logicalRightOffset, false, &heightRemainingRight) - floatLogicalLeft + LayoutUnit::epsilon() < floatLogicalWidth) {
+        while (logicalRightOffsetForLine(logicalTopOffset, logicalRightOffset, false, &heightRemainingRight) - floatLogicalLeft < floatLogicalWidth) {
             logicalTopOffset += min(heightRemainingLeft, heightRemainingRight);
             floatLogicalLeft = logicalLeftOffsetForLine(logicalTopOffset, logicalLeftOffset, false, &heightRemainingLeft);
             if (inRenderFlowThread()) {
@@ -4012,8 +3999,7 @@ LayoutPoint RenderBlock::computeLogicalLocationForFloat(const FloatingObject* fl
         LayoutUnit heightRemainingLeft = 1;
         LayoutUnit heightRemainingRight = 1;
         floatLogicalLeft = logicalRightOffsetForLine(logicalTopOffset, logicalRightOffset, false, &heightRemainingRight);
-        // FIXME: LayoutUnit::epsilon is probably only necessary here due to lost precision elsewhere https://bugs.webkit.org/show_bug.cgi?id=94000
-        while (floatLogicalLeft - logicalLeftOffsetForLine(logicalTopOffset, logicalLeftOffset, false, &heightRemainingLeft) + LayoutUnit::epsilon() < floatLogicalWidth) {
+        while (floatLogicalLeft - logicalLeftOffsetForLine(logicalTopOffset, logicalLeftOffset, false, &heightRemainingLeft) < floatLogicalWidth) {
             logicalTopOffset += min(heightRemainingLeft, heightRemainingRight);
             floatLogicalLeft = logicalRightOffsetForLine(logicalTopOffset, logicalRightOffset, false, &heightRemainingRight);
             if (inRenderFlowThread()) {
@@ -5425,7 +5411,7 @@ LayoutRect RenderBlock::columnRectAt(ColumnInfo* colInfo, unsigned index) const
     LayoutUnit colLogicalHeight = colInfo->columnHeight();
     LayoutUnit colLogicalTop = borderBefore() + paddingBefore();
     LayoutUnit colLogicalLeft = logicalLeftOffsetForContent();
-    int colGap = columnGap();
+    LayoutUnit colGap = columnGap();
     if (colInfo->progressionAxis() == ColumnInfo::InlineAxis) {
         if (style()->isLeftToRightDirection() ^ colInfo->progressionIsReversed())
             colLogicalLeft += index * (colLogicalWidth + colGap);
@@ -5605,7 +5591,7 @@ void RenderBlock::adjustRectForColumns(LayoutRect& r) const
         return;
 
     LayoutUnit startOffset = max(isHorizontal ? r.y() : r.x(), beforeBorderPadding);
-    LayoutUnit endOffset = min<LayoutUnit>(isHorizontal ? r.maxY() : r.maxX(), beforeBorderPadding + colCount * colHeight);
+    LayoutUnit endOffset = max(min<LayoutUnit>(isHorizontal ? r.maxY() : r.maxX(), beforeBorderPadding + colCount * colHeight), beforeBorderPadding);
 
     // FIXME: Can overflow on fast/block/float/float-not-removed-from-next-sibling4.html, see https://bugs.webkit.org/show_bug.cgi?id=68744
     unsigned startColumn = (startOffset - beforeBorderPadding) / colHeight;
@@ -6503,13 +6489,13 @@ static inline RenderObject* findFirstLetterBlock(RenderBlock* start)
     RenderObject* firstLetterBlock = start;
     while (true) {
         bool canHaveFirstLetterRenderer = firstLetterBlock->style()->hasPseudoStyle(FIRST_LETTER)
-            && firstLetterBlock->canHaveGeneratedChildren();
+            && firstLetterBlock->canHaveGeneratedChildren() && !firstLetterBlock->isFlexibleBox();
         if (canHaveFirstLetterRenderer)
             return firstLetterBlock;
 
         RenderObject* parentBlock = firstLetterBlock->parent();
         if (firstLetterBlock->isReplaced() || !parentBlock || parentBlock->firstChild() != firstLetterBlock || 
-            !parentBlock->isBlockFlow())
+            !parentBlock->isBlockFlow() || parentBlock->isFlexibleBox())
             return 0;
         firstLetterBlock = parentBlock;
     } 
@@ -7927,13 +7913,16 @@ TextRun RenderBlock::constructTextRun(RenderObject* context, const Font& font, c
 
 RenderBlock* RenderBlock::createAnonymousWithParentRendererAndDisplay(const RenderObject* parent, EDisplay display)
 {
-    // FIXME: Do we need to cover the new flex box here ?
     // FIXME: Do we need to convert all our inline displays to block-type in the anonymous logic ?
     EDisplay newDisplay;
     RenderBlock* newBox = 0;
     if (display == BOX || display == INLINE_BOX) {
+        // FIXME: Remove this case once we have eliminated all internal users of old flexbox
         newBox = RenderDeprecatedFlexibleBox::createAnonymous(parent->document());
         newDisplay = BOX;
+    } else if (display == FLEX || display == INLINE_FLEX) {
+        newBox = RenderFlexibleBox::createAnonymous(parent->document());
+        newDisplay = FLEX;
     } else {
         newBox = RenderBlock::createAnonymous(parent->document());
         newDisplay = BLOCK;

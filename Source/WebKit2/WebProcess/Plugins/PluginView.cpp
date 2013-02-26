@@ -71,7 +71,7 @@ namespace WebKit {
 
 // This simulated mouse click delay in HTMLPlugInImageElement.cpp should generally be the same or shorter than this delay.
 static const double pluginSnapshotTimerDelay = 1.1;
-static const unsigned maximumSnapshotRetries = 60;
+static const unsigned maximumSnapshotRetries = 4;
 
 class PluginView::URLRequest : public RefCounted<URLRequest> {
 public:
@@ -549,7 +549,10 @@ void PluginView::initializePlugin()
 void PluginView::didFailToInitializePlugin()
 {
     m_plugin = 0;
-    m_webPage->send(Messages::WebPageProxy::DidFailToInitializePlugin(m_parameters.mimeType));
+
+    String frameURLString = frame()->loader()->documentLoader()->responseURL().string();
+    String pageURLString = m_webPage->corePage()->mainFrame()->loader()->documentLoader()->responseURL().string();
+    m_webPage->send(Messages::WebPageProxy::DidFailToInitializePlugin(m_parameters.mimeType, frameURLString, pageURLString));
 }
 
 void PluginView::didInitializePlugin()
@@ -1346,8 +1349,6 @@ bool PluginView::isAcceleratedCompositingEnabled()
     if (!settings)
         return false;
 
-    if (m_pluginElement->displayState() < HTMLPlugInElement::PlayingWithPendingMouseClick)
-        return false;
     return settings->acceleratedCompositingEnabled();
 }
 
@@ -1606,8 +1607,7 @@ void PluginView::pluginSnapshotTimerFired(DeferrableOneShotTimer<PluginView>*)
     }
 #endif
 
-    destroyPluginAndReset();
-    m_plugin = 0;
+    m_pluginElement->setDisplayState(HTMLPlugInElement::DisplayingSnapshot);
 }
 
 bool PluginView::shouldAlwaysAutoStart() const

@@ -82,7 +82,7 @@ TokenPreloadScanner::TagId TokenPreloadScanner::tagIdFor(const String& tagName)
     return UnknownTagId;
 }
 
-String TokenPreloadScanner::inititatorFor(TagId tagId)
+String TokenPreloadScanner::initiatorFor(TagId tagId)
 {
     switch (tagId) {
     case ImgTagId:
@@ -127,12 +127,12 @@ public:
     }
 
 #if ENABLE(THREADED_HTML_PARSER)
-    void processAttributes(const Vector<CompactAttribute>& attributes)
+    void processAttributes(const Vector<CompactHTMLToken::Attribute>& attributes)
     {
         if (m_tagId >= UnknownTagId)
             return;
-        for (Vector<CompactAttribute>::const_iterator iter = attributes.begin(); iter != attributes.end(); ++iter)
-            processAttribute(iter->name(), iter->value());
+        for (Vector<CompactHTMLToken::Attribute>::const_iterator iter = attributes.begin(); iter != attributes.end(); ++iter)
+            processAttribute(iter->name, iter->value);
     }
 #endif
 
@@ -141,7 +141,7 @@ public:
         if (!shouldPreload())
             return nullptr;
 
-        OwnPtr<PreloadRequest> request = PreloadRequest::create(inititatorFor(m_tagId), m_urlToLoad, predictedBaseURL, resourceType());
+        OwnPtr<PreloadRequest> request = PreloadRequest::create(initiatorFor(m_tagId), m_urlToLoad, predictedBaseURL, resourceType());
         request->setCrossOriginModeAllowsCookies(crossOriginModeAllowsCookies());
         request->setCharset(charset());
         return request.release();
@@ -262,6 +262,30 @@ TokenPreloadScanner::~TokenPreloadScanner()
 {
 }
 
+TokenPreloadScannerCheckpoint TokenPreloadScanner::createCheckpoint()
+{
+    TokenPreloadScannerCheckpoint checkpoint = m_checkpoints.size();
+    m_checkpoints.append(Checkpoint(m_predictedBaseElementURL, m_inStyle
+#if ENABLE(TEMPLATE_ELEMENT)
+                                    , m_templateCount
+#endif
+                                    ));
+    return checkpoint;
+}
+
+void TokenPreloadScanner::rewindTo(TokenPreloadScannerCheckpoint checkpointIndex)
+{
+    ASSERT(checkpointIndex < m_checkpoints.size()); // If this ASSERT fires, checkpointIndex is invalid.
+    const Checkpoint& checkpoint = m_checkpoints[checkpointIndex];
+    m_predictedBaseElementURL = checkpoint.predictedBaseElementURL;
+    m_inStyle = checkpoint.inStyle;
+#if ENABLE(TEMPLATE_ELEMENT)
+    m_templateCount = checkpoint.templateCount;
+#endif
+    m_cssScanner.reset();
+    m_checkpoints.clear();
+}
+
 void TokenPreloadScanner::scan(const HTMLToken& token, Vector<OwnPtr<PreloadRequest> >& requests)
 {
     scanCommon(token, requests);
@@ -337,26 +361,13 @@ void TokenPreloadScanner::scanCommon(const Token& token, Vector<OwnPtr<PreloadRe
     }
 }
 
-void TokenPreloadScanner::updatePredictedBaseURL(const HTMLToken& token)
+template<typename Token>
+void TokenPreloadScanner::updatePredictedBaseURL(const Token& token)
 {
     ASSERT(m_predictedBaseElementURL.isEmpty());
-    for (HTMLToken::AttributeList::const_iterator iter = token.attributes().begin(); iter != token.attributes().end(); ++iter) {
-        AtomicString attributeName(iter->name);
-        if (attributeName == hrefAttr) {
-            String hrefValue = StringImpl::create8BitIfPossible(iter->value);
-            m_predictedBaseElementURL = KURL(m_documentURL, stripLeadingAndTrailingHTMLSpaces(hrefValue));
-            break;
-        }
-    }
+    if (const typename Token::Attribute* hrefAttribute = token.getAttributeItem(hrefAttr))
+        m_predictedBaseElementURL = KURL(m_documentURL, stripLeadingAndTrailingHTMLSpaces(hrefAttribute->value)).copy();
 }
-
-#if ENABLE(THREADED_HTML_PARSER)
-void TokenPreloadScanner::updatePredictedBaseURL(const CompactHTMLToken& token)
-{
-    ASSERT(m_predictedBaseElementURL.isEmpty());
-    m_predictedBaseElementURL = KURL(m_documentURL, stripLeadingAndTrailingHTMLSpaces(token.getAttributeItem(hrefAttr)->value())).copy();
-}
-#endif
 
 HTMLPreloadScanner::HTMLPreloadScanner(const HTMLParserOptions& options, const KURL& documentURL)
     : m_scanner(documentURL)

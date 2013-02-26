@@ -45,12 +45,6 @@ public:
 
     virtual PassRefPtr<StringImpl> originalText() const;
 
-    void updateTextIfNeeded()
-    {
-        if (preferredLogicalWidthsDirty())
-            updateText();
-    }
-
     void extractTextBox(InlineTextBox*);
     void attachTextBox(InlineTextBox*);
     void removeTextBox(InlineTextBox*);
@@ -152,7 +146,6 @@ protected:
     virtual void styleWillChange(StyleDifference, const RenderStyle*) { }
     virtual void styleDidChange(StyleDifference, const RenderStyle* oldStyle);
 
-    virtual void updateText() { }
     virtual void setTextInternal(PassRefPtr<StringImpl>);
     virtual UChar previousCharacter() const;
     
@@ -229,6 +222,8 @@ inline void RenderText::checkConsistency() const
 #endif
 
 void applyTextTransform(const RenderStyle*, String&, UChar);
+
+LineBreakIteratorMode mapLineBreakToIteratorMode(LineBreak);
 
 } // namespace WebCore
 

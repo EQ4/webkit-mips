@@ -27,6 +27,7 @@
 #include "config.h"
 #include "WebView.h"
 
+#include "CoordinatedLayerTreeHostProxy.h"
 #include "DownloadManagerEfl.h"
 #include "DrawingAreaProxyImpl.h"
 #include "EwkView.h"
@@ -38,6 +39,8 @@
 #include "WebPageProxy.h"
 #include "WebPopupMenuListenerEfl.h"
 #include "ewk_context_private.h"
+#include <WebCore/CoordinatedGraphicsScene.h>
+#include <WebCore/PlatformContextCairo.h>
 
 #if ENABLE(FULLSCREEN_API)
 #include "WebFullScreenManagerProxy.h"
@@ -76,6 +79,48 @@ WebView::~WebView()
 void WebView::initialize()
 {
     m_page->initializeWebPage();
+    if (CoordinatedGraphicsScene* scene = coordinatedGraphicsScene())
+        scene->setActive(true);
+}
+
+void WebView::setUserViewportTranslation(double tx, double ty)
+{
+    m_userViewportTransform = TransformationMatrix().translate(tx, ty);
+}
+
+IntPoint WebView::userViewportToContents(const IntPoint& point) const
+{
+    return m_userViewportTransform.mapPoint(point);
+}
+
+void WebView::paintToCurrentGLContext()
+{
+    CoordinatedGraphicsScene* scene = coordinatedGraphicsScene();
+    if (!scene)
+        return;
+
+    // FIXME: We need to clean up this code as it is split over CoordGfx and Page.
+    scene->setDrawsBackground(m_page->drawsBackground());
+
+    FloatRect viewport = m_userViewportTransform.mapRect(IntRect(IntPoint(), m_ewkView->size()));
+    scene->paintToCurrentGLContext(transformToScene().toTransformationMatrix(), /* opacity */ 1, viewport);
+}
+
+void WebView::paintToCairoSurface(cairo_surface_t* surface)
+{
+    CoordinatedGraphicsScene* scene = coordinatedGraphicsScene();
+    if (!scene)
+        return;
+
+    PlatformContextCairo context(cairo_create(surface));
+
+    const FloatPoint& pagePosition = m_ewkView->pagePosition();
+    double effectiveScale = m_page->deviceScaleFactor() * m_ewkView->pageScaleFactor();
+
+    cairo_matrix_t transform = { effectiveScale, 0, 0, effectiveScale, - pagePosition.x(), - pagePosition.y() };
+    cairo_set_matrix(context.cr(), &transform);
+
+    scene->paintToGraphicsContext(&context);
 }
 
 Evas_Object* WebView::evasObject()
@@ -118,6 +163,23 @@ void WebView::resumeActiveDOMObjectsAndAnimations()
     m_page->resumeActiveDOMObjectsAndAnimations();
 }
 
+void WebView::setShowsAsSource(bool showsAsSource)
+{
+    m_page->setMainFrameInViewSourceMode(showsAsSource);
+}
+
+bool WebView::showsAsSource() const
+{
+    return m_page->mainFrameInViewSourceMode();
+}
+
+#if ENABLE(FULLSCREEN_API)
+void WebView::exitFullScreen()
+{
+    m_page->fullScreenManager()->requestExitFullScreen();
+}
+#endif
+
 void WebView::initializeClient(const WKViewClient* client)
 {
     m_client.initialize(client);
@@ -126,31 +188,61 @@ void WebView::initializeClient(const WKViewClient* client)
 void WebView::didCommitLoad()
 {
     if (m_page->useFixedLayout()) {
-        ASSERT(m_pageViewportController);
-        m_pageViewportController->didCommitLoad();
-    } else
-        m_ewkView->scheduleUpdateDisplay();
+        m_ewkView->pageViewportController()->didCommitLoad();
+        return;
+    }
+    m_ewkView->scheduleUpdateDisplay();
 }
 
 void WebView::updateViewportSize()
 {
     if (m_page->useFixedLayout()) {
-        if (!m_pageViewportControllerClient) {
-            m_pageViewportControllerClient = PageViewportControllerClientEfl::create(m_ewkView);
-            m_pageViewportController = adoptPtr(new PageViewportController(page(), m_pageViewportControllerClient.get()));
-        }
-        m_pageViewportControllerClient->updateViewportSize();
-    } else
-        m_page->drawingArea()->setVisibleContentsRect(IntRect(roundedIntPoint(m_ewkView->pagePosition()), m_ewkView->size()), FloatPoint());
+        FloatSize size = m_ewkView->size();
+        // The viewport controller expects sizes in UI units, and not raw device units.
+        size.scale(1 / m_page->deviceScaleFactor());
+        m_ewkView->pageViewportController()->didChangeViewportSize(size);
+        return;
+    }
+    m_page->drawingArea()->setVisibleContentsRect(IntRect(roundedIntPoint(m_ewkView->pagePosition()), m_ewkView->size()), FloatPoint());
 }
 
 void WebView::didChangeContentsSize(const WebCore::IntSize& size)
 {
     if (m_page->useFixedLayout()) {
-        ASSERT(m_pageViewportController);
-        m_pageViewportController->didChangeContentsSize(size);
+        m_ewkView->pageViewportController()->didChangeContentsSize(size);
+        return;
     }
     m_client.didChangeContentsSize(this, size);
+}
+
+AffineTransform WebView::transformFromScene() const
+{
+    return transformToScene().inverse();
+}
+
+AffineTransform WebView::transformToScene() const
+{
+    TransformationMatrix transform = m_userViewportTransform;
+
+    const FloatPoint& pagePosition = m_ewkView->pagePosition();
+    transform.translate(-pagePosition.x(), -pagePosition.y());
+    transform.scale(m_page->deviceScaleFactor());
+    transform.scale(m_ewkView->pageScaleFactor());
+
+    return transform.toAffineTransform();
+}
+
+CoordinatedGraphicsScene* WebView::coordinatedGraphicsScene()
+{
+    DrawingAreaProxy* drawingArea = m_page->drawingArea();
+    if (!drawingArea)
+        return 0;
+
+    WebKit::CoordinatedLayerTreeHostProxy* layerTreeHostProxy = drawingArea->coordinatedLayerTreeHostProxy();
+    if (!layerTreeHostProxy)
+        return 0;
+
+    return layerTreeHostProxy->coordinatedGraphicsScene();
 }
 
 // Page Client
@@ -325,12 +417,14 @@ void WebView::setFindIndicator(PassRefPtr<FindIndicator>, bool, bool)
 
 void WebView::enterAcceleratedCompositingMode(const LayerTreeContext&)
 {
-    m_ewkView->enterAcceleratedCompositingMode();
+    if (CoordinatedGraphicsScene* scene = coordinatedGraphicsScene())
+        scene->setActive(true);
 }
 
 void WebView::exitAcceleratedCompositingMode()
 {
-    m_ewkView->exitAcceleratedCompositingMode();
+    if (CoordinatedGraphicsScene* scene = coordinatedGraphicsScene())
+        scene->setActive(false);
 }
 
 void WebView::updateAcceleratedCompositingMode(const LayerTreeContext&)
@@ -414,39 +508,38 @@ FloatRect WebView::convertToUserSpace(const FloatRect& deviceRect)
 void WebView::didChangeViewportProperties(const WebCore::ViewportAttributes& attr)
 {
     if (m_page->useFixedLayout()) {
-        ASSERT(m_pageViewportController);
-        m_pageViewportController->didChangeViewportAttributes(attr);
-    } else
-        m_ewkView->scheduleUpdateDisplay();
+        m_ewkView->pageViewportController()->didChangeViewportAttributes(attr);
+        return;
+    }
+    m_ewkView->scheduleUpdateDisplay();
 }
 
 void WebView::pageDidRequestScroll(const IntPoint& position)
 {
-    if (m_page->useFixedLayout()) {
-        ASSERT(m_pageViewportController);
-        m_pageViewportController->pageDidRequestScroll(position);
-    } else {
-        m_ewkView->setPagePosition(FloatPoint(position));
-        m_ewkView->scheduleUpdateDisplay();
+    if (m_page->useFixedLayout()) {        
+        m_ewkView->pageViewportController()->pageDidRequestScroll(position);
+        return;
     }
+    m_ewkView->setPagePosition(FloatPoint(position));
+    m_ewkView->scheduleUpdateDisplay();
 }
 
 void WebView::didRenderFrame(const WebCore::IntSize& contentsSize, const WebCore::IntRect& coveredRect)
 {
     if (m_page->useFixedLayout()) {
-        ASSERT(m_pageViewportController);
-        m_pageViewportController->didRenderFrame(contentsSize, coveredRect);
-    } else
-        m_ewkView->scheduleUpdateDisplay();
+        m_ewkView->pageViewportController()->didRenderFrame(contentsSize, coveredRect);
+        return;
+    }
+    m_ewkView->scheduleUpdateDisplay();
 }
 
 void WebView::pageTransitionViewportReady()
 {
     if (m_page->useFixedLayout()) {
-        ASSERT(m_pageViewportController);
-        m_pageViewportController->pageTransitionViewportReady();
-    } else
-        m_ewkView->scheduleUpdateDisplay();
+        m_ewkView->pageViewportController()->pageTransitionViewportReady();
+        return;
+    }
+    m_ewkView->scheduleUpdateDisplay();
 }
 
 } // namespace WebKit

@@ -135,6 +135,13 @@ RenderFlexibleBox::~RenderFlexibleBox()
 {
 }
 
+RenderFlexibleBox* RenderFlexibleBox::createAnonymous(Document* document)
+{
+    RenderFlexibleBox* renderer = new (document->renderArena()) RenderFlexibleBox(0);
+    renderer->setDocumentForAnonymous(document);
+    return renderer;
+}
+
 const char* RenderFlexibleBox::renderName() const
 {
     return "RenderFlexibleBox";
@@ -299,8 +306,6 @@ void RenderFlexibleBox::layoutBlock(bool relayoutChildren, LayoutUnit)
 
     if (updateLogicalWidthAndColumnWidth())
         relayoutChildren = true;
-
-    m_overflow.clear();
 
     LayoutUnit previousHeight = logicalHeight();
     setLogicalHeight(0);
@@ -1134,7 +1139,7 @@ void RenderFlexibleBox::layoutAndPlaceChildren(LayoutUnit& crossAxisOffset, cons
             childCrossAxisMarginBoxExtent = maxAscent + maxDescent;
         } else
             childCrossAxisMarginBoxExtent = crossAxisExtentForChild(child) + crossAxisMarginExtentForChild(child);
-        if (!isColumnFlow() && style()->logicalHeight().isAuto())
+        if (!isColumnFlow())
             setLogicalHeight(std::max(logicalHeight(), crossAxisOffset + flowAwareBorderAfter() + flowAwarePaddingAfter() + childCrossAxisMarginBoxExtent + crossAxisScrollbarExtent()));
         maxChildCrossAxisExtent = std::max(maxChildCrossAxisExtent, childCrossAxisMarginBoxExtent);
 

@@ -32,11 +32,12 @@ namespace WebCore {
 
 static const int pbufferAttributes[] = { GLX_PBUFFER_WIDTH, 1, GLX_PBUFFER_HEIGHT, 1, 0 };
 
-GLXTransportSurface::GLXTransportSurface()
-    : GLPlatformSurface()
+GLXTransportSurface::GLXTransportSurface(SurfaceAttributes attributes)
+    : GLTransportSurface(attributes)
 {
     m_sharedDisplay = X11Helper::nativeDisplay();
-    m_configSelector = adoptPtr(new GLXConfigSelector());
+    attributes |= GLPlatformSurface::DoubleBuffered;
+    m_configSelector = adoptPtr(new GLXConfigSelector(attributes));
     OwnPtrX11<XVisualInfo> visInfo(m_configSelector->visualInfo(m_configSelector->surfaceContextConfig()));
 
     if (!visInfo.get()) {
@@ -65,7 +66,7 @@ PlatformSurfaceConfig GLXTransportSurface::configuration()
 
 void GLXTransportSurface::setGeometry(const IntRect& newRect)
 {
-    GLPlatformSurface::setGeometry(newRect);
+    GLTransportSurface::setGeometry(newRect);
     X11Helper::resizeWindow(newRect, m_drawable);
     // Force resize of GL surface after window resize.
     glXSwapBuffers(sharedDisplay(), m_drawable);
@@ -81,7 +82,7 @@ void GLXTransportSurface::swapBuffers()
 
 void GLXTransportSurface::destroy()
 {
-    GLPlatformSurface::destroy();
+    GLTransportSurface::destroy();
 
     if (m_bufferHandle) {
         X11Helper::destroyWindow(m_bufferHandle);
@@ -92,23 +93,28 @@ void GLXTransportSurface::destroy()
     m_configSelector = nullptr;
 }
 
-GLXOffScreenSurface::GLXOffScreenSurface()
-    : GLPlatformSurface()
+GLPlatformSurface::SurfaceAttributes GLXTransportSurface::attributes() const
+{
+    return m_configSelector->attributes();
+}
+
+GLXOffScreenSurface::GLXOffScreenSurface(SurfaceAttributes surfaceAttributes)
+    : GLPlatformSurface(surfaceAttributes)
     , m_pixmap(0)
     , m_glxPixmap(0)
 {
-    initialize();
+    initialize(surfaceAttributes);
 }
 
 GLXOffScreenSurface::~GLXOffScreenSurface()
 {
 }
 
-void GLXOffScreenSurface::initialize()
+void GLXOffScreenSurface::initialize(SurfaceAttributes attributes)
 {
     m_sharedDisplay = X11Helper::nativeDisplay();
 
-    m_configSelector = adoptPtr(new GLXConfigSelector());
+    m_configSelector = adoptPtr(new GLXConfigSelector(attributes));
 
     OwnPtrX11<XVisualInfo> visualInfo(m_configSelector->visualInfo(m_configSelector->pixmapContextConfig()));
     X11Helper::createPixmap(&m_pixmap, *visualInfo.get());
@@ -140,7 +146,6 @@ void GLXOffScreenSurface::destroy()
 
 void GLXOffScreenSurface::freeResources()
 {
-    GLPlatformSurface::destroy();
     Display* display = sharedDisplay();
 
     if (!display)

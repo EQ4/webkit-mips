@@ -68,6 +68,7 @@
 #include "GraphicsContext.h"
 #include "GraphicsContext3D.h"
 #include "GraphicsContext3DPrivate.h"
+#include "GraphicsLayerFactoryChromium.h"
 #include "HTMLInputElement.h"
 #include "HTMLMediaElement.h"
 #include "HTMLNames.h"
@@ -395,12 +396,16 @@ WebViewImpl::WebViewImpl(WebViewClient* client)
     , m_pageDefinedMaximumPageScaleFactor(-1)
     , m_minimumPageScaleFactor(minPageScaleFactor)
     , m_maximumPageScaleFactor(maxPageScaleFactor)
+    , m_initialPageScaleFactorOverride(-1)
     , m_initialPageScaleFactor(-1)
     , m_ignoreViewportTagMaximumScale(false)
     , m_pageScaleFactorIsSet(false)
     , m_savedPageScaleFactor(0)
-    , m_doubleTapZoomInEffect(false)
-    , m_shouldUseDoubleTapTimeZero(false)
+    , m_doubleTapZoomPageScaleFactor(0)
+    , m_doubleTapZoomPending(false)
+    , m_enableFakeDoubleTapAnimationForTesting(false)
+    , m_fakeDoubleTapPageScaleFactor(0)
+    , m_fakeDoubleTapUseAnchor(false)
     , m_contextMenuAllowed(false)
     , m_doingDragAndDrop(false)
     , m_ignoreInputEvents(false)
@@ -420,6 +425,7 @@ WebViewImpl::WebViewImpl(WebViewClient* client)
     , m_layerTreeView(0)
     , m_rootLayer(0)
     , m_rootGraphicsLayer(0)
+    , m_graphicsLayerFactory(adoptPtr(new GraphicsLayerFactoryChromium(this)))
     , m_isAcceleratedCompositingActive(false)
     , m_layerTreeViewCommitsDeferred(false)
     , m_compositorCreationFailed(false)
@@ -856,19 +862,34 @@ void WebViewImpl::transferActiveWheelFlingAnimation(const WebActiveWheelFlingPar
     scheduleAnimation();
 }
 
-void WebViewImpl::startPageScaleAnimation(const IntPoint& targetPosition, bool useAnchor, float newScale, double durationInSeconds)
+bool WebViewImpl::startPageScaleAnimation(const IntPoint& targetPosition, bool useAnchor, float newScale, double durationInSeconds)
 {
     WebPoint clampedPoint = targetPosition;
-    if (!useAnchor)
+    if (!useAnchor) {
         clampedPoint = clampOffsetAtScale(targetPosition, newScale);
-    if ((!durationInSeconds && !useAnchor) || m_shouldUseDoubleTapTimeZero) {
-        setPageScaleFactor(newScale, clampedPoint);
-        return;
+        if (!durationInSeconds) {
+            setPageScaleFactor(newScale, clampedPoint);
+            return false;
+        }
     }
-    if (!m_layerTreeView)
-        return;
+    if (useAnchor && newScale == pageScaleFactor())
+        return false;
 
-    m_layerTreeView->startPageScaleAnimation(targetPosition, useAnchor, newScale, durationInSeconds);
+    if (m_enableFakeDoubleTapAnimationForTesting) {
+        m_fakeDoubleTapTargetPosition = targetPosition;
+        m_fakeDoubleTapUseAnchor = useAnchor;
+        m_fakeDoubleTapPageScaleFactor = newScale;
+    } else {
+        if (!m_layerTreeView)
+            return false;
+        m_layerTreeView->startPageScaleAnimation(targetPosition, useAnchor, newScale, durationInSeconds);
+    }
+    return true;
+}
+
+void WebViewImpl::enableFakeDoubleTapAnimationForTesting(bool enable)
+{
+    m_enableFakeDoubleTapAnimationForTesting = enable;
 }
 #endif
 
@@ -909,6 +930,7 @@ void WebViewImpl::setContinuousPaintingEnabled(bool enabled)
         m_layerTreeView->setContinuousPaintingEnabled(enabled);
     }
     m_continuousPaintingEnabled = enabled;
+    m_client->scheduleAnimation();
 }
 
 bool WebViewImpl::handleKeyEvent(const WebKeyboardEvent& event)
@@ -1153,11 +1175,6 @@ WebRect WebViewImpl::widenRectWithinPageBounds(const WebRect& source, int target
     return WebRect(newX, source.y, newWidth, source.height);
 }
 
-void WebViewImpl::shouldUseAnimateDoubleTapTimeZeroForTesting(bool setToZero)
-{
-    m_shouldUseDoubleTapTimeZero = setToZero;
-}
-
 void WebViewImpl::computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZoomType zoomType, float& scale, WebPoint& scroll, bool& isAnchor)
 {
     scale = pageScaleFactor();
@@ -1215,17 +1232,15 @@ void WebViewImpl::computeScaleAndScrollForHitRect(const WebRect& hitRect, AutoZo
         scaleUnchanged = fabs(pageScaleFactor() - scale) < minScaleDifference;
     }
 
-    if (zoomType == DoubleTap && (rect.isEmpty() || scaleUnchanged || m_doubleTapZoomInEffect)) {
+    bool stillAtPreviousDoubleTapScale = (pageScaleFactor() == m_doubleTapZoomPageScaleFactor
+        && m_doubleTapZoomPageScaleFactor != m_minimumPageScaleFactor)
+        || m_doubleTapZoomPending;
+    if (zoomType == DoubleTap && (rect.isEmpty() || scaleUnchanged || stillAtPreviousDoubleTapScale)) {
         // Zoom out to minimum scale.
         scale = m_minimumPageScaleFactor;
         scroll = WebPoint(hitRect.x, hitRect.y);
         isAnchor = true;
-        m_doubleTapZoomInEffect = false;
     } else {
-        if (zoomType == DoubleTap && scale != m_minimumPageScaleFactor)
-            m_doubleTapZoomInEffect = true;
-        else
-            m_doubleTapZoomInEffect = false;
         // FIXME: If this is being called for auto zoom during find in page,
         // then if the user manually zooms in it'd be nice to preserve the
         // relative increase in zoom they caused (if they zoom out then it's ok
@@ -1343,8 +1358,13 @@ void WebViewImpl::animateZoomAroundPoint(const IntPoint& point, AutoZoomType zoo
     computeScaleAndScrollForHitRect(WebRect(webPoint.x, webPoint.y, 0, 0), zoomType, scale, scroll, isAnchor);
 
     bool isDoubleTap = (zoomType == DoubleTap);
-    double durationInSeconds = (isDoubleTap && !m_shouldUseDoubleTapTimeZero) ? doubleTapZoomAnimationDurationInSeconds : 0;
-    startPageScaleAnimation(scroll, isAnchor, scale, durationInSeconds);
+    double durationInSeconds = isDoubleTap ? doubleTapZoomAnimationDurationInSeconds : 0;
+    bool isAnimating = startPageScaleAnimation(scroll, isAnchor, scale, durationInSeconds);
+
+    if (isDoubleTap && isAnimating) {
+        m_doubleTapZoomPageScaleFactor = scale;
+        m_doubleTapZoomPending = true;
+    }
 #endif
 }
 
@@ -1833,9 +1853,6 @@ void WebViewImpl::didBeginFrame()
 {
     if (m_devToolsAgent)
         m_devToolsAgent->didComposite();
-
-    if (m_continuousPaintingEnabled)
-        ContinuousPainter::setNeedsDisplayRecursive(m_rootGraphicsLayer, m_pageOverlays.get());
 }
 
 void WebViewImpl::updateAnimations(double monotonicFrameBeginTime)
@@ -1856,6 +1873,11 @@ void WebViewImpl::updateAnimations(double monotonicFrameBeginTime)
 
     if (!m_page)
         return;
+
+    if (m_continuousPaintingEnabled) {
+        ContinuousPainter::setNeedsDisplayRecursive(m_rootGraphicsLayer, m_pageOverlays.get());
+        m_client->scheduleAnimation();
+    }
 
     PageWidgetDelegate::animate(m_page.get(), monotonicFrameBeginTime);
 #endif
@@ -2944,6 +2966,15 @@ double WebView::zoomFactorToZoomLevel(double factor)
     return log(factor) / log(textSizeMultiplierRatio);
 }
 
+void WebViewImpl::setInitialPageScaleOverride(float initialPageScaleFactorOverride)
+{
+    if (m_initialPageScaleFactorOverride == initialPageScaleFactorOverride)
+        return;
+    m_initialPageScaleFactorOverride = initialPageScaleFactorOverride;
+    m_pageScaleFactorIsSet = false;
+    computePageScaleFactorLimits();
+}
+
 float WebViewImpl::pageScaleFactor() const
 {
     if (!page())
@@ -3145,16 +3176,18 @@ IntSize WebViewImpl::layoutSize() const
 
 void WebViewImpl::computePageScaleFactorLimits()
 {
-    if (m_pageDefinedMinimumPageScaleFactor == -1 || m_pageDefinedMaximumPageScaleFactor == -1)
-        return;
-
     if (!mainFrame() || !page() || !page()->mainFrame() || !page()->mainFrame()->view())
         return;
 
     FrameView* view = page()->mainFrame()->view();
 
-    m_minimumPageScaleFactor = min(max(m_pageDefinedMinimumPageScaleFactor, minPageScaleFactor), maxPageScaleFactor);
-    m_maximumPageScaleFactor = max(min(m_pageDefinedMaximumPageScaleFactor, maxPageScaleFactor), minPageScaleFactor);
+    if (m_pageDefinedMinimumPageScaleFactor == -1 || m_pageDefinedMaximumPageScaleFactor == -1) {
+        m_minimumPageScaleFactor = minPageScaleFactor;
+        m_maximumPageScaleFactor = maxPageScaleFactor;
+    } else {
+        m_minimumPageScaleFactor = min(max(m_pageDefinedMinimumPageScaleFactor, minPageScaleFactor), maxPageScaleFactor);
+        m_maximumPageScaleFactor = max(min(m_pageDefinedMaximumPageScaleFactor, maxPageScaleFactor), minPageScaleFactor);
+    }
 
     if (settings()->viewportEnabled()) {
         if (!contentsSize().width() || !m_size.width)
@@ -3171,9 +3204,14 @@ void WebViewImpl::computePageScaleFactorLimits()
     ASSERT(m_minimumPageScaleFactor <= m_maximumPageScaleFactor);
 
     // Initialize and/or clamp the page scale factor if needed.
+    float initialPageScaleFactor = m_initialPageScaleFactor;
+    if (!settings()->viewportEnabled())
+        initialPageScaleFactor = 1;
+    if (m_initialPageScaleFactorOverride != -1)
+        initialPageScaleFactor = m_initialPageScaleFactorOverride;
     float newPageScaleFactor = pageScaleFactor();
-    if (!m_pageScaleFactorIsSet && m_initialPageScaleFactor != -1) {
-        newPageScaleFactor = m_initialPageScaleFactor;
+    if (!m_pageScaleFactorIsSet && initialPageScaleFactor != -1) {
+        newPageScaleFactor = initialPageScaleFactor;
         m_pageScaleFactorIsSet = true;
     }
     newPageScaleFactor = clampPageScaleFactorToLimits(newPageScaleFactor);
@@ -3767,10 +3805,8 @@ void WebViewImpl::didCommitLoad(bool* isNewNavigation, bool isNavigationWithinPa
     m_newNavigationLoader = 0;
 #endif
     m_observedNewNavigation = false;
-    if (*isNewNavigation && !isNavigationWithinPage) {
+    if (*isNewNavigation && !isNavigationWithinPage)
         m_pageScaleFactorIsSet = false;
-        m_doubleTapZoomInEffect = false;
-    }
 
     // Make sure link highlight from previous page is cleared.
     m_linkHighlight.clear();
@@ -3969,6 +4005,8 @@ bool WebViewImpl::tabsToLinks() const
 void WebViewImpl::suppressInvalidations(bool enable)
 {
     m_suppressInvalidations = enable;
+    if (m_client)
+        m_client->suppressCompositorScheduling(enable);
 }
 
 #if USE(ACCELERATED_COMPOSITING)
@@ -3979,7 +4017,7 @@ bool WebViewImpl::allowsAcceleratedCompositing()
 
 void WebViewImpl::setRootGraphicsLayer(GraphicsLayer* layer)
 {
-    TemporaryChange<bool> change(m_suppressInvalidations, true);
+    suppressInvalidations(true);
 
     m_rootGraphicsLayer = layer;
     m_rootLayer = layer ? layer->platformLayer() : 0;
@@ -4003,9 +4041,7 @@ void WebViewImpl::setRootGraphicsLayer(GraphicsLayer* layer)
             m_layerTreeView->clearRootLayer();
     }
 
-    IntRect damagedRect(0, 0, m_size.width, m_size.height);
-    if (!m_isAcceleratedCompositingActive && !m_suppressInvalidations)
-        m_client->didInvalidateRect(damagedRect);
+    suppressInvalidations(false);
 }
 
 void WebViewImpl::scheduleCompositingLayerSync()
@@ -4056,7 +4092,13 @@ void WebViewImpl::setBackgroundColor(const WebCore::Color& color)
 
 WebCore::GraphicsLayerFactory* WebViewImpl::graphicsLayerFactory() const
 {
-    return m_chromeClientImpl.graphicsLayerFactory();
+    return m_graphicsLayerFactory.get();
+}
+
+void WebViewImpl::registerForAnimations(WebLayer* layer)
+{
+    if (m_layerTreeView)
+        m_layerTreeView->registerForAnimations(layer);
 }
 
 WebCore::GraphicsLayer* WebViewImpl::rootGraphicsLayer()
@@ -4217,7 +4259,7 @@ void WebViewImpl::applyScrollAndScale(const WebSize& scrollDelta, float pageScal
         }
 
         setPageScaleFactor(pageScaleFactor() * pageScaleDelta, scrollPoint);
-        m_doubleTapZoomInEffect = false;
+        m_doubleTapZoomPending = false;
     }
 }
 

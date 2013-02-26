@@ -61,7 +61,7 @@ static void checkThatPreloadsAreSafeToSendToAnotherThread(const PreloadRequestSt
 
 #endif
 
-static inline bool tokenExitsForeignContent(const CompactHTMLToken& token)
+static bool tokenExitsForeignContent(const CompactHTMLToken& token)
 {
     // FIXME: This is copied from HTMLTreeBuilder::processTokenInForeignContent and changed to use threadSafeMatch.
     const String& tagName = token.data();
@@ -112,8 +112,24 @@ static inline bool tokenExitsForeignContent(const CompactHTMLToken& token)
         || (threadSafeMatch(tagName, fontTag) && (token.getAttributeItem(colorAttr) || token.getAttributeItem(faceAttr) || token.getAttributeItem(sizeAttr)));
 }
 
-// FIXME: Tune this constant based on a benchmark. The current value was chosen arbitrarily.
-static const size_t pendingTokenLimit = 4000;
+static bool tokenExitsSVG(const CompactHTMLToken& token)
+{
+    const String& tagName = token.data();
+    return equalIgnoringCase(tagName, SVGNames::foreignObjectTag.localName());
+}
+
+static bool tokenExitsMath(const CompactHTMLToken& token)
+{
+    // FIXME: This is copied from HTMLElementStack::isMathMLTextIntegrationPoint and changed to use threadSafeMatch.
+    const String& tagName = token.data();
+    return threadSafeMatch(tagName, MathMLNames::miTag)
+        || threadSafeMatch(tagName, MathMLNames::moTag)
+        || threadSafeMatch(tagName, MathMLNames::mnTag)
+        || threadSafeMatch(tagName, MathMLNames::msTag)
+        || threadSafeMatch(tagName, MathMLNames::mtextTag);
+}
+
+static const size_t pendingTokenLimit = 1000;
 
 BackgroundHTMLParser::BackgroundHTMLParser(PassRefPtr<WeakReference<BackgroundHTMLParser> > reference, PassOwnPtr<Configuration> config)
     : m_weakFactory(reference, this)
@@ -140,7 +156,7 @@ void BackgroundHTMLParser::resumeFrom(PassOwnPtr<Checkpoint> checkpoint)
     m_token = checkpoint->token.release();
     m_tokenizer = checkpoint->tokenizer.release();
     m_input.rewindTo(checkpoint->inputCheckpoint, checkpoint->unparsedInput);
-    m_preloadScanner.clear(); // FIXME: We should rewind the preload scanner rather than clearing it.
+    m_preloadScanner->rewindTo(checkpoint->preloadScannerCheckpoint);
     pumpTokenizer();
 }
 
@@ -180,8 +196,8 @@ bool BackgroundHTMLParser::simulateTreeBuilder(const CompactHTMLToken& token)
             m_namespaceStack.append(MathML);
         if (inForeignContent() && tokenExitsForeignContent(token))
             m_namespaceStack.removeLast();
-        // FIXME: Support tags that exit MathML.
-        if (m_namespaceStack.last() == SVG && equalIgnoringCase(tagName, SVGNames::foreignObjectTag.localName()))
+        if ((m_namespaceStack.last() == SVG && tokenExitsSVG(token))
+            || (m_namespaceStack.last() == MathML && tokenExitsMath(token)))
             m_namespaceStack.append(HTML);
         if (!inForeignContent()) {
             // FIXME: This is just a copy of Tokenizer::updateStateFor which uses threadSafeMatches.
@@ -203,10 +219,10 @@ bool BackgroundHTMLParser::simulateTreeBuilder(const CompactHTMLToken& token)
 
     if (token.type() == HTMLToken::EndTag) {
         const String& tagName = token.data();
-        // FIXME: Support tags that exit MathML.
         if ((m_namespaceStack.last() == SVG && threadSafeMatch(tagName, SVGNames::svgTag))
             || (m_namespaceStack.last() == MathML && threadSafeMatch(tagName, MathMLNames::mathTag))
-            || (m_namespaceStack.contains(SVG) && m_namespaceStack.last() == HTML && equalIgnoringCase(tagName, SVGNames::foreignObjectTag.localName())))
+            || (m_namespaceStack.contains(SVG) && m_namespaceStack.last() == HTML && tokenExitsSVG(token))
+            || (m_namespaceStack.contains(MathML) && m_namespaceStack.last() == HTML && tokenExitsMath(token)))
             m_namespaceStack.removeLast();
         if (threadSafeMatch(tagName, scriptTag)) {
             if (!inForeignContent())
@@ -215,7 +231,8 @@ bool BackgroundHTMLParser::simulateTreeBuilder(const CompactHTMLToken& token)
         }
     }
 
-    // FIXME: Need to set setForceNullCharacterReplacement based on m_inForeignContent as well.
+    // FIXME: Also setForceNullCharacterReplacement when in text mode.
+    m_tokenizer->setForceNullCharacterReplacement(inForeignContent());
     m_tokenizer->setShouldAllowCDATA(inForeignContent());
     return true;
 }
@@ -235,8 +252,7 @@ void BackgroundHTMLParser::pumpTokenizer()
             if (xssInfo)
                 token.setXSSInfo(xssInfo.release());
 
-            if (m_preloadScanner)
-                m_preloadScanner->scan(token, m_pendingPreloads);
+            m_preloadScanner->scan(token, m_pendingPreloads);
 
             m_pendingTokens->append(token);
         }
@@ -263,7 +279,8 @@ void BackgroundHTMLParser::sendTokensToMainThread()
     OwnPtr<HTMLDocumentParser::ParsedChunk> chunk = adoptPtr(new HTMLDocumentParser::ParsedChunk);
     chunk->tokens = m_pendingTokens.release();
     chunk->preloads.swap(m_pendingPreloads);
-    chunk->checkpoint = m_input.createCheckpoint();
+    chunk->inputCheckpoint = m_input.createCheckpoint();
+    chunk->preloadScannerCheckpoint = m_preloadScanner->createCheckpoint();
     callOnMainThread(bind(&HTMLDocumentParser::didReceiveParsedChunkFromBackgroundParser, m_parser, chunk.release()));
 
     m_pendingTokens = adoptPtr(new CompactHTMLTokenStream);

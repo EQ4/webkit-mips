@@ -705,10 +705,7 @@ void WebPagePrivate::load(const BlackBerry::Platform::String& url, const BlackBe
 
     request.setSuggestedSaveName(suggestedSaveName);
 
-    FrameLoadRequest frameRequest(m_mainFrame, request);
-    frameRequest.setFrameName("");
-    frameRequest.setShouldCheckNewWindowPolicy(true);
-    m_mainFrame->loader()->load(frameRequest);
+    m_mainFrame->loader()->load(FrameLoadRequest(m_mainFrame, request));
 }
 
 void WebPage::load(const BlackBerry::Platform::String& url, const BlackBerry::Platform::String& networkToken, bool isInitial)
@@ -2283,7 +2280,7 @@ Platform::WebContext WebPagePrivate::webContext(TargetDetectionStrategy strategy
     if (Node* linkNode = node->enclosingLinkEventParentOrSelf()) {
         KURL href;
         if (linkNode->isLink() && linkNode->hasAttributes()) {
-            if (Attribute* attribute = static_cast<Element*>(linkNode)->getAttributeItem(HTMLNames::hrefAttr))
+            if (const Attribute* attribute = static_cast<Element*>(linkNode)->getAttributeItem(HTMLNames::hrefAttr))
                 href = linkNode->document()->completeURL(stripLeadingAndTrailingHTMLSpaces(attribute->value()));
         }
 
@@ -4504,6 +4501,11 @@ void WebPage::selectAll()
     d->m_inputHandler->selectAll();
 }
 
+bool WebPage::isInputMode() const
+{
+    return d->m_inputHandler->isInputMode();
+}
+
 void WebPage::setDocumentSelection(const Platform::IntPoint& documentStartPoint, const Platform::IntPoint& documentEndPoint)
 {
     if (d->m_page->defersLoading())
@@ -6244,7 +6246,7 @@ const HitTestResult& WebPagePrivate::hitTestResult(const IntPoint& contentPos)
 {
     if (m_cachedHitTestContentPos != contentPos) {
         m_cachedHitTestContentPos = contentPos;
-        m_cachedHitTestResult = m_mainFrame->eventHandler()->hitTestResultAtPoint(m_cachedHitTestContentPos, HitTestResult::ReadOnly | HitTestResult::Active | HitTestResult::AllowShadowContent);
+        m_cachedHitTestResult = m_mainFrame->eventHandler()->hitTestResultAtPoint(m_cachedHitTestContentPos, HitTestRequest::ReadOnly | HitTestRequest::Active | HitTestRequest::AllowShadowContent);
     }
 
     return m_cachedHitTestResult;
@@ -6259,14 +6261,14 @@ void WebPagePrivate::willComposite()
 {
     if (!m_page->settings()->developerExtrasEnabled())
         return;
-    InspectorInstrumentation::willComposite(m_page);
+    m_page->inspectorController()->willComposite();
 }
 
 void WebPagePrivate::didComposite()
 {
     if (!m_page->settings()->developerExtrasEnabled())
         return;
-    InspectorInstrumentation::didComposite(m_page);
+    m_page->inspectorController()->didComposite();
 }
 
 void WebPage::updateNotificationPermission(const BlackBerry::Platform::String& requestId, bool allowed)

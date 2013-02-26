@@ -153,6 +153,7 @@ public:
 
     void didMoveOnscreen();
     void willMoveOffscreen();
+    void setIsInWindow(bool);
 
     void resetScrollbars();
     void resetScrollbarsAndClearContentsSize();
@@ -222,6 +223,8 @@ public:
     // Functions for querying the current scrolled position, negating the effects of overhang
     // and adjusting for page scale.
     IntSize scrollOffsetForFixedPosition() const;
+    // Static function can be called from another thread.
+    static IntSize scrollOffsetForFixedPosition(const IntRect& visibleContentRect, const IntSize& contentsSize, const IntPoint& scrollPosition, const IntPoint& scrollOrigin, float frameScaleFactor, bool fixedElementsLayoutRelativeToFrame);
 
     bool fixedElementsLayoutRelativeToFrame() const;
 
@@ -451,6 +454,7 @@ private:
     virtual bool scrollAnimatorEnabled() const OVERRIDE;
 #if USE(ACCELERATED_COMPOSITING)
     virtual bool usesCompositedScrolling() const OVERRIDE;
+    virtual GraphicsLayer* layerForScrolling() const OVERRIDE;
     virtual GraphicsLayer* layerForHorizontalScrollbar() const OVERRIDE;
     virtual GraphicsLayer* layerForVerticalScrollbar() const OVERRIDE;
     virtual GraphicsLayer* layerForScrollCorner() const OVERRIDE;

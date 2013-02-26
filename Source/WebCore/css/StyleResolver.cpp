@@ -102,6 +102,7 @@
 #include "SVGFontFaceElement.h"
 #include "ScaleTransformOperation.h"
 #include "SecurityOrigin.h"
+#include "SelectorCheckerFastPath.h"
 #include "Settings.h"
 #include "ShadowData.h"
 #include "ShadowRoot.h"
@@ -112,6 +113,7 @@
 #include "StyleCachedImage.h"
 #include "StyleGeneratedImage.h"
 #include "StylePendingImage.h"
+#include "StylePropertySet.h"
 #include "StyleRule.h"
 #include "StyleRuleImport.h"
 #include "StyleSheetContents.h"
@@ -696,7 +698,7 @@ void StyleResolver::collectMatchingRulesForList(const Vector<RuleData>* rules, c
             }
             // If we're matching normal rules, set a pseudo bit if
             // we really just matched a pseudo-element.
-            if (dynamicPseudo != NOPSEUDO && state.pseudoStyle() == NOPSEUDO) {
+            if (dynamicPseudo != NOPSEUDO && state.pseudoStyleRequest().pseudoId == NOPSEUDO) {
                 if (state.mode() == SelectorChecker::CollectingRules) {
                     InspectorInstrumentation::didMatchRule(cookie, false);
                     continue;
@@ -805,9 +807,9 @@ inline void StyleResolver::initElement(Element* e)
     }
 }
 
-inline void StyleResolver::State::initForStyleResolve(Document* document, Element* e, RenderStyle* parentStyle, PseudoId pseudoId, RenderRegion* regionForStyling)
+inline void StyleResolver::State::initForStyleResolve(Document* document, Element* e, RenderStyle* parentStyle, const PseudoStyleRequest& pseudoStyleRequest, RenderRegion* regionForStyling)
 {
-    m_pseudoStyle = pseudoId;
+    m_pseudoStyleRequest = pseudoStyleRequest;
     m_regionForStyling = regionForStyling;
 
     if (e) {
@@ -873,7 +875,11 @@ Node* StyleResolver::locateCousinList(Element* parent, unsigned& visitedNodeCoun
         while (currentNode) {
             ++subcount;
             if (currentNode->renderStyle() == parentStyle && currentNode->lastChild()
-                && currentNode->isElementNode() && !parentElementPreventsSharing(toElement(currentNode))) {
+                && currentNode->isElementNode() && !parentElementPreventsSharing(toElement(currentNode))
+#if ENABLE(SHADOW_DOM)
+                && !toElement(currentNode)->shadow()
+#endif
+                ) {
                 // Adjust for unused reserved tries.
                 visitedNodeCount -= cStyleSearchThreshold - subcount;
                 return currentNode->lastChild();
@@ -1567,7 +1573,7 @@ void StyleResolver::keyframeStylesForAnimation(Element* e, const RenderStyle* el
     }
 }
 
-PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(PseudoId pseudo, Element* e, RenderStyle* parentStyle)
+PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(Element* e, const PseudoStyleRequest& pseudoStyleRequest, RenderStyle* parentStyle)
 {
     ASSERT(parentStyle);
     if (!e)
@@ -1577,7 +1583,7 @@ PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(PseudoId pseudo, El
 
     initElement(e);
 
-    state.initForStyleResolve(document(), e, parentStyle, pseudo);
+    state.initForStyleResolve(document(), e, parentStyle, pseudoStyleRequest);
     state.setStyle(RenderStyle::create());
     state.style()->inheritFrom(m_state.parentStyle());
 
@@ -1596,7 +1602,7 @@ PassRefPtr<RenderStyle> StyleResolver::pseudoStyleForElement(PseudoId pseudo, El
     if (matchResult.matchedProperties.isEmpty())
         return 0;
 
-    state.style()->setStyleType(pseudo);
+    state.style()->setStyleType(pseudoStyleRequest.pseudoId);
 
     applyMatchedProperties(matchResult, e);
 
@@ -2091,7 +2097,7 @@ inline bool StyleResolver::ruleMatches(const RuleData& ruleData, const Container
 
     if (ruleData.hasFastCheckableSelector()) {
         // We know this selector does not include any pseudo elements.
-        if (state.pseudoStyle() != NOPSEUDO)
+        if (state.pseudoStyleRequest().pseudoId != NOPSEUDO)
             return false;
         // We know a sufficiently simple single part selector matches simply because we found it from the rule hash.
         // This is limited to HTML only so we don't need to check the namespace.
@@ -2101,10 +2107,11 @@ inline bool StyleResolver::ruleMatches(const RuleData& ruleData, const Container
         }
         if (ruleData.selector()->m_match == CSSSelector::Tag && !SelectorChecker::tagMatches(state.element(), ruleData.selector()->tagQName()))
             return false;
-        if (!SelectorChecker::fastCheckRightmostAttributeSelector(state.element(), ruleData.selector()))
+        SelectorCheckerFastPath selectorCheckerFastPath(ruleData.selector(), state.element());
+        if (!selectorCheckerFastPath.matchesRightmostAttributeSelector())
             return false;
 
-        return SelectorChecker::fastCheck(ruleData.selector(), state.element());
+        return selectorCheckerFastPath.matches();
     }
 
     // Slow path.
@@ -2112,12 +2119,14 @@ inline bool StyleResolver::ruleMatches(const RuleData& ruleData, const Container
     SelectorChecker::SelectorCheckingContext context(ruleData.selector(), state.element(), SelectorChecker::VisitedMatchEnabled);
     context.elementStyle = state.style();
     context.scope = scope;
-    context.pseudoStyle = state.pseudoStyle();
+    context.pseudoId = state.pseudoStyleRequest().pseudoId;
+    context.scrollbar = state.pseudoStyleRequest().scrollbar;
+    context.scrollbarPart = state.pseudoStyleRequest().scrollbarPart;
     context.behaviorAtBoundary = behaviorAtBoundary;
     SelectorChecker::Match match = selectorChecker.match(context, dynamicPseudo, DOMSiblingTraversalStrategy());
     if (match != SelectorChecker::SelectorMatches)
         return false;
-    if (state.pseudoStyle() != NOPSEUDO && state.pseudoStyle() != dynamicPseudo)
+    if (state.pseudoStyleRequest().pseudoId != NOPSEUDO && state.pseudoStyleRequest().pseudoId != dynamicPseudo)
         return false;
     return true;
 }
@@ -2128,9 +2137,12 @@ bool StyleResolver::checkRegionSelector(const CSSSelector* regionSelector, Eleme
         return false;
 
     SelectorChecker selectorChecker(document(), m_state.mode());
-    for (const CSSSelector* s = regionSelector; s; s = CSSSelectorList::next(s))
-        if (selectorChecker.matches(s, regionElement))
+    for (const CSSSelector* s = regionSelector; s; s = CSSSelectorList::next(s)) {
+        SelectorChecker::SelectorCheckingContext selectorCheckingContext(s, regionElement, SelectorChecker::VisitedMatchDisabled);
+        PseudoId ignoreDynamicPseudo = NOPSEUDO;
+        if (selectorChecker.match(selectorCheckingContext, ignoreDynamicPseudo, DOMSiblingTraversalStrategy()) == SelectorChecker::SelectorMatches)
             return true;
+    }
 
     return false;
 }
@@ -2684,7 +2696,7 @@ static bool createGridTrackList(CSSValue* value, Vector<GridTrackSize>& trackSiz
 }
 
 
-static bool createGridPosition(CSSValue* value, GridPosition& position)
+static bool createGridPositions(CSSValue* value, GridPositions& position)
 {
     // For now, we only accept: <integer> | 'auto'
     if (!value->isPrimitiveValue())
@@ -2695,7 +2707,7 @@ static bool createGridPosition(CSSValue* value, GridPosition& position)
         return true;
 
     ASSERT_WITH_SECURITY_IMPLICATION(primitiveValue->isNumber());
-    position.setIntegerPosition(primitiveValue->getIntValue());
+    position.firstPosition().setIntegerPosition(primitiveValue->getIntValue());
     return true;
 }
 
@@ -3555,15 +3567,15 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
     }
 
     case CSSPropertyWebkitGridColumn: {
-        GridPosition column;
-        if (!createGridPosition(value, column))
+        GridPositions column;
+        if (!createGridPositions(value, column))
             return;
         state.style()->setGridItemColumn(column);
         return;
     }
     case CSSPropertyWebkitGridRow: {
-        GridPosition row;
-        if (!createGridPosition(value, row))
+        GridPositions row;
+        if (!createGridPositions(value, row))
             return;
         state.style()->setGridItemRow(row);
         return;
@@ -5142,6 +5154,15 @@ void StyleResolver::loadPendingResources()
     // Start loading the SVG Documents referenced by this style.
     loadPendingSVGDocuments();
 #endif
+}
+
+inline StyleResolver::MatchedProperties::MatchedProperties()
+    : possiblyPaddedMember(0)
+{
+}
+
+inline StyleResolver::MatchedProperties::~MatchedProperties()
+{
 }
 
 void StyleResolver::MatchedProperties::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
