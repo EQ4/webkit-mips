@@ -1808,18 +1808,6 @@ void WebViewImpl::didExitFullScreen()
 #endif
 }
 
-void WebViewImpl::instrumentBeginFrame()
-{
-    if (m_devToolsAgent)
-        m_devToolsAgent->didBeginFrame();
-}
-
-void WebViewImpl::instrumentCancelFrame()
-{
-    if (m_devToolsAgent)
-        m_devToolsAgent->didCancelFrame();
-}
-
 #if ENABLE(BATTERY_STATUS)
 void WebViewImpl::updateBatteryStatus(const WebBatteryStatus& status)
 {
@@ -1845,7 +1833,6 @@ void WebViewImpl::animate(double)
 
 void WebViewImpl::willBeginFrame()
 {
-    instrumentBeginFrame();
     m_client->willBeginCompositorFrame();
 }
 
@@ -4261,32 +4248,6 @@ void WebViewImpl::applyScrollAndScale(const WebSize& scrollDelta, float pageScal
         setPageScaleFactor(pageScaleFactor() * pageScaleDelta, scrollPoint);
         m_doubleTapZoomPending = false;
     }
-}
-
-void WebViewImpl::willCommit()
-{
-    if (m_devToolsAgent)
-        m_devToolsAgent->willComposite();
-}
-
-void WebViewImpl::didCommit()
-{
-    if (m_client) {
-        m_client->didCommitCompositorFrame();
-        m_client->didBecomeReadyForAdditionalInput();
-    }
-}
-
-void WebViewImpl::didCommitAndDrawFrame()
-{
-    if (m_client)
-        m_client->didCommitAndDrawCompositorFrame();
-}
-
-void WebViewImpl::didCompleteSwapBuffers()
-{
-    if (m_client)
-        m_client->didCompleteSwapBuffers();
 }
 
 void WebViewImpl::didRecreateOutputSurface(bool success)

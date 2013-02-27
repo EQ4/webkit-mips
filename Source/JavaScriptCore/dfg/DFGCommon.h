@@ -221,6 +221,15 @@ enum OperandSpeculationMode { AutomaticOperandSpeculation, ManualOperandSpeculat
 
 enum SpeculationDirection { ForwardSpeculation, BackwardSpeculation };
 
+template<typename T, typename U>
+bool checkAndSet(T& left, U right)
+{
+    if (left == right)
+        return false;
+    left = right;
+    return true;
+}
+
 } } // namespace JSC::DFG
 
 namespace WTF {
@@ -237,7 +246,7 @@ namespace JSC { namespace DFG {
 
 // Put things here that must be defined even if ENABLE(DFG_JIT) is false.
 
-enum CapabilityLevel { CannotCompile, ShouldProfile, CanCompile, CapabilityLevelNotSet };
+enum CapabilityLevel { CannotCompile, MayInline, CanCompile, CapabilityLevelNotSet };
 
 // Unconditionally disable DFG disassembly support if the DFG is not compiled in.
 inline bool shouldShowDisassembly()

@@ -35,6 +35,7 @@
 #include <WebCore/Page.h>
 #include <WebCore/SchemeRegistry.h>
 #include <WebCore/SecurityOrigin.h>
+#include <WebCore/StorageMap.h>
 
 using namespace WebCore;
 
@@ -76,7 +77,7 @@ unsigned StorageAreaProxy::length(ExceptionCode& ec, Frame* sourceFrame)
         return 0;
 
     loadValuesIfNeeded();
-    return m_values->size();
+    return m_storageMap->length();
 }
 
 String StorageAreaProxy::key(unsigned index, ExceptionCode&, Frame* sourceFrame)
@@ -86,11 +87,18 @@ String StorageAreaProxy::key(unsigned index, ExceptionCode&, Frame* sourceFrame)
     return String();
 }
 
-String StorageAreaProxy::getItem(const String& key, ExceptionCode&, Frame* sourceFrame)
+String StorageAreaProxy::getItem(const String& key, ExceptionCode& ec, Frame* sourceFrame)
 {
-    // FIXME: Implement this.
-    ASSERT_NOT_REACHED();
-    return String();
+    ec = 0;
+    if (!canAccessStorage(sourceFrame)) {
+        ec = SECURITY_ERR;
+        return String();
+    }
+    if (disabledByPrivateBrowsingInFrame(sourceFrame))
+        return String();
+
+    loadValuesIfNeeded();
+    return m_storageMap->getItem(key);
 }
 
 void StorageAreaProxy::setItem(const String& key, const String& value, ExceptionCode& ec, Frame* sourceFrame)
@@ -110,8 +118,20 @@ void StorageAreaProxy::setItem(const String& key, const String& value, Exception
 
     loadValuesIfNeeded();
 
-    // FIXME: Actually set the value.
-    ASSERT_NOT_REACHED();
+    ASSERT(m_storageMap->hasOneRef());
+    String oldValue;
+    bool quotaException;
+    m_storageMap->setItem(key, value, oldValue, quotaException);
+
+    if (quotaException) {
+        ec = QUOTA_EXCEEDED_ERR;
+        return;
+    }
+
+    if (oldValue == value)
+        return;
+
+    WebProcess::shared().connection()->send(Messages::StorageManager::SetItem(m_storageAreaID, key, value), 0);
 }
 
 void StorageAreaProxy::removeItem(const String& key, ExceptionCode&, Frame* sourceFrame)
@@ -173,7 +193,7 @@ bool StorageAreaProxy::disabledByPrivateBrowsingInFrame(const Frame* sourceFrame
 
 void StorageAreaProxy::loadValuesIfNeeded()
 {
-    if (m_values)
+    if (m_storageMap)
         return;
 
     HashMap<String, String> values;
@@ -181,8 +201,8 @@ void StorageAreaProxy::loadValuesIfNeeded()
     // (This flag does not yet exist).
     WebProcess::shared().connection()->sendSync(Messages::StorageManager::GetValues(m_storageAreaID), Messages::StorageManager::GetValues::Reply(values), 0);
 
-    // FIXME: Don't copy the hash map.
-    m_values = adoptPtr(new HashMap<String, String>(values));
+    m_storageMap = StorageMap::create(m_quotaInBytes);
+    m_storageMap->importItems(values);
 }
 
 } // namespace WebKit

@@ -453,7 +453,8 @@ accessibility/corresponding-control-deleted-crash.html
 
 # ENABLE(TEMPLATE_ELEMENT) is disabled.
 fast/dom/HTMLTemplateElement
-html5lib/generated/run-template.html
+html5lib/generated/run-template-data.html
+html5lib/generated/run-template-write.html
 fast/xsl/xslt-xhtml-template.xml
 fast/xpath/xpath-template-element.html
 fast/xsl/xslt-processor-template.html
@@ -949,8 +950,11 @@ fast/canvas/canvas-quadratic-same-endpoint.html
 css3/filters/composited-during-transition-layertree.html
 
 # --- Custom Filters ---
-# This test is currently skipped on Mac for slight color differences, please see the relevant bug: http://webkit.org/b/107487
+# The following 3 tests are currently skipped on Mac for slight color differences,
+# please see the relevant bug: http://webkit.org/b/107487
 webkit.org/b/107487 css3/filters/custom/custom-filter-blend-fractional-destination-alpha.html [ Skip ]
+webkit.org/b/107487 css3/filters/custom/custom-filter-nonseparable-blend-mode-color.html [ Skip ]
+webkit.org/b/107487 css3/filters/custom/custom-filter-nonseparable-blend-mode-luminosity.html [ Skip ]
 
 # --- Text ---
 fast/forms/text-control-intrinsic-widths.html
@@ -1299,9 +1303,6 @@ webkit.org/b/99221 fast/js/random-array-gc-stress.html [ Pass Timeout ]
 # User Timing is not enable yet. so skip it.
 webkit.org/b/84893 http/tests/w3c/webperf/submission/Intel/user-timing [ Skip ]
 
-# Verified passing, so override generic skip
-webkit.org/b/89235 css3/line-break [ Pass ]
-
 # Expected to fail until WebGL extension implementation lands
 webkit.org/b/98257 fast/canvas/webgl/oes-element-index-uint.html [ Failure Pass ]
 
@@ -1440,3 +1441,10 @@ webkit.org/b/110186 inspector-protocol/page/javascriptDialogEvents.html [ Skip ]
 webkit.org/b/110554 http/tests/security/feed-urls-from-remote.html [ Failure ]
 webkit.org/b/110555 fast/canvas/canvas-currentPath.html [ Failure ]
 webkit.org/b/110555 fast/canvas/canvas-path-constructors.html [ Failure ]
+
+# Need rebaseline
+webkit.org/b/110654 css2.1/20110323/replaced-elements-001.htm [ Failure ]
+webkit.org/b/110654 svg/custom/foreign-object-skew.svg [ Failure ]
+webkit.org/b/110654 tables/mozilla/bugs/bug92647-2.html [ Failure ]
+# New test
+webkit.org/b/110654 css3/flexbox/button.html [ Failure ]

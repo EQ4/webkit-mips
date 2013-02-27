@@ -57,9 +57,16 @@
  */
 
 #include "config.h"
-#include "Atomics.h"
 
-#if CPU(MIPS) && COMPILER(GCC) && USE(LOCKFREE_THREADSAFEREFCOUNTED) && USE(PTHREADS)
+// Some architectures, like MIPS32, don't have GCC implementation for builtin __sync_* functions
+// with 64 bits variable size. Official GCC answer for the problem: If a target doesn't support
+// atomic operations on certain variable sizes, you are out of luck with atomicity in that case
+// (http://gcc.gnu.org/bugzilla/show_bug.cgi?id=56296). GCC >= 4.8 will support __atomic_* builtin
+// functions for this purpose for all the GCC targets, but for current compilers we have to include
+// our own implementation.
+#if COMPILER(GCC) && !defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8) && USE(LOCKFREE_THREADSAFEREFCOUNTED) && USE(PTHREADS)
+
+#include "Atomics.h"
 
 #include "ThreadingPrimitives.h"
 

@@ -1,3 +1,100 @@
+2013-02-26  Anders Carlsson  <andersca@apple.com>
+
+        Implement StorageAreaProxy::getItem and StorageAreaProxy::setItem
+        https://bugs.webkit.org/show_bug.cgi?id=110927
+
+        Reviewed by Sam Weinig.
+
+        * UIProcess/Storage/StorageManager.cpp:
+        (WebKit::StorageManager::setItem):
+        * UIProcess/Storage/StorageManager.h:
+        Add empty stub.
+        
+        * UIProcess/Storage/StorageManager.messages.in:
+        Add SetItem message.
+
+        * WebProcess/Storage/StorageAreaProxy.cpp:
+        (WebKit::StorageAreaProxy::getItem):
+        Fill the storage map and get the item from it.
+
+        (WebKit::StorageAreaProxy::setItem):
+        Update the storage map and send a SetItem message to the UI process.
+
+2013-02-26  Anders Carlsson  <andersca@apple.com>
+
+        StorageAreaProxy should hold on to a StorageMap and not a HashMap
+        https://bugs.webkit.org/show_bug.cgi?id=110919
+
+        Reviewed by Jessie Berlin.
+
+        Create a storage map instead of a hash map.
+
+        * WebProcess/Storage/StorageAreaProxy.cpp:
+        (WebKit::StorageAreaProxy::length):
+        (WebKit::StorageAreaProxy::loadValuesIfNeeded):
+        * WebProcess/Storage/StorageAreaProxy.h:
+        (WebCore):
+        (StorageAreaProxy):
+
+2013-02-26  Anders Carlsson  <andersca@apple.com>
+
+        Fix a copy/paste error in WebLoaderClient::didBlockInsecurePluginVersion
+        https://bugs.webkit.org/show_bug.cgi?id=110914
+        <rdar://problem/13297581>
+
+        Reviewed by Beth Dakin.
+
+        Pass kWKErrorCodeInsecurePlugInVersion to the pluginDidFail callback.
+
+        * UIProcess/WebLoaderClient.cpp:
+        (WebKit::WebLoaderClient::didBlockInsecurePluginVersion):
+
+2013-02-26  Jer Noble  <jer.noble@apple.com>
+
+        Unreviewed build fix; use correct macro for platform name in FeatureDefines.xcconfig.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-26  Manuel Rego Casasnovas  <rego@igalia.com>
+
+        [WK2][GTK] REGRESSION (r143463): unit test failure in WebKit2APITests/TestContextMenu
+        https://bugs.webkit.org/show_bug.cgi?id=110869
+
+        Reviewed by Martin Robinson.
+
+        Test was failing because of new media controls needs more space to be
+        painted than just 10x10 pixels.
+
+        * UIProcess/API/gtk/tests/TestContextMenu.cpp:
+        (testContextMenuDefaultMenu): Modified test in order to give more space
+        to the media controls.
+
+2013-02-26  Dean Jackson  <dino@apple.com>
+
+        Draw intermediate snapshots if possible
+        https://bugs.webkit.org/show_bug.cgi?id=110811
+
+        Reviewed by Simon Fraser.
+
+        After http://webkit.org/b/110495 we delayed snapshotting until we've
+        received a nice image, but this made the page look like it is broken.
+        We should draw any intermediate snapshots that we find, which might
+        include content such as progress bars/spinners.
+
+        * WebProcess/Plugins/PluginView.cpp:
+        (WebKit): Reinstate 60 attempts at snapshots before giving up.
+        (WebKit::PluginView::isAcceleratedCompositingEnabled): We do not
+        want accelerated compositing enabled when we are trying to capture
+        snapshots.
+
+2013-02-26  Andras Becsi  <andras.becsi@digia.com>
+
+        Remove nonexistent StringPairVector.h from Target.pri after r142839
+
+        Unreviewed gardening.
+
+        * Target.pri:
+
 2013-02-26  Simon Hausmann  <simon.hausmann@digia.com>
 
         Unreviewed trivial !ENABLE(NETSCAPE_PLUGIN_API) build fix

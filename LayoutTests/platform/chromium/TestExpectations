@@ -125,6 +125,26 @@ webkit.org/b/101362 [ Debug ] fast/dom/Window/customized-property-survives-gc.ht
 
 webkit.org/b/110324 [ Debug ] fast/js/regress/nested-function-parsing.html [ Pass Slow ]
 
+# These tests are slow since r144032
+webkit.org/b/110876 html5lib/generated/run-doctype01-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-domjs-unsafe-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-entities01-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-plain-text-unsafe-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-scriptdata01-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-template-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests1-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests10-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests16-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests19-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests2-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests20-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests6-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests7-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-tests9-data.html [ Pass Slow ]
+webkit.org/b/110876 html5lib/generated/run-webkit01-data.html [ Pass Slow ]
+
+webkit.org/b/110924 fast/js/regress/inlined-put-by-id-transition.html [ Pass Crash ]
+
 # -----------------------------------------------------------------
 # TEMPORARILY SKIPPED TESTS
 # -----------------------------------------------------------------
@@ -2198,9 +2218,9 @@ webkit.org/b/36666 storage/websql/open-database-over-quota.html [ Failure ]
 
 webkit.org/b/37283 fast/overflow/scrollbar-restored-and-then-locked.html [ Failure ]
 
-webkit.org/b/37297 fast/history/nested-visited-test.html [ Failure ]
-webkit.org/b/37297 fast/history/self-is-visited.html [ Failure ]
-webkit.org/b/37297 fast/history/sibling-visited-test.html [ Failure ]
+webkit.org/b/37297 fast/history/nested-visited-test.html [ Failure Timeout ]
+webkit.org/b/37297 fast/history/self-is-visited.html [ Failure Timeout ]
+webkit.org/b/37297 fast/history/sibling-visited-test.html [ Failure Timeout ]
 webkit.org/b/37297 fast/loader/stateobjects/state-url-sets-links-visited.html [ Failure Timeout ]
 webkit.org/b/58000 [ Mac Android ] fast/history/visited-link-background-color.html [ Failure ]
 
@@ -3061,7 +3081,7 @@ webkit.org/b/66953 [ Debug ] animations/play-state.html [ Failure Pass ]
 webkit.org/b/66953 [ Debug ] animations/play-state-paused.html [ Failure Pass ]
 webkit.org/b/66953 [ Debug ] animations/play-state-suspend.html [ Failure Pass ]
 webkit.org/b/66953 [ Debug ] animations/suspend-resume-animation.html [ Failure Pass ]
-webkit.org/b/66953 [ Mac Debug ] animations/animation-direction-reverse.html [ Failure Pass ]
+webkit.org/b/66953 [ Mac Win Debug ] animations/animation-direction-reverse.html [ Failure Pass ]
 
 webkit.org/b/72761 accessibility/anonymous-render-block-in-continuation-causes-crash.html [ Pass Timeout ]
 
@@ -4413,21 +4433,20 @@ crbug.com/175926 [ Linux ] platform/chromium/virtual/softwarecompositing/rtl/rtl
 crbug.com/175926 [ Linux ] platform/chromium/virtual/softwarecompositing/rtl/rtl-iframe-fixed-overflow-scrolled.html [ ImageOnlyFailure ]
 crbug.com/175926 [ Linux ] platform/chromium/virtual/softwarecompositing/rtl/rtl-iframe-fixed-overflow.html [ ImageOnlyFailure ]
 
-# These tests are timing out since r144032
-webkit.org/b/110876 html5lib/generated/run-doctype01-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-domjs-unsafe-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-entities01-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-plain-text-unsafe-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-scriptdata01-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-template-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests1-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests10-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests16-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests19-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests2-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests20-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests6-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests7-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-tests9-data.html [ Timeout Pass ]
-webkit.org/b/110876 html5lib/generated/run-webkit01-data.html [ Timeout Pass ]
+# Need rebaseline
+webkit.org/b/110654 [ Mac Win ] css2.1/20110323/replaced-elements-001.htm [ Failure ]
+webkit.org/b/110654 [ Mac Win ] svg/custom/foreign-object-skew.svg [ Failure ]
+webkit.org/b/110654 [ Mac Win ] tables/mozilla/bugs/bug92647-2.html [ Failure ]
+# New test
+webkit.org/b/110654 [ Mac Win ] css3/flexbox/button.html [ Failure ]
+
+# This is possibly a bug in the version of fontconfig on Precise, not sure.
+webkit.org/b/110915 [ Linux ] platform/chromium-linux/fast/text/chromium-linux-fontconfig-renderstyle.html [ Failure Pass ]
+
+# This fails on Precise due to a difference in Garuda.ttf between Lucid and Precise.
+# We can rebaseline when we drop Lucid support.
+webkit.org/b/110540 [ Linux ] fast/text/international/thai-line-breaks.html [ ImageOnlyFailure Pass ]
+
+webkit.org/b/110956 fast/notifications/notifications-request-permission.html [ Pass Crash Failure ]
+webkit.org/b/110956 fast/notifications/notifications-request-permission-optional.html [ Pass Crash ]
 

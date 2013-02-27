@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2009 Google Inc. All rights reserved.
+* Copyright (C) 2013 Google Inc. All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are
@@ -53,6 +53,7 @@
 #include "ResourceRequest.h"
 #include "ResourceResponse.h"
 #include "TimelineRecordFactory.h"
+#include "TimelineTraceEventProcessor.h"
 
 #include <wtf/CurrentTime.h>
 
@@ -116,6 +117,9 @@ static const char WebSocketCreate[] = "WebSocketCreate";
 static const char WebSocketSendHandshakeRequest[] = "WebSocketSendHandshakeRequest";
 static const char WebSocketReceiveHandshakeResponse[] = "WebSocketReceiveHandshakeResponse";
 static const char WebSocketDestroy[] = "WebSocketDestroy";
+
+// Event names visible to other modules.
+const char Rasterize[] = "Rasterize";
 }
 
 void InspectorTimelineAgent::pushGCEventRecords()
@@ -179,6 +183,8 @@ void InspectorTimelineAgent::start(ErrorString*, const int* maxCallStackDepth)
     m_instrumentingAgents->setInspectorTimelineAgent(this);
     ScriptGCEvent::addEventListener(this);
     m_state->setBoolean(TimelineAgentState::timelineAgentEnabled, true);
+    if (m_client && m_pageAgent)
+        m_traceEventProcessor = adoptRef(new TimelineTraceEventProcessor(m_weakFactory.createWeakPtr(), m_client));
 }
 
 void InspectorTimelineAgent::stop(ErrorString*)
@@ -186,6 +192,9 @@ void InspectorTimelineAgent::stop(ErrorString*)
     if (!m_state->getBoolean(TimelineAgentState::timelineAgentEnabled))
         return;
 
+    m_traceEventProcessor->shutdown();
+    m_traceEventProcessor.clear();
+    m_weakFactory.revokeAll();
     m_instrumentingAgents->setInspectorTimelineAgent(0);
     ScriptGCEvent::removeEventListener(this);
 
@@ -217,6 +226,9 @@ void InspectorTimelineAgent::supportsFrameInstrumentation(ErrorString*, bool* re
 
 void InspectorTimelineAgent::didBeginFrame()
 {
+#if PLATFORM(CHROMIUM)
+    TRACE_EVENT_INSTANT0("webkit", InstrumentationEvents::BeginFrame);
+#endif
     m_pendingFrameRecord = TimelineRecordFactory::createGenericRecord(timestamp(), 0);
 }
 
@@ -635,6 +647,7 @@ InspectorTimelineAgent::InspectorTimelineAgent(InstrumentingAgents* instrumentin
     , m_platformInstrumentationClientInstalledAtStackDepth(0)
     , m_inspectorType(type)
     , m_client(client)
+    , m_weakFactory(this)
 {
 }
 
@@ -704,6 +717,11 @@ double InspectorTimelineAgent::timestamp()
 double InspectorTimelineAgent::timestampFromMicroseconds(double microseconds)
 {
     return (microseconds + m_timestampOffset) * 1000.0;
+}
+
+Page* InspectorTimelineAgent::page()
+{
+    return m_pageAgent ? m_pageAgent->page() : 0;
 }
 
 } // namespace WebCore

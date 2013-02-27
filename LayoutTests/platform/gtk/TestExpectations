@@ -77,7 +77,8 @@ Bug(GTK) fast/css/draggable-region-parser.html [ Failure ]
 
 # ENABLE(TEMPLATE_ELEMENT) is disabled.
 webkit.org/b/103547 fast/dom/HTMLTemplateElement [ Skip ]
-webkit.org/b/103547 html5lib/generated/run-template.html [ Skip ]
+webkit.org/b/103547 html5lib/generated/run-template-data.html [ Skip ]
+webkit.org/b/103547 html5lib/generated/run-template-write.html [ Skip ]
 webkit.org/b/103547 fast/xsl/xslt-xhtml-template.xml [ Skip ]
 webkit.org/b/103547 fast/xpath/xpath-template-element.html [ Skip ]
 webkit.org/b/103547 fast/xsl/xslt-processor-template.html [ Skip ]
@@ -1408,7 +1409,16 @@ webkit.org/b/110320 fast/dom/shadow/shadow-dom-event-dispatching-text-node-in-sh
 
 webkit.org/b/110446 svg/as-background-image/svg-transformed-background.html [ ImageOnlyFailure ]
 
-webkit.org/b/110694 html5lib/runner.html [ Failure ]
+webkit.org/b/110694 html5lib/generated/run-domjs-unsafe-data.html [ Failure ]
+webkit.org/b/110694 html5lib/generated/run-pending-spec-changes-plain-text-unsafe-data.html [ Failure ]
+webkit.org/b/110694 html5lib/generated/run-plain-text-unsafe-data.html [ Failure ]
+
+# Need rebaseline
+webkit.org/b/110654 css2.1/20110323/replaced-elements-001.htm [ Failure ]
+webkit.org/b/110654 svg/custom/foreign-object-skew.svg [ Failure ]
+webkit.org/b/110654 tables/mozilla/bugs/bug92647-2.html [ Failure ]
+# New test
+webkit.org/b/110654 css3/flexbox/button.html [ Failure ]
 
 #////////////////////////////////////////////////////////////////////////////////////////
 # End of Tests failing

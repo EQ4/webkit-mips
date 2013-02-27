@@ -1,3 +1,200 @@
+2013-02-26  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144129.
+        http://trac.webkit.org/changeset/144129
+        https://bugs.webkit.org/show_bug.cgi?id=110947
+
+        Breaks compilation on chromium mac and win (Requested by
+        vsevik on #webkit).
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::willBeginFrame):
+        (WebKit):
+        (WebKit::WebViewImpl::didBeginFrame):
+        * src/WebViewImpl.h:
+        * tests/WebLayerTreeViewTestCommon.h:
+
+2013-02-26  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r184829.  Requested by
+        "Mark Pilgrim" <pilgrim@chromium.org> via sheriffbot.
+
+        * DEPS:
+
+2013-02-26  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Remove WebLayerTreeViewClient::(will|did)BeginFrame
+        https://bugs.webkit.org/show_bug.cgi?id=110928
+
+        Reviewed by Adrienne Walker.
+
+        * src/WebViewImpl.cpp:
+        * src/WebViewImpl.h:
+        * tests/WebLayerTreeViewTestCommon.h:
+
+2013-02-26  Alpha Lam  <hclam@chromium.org>
+
+        [chromium] GIFImageDecoderTest.parseAndDecodeByteByByte failing on Android
+        https://bugs.webkit.org/show_bug.cgi?id=110922
+
+        Unreviewed. Build fix.
+
+        * tests/GIFImageDecoderTest.cpp:
+        (WebKit):
+
+2013-02-26  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Remove unused WebLayerTreeViewClient calls
+        https://bugs.webkit.org/show_bug.cgi?id=110923
+
+        Reviewed by Adrienne Walker.
+
+        These notifications existed for instrumentation, but now the instrumentation routes
+        through WebDevToolsAgent.
+
+        * src/WebViewImpl.cpp:
+        * src/WebViewImpl.h:
+        * tests/WebLayerTreeViewTestCommon.h:
+
+2013-02-26  Dirk Pranke  <dpranke@chromium.org>
+
+        Roll Chromium DEPS from r183905 -> r184646.
+
+        Unreviewed.
+
+        * DEPS:
+
+2013-02-26  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Remove unused WebWidget::instrument calls
+        https://bugs.webkit.org/show_bug.cgi?id=110906
+
+        Reviewed by Jochen Eisinger.
+
+        These calls are now routed through WebDevToolsAgent.
+
+        * public/WebWidget.h:
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::willBeginFrame):
+        * src/WebViewImpl.h:
+
+2013-02-20  Alpha Lam  <hclam@chromium.org>
+
+        GIFImageReader to read from source data directly
+        https://bugs.webkit.org/show_bug.cgi?id=109662
+
+        Reviewed by Stephen White.
+
+        Added the following unit tests to test new logic in GIFImageDecoder:
+
+        GIFImageDecoderTest.decodeTwoFrames
+        Test that it can decode a multi-frame GIF image correctly.
+
+        GIFImageDecoderTest.parseAndDecode
+        First perform a parse operation and then a decode operation. Expect
+        that parse and decode operates correctly.
+
+        GIFImageDecoderTest.parseByteByByte
+        Test that multi-frame GIF image can be parsed correctly byte by byte.
+
+        GIFImageDecoderTest.parseAndDecodeByteByByte
+        Run a loop to feed decoder byte by byte, perform a parse and then
+        decode operation and make sure frames are decoded correctly.
+
+        GIFImageDecoderTest.brokenSecondFrame
+        Decode a GIF image with second frame broken. Expect that the first
+        frame can be decoded correctly.
+
+        * WebKit.gypi:
+        * tests/GIFImageDecoderTest.cpp: Added.
+        (WebKit):
+        (WebKit::readFile):
+        (WebKit::TEST):
+        * tests/data/broken.gif: Added.
+
+2013-02-26  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144065.
+        http://trac.webkit.org/changeset/144065
+        https://bugs.webkit.org/show_bug.cgi?id=110896
+
+        Causing failures and crashes on Chromium Win7 and Win XP
+        (Requested by schenney on #webkit).
+
+        * features.gypi:
+
+2013-02-26  Levi Weintraub  <leviw@chromium.org>
+
+        Add support for 8 bit TextRuns for Chromium/HarfBuzz
+        https://bugs.webkit.org/show_bug.cgi?id=99393
+
+        Reviewed by Eric Seidel.
+
+        Enabling 8 bit text runs for Chromium.
+
+        * features.gypi:
+
+2013-02-26  Dmitry Zvorygin  <zvorygin@chromium.org>
+
+        Merged Tip and Debug log levels for web console.
+        https://bugs.webkit.org/show_bug.cgi?id=109919
+
+        Reviewed by Pavel Feldman.
+
+        In every component either TIP or DEBUG level was used for reporting,
+        but not both. This patch is prerequisite for Web Inspector console log filtering.
+
+        * public/WebConsoleMessage.h:
+        * src/AssertMatchingEnums.cpp:
+        * src/WebFrameImpl.cpp:
+        (WebKit::WebFrameImpl::addMessageToConsole):
+
+2013-02-26  Andrey Kosyakov  <caseq@chromium.org>
+
+        Plumbing trace events to Timeline
+
+        Web Inspector: plumb trace events to Timeline agent
+        https://bugs.webkit.org/show_bug.cgi?id=105796
+
+        Reviewed by Pavel Feldman.
+
+        * public/WebDevToolsAgentClient.h:
+        (WebDevToolsAgentClient):
+        (WebKit::WebDevToolsAgentClient::setTraceEventCallback):
+        * src/InspectorClientImpl.cpp:
+        (WebKit::InspectorClientImpl::setTraceEventCallback):
+        (WebKit):
+        * src/InspectorClientImpl.h:
+        (InspectorClientImpl):
+        * src/WebDevToolsAgentImpl.cpp:
+        (WebKit::WebDevToolsAgentImpl::setTraceEventCallback):
+        (WebKit):
+        * src/WebDevToolsAgentImpl.h:
+        (WebDevToolsAgentImpl):
+
+2013-02-01  Andrey Kosyakov  <caseq@chromium.org>
+
+        Web Inspector: plumb trace events to Timeline agent
+        https://bugs.webkit.org/show_bug.cgi?id=105796
+
+        Reviewed by Pavel Feldman.
+
+        Plumb trace events to Inspector.
+
+        * public/WebDevToolsAgentClient.h:
+        (WebDevToolsAgentClient):
+        (WebKit::WebDevToolsAgentClient::setTraceEventCallback):
+        * src/InspectorClientImpl.cpp:
+        (WebKit::InspectorClientImpl::setTraceEventCallback):
+        (WebKit):
+        * src/InspectorClientImpl.h:
+        (InspectorClientImpl):
+        * src/WebDevToolsAgentImpl.cpp:
+        (WebKit::WebDevToolsAgentImpl::setTraceEventCallback):
+        (WebKit):
+        * src/WebDevToolsAgentImpl.h:
+        (WebDevToolsAgentImpl):
+
 2013-02-26  Andrey Kosyakov  <caseq@chromium.org>
 
         Unreviewed, rolling out r144041, r144044, and r144048.
