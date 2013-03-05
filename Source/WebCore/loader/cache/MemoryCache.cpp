@@ -23,12 +23,8 @@
 #include "config.h"
 #include "MemoryCache.h"
 
-#include "CachedCSSStyleSheet.h"
-#include "CachedFont.h"
-#include "CachedImage.h"
-#include "CachedScript.h"
-#include "CachedXSLStyleSheet.h"
-#include "CachedResourceLoader.h"
+#include "CachedResource.h"
+#include "CachedResourceHandle.h"
 #include "CrossThreadTask.h"
 #include "Document.h"
 #include "FrameLoader.h"
@@ -37,7 +33,6 @@
 #include "Image.h"
 #include "Logging.h"
 #include "PublicSuffix.h"
-#include "ResourceHandle.h"
 #include "SecurityOrigin.h"
 #include "SecurityOriginHash.h"
 #include "WebCoreMemoryInstrumentation.h"
@@ -800,6 +795,10 @@ void MemoryCache::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     info.addMember(m_resources, "resources");
     info.addMember(m_allResources, "allResources");
     info.addMember(m_liveDecodedResources, "liveDecodedResources");
+#if !ENABLE(CACHE_PARTITIONING)
+    for (CachedResourceMap::const_iterator i = m_resources.begin(); i != m_resources.end(); ++i)
+        info.addMember(i->value, "cachedResourceItem", WTF::RetainingPointer);
+#endif
 }
 
 void MemoryCache::setDisabled(bool disabled)

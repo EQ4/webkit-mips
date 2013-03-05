@@ -1089,7 +1089,7 @@ InjectedScript.CallFrameProxy._createScopeJson = function(scopeTypeCode, scopeOb
 
     return {
         object: injectedScript._wrapObject(scopeObject, groupId),
-        type: scopeTypeNames[scopeTypeCode]
+        type: /** @type {DebuggerAgent.ScopeType} */ (scopeTypeNames[scopeTypeCode])
     };
 }
 
@@ -1117,12 +1117,22 @@ function CommandLineAPI(commandLineAPIImpl, callFrame)
         return false;
     }
 
+    /**
+     * @param {string} name The name of the method for which a toString method should be generated.
+     * @return {function():string}
+     */
+    function customToStringMethod(name)
+    {
+        return function () { return "function " + name + "() { [Command Line API] }"; };
+    }
+
     for (var i = 0; i < CommandLineAPI.members_.length; ++i) {
         var member = CommandLineAPI.members_[i];
         if (member in inspectedWindow || inScopeVariables(member))
             continue;
 
         this[member] = bind(commandLineAPIImpl[member], commandLineAPIImpl);
+        this[member].toString = customToStringMethod(member);
     }
 
     for (var i = 0; i < 5; ++i) {

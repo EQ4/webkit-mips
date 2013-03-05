@@ -66,7 +66,6 @@ public:
     long long applicationCacheDiskUsageForOrigin(JSStringRef name);
     bool isCommandEnabled(JSStringRef name);
     void keepWebHistory();
-    JSValueRef computedStyleIncludingVisitedInfo(JSContextRef, JSValueRef);
     void notifyDone();
     int numberOfPendingGeolocationPermissionRequests();
     void overridePreference(JSStringRef key, JSStringRef value);
@@ -325,8 +324,6 @@ public:
 
     // Simulate a request an embedding application could make, populating per-session credential storage.
     void authenticateSession(JSStringRef url, JSStringRef username, JSStringRef password);
-
-    JSRetainPtr<JSStringRef> markerTextForListItem(JSContextRef, JSValueRef nodeObject) const;
 
     JSValueRef originsWithLocalStorage(JSContextRef);
     void deleteAllLocalStorage();

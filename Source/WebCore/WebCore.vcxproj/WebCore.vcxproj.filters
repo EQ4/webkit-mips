@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="DerivedSources">
@@ -3237,9 +3237,6 @@
     <ClCompile Include="..\platform\network\BlobData.cpp">
       <Filter>platform\network</Filter>
     </ClCompile>
-    <ClCompile Include="..\platform\network\BlobRegistryImpl.cpp">
-      <Filter>platform\network</Filter>
-    </ClCompile>
     <ClCompile Include="..\platform\network\BlobResourceHandle.cpp">
       <Filter>platform\network</Filter>
     </ClCompile>
@@ -5895,9 +5892,6 @@
     <ClCompile Include="..\bindings\js\JSDedicatedWorkerContextCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
-    <ClCompile Include="..\bindings\js\JSDesktopNotificationsCustom.cpp">
-      <Filter>bindings\js</Filter>
-    </ClCompile>
     <ClCompile Include="..\bindings\js\JSDeviceMotionEventCustom.cpp">
       <Filter>bindings\js</Filter>
     </ClCompile>
@@ -6822,6 +6816,9 @@
     </ClCompile>
     <ClCompile Include="..\svg\graphics\SVGImageForContainer.cpp">
       <Filter>rendering\svg\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\inspector\TimelineTraceEventProcessor.cpp">
+      <Filter>inspector</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -14327,6 +14324,9 @@
     <ClInclude Include="..\svg\graphics\SVGImageForContainer.h">
       <Filter>rendering\svg\graphics</Filter>
     </ClInclude>
+    <ClInclude Include="..\inspector\TimelineTraceEventProcessor.h">
+      <Filter>inspector</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\css\CSSGrammar.y.in">
@@ -14633,6 +14633,9 @@
       <Filter>inspector\front-end</Filter>
     </None>
     <None Include="..\inspector\front-end\FilteredItemSelectionDialog.js">
+      <Filter>inspector\front-end</Filter>
+    </None>
+    <None Include="..\inspector\front-end\FlameChart.js">
       <Filter>inspector\front-end</Filter>
     </None>
     <None Include="..\inspector\front-end\FontView.js">

@@ -45,6 +45,7 @@
 #import <WebCore/AXObjectCache.h>
 #import <WebCore/FocusController.h>
 #import <WebCore/Frame.h>
+#import <WebCore/FrameLoader.h>
 #import <WebCore/FrameView.h>
 #import <WebCore/HitTestResult.h>
 #import <WebCore/HTMLConverter.h>
@@ -472,10 +473,7 @@ void WebPage::performDictionaryLookupAtLocation(const FloatPoint& floatPoint)
     if (!frame)
         return;
 
-    if (frame->document()->isPluginDocument()) {
-        PluginDocument* pluginDocument = static_cast<PluginDocument*>(frame->document());
-        PluginView* pluginView = static_cast<PluginView*>(pluginDocument->pluginWidget());
-
+    if (PluginView* pluginView = pluginViewForFrame(frame)) {
         if (pluginView->performDictionaryLookupAtLocation(floatPoint))
             return;
     }
@@ -655,7 +653,19 @@ void WebPage::readSelectionFromPasteboard(const String& pasteboardName, bool& re
 void WebPage::getStringSelectionForPasteboard(String& stringValue)
 {
     Frame* frame = m_page->focusController()->focusedOrMainFrame();
-    if (!frame || frame->selection()->isNone())
+
+    if (!frame)
+        return;
+
+    if (PluginView* pluginView = focusedPluginViewForFrame(frame)) {
+        String selection = pluginView->getSelectionString();
+        if (!selection.isNull()) {
+            stringValue = selection;
+            return;
+        }
+    }
+
+    if (frame->selection()->isNone())
         return;
 
     stringValue = frame->editor()->stringSelectionForPasteboard();
@@ -725,7 +735,7 @@ PassRefPtr<SharedBuffer> WebPage::cachedResponseDataForURL(const KURL& url)
 
 bool WebPage::platformCanHandleRequest(const WebCore::ResourceRequest& request)
 {
-    if ([NSURLConnection canHandleRequest:request.nsURLRequest()])
+    if ([NSURLConnection canHandleRequest:request.nsURLRequest(DoNotUpdateHTTPBody)])
         return true;
 
     // FIXME: Return true if this scheme is any one WebKit2 knows how to handle.
@@ -806,6 +816,11 @@ static void drawPDFPage(PDFDocument *pdfDocument, CFIndex pageIndex, CGContextRe
         cropBox = [pdfPage boundsForBox:kPDFDisplayBoxMediaBox];
     else
         cropBox = NSIntersectionRect(cropBox, [pdfPage boundsForBox:kPDFDisplayBoxMediaBox]);
+
+    // Always auto-rotate PDF content regardless of the paper orientation.
+    NSInteger rotation = [pdfPage rotation];
+    if (rotation == 90 || rotation == 270)
+        std::swap(cropBox.size.width, cropBox.size.height);
 
     bool shouldRotate = (paperSize.width < paperSize.height) != (cropBox.size.width < cropBox.size.height);
     if (shouldRotate)

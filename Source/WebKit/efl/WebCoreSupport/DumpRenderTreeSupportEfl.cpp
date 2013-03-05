@@ -30,7 +30,6 @@
 
 #include <APICast.h>
 #include <AnimationController.h>
-#include <CSSComputedStyleDeclaration.h>
 #include <DocumentLoader.h>
 #include <EditorClientEfl.h>
 #include <Eina.h>
@@ -38,6 +37,7 @@
 #include <FindOptions.h>
 #include <FloatSize.h>
 #include <FocusController.h>
+#include <FrameLoader.h>
 #include <FrameView.h>
 #include <HTMLInputElement.h>
 #include <InspectorController.h>
@@ -541,16 +541,6 @@ void DumpRenderTreeSupportEfl::deliverAllMutationsIfNecessary()
     WebCore::MutationObserver::deliverAllMutations();
 }
 
-String DumpRenderTreeSupportEfl::markerTextForListItem(JSContextRef context, JSValueRef nodeObject)
-{
-    JSC::ExecState* exec = toJS(context);
-    WebCore::Element* element = WebCore::toElement(toJS(exec, nodeObject));
-    if (!element)
-        return String();
-
-    return WebCore::markerTextForListItem(element);
-}
-
 void DumpRenderTreeSupportEfl::setInteractiveFormValidationEnabled(Evas_Object* ewkView, bool enabled)
 {
     DRT_SUPPRT_PAGE_GET_OR_RETURN(ewkView, page);
@@ -563,22 +553,6 @@ void DumpRenderTreeSupportEfl::setValidationMessageTimerMagnification(Evas_Objec
     DRT_SUPPRT_PAGE_GET_OR_RETURN(ewkView, page);
 
     page->settings()->setValidationMessageTimerMagnification(value);
-}
-
-JSValueRef DumpRenderTreeSupportEfl::computedStyleIncludingVisitedInfo(JSContextRef context, JSValueRef value)
-{
-    if (!value)
-        return JSValueMakeUndefined(context);
-
-    JSC::ExecState* exec = toJS(context);
-    JSC::JSValue jsValue = toJS(exec, value);
-    if (!jsValue.inherits(&WebCore::JSElement::s_info))
-        return JSValueMakeUndefined(context);
-
-    WebCore::JSElement* jsElement = static_cast<WebCore::JSElement*>(asObject(jsValue));
-    WebCore::Element* element = jsElement->impl();
-    RefPtr<WebCore::CSSComputedStyleDeclaration> style = WebCore::CSSComputedStyleDeclaration::create(element, true);
-    return toRef(exec, toJS(exec, jsElement->globalObject(), style.get()));
 }
 
 void DumpRenderTreeSupportEfl::setAuthorAndUserStylesEnabled(Evas_Object* ewkView, bool enabled)

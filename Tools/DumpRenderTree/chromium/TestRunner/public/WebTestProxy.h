@@ -33,6 +33,7 @@
 
 #include "Platform/chromium/public/WebRect.h"
 #include "Platform/chromium/public/WebURLError.h"
+#include "Platform/chromium/public/WebURLRequest.h"
 #include "WebKit/chromium/public/WebAccessibilityNotification.h"
 #include "WebKit/chromium/public/WebDOMMessageEvent.h"
 #include "WebKit/chromium/public/WebDragOperation.h"
@@ -69,7 +70,6 @@ class WebSpeechRecognizer;
 class WebSpellCheckClient;
 class WebString;
 class WebURL;
-class WebURLRequest;
 class WebURLResponse;
 class WebUserMediaClient;
 class WebView;
@@ -108,6 +108,9 @@ public:
 
     void setLogConsoleOutput(bool enabled);
 
+    // FIXME: Make this private again.
+    void scheduleComposite();
+
 #if WEBTESTRUNNER_IMPLEMENTATION
     void display();
     void displayInvalidatedRegion();
@@ -125,7 +128,6 @@ protected:
 
     void didInvalidateRect(const WebKit::WebRect&);
     void didScrollRect(int, int, const WebKit::WebRect&);
-    void scheduleComposite();
     void scheduleAnimation();
     void setWindowRect(const WebKit::WebRect&);
     void show(WebKit::WebNavigationPolicy);
@@ -160,6 +162,8 @@ protected:
     bool requestPointerLock();
     void requestPointerUnlock();
     bool isPointerLocked();
+    void didFocus();
+    void didBlur();
 
     void willPerformClientRedirect(WebKit::WebFrame*, const WebKit::WebURL& from, const WebKit::WebURL& to, double interval, double fire_time);
     void didCancelClientRedirect(WebKit::WebFrame*);
@@ -183,6 +187,7 @@ protected:
     void didCreateDataSource(WebKit::WebFrame*, WebKit::WebDataSource*);
     void willSendRequest(WebKit::WebFrame*, unsigned identifier, WebKit::WebURLRequest&, const WebKit::WebURLResponse& redirectResponse);
     void didReceiveResponse(WebKit::WebFrame*, unsigned identifier, const WebKit::WebURLResponse&);
+    void didChangeResourcePriority(WebKit::WebFrame*, unsigned identifier, const WebKit::WebURLRequest::Priority&);
     void didFinishResourceLoad(WebKit::WebFrame*, unsigned identifier);
     void didFailResourceLoad(WebKit::WebFrame*, unsigned identifier, const WebKit::WebURLError&);
     void unableToImplementPolicyWithError(WebKit::WebFrame*, const WebKit::WebURLError&);
@@ -213,6 +218,7 @@ private:
     WebKit::WebRect m_paintRect;
     bool m_isPainting;
     std::map<unsigned, std::string> m_resourceIdentifierMap;
+    std::map<unsigned, WebKit::WebURLRequest> m_requestMap;
 
     bool m_logConsoleOutput;
 
@@ -415,6 +421,16 @@ public:
     {
         return WebTestProxyBase::isPointerLocked();
     }
+    virtual void didFocus()
+    {
+        WebTestProxyBase::didFocus();
+        Base::didFocus();
+    }
+    virtual void didBlur()
+    {
+        WebTestProxyBase::didBlur();
+        Base::didBlur();
+    }
 
     // WebFrameClient implementation.
     virtual void willPerformClientRedirect(WebKit::WebFrame* frame, const WebKit::WebURL& from, const WebKit::WebURL& to, double interval, double fireTime)
@@ -526,6 +542,11 @@ public:
     {
         WebTestProxyBase::didReceiveResponse(frame, identifier, response);
         Base::didReceiveResponse(frame, identifier, response);
+    }
+    virtual void didChangeResourcePriority(WebKit::WebFrame* frame, unsigned identifier, const WebKit::WebURLRequest::Priority& priority)
+    {
+        WebTestProxyBase::didChangeResourcePriority(frame, identifier, priority);
+        Base::didChangeResourcePriority(frame, identifier, priority);
     }
     virtual void didFinishResourceLoad(WebKit::WebFrame* frame, unsigned identifier)
     {

@@ -199,9 +199,6 @@ http/tests/security/contentTypeOptions
 # Speech input is not yet enabled.
 fast/speech
 
-# Speech synthesis is not yet enabled.
-platform/mac/fast/speechsynthesis
-
 # Speech JavaScript API is not yet enabled.
 fast/events/constructors/speech-recognition-event-constructor.html
 
@@ -916,6 +913,9 @@ compositing/overflow/textarea-scroll-touch.html
 compositing/overflow/updating-scrolling-content.html
 compositing/overflow/scrolling-without-painting.html
 
+# https://bugs.webkit.org/show_bug.cgi?id=110871
+compositing/overlap-blending/reflection-opacity-huge.html
+
 # https://bugs.webkit.org/show_bug.cgi?id=95027
 fast/block/float/016.html
 
@@ -1252,8 +1252,6 @@ webkit.org/b/104595 fast/css/empty-generated-content.html [ Failure ]
 # Needs a rebaseline after WK108429 lands.
 webkit.org/b/108429 svg/custom/text-ctm.svg [ Pass Failure ]
 
-webkit.org/b/93247 [ Debug ] fast/lists/list-marker-remove-crash.html [ Crash ]
-
 # (r125790): Newly added test inspector/timeline/timeline-decode-resize.html is failing on mac
 webkit.org/b/94374 inspector/timeline/timeline-decode-resize.html [ Failure ]
 
@@ -1423,9 +1421,6 @@ webkit.org/b/108370 editing/spelling/spelling-with-underscore-selection.html [ S
 webkit.org/b/108370 editing/spelling/spelling-with-whitespace-selection.html [ Skip ]
 webkit.org/b/108370 editing/spelling/spelling-changed-text.html [ Skip ]
 
-webkit.org/b/108257 [ Debug ] compositing/overflow/composited-scrolling-creates-a-stacking-container.html [ Crash ]
-webkit.org/b/108257 [ Debug ] compositing/overflow/automatically-opt-into-composited-scrolling.html [ Crash ]
-
 # Rebaseline required after https://webkit.org/b/95772
 webkit.org/b/109209 fast/text/international/bidi-ignored-for-first-child-inline.html [ Failure ]
 
@@ -1448,3 +1443,6 @@ webkit.org/b/110654 svg/custom/foreign-object-skew.svg [ Failure ]
 webkit.org/b/110654 tables/mozilla/bugs/bug92647-2.html [ Failure ]
 # New test
 webkit.org/b/110654 css3/flexbox/button.html [ Failure ]
+
+# Need support for ResourceHandle::didChangePriority and DRT support
+webkit.org/b/111016 http/tests/loading/promote-img-preload-priority.html [ Failure ]

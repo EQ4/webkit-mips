@@ -658,6 +658,16 @@ bool WKPreferencesGetFullScreenEnabled(WKPreferencesRef preferencesRef)
     return toImpl(preferencesRef)->fullScreenEnabled();
 }
 
+void WKPreferencesSetAsynchronousSpellCheckingEnabled(WKPreferencesRef preferencesRef, bool enabled)
+{
+    toImpl(preferencesRef)->setAsynchronousSpellCheckingEnabled(enabled);
+}
+
+bool WKPreferencesGetAsynchronousSpellCheckingEnabled(WKPreferencesRef preferencesRef)
+{
+    return toImpl(preferencesRef)->asynchronousSpellCheckingEnabled();
+}
+
 void WKPreferencesSetAVFoundationEnabled(WKPreferencesRef preferencesRef, bool enabled)
 {
     toImpl(preferencesRef)->setAVFoundationEnabled(enabled);
@@ -1032,4 +1042,24 @@ void WKPreferencesSetPageVisibilityBasedProcessSuppressionEnabled(WKPreferencesR
 bool WKPreferencesGetPageVisibilityBasedProcessSuppressionEnabled(WKPreferencesRef preferencesRef)
 {
     return toImpl(preferencesRef)->pageVisibilityBasedProcessSuppressionEnabled();
+}
+
+void WKPreferencesSetSmartInsertDeleteEnabled(WKPreferencesRef preferencesRef, bool enabled)
+{
+    toImpl(preferencesRef)->setSmartInsertDeleteEnabled(enabled);
+}
+
+bool WKPreferencesGetSmartInsertDeleteEnabled(WKPreferencesRef preferencesRef)
+{
+    return toImpl(preferencesRef)->smartInsertDeleteEnabled();
+}
+
+void WKPreferencesSetShowsURLsInToolTipsEnabled(WKPreferencesRef preferencesRef, bool enabled)
+{
+    toImpl(preferencesRef)->setShowsURLsInToolTipsEnabled(enabled);
+}
+
+bool WKPreferencesGetShowsURLsInToolTipsEnabled(WKPreferencesRef preferencesRef)
+{
+    return toImpl(preferencesRef)->showsURLsInToolTipsEnabled();
 }

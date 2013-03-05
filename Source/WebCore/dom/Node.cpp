@@ -442,8 +442,7 @@ Node::~Node()
     if (m_next)
         m_next->setPreviousSibling(0);
 
-    if (doc)
-        doc->guardDeref();
+    m_treeScope->guardDeref();
 
     InspectorCounters::decrementCounter(InspectorCounters::NodeCounter);
 }
@@ -892,11 +891,6 @@ bool Node::isFocusable() const
     return true;
 }
 
-bool Node::isTreeScope() const
-{
-    return treeScope()->rootNode() == this;
-}
-
 bool Node::isKeyboardFocusable(KeyboardEvent*) const
 {
     return isFocusable() && tabIndex() >= 0;
@@ -1068,7 +1062,6 @@ void Node::attach()
     ASSERT(!attached());
     ASSERT(!renderer() || (renderer()->style() && renderer()->parent()));
 
-    // FIXME: This is O(N^2) for the innerHTML case, where all children are replaced at once (and not attached).
     // If this node got a renderer it may be the previousRenderer() of sibling text nodes and thus affect the
     // result of Text::textRendererIsNeeded() for those nodes.
     if (renderer()) {
@@ -1076,9 +1069,16 @@ void Node::attach()
             if (next->renderer())
                 break;
             if (!next->attached())
-                break;  // Assume this means none of the following siblings are attached.
-            if (next->isTextNode())
-                toText(next)->createTextRendererIfNeeded();
+                break; // Assume this means none of the following siblings are attached.
+            if (!next->isTextNode())
+                continue;
+            ASSERT(!next->renderer());
+            toText(next)->createTextRendererIfNeeded();
+            // If we again decided not to create a renderer for next, we can bail out the loop,
+            // because it won't affect the result of Text::textRendererIsNeeded() for the rest
+            // of sibling nodes.
+            if (!next->renderer())
+                break;
         }
     }
 
@@ -2561,6 +2561,31 @@ PassRefPtr<PropertyNodeList> Node::propertyNodeList(const String& name)
 }
 #endif
 
+// This is here for inlining
+inline void TreeScope::removedLastRefToScope()
+{
+    ASSERT(!deletionHasBegun());
+    if (m_guardRefCount) {
+        // If removing a child removes the last self-only ref, we don't
+        // want the scope to be destructed until after
+        // removeDetachedChildren returns, so we guard ourselves with an
+        // extra self-only ref.
+        guardRef();
+        dispose();
+#ifndef NDEBUG
+        // We need to do this right now since guardDeref() can delete this.
+        rootNode()->m_inRemovedLastRefFunction = false;
+#endif
+        guardDeref();
+    } else {
+#ifndef NDEBUG
+        rootNode()->m_inRemovedLastRefFunction = false;
+        beginDeletion();
+#endif
+        delete this;
+    }
+}
+
 // It's important not to inline removedLastRef, because we don't want to inline the code to
 // delete a Node at each deref call site.
 void Node::removedLastRef()
@@ -2568,10 +2593,11 @@ void Node::removedLastRef()
     // An explicit check for Document here is better than a virtual function since it is
     // faster for non-Document nodes, and because the call to removedLastRef that is inlined
     // at all deref call sites is smaller if it's a non-virtual function.
-    if (isDocumentNode()) {
-        static_cast<Document*>(this)->removedLastRef();
+    if (isTreeScope()) {
+        treeScope()->removedLastRefToScope();
         return;
     }
+
 #ifndef NDEBUG
     m_deletionHasBegun = true;
 #endif

@@ -458,16 +458,6 @@ bool TestRunner::callShouldCloseOnWebView()
     return false;
 }
 
-JSRetainPtr<JSStringRef> TestRunner::markerTextForListItem(JSContextRef context, JSValueRef nodeObject) const
-{
-    return 0;
-}
-
-JSValueRef TestRunner::computedStyleIncludingVisitedInfo(JSContextRef, JSValueRef)
-{
-    return 0;
-}
-
 void TestRunner::authenticateSession(JSStringRef, JSStringRef, JSStringRef)
 {
 }

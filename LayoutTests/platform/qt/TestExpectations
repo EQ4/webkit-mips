@@ -90,11 +90,6 @@ fast/forms/input-in-table-cell-no-value.html
 # ENABLE_GAMEPAD not enabled.
 gamepad/
 
-# Remove from list after enabling CANVAS_PATH
-fast/canvas/canvas-currentPath.html
-fast/canvas/canvas-path-constructors.html
-fast/canvas/canvas-currentPath-crash.html
-
 # ENABLE(INPUT_SPEECH) is disabled.
 fast/speech
 
@@ -160,18 +155,6 @@ http/tests/security/webgl-remote-read-remote-image-allowed-with-credentials.html
 http/tests/security/webgl-remote-read-remote-image-blocked-no-crossorigin.html
 inspector/profiler/webgl
 webgl/
-
-# ENABLE(LINK_PREFETCH) is disabled.
-fast/dom/HTMLLinkElement/link-and-subresource-test.html
-fast/dom/HTMLLinkElement/link-and-subresource-test-nonexistent.html
-fast/dom/HTMLLinkElement/prefetch.html
-fast/dom/HTMLLinkElement/prefetch-beforeload.html
-fast/dom/HTMLLinkElement/prefetch-onerror.html
-fast/dom/HTMLLinkElement/prefetch-onload.html
-fast/dom/HTMLLinkElement/prefetch-too-many-clients.html
-fast/dom/HTMLLinkElement/subresource.html
-http/tests/misc/link-rel-prefetch-and-subresource.html
-http/tests/misc/prefetch-purpose.html
 
 # ENABLE(LINK_PRERENDER) is disabled.
 fast/dom/HTMLLinkElement/prerender-insert-after-stop.html
@@ -864,6 +847,8 @@ plugins/npruntime/delete-plugin-within-hasProperty-return-true.html
 plugins/npruntime/delete-plugin-within-setProperty.html
 plugins/npruntime/delete-plugin-within-getProperty.html
 plugins/npruntime/delete-plugin-within-invoke.html
+
+webkit.org/b/111058 plugins/plugin-clip-subframe.html [ Skip ]
 
 # =========================================================================== #
 # Failing Sputnik tests                                                       #
@@ -1912,6 +1897,10 @@ webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-circle.html [ Skip
 
 webkit.org/b/110090 fast/events/clientXY-in-zoom-and-scroll.html [ Skip ]
 
+webkit.org/b/108508 fast/canvas/canvas-currentPath.html [ Skip ]
+
+webkit.org/b/111290 fast/regions/seamless-iframe-flowed-into-regions.html [ Skip ]
+
 # ============================================================================= #
 # failing security tests
 # ============================================================================= #
@@ -2275,8 +2264,12 @@ svg/transforms/transformed-text-fill-gradient.html
 fast/regions/floats-basic-in-variable-width-regions.html
 fast/regions/region-style-rule-position.html
 fast/forms/select/intrinsic-min-width-applies-with-fixed-width.html
-webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-circle.html [ ImageOnlyFailure ]
-webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-ellipse.html [ ImageOnlyFailure ]
+webkit.org/b/110762 compositing/overlap-blending/children-opacity-no-overlap.html [ Skip ]
+webkit.org/b/110762 compositing/overlap-blending/reflection-opacity-huge.html [ Skip ]
+webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-circle.html [ Skip ]
+webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-circle-padding.html [ Skip ]
+webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-ellipse.html [ Skip ]
+webkit.org/b/110089 fast/exclusions/shape-inside/shape-inside-ellipse-padding.html [ Skip ]
 webkit.org/b/110447 fast/regions/shape-inside-on-regions.html [ Skip ]
 
 # Failing fast/css/sticky/ tests with minor pixel differences
@@ -2294,6 +2287,10 @@ plugins/npruntime/object-from-destroyed-plugin-in-subframe.html
 # [Qt] New inspector/debugger/linkifier.html is flakey from the beginning (r115064).
 # https://bugs.webkit.org/show_bug.cgi?id=84866
 inspector/debugger/linkifier.html
+
+webkit.org/b/111057 http/tests/inspector/extensions-network-redirect.html
+webkit.org/b/111057 http/tests/inspector/console-resource-errors.html
+webkit.org/b/111057 http/tests/inspector/resource-har-pages.html
 
 # REGRESSION(r115379) - https://bugs.webkit.org/show_bug.cgi?id=85004
 http/tests/inspector/network/network-initiator.html
@@ -2492,8 +2489,6 @@ webkit.org/b/91379 http/tests/security/contentSecurityPolicy/object-src-none-all
 
 webkit.org/b/99756 fast/events/touch/touch-slider.html [ Failure ]
 
-webkit.org/b/93247 [ Debug ] fast/lists/list-marker-remove-crash.html [ Crash ]
-
 # This has always failed on Qt - exposed by bug 89826
 webkit.org/b/94004 css2.1/20110323/c541-word-sp-000.htm [ ImageOnlyFailure ]
 
@@ -2635,12 +2630,6 @@ inspector/editor/text-editor-word-jumps.html
 inspector/editor/text-editor-home-button.html
 inspector/editor/text-editor-smart-braces.html
 
-# [Qt] REGRESSION(143400): It made all inspector tests crash on Qt 64 bit release.
-webkit.org/b/110440 http/tests/inspector-enabled
-webkit.org/b/110440 http/tests/inspector
-webkit.org/b/110440 http/tests/xmlhttprequest/access-control-repeated-failed-preflight-crash.html
-webkit.org/b/110440 inspector
-
 # [Qt] REGRESSION(r141634) test failing
 webkit.org/b/108813 compositing/visibility/visibility-image-layers-dynamic.html [ Skip ]
 
@@ -2681,3 +2670,6 @@ webkit.org/b/110654 svg/custom/foreign-object-skew.svg [ Failure ]
 webkit.org/b/110654 tables/mozilla/bugs/bug92647-2.html [ Failure ]
 # New test
 webkit.org/b/110654 css3/flexbox/button.html [ Failure ]
+
+# Need support for ResourceHandle::didChangePriority and DRT support
+webkit.org/b/111016 http/tests/loading/promote-img-preload-priority.html [ Failure ]

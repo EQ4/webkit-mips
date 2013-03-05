@@ -116,7 +116,6 @@ SOURCES += \
      bindings/js/JSDOMWindowWebSocketCustom.cpp \
      bindings/js/JSDOMWrapper.cpp \
      bindings/js/JSDataViewCustom.cpp \
-     bindings/js/JSDesktopNotificationsCustom.cpp \
      bindings/js/JSDeviceMotionEventCustom.cpp \
      bindings/js/JSDeviceOrientationEventCustom.cpp \
      bindings/js/JSDocumentCustom.cpp \
@@ -1085,6 +1084,7 @@ SOURCES += \
     platform/mock/ScrollbarThemeMock.cpp \
     platform/network/AuthenticationChallengeBase.cpp \
     platform/network/BlobData.cpp \
+    platform/network/BlobRegistry.cpp \
     platform/network/BlobRegistryImpl.cpp \
     platform/network/BlobResourceHandle.cpp \
     platform/network/Credential.cpp \
@@ -1173,6 +1173,7 @@ SOURCES += \
     rendering/FixedTableLayout.cpp \
     rendering/FlowThreadController.cpp \
     rendering/HitTestingTransformState.cpp \
+    rendering/HitTestLocation.cpp \
     rendering/HitTestResult.cpp \
     rendering/InlineBox.cpp \
     rendering/InlineFlowBox.cpp \
@@ -2451,6 +2452,7 @@ HEADERS += \
     rendering/FilterEffectRenderer.h \
     rendering/FixedTableLayout.h \
     rendering/HitTestingTransformState.h \
+    rendering/HitTestLocation.h \
     rendering/HitTestResult.h \
     rendering/InlineBox.h \
     rendering/InlineFlowBox.h \
@@ -3372,8 +3374,6 @@ enable?(VIDEO) {
             DEFINES+=NS_BUILD_32_LIKE_64
         }
 
-        QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.5
-
     } else: use?(GSTREAMER) {
         HEADERS += \
             platform/graphics/gstreamer/GStreamerGWorld.h \
@@ -4019,6 +4019,7 @@ enable?(WEBGL) {
         html/canvas/WebGLObject.h \
         html/canvas/WebGLActiveInfo.h \
         html/canvas/WebGLBuffer.h \
+        html/canvas/WebGLCompressedTextureATC.h \
         html/canvas/WebGLCompressedTextureS3TC.h \
         html/canvas/WebGLContextAttributes.h \
         html/canvas/WebGLContextEvent.h \
@@ -4037,9 +4038,11 @@ enable?(WEBGL) {
         html/canvas/WebGLShader.h \
         html/canvas/WebGLShaderPrecisionFormat.h \
         html/canvas/WebGLSharedObject.h \
+        html/canvas/EXTDrawBuffers.h \
         html/canvas/EXTTextureFilterAnisotropic.h \
         html/canvas/OESStandardDerivatives.h \
         html/canvas/OESTextureFloat.h \
+        html/canvas/OESTextureHalfFloat.h \
         html/canvas/OESVertexArrayObject.h \
         html/canvas/OESElementIndexUint.h \
         html/canvas/WebGLTexture.h \
@@ -4053,6 +4056,7 @@ enable?(WEBGL) {
         html/canvas/CanvasContextAttributes.cpp \
         html/canvas/WebGLObject.cpp \
         html/canvas/WebGLBuffer.cpp \
+        html/canvas/WebGLCompressedTextureATC.cpp \
         html/canvas/WebGLCompressedTextureS3TC.cpp \
         html/canvas/WebGLContextAttributes.cpp \
         html/canvas/WebGLContextEvent.cpp \
@@ -4071,9 +4075,11 @@ enable?(WEBGL) {
         html/canvas/WebGLShader.cpp \
         html/canvas/WebGLShaderPrecisionFormat.cpp \
         html/canvas/WebGLSharedObject.cpp \
+        html/canvas/EXTDrawBuffers.cpp \
         html/canvas/EXTTextureFilterAnisotropic.cpp \
         html/canvas/OESStandardDerivatives.cpp \
         html/canvas/OESTextureFloat.cpp \
+        html/canvas/OESTextureHalfFloat.cpp \
         html/canvas/OESVertexArrayObject.cpp \
         html/canvas/OESElementIndexUint.cpp \
         html/canvas/WebGLTexture.cpp \
@@ -4233,6 +4239,7 @@ contains(DEFINES, ENABLE_OPENCL=1) {
         platform/graphics/gpu/opencl/FilterContextOpenCL.cpp \
         platform/graphics/gpu/opencl/OpenCLFEColorMatrix.cpp \
         platform/graphics/gpu/opencl/OpenCLFEFlood.cpp \
+        platform/graphics/gpu/opencl/OpenCLFEImage.cpp \
         platform/graphics/gpu/opencl/OpenCLFEMerge.cpp \
         platform/graphics/gpu/opencl/OpenCLFESourceAlpha.cpp \
         platform/graphics/gpu/opencl/OpenCLFESourceGraphic.cpp \

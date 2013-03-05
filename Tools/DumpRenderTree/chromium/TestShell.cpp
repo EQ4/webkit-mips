@@ -113,7 +113,7 @@ TestShell::TestShell()
     , m_softwareCompositingEnabled(false)
     , m_threadedCompositingEnabled(false)
     , m_forceCompositingMode(false)
-    , m_threadedHTMLParser(false)
+    , m_threadedHTMLParser(true)
     , m_accelerated2dCanvasEnabled(false)
     , m_deferred2dCanvasEnabled(false)
     , m_acceleratedPaintingEnabled(false)
@@ -145,7 +145,6 @@ void TestShell::initialize(MockPlatform* platformSupport)
 
     if (m_threadedCompositingEnabled)
         m_webCompositorThread = adoptPtr(WebKit::Platform::current()->createThread("Compositor"));
-    WebKit::Platform::current()->compositorSupport()->initialize(m_webCompositorThread.get());
 
     createMainWindow();
 }

@@ -39,6 +39,7 @@
 #include "ExceptionCode.h"
 #include "Frame.h"
 #include "FrameLoadRequest.h"
+#include "FrameLoader.h"
 #include "FrameView.h"
 #include "HTMLCollection.h"
 #include "HTMLDocument.h"
@@ -146,7 +147,7 @@ v8::Handle<v8::Value> WindowSetTimeoutImpl(const v8::Arguments& args, bool singl
 
 v8::Handle<v8::Value> V8DOMWindow::eventAttrGetterCustom(v8::Local<v8::String> name, const v8::AccessorInfo& info)
 {
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(info.GetIsolate()));
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(info.GetIsolate(), worldTypeInMainThread(info.GetIsolate())));
     if (holder.IsEmpty())
         return v8::Undefined();
 
@@ -168,7 +169,7 @@ v8::Handle<v8::Value> V8DOMWindow::eventAttrGetterCustom(v8::Local<v8::String> n
 
 void V8DOMWindow::eventAttrSetterCustom(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
 {
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(info.GetIsolate()));
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(info.GetIsolate(), worldTypeInMainThread(info.GetIsolate())));
     if (holder.IsEmpty())
         return;
 
@@ -344,7 +345,7 @@ v8::Handle<v8::Value> V8DOMWindow::postMessageMethodCustom(const v8::Arguments& 
 // switching context of receiver. I consider it is dangerous.
 v8::Handle<v8::Value> V8DOMWindow::toStringMethodCustom(const v8::Arguments& args)
 {
-    v8::Handle<v8::Object> domWrapper = args.This()->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(args.GetIsolate()));
+    v8::Handle<v8::Object> domWrapper = args.This()->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(args.GetIsolate(), worldTypeInMainThread(args.GetIsolate())));
     if (domWrapper.IsEmpty())
         return args.This()->ObjectProtoToString();
     return domWrapper->ObjectProtoToString();
@@ -507,10 +508,10 @@ v8::Handle<v8::Value> V8DOMWindow::setIntervalMethodCustom(const v8::Arguments& 
     return WindowSetTimeoutImpl(args, false);
 }
 
-bool V8DOMWindow::namedSecurityCheck(v8::Local<v8::Object> host, v8::Local<v8::Value> key, v8::AccessType type, v8::Local<v8::Value>)
+bool V8DOMWindow::namedSecurityCheckCustom(v8::Local<v8::Object> host, v8::Local<v8::Value> key, v8::AccessType type, v8::Local<v8::Value>)
 {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Handle<v8::Object> window = host->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(isolate));
+    v8::Handle<v8::Object> window = host->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(isolate, worldTypeInMainThread(isolate)));
     if (window.IsEmpty())
         return false;  // the frame is gone.
 
@@ -541,10 +542,10 @@ bool V8DOMWindow::namedSecurityCheck(v8::Local<v8::Object> host, v8::Local<v8::V
     return BindingSecurity::shouldAllowAccessToFrame(BindingState::instance(), target, DoNotReportSecurityError);
 }
 
-bool V8DOMWindow::indexedSecurityCheck(v8::Local<v8::Object> host, uint32_t index, v8::AccessType type, v8::Local<v8::Value>)
+bool V8DOMWindow::indexedSecurityCheckCustom(v8::Local<v8::Object> host, uint32_t index, v8::AccessType type, v8::Local<v8::Value>)
 {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Handle<v8::Object> window = host->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(isolate));
+    v8::Handle<v8::Object> window = host->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(isolate, worldTypeInMainThread(isolate)));
     if (window.IsEmpty())
         return false;
 
@@ -586,7 +587,7 @@ v8::Handle<v8::Value> toV8(DOMWindow* window, v8::Handle<v8::Object> creationCon
     // necessarily the first global object associated with that DOMWindow.
     v8::Handle<v8::Context> currentContext = v8::Context::GetCurrent();
     v8::Handle<v8::Object> currentGlobal = currentContext->Global();
-    v8::Handle<v8::Object> windowWrapper = currentGlobal->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(isolate));
+    v8::Handle<v8::Object> windowWrapper = currentGlobal->FindInstanceInPrototypeChain(V8DOMWindow::GetTemplate(isolate, worldTypeInMainThread(isolate)));
     if (!windowWrapper.IsEmpty()) {
         if (V8DOMWindow::toNative(windowWrapper) == window)
             return currentGlobal;

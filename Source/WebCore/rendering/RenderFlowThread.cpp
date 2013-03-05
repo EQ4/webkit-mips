@@ -59,7 +59,7 @@ RenderFlowThread::RenderFlowThread(Document* document)
     , m_pageLogicalSizeChanged(false)
 {
     ASSERT(document->cssRegionsEnabled());
-    setInRenderFlowThread();
+    setFlowThreadState(InsideOutOfFlowThread);
 }
 
 PassRefPtr<RenderStyle> RenderFlowThread::createFlowThreadStyle(RenderStyle* parentStyle)
@@ -727,9 +727,8 @@ bool RenderFlowThread::objectInFlowRegion(const RenderObject* object, const Rend
     ASSERT(object);
     ASSERT(region);
 
-    if (!object->inRenderFlowThread())
-        return false;
-    if (object->enclosingRenderFlowThread() != this)
+    RenderFlowThread* flowThread = object->flowThreadContainingBlock();
+    if (flowThread != this)
         return false;
     if (!m_regionList.contains(const_cast<RenderRegion*>(region)))
         return false;
@@ -959,13 +958,46 @@ void RenderFlowThread::decrementAutoLogicalHeightRegions()
         view()->flowThreadController()->decrementFlowThreadsWithAutoLogicalHeightRegions();
 }
 
+void RenderFlowThread::collectLayerFragments(LayerFragments& layerFragments, const LayoutRect& layerBoundingBox, const LayoutRect& dirtyRect)
+{
+    ASSERT(!m_regionsInvalidated);
+    
+    for (RenderRegionList::const_iterator iter = m_regionList.begin(); iter != m_regionList.end(); ++iter) {
+        RenderRegion* region = *iter;
+        region->collectLayerFragments(layerFragments, layerBoundingBox, dirtyRect);
+    }
+}
+
+LayoutRect RenderFlowThread::fragmentsBoundingBox(const LayoutRect& layerBoundingBox)
+{
+    ASSERT(!m_regionsInvalidated);
+    
+    LayoutRect result;
+    for (RenderRegionList::const_iterator iter = m_regionList.begin(); iter != m_regionList.end(); ++iter) {
+        RenderRegion* region = *iter;
+        LayerFragments fragments;
+        region->collectLayerFragments(fragments, layerBoundingBox, PaintInfo::infiniteRect());
+        for (size_t i = 0; i < fragments.size(); ++i) {
+            const LayerFragment& fragment = fragments.at(i);
+            LayoutRect fragmentRect(layerBoundingBox);
+            fragmentRect.intersect(fragment.paginationClip);
+            fragmentRect.moveBy(fragment.paginationOffset);
+            result.unite(fragmentRect);
+        }
+    }
+    
+    return result;
+}
+
 CurrentRenderFlowThreadMaintainer::CurrentRenderFlowThreadMaintainer(RenderFlowThread* renderFlowThread)
     : m_renderFlowThread(renderFlowThread)
+    , m_previousRenderFlowThread(0)
 {
     if (!m_renderFlowThread)
         return;
     RenderView* view = m_renderFlowThread->view();
-    ASSERT(!view->flowThreadController()->currentRenderFlowThread());
+    m_previousRenderFlowThread = view->flowThreadController()->currentRenderFlowThread();
+    ASSERT(!m_previousRenderFlowThread || !renderFlowThread->isRenderNamedFlowThread());
     view->flowThreadController()->setCurrentRenderFlowThread(m_renderFlowThread);
 }
 
@@ -975,7 +1007,7 @@ CurrentRenderFlowThreadMaintainer::~CurrentRenderFlowThreadMaintainer()
         return;
     RenderView* view = m_renderFlowThread->view();
     ASSERT(view->flowThreadController()->currentRenderFlowThread() == m_renderFlowThread);
-    view->flowThreadController()->setCurrentRenderFlowThread(0);
+    view->flowThreadController()->setCurrentRenderFlowThread(m_previousRenderFlowThread);
 }
 
 

@@ -939,8 +939,6 @@ private:
                     break;
                 if (node != expectedNode)
                     result.mayBeAccessed = true;
-                if (node->refCount() > 1)
-                    result.mayBeAccessed = true;
                 return result;
             }
                 
@@ -1025,7 +1023,7 @@ private:
         dataLogF("   Replacing @%u -> @%u", m_currentNode->index(), replacement->index());
 #endif
         
-        m_currentNode->setOpAndDefaultFlags(Phantom);
+        m_currentNode->convertToPhantom();
         m_currentNode->setRefCount(1);
         eliminateIrrelevantPhantomChildren(m_currentNode);
         
@@ -1043,9 +1041,8 @@ private:
         dataLogF("   Eliminating @%u", m_currentNode->index());
 #endif
         
-        ASSERT(m_currentNode->refCount() == 1);
         ASSERT(m_currentNode->mustGenerate());
-        m_currentNode->setOpAndDefaultFlags(Phantom);
+        m_currentNode->convertToPhantom();
         eliminateIrrelevantPhantomChildren(m_currentNode);
         
         m_changed = true;
@@ -1055,10 +1052,8 @@ private:
     {
         if (!node)
             return;
-        if (node->refCount() != 1)
-            return;
         ASSERT(node->mustGenerate());
-        node->setOpAndDefaultFlags(phantomType);
+        node->setOpAndDefaultNonExitFlags(phantomType);
         if (phantomType == Phantom)
             eliminateIrrelevantPhantomChildren(node);
         
@@ -1208,10 +1203,9 @@ private:
             if (result.mayBeAccessed || result.mayClobberWorld)
                 break;
             ASSERT(replacement->op() == SetLocal);
-            ASSERT(replacement->refCount() == 1);
             ASSERT(replacement->shouldGenerate());
             // FIXME: Investigate using mayExit as a further optimization.
-            node->setOpAndDefaultFlags(Phantom);
+            node->convertToPhantom();
             Node* dataNode = replacement->child1().node();
             ASSERT(dataNode->hasResult());
             m_graph.clearAndDerefChild1(node);

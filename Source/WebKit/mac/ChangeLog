@@ -1,3 +1,266 @@
+2013-03-04  David Kilzer  <ddkilzer@apple.com>
+
+        BUILD FIX (r144662): Import JSBase.h in WebFrameLoadDelegate.h
+        <http://webkit.org/b/111269>
+
+        Fixes the following build failure:
+
+            In file included from Source/WebKit/ios/DefaultDelegates/WebDefaultFrameLoadDelegate.m:11:
+            In file included from Source/WebKit/mac/WebView/WebFrameLoadDelegatePrivate.h:29:
+            Source/WebKit/mac/WebView/WebFrameLoadDelegate.h:41:5: error: 'JSC_OBJC_API_ENABLED' is not defined, evaluates to 0 [-Werror,-Wundef]
+            #if JSC_OBJC_API_ENABLED
+                ^
+            Source/WebKit/mac/WebView/WebFrameLoadDelegate.h:207:5: error: 'JSC_OBJC_API_ENABLED' is not defined, evaluates to 0 [-Werror,-Wundef]
+            #if JSC_OBJC_API_ENABLED
+                ^
+            2 errors generated.
+
+        * WebView/WebFrameLoadDelegate.h: Include JSBase.h.
+
+2013-03-04  Chris Fleizach  <cfleizach@apple.com>
+
+        Support WebSpeech - Speech Synthesis
+        https://bugs.webkit.org/show_bug.cgi?id=106742
+
+        Reviewed by Simon Fraser.
+
+        Enable speech synthesis for the Mac.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-03-04  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Remove contextInternalContext from JSContextInternal.h
+        https://bugs.webkit.org/show_bug.cgi?id=111356
+
+        Reviewed by Geoffrey Garen.
+
+        We don't need it any more since we have globalContextRef in JSContext.
+
+        * WebView/WebScriptWorld.mm:
+        (+[WebScriptWorld scriptWorldForJavaScriptContext:]):
+
+2013-03-04  Laszlo Gombos  <l.gombos@samsung.com>
+
+        JSC_OBJC_API_ENABLED should be removed from FeatureDefines.h
+        https://bugs.webkit.org/show_bug.cgi?id=111269
+
+        Reviewed by Mark Hahnenberg.
+
+        Include JavaScriptCore/JSBase.h for the definition of JSC_OBJC_API_ENABLED.
+
+        * WebView/WebDelegateImplementationCaching.h:
+
+2013-03-04  Kunihiko Sakamoto  <ksakamoto@chromium.org>
+
+        Add build flag for FontLoader
+        https://bugs.webkit.org/show_bug.cgi?id=111289
+
+        Reviewed by Benjamin Poulain.
+
+        Add ENABLE_FONT_LOAD_EVENTS build flag (disabled by default).
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-03-03  Benjamin Poulain  <benjamin@webkit.org>
+
+        [Mac] Get rid of a useless method from DOMHTMLInputElement
+        https://bugs.webkit.org/show_bug.cgi?id=111279
+
+        Reviewed by Sam Weinig.
+
+        * DOM/WebDOMOperations.mm:
+        * DOM/WebDOMOperationsPrivate.h:
+        setValueForUser: is already privately exposed by DOMHTMLInputElement,
+        no need to have it twice.
+
+2013-03-03  Adam Barth  <abarth@webkit.org>
+
+        Unreviewed attempted build fix. Adds back some includes removed in
+        http://trac.webkit.org/changeset/144565.
+
+        * DOM/WebDOMOperations.mm:
+        * Misc/WebNSPasteboardExtras.mm:
+        * WebCoreSupport/WebFrameNetworkingContext.mm:
+        * WebView/WebRenderLayer.mm:
+        * WebView/WebRenderNode.mm:
+
+2013-03-03  Adam Barth  <abarth@webkit.org>
+
+        Unreviewed rollout of http://trac.webkit.org/r144530
+        As described in https://bugs.webkit.org/show_bug.cgi?id=111167 and
+        https://bugs.webkit.org/show_bug.cgi?id=111035, this patch caused a
+        large number of ASSERTs in chromium-win.
+
+        * DOM/WebDOMOperations.mm:
+        * Misc/WebNSPasteboardExtras.mm:
+        * WebCoreSupport/WebFrameNetworkingContext.mm:
+        * WebView/WebRenderLayer.mm:
+        * WebView/WebRenderNode.mm:
+
+2013-02-18  Darin Adler  <darin@apple.com>
+
+        Cut down the number of source files that depend on Clipboard.h
+        https://bugs.webkit.org/show_bug.cgi?id=110030
+
+        Reviewed by Ryosuke Niwa.
+
+        * WebView/WebPDFView.mm: Add include of Clipboard.h since we use it
+        here and the world no longer includes it everywhere.
+
+2013-03-02  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move computedStyleIncludingVisitedInfo from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109772
+
+        Reviewed by Andreas Kling.
+
+        * WebView/WebView.mm:
+        * WebView/WebViewPrivate.h:
+
+2013-03-02  David Kilzer  <ddkilzer@apple.com>
+
+        BUILD FIX (r143637): Predeclare JSContext as an Objective-C class
+        <http://webkit.org/b/106059>
+
+        Fixes the following build failure:
+
+            In file included from Source/WebKit/ios/DefaultDelegates/WebDefaultFrameLoadDelegate.m:11:
+            In file included from Source/WebKit/mac/WebView/WebFrameLoadDelegatePrivate.h:29:
+            Source/WebKit/mac/WebView/WebFrameLoadDelegate.h:215:64: error: expected a type
+            - (void)webView:(WebView *)webView didCreateJavaScriptContext:(JSContext *)context forFrame:(WebFrame *)frame;
+                                                                           ^
+            1 error generated.
+
+        * WebView/WebFrameLoadDelegate.h: Add @class JSContext
+        declaration.
+
+2013-02-28  Alexey Proskuryakov  <ap@apple.com>
+
+        Reduce amount of rebuilding when touching networking headers
+        https://bugs.webkit.org/show_bug.cgi?id=111035
+
+        Reviewed by Eric Seidel.
+
+        Adding includes that are now necessary because WebCore headers don't have them
+        any more.
+
+        * DOM/WebDOMOperations.mm:
+        * Misc/WebNSPasteboardExtras.mm:
+        * WebCoreSupport/WebFrameNetworkingContext.mm:
+        * WebView/WebRenderLayer.mm:
+        * WebView/WebRenderNode.mm:
+
+2013-03-01  Jason Anderssen  <janderssen@gmail.com>
+
+        Move markerTextForListItem from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=110939
+
+        Reviewed by Benjamin Poulain.
+
+        * DOM/WebDOMOperations.mm:
+        * DOM/WebDOMOperationsPrivate.h:
+
+2013-02-28  Sam Weinig  <sam@webkit.org>
+
+        Add SPI for marking a WebView as doing things on behalf of another process
+        https://bugs.webkit.org/show_bug.cgi?id=111125
+
+        Reviewed by Alexey Proskuryakov.
+
+        * WebCoreSupport/WebFrameNetworkingContext.h:
+        (WebFrameNetworkingContext):
+        * WebCoreSupport/WebFrameNetworkingContext.mm:
+        (WebFrameNetworkingContext::sourceApplicationAuditData):
+        * WebView/WebView.mm:
+        (-[WebView _setSourceApplicationAuditData:]):
+        (-[WebView _sourceApplicationAuditData]):
+        * WebView/WebViewData.h:
+        * WebView/WebViewData.mm:
+        (-[WebViewPrivate dealloc]):
+        * WebView/WebViewPrivate.h:
+        Add SPI for setting a source application for a WebView.
+
+2013-03-01  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144422 and r144424.
+        http://trac.webkit.org/changeset/144422
+        http://trac.webkit.org/changeset/144424
+        https://bugs.webkit.org/show_bug.cgi?id=111167
+
+        Caused over 20 tests to fail assertion on Chromium Win port as
+        ASSERTION FAILED: m_platformRequestUpdated (Requested by
+        toyoshim on #webkit).
+
+        * DOM/WebDOMOperations.mm:
+        * Misc/WebNSPasteboardExtras.mm:
+        * WebCoreSupport/WebFrameNetworkingContext.mm:
+        * WebView/WebRenderLayer.mm:
+        * WebView/WebRenderNode.mm:
+
+2013-02-28  Alexey Proskuryakov  <ap@apple.com>
+
+        Reduce amount of rebuilding when touching networking headers
+        https://bugs.webkit.org/show_bug.cgi?id=111035
+
+        Reviewed by Eric Seidel.
+
+        Adding includes that are now necessary because WebCore headers don't have them
+        any more.
+
+        * DOM/WebDOMOperations.mm:
+        * Misc/WebNSPasteboardExtras.mm:
+        * WebCoreSupport/WebFrameNetworkingContext.mm:
+        * WebView/WebRenderLayer.mm:
+        * WebView/WebRenderNode.mm:
+
+2013-02-27  John Bauman  <jbauman@chromium.org>
+
+        Plugin in iframe may not display
+        https://bugs.webkit.org/show_bug.cgi?id=109879
+
+        Reviewed by Simon Fraser.
+
+        Ensure NetscapePluginWidget informs the plugin view of the cliprect change directly.
+
+        * Plugins/WebBaseNetscapePluginView.h:
+        * WebCoreSupport/WebFrameLoaderClient.mm:
+        (NetscapePluginWidget::clipRectChanged):
+
+2013-02-26  Alexey Proskuryakov  <ap@apple.com>
+
+        Don't add a body to platform request until necessary
+        https://bugs.webkit.org/show_bug.cgi?id=110900
+
+        Reviewed by Brady Eidson.
+
+        WebKit1 behavior is unchanged, body is added on every conversion.
+
+        * WebCoreSupport/WebFrameLoaderClient.mm:
+        (WebFrameLoaderClient::convertMainResourceLoadToDownload):
+        (WebFrameLoaderClient::dispatchDidLoadResourceFromMemoryCache):
+        (WebFrameLoaderClient::assignIdentifierToInitialRequest):
+        (WebFrameLoaderClient::dispatchWillSendRequest):
+        (WebFrameLoaderClient::dispatchDecidePolicyForResponse):
+        (WebFrameLoaderClient::dispatchDecidePolicyForNewWindowAction):
+        (WebFrameLoaderClient::dispatchDecidePolicyForNavigationAction):
+        (WebFrameLoaderClient::updateGlobalHistory):
+        (WebFrameLoaderClient::canHandleRequest):
+        * WebView/WebDataSource.mm:
+        (-[WebDataSource initialRequest]):
+        (-[WebDataSource request]):
+        * WebView/WebFrame.mm:
+        (-[WebFrame _loadData:MIMEType:textEncodingName:baseURL:unreachableURL:]):
+
+2013-02-27  Glenn Adams  <glenn@skynav.com>
+
+        Add ENABLE_CSS3_TEXT_LINE_BREAK flag.
+        https://bugs.webkit.org/show_bug.cgi?id=110944
+
+        Reviewed by Dean Jackson.
+
+        * Configurations/FeatureDefines.xcconfig:
+
 2013-02-26  Jer Noble  <jer.noble@apple.com>
 
         Unreviewed build fix; use correct macro for platform name in FeatureDefines.xcconfig.

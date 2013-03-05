@@ -3566,20 +3566,28 @@ void StyleResolver::applyProperty(CSSPropertyID id, CSSValue* value)
         return;
     }
 
+    case CSSPropertyWebkitGridStart:
     case CSSPropertyWebkitGridColumn: {
-        GridPosition column;
-        if (!createGridPosition(value, column))
+        GridPosition startPosition;
+        if (!createGridPosition(value, startPosition))
             return;
-        state.style()->setGridItemColumn(column);
+        state.style()->setGridItemStart(startPosition);
         return;
     }
+    case CSSPropertyWebkitGridBefore:
     case CSSPropertyWebkitGridRow: {
-        GridPosition row;
-        if (!createGridPosition(value, row))
+        GridPosition beforePosition;
+        if (!createGridPosition(value, beforePosition))
             return;
-        state.style()->setGridItemRow(row);
+        state.style()->setGridItemBefore(beforePosition);
         return;
     }
+    // These properties are aliased and StyleBuilder already applied the property on the prefixed version.
+    case CSSPropertyTransitionDelay:
+    case CSSPropertyTransitionDuration:
+    case CSSPropertyTransitionProperty:
+    case CSSPropertyTransitionTimingFunction:
+        return;
     // These properties are implemented in the StyleBuilder lookup table.
     case CSSPropertyBackgroundAttachment:
     case CSSPropertyBackgroundClip:

@@ -248,6 +248,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSErrorCallback.h \
 	DerivedSources/WebCore/JSErrorEvent.cpp \
 	DerivedSources/WebCore/JSErrorEvent.h \
+	DerivedSources/WebCore/JSEXTDrawBuffers.cpp \
+	DerivedSources/WebCore/JSEXTDrawBuffers.h \
 	DerivedSources/WebCore/JSEXTTextureFilterAnisotropic.cpp \
 	DerivedSources/WebCore/JSEXTTextureFilterAnisotropic.h \
 	DerivedSources/WebCore/JSEvent.cpp \
@@ -577,6 +579,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSOESStandardDerivatives.h \
 	DerivedSources/WebCore/JSOESTextureFloat.cpp \
 	DerivedSources/WebCore/JSOESTextureFloat.h \
+	DerivedSources/WebCore/JSOESTextureHalfFloat.cpp \
+	DerivedSources/WebCore/JSOESTextureHalfFloat.h \
 	DerivedSources/WebCore/JSOESVertexArrayObject.cpp \
 	DerivedSources/WebCore/JSOESVertexArrayObject.h \
 	DerivedSources/WebCore/JSOESElementIndexUint.cpp \
@@ -777,6 +781,8 @@ webcore_built_sources += \
 	DerivedSources/WebCore/JSWebGLActiveInfo.h \
 	DerivedSources/WebCore/JSWebGLBuffer.cpp \
 	DerivedSources/WebCore/JSWebGLBuffer.h \
+	DerivedSources/WebCore/JSWebGLCompressedTextureATC.cpp \
+	DerivedSources/WebCore/JSWebGLCompressedTextureATC.h \
 	DerivedSources/WebCore/JSWebGLCompressedTextureS3TC.cpp \
 	DerivedSources/WebCore/JSWebGLCompressedTextureS3TC.h \
 	DerivedSources/WebCore/JSWebGLContextAttributes.cpp \
@@ -1533,6 +1539,7 @@ dom_binding_idls += \
 	$(WebCore)/html/canvas/CanvasRenderingContext2D.idl \
 	$(WebCore)/html/canvas/DataView.idl \
 	$(WebCore)/html/canvas/DOMPath.idl \
+	$(WebCore)/html/canvas/EXTDrawBuffers.idl \
 	$(WebCore)/html/canvas/EXTTextureFilterAnisotropic.idl \
 	$(WebCore)/html/canvas/Float32Array.idl \
 	$(WebCore)/html/canvas/Float64Array.idl \
@@ -1541,6 +1548,7 @@ dom_binding_idls += \
 	$(WebCore)/html/canvas/Int8Array.idl \
 	$(WebCore)/html/canvas/OESStandardDerivatives.idl \
 	$(WebCore)/html/canvas/OESTextureFloat.idl \
+	$(WebCore)/html/canvas/OESTextureHalfFloat.idl \
 	$(WebCore)/html/canvas/OESVertexArrayObject.idl \
 	$(WebCore)/html/canvas/OESElementIndexUint.idl \
 	$(WebCore)/html/canvas/Uint16Array.idl \
@@ -1549,6 +1557,7 @@ dom_binding_idls += \
 	$(WebCore)/html/canvas/Uint8ClampedArray.idl \
 	$(WebCore)/html/canvas/WebGLActiveInfo.idl \
 	$(WebCore)/html/canvas/WebGLBuffer.idl \
+	$(WebCore)/html/canvas/WebGLCompressedTextureATC.idl \
 	$(WebCore)/html/canvas/WebGLCompressedTextureS3TC.idl \
 	$(WebCore)/html/canvas/WebGLContextAttributes.idl \
 	$(WebCore)/html/canvas/WebGLContextEvent.idl \
@@ -3273,12 +3282,16 @@ webcore_sources += \
 	Source/WebCore/html/canvas/DataView.cpp \
 	Source/WebCore/html/canvas/DataView.h \
 	Source/WebCore/html/canvas/DOMPath.h \
+	Source/WebCore/html/canvas/EXTDrawBuffers.cpp \
+	Source/WebCore/html/canvas/EXTDrawBuffers.h \
 	Source/WebCore/html/canvas/EXTTextureFilterAnisotropic.cpp \
 	Source/WebCore/html/canvas/EXTTextureFilterAnisotropic.h \
 	Source/WebCore/html/canvas/OESStandardDerivatives.cpp \
 	Source/WebCore/html/canvas/OESStandardDerivatives.h \
 	Source/WebCore/html/canvas/OESTextureFloat.cpp \
 	Source/WebCore/html/canvas/OESTextureFloat.h \
+	Source/WebCore/html/canvas/OESTextureHalfFloat.cpp \
+	Source/WebCore/html/canvas/OESTextureHalfFloat.h \
 	Source/WebCore/html/canvas/OESVertexArrayObject.cpp \
 	Source/WebCore/html/canvas/OESVertexArrayObject.h \
 	Source/WebCore/html/canvas/OESElementIndexUint.cpp \
@@ -3286,6 +3299,8 @@ webcore_sources += \
 	Source/WebCore/html/canvas/WebGLActiveInfo.h \
 	Source/WebCore/html/canvas/WebGLBuffer.cpp \
 	Source/WebCore/html/canvas/WebGLBuffer.h \
+	Source/WebCore/html/canvas/WebGLCompressedTextureATC.cpp \
+	Source/WebCore/html/canvas/WebGLCompressedTextureATC.h \
 	Source/WebCore/html/canvas/WebGLCompressedTextureS3TC.cpp \
 	Source/WebCore/html/canvas/WebGLCompressedTextureS3TC.h \
 	Source/WebCore/html/canvas/WebGLContextAttributes.cpp \
@@ -4358,6 +4373,8 @@ webcore_sources += \
 	Source/WebCore/rendering/HitTestRequest.h \
 	Source/WebCore/rendering/HitTestingTransformState.cpp \
 	Source/WebCore/rendering/HitTestingTransformState.h \
+	Source/WebCore/rendering/HitTestLocation.cpp \
+	Source/WebCore/rendering/HitTestLocation.h \
 	Source/WebCore/rendering/HitTestResult.cpp \
 	Source/WebCore/rendering/HitTestResult.h \
 	Source/WebCore/rendering/InlineBox.cpp \
@@ -5835,6 +5852,7 @@ webcore_platform_sources += \
 	Source/WebCore/platform/network/BlobData.cpp \
 	Source/WebCore/platform/network/BlobData.h \
 	Source/WebCore/platform/network/BlobRegistry.h \
+	Source/WebCore/platform/network/BlobRegistry.cpp \
 	Source/WebCore/platform/network/BlobRegistryImpl.cpp \
 	Source/WebCore/platform/network/BlobRegistryImpl.h \
 	Source/WebCore/platform/network/BlobResourceHandle.cpp \

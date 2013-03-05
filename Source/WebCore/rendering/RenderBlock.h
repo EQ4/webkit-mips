@@ -142,6 +142,15 @@ public:
     void setHasMarkupTruncation(bool b) { m_hasMarkupTruncation = b; }
     bool hasMarkupTruncation() const { return m_hasMarkupTruncation; }
 
+    void setHasMarginBeforeQuirk(bool b) { m_hasMarginBeforeQuirk = b; }
+    void setHasMarginAfterQuirk(bool b) { m_hasMarginAfterQuirk = b; }
+
+    bool hasMarginBeforeQuirk() const { return m_hasMarginBeforeQuirk; }
+    bool hasMarginAfterQuirk() const { return m_hasMarginAfterQuirk; }
+
+    bool hasMarginBeforeQuirk(const RenderBox* child) const;
+    bool hasMarginAfterQuirk(const RenderBox* child) const;
+
     RootInlineBox* createAndAppendRootInlineBox();
 
     bool generatesLineBoxesForInlineChild(RenderObject*);
@@ -438,6 +447,7 @@ public:
 
 #if ENABLE(CSS_EXCLUSIONS)
     ExclusionShapeInsideInfo* exclusionShapeInsideInfo() const;
+    ExclusionShapeInsideInfo* layoutExclusionShapeInsideInfo() const;
     bool allowsExclusionShapeInsideInfoSharing() const { return !isInline() && !isFloating(); }
 #endif
 
@@ -535,7 +545,7 @@ protected:
     void addOverflowFromInlineChildren();
     void addVisualOverflowFromTheme();
 
-    virtual void addFocusRingRects(Vector<IntRect>&, const LayoutPoint&);
+    virtual void addFocusRingRects(Vector<IntRect>&, const LayoutPoint& additionalOffset, const RenderLayerModelObject* paintContainer = 0) OVERRIDE;
 
 #if ENABLE(SVG)
     // Only used by RenderSVGText, which explicitely overrides RenderBlock::layoutBlock(), do NOT use for anything else.
@@ -548,8 +558,8 @@ protected:
     }
 #endif
 
-    void updateRegionsAndExclusionsLogicalSize();
-    void computeRegionRangeForBlock();
+    bool updateRegionsAndExclusionsLogicalSize(RenderFlowThread*);
+    void computeRegionRangeForBlock(RenderFlowThread*);
 
     void updateBlockChildDirtyBitsBeforeLayout(bool relayoutChildren, RenderBox*);
 
@@ -962,8 +972,8 @@ private:
 
         // These variables are used to detect quirky margins that we need to collapse away (in table cells
         // and in the body element).
-        bool m_marginBeforeQuirk : 1;
-        bool m_marginAfterQuirk : 1;
+        bool m_hasMarginBeforeQuirk : 1;
+        bool m_hasMarginAfterQuirk : 1;
         bool m_determinedMarginBeforeQuirk : 1;
 
         bool m_discardMargin : 1;
@@ -982,8 +992,8 @@ private:
             m_positiveMargin = 0;
             m_negativeMargin = 0;
         }
-        void setMarginBeforeQuirk(bool b) { m_marginBeforeQuirk = b; }
-        void setMarginAfterQuirk(bool b) { m_marginAfterQuirk = b; }
+        void setHasMarginBeforeQuirk(bool b) { m_hasMarginBeforeQuirk = b; }
+        void setHasMarginAfterQuirk(bool b) { m_hasMarginAfterQuirk = b; }
         void setDeterminedMarginBeforeQuirk(bool b) { m_determinedMarginBeforeQuirk = b; }
         void setPositiveMargin(LayoutUnit p) { ASSERT(!m_discardMargin); m_positiveMargin = p; }
         void setNegativeMargin(LayoutUnit n) { ASSERT(!m_discardMargin); m_negativeMargin = n; }
@@ -1011,8 +1021,8 @@ private:
         bool canCollapseMarginAfterWithChildren() const { return m_canCollapseMarginAfterWithChildren; }
         bool quirkContainer() const { return m_quirkContainer; }
         bool determinedMarginBeforeQuirk() const { return m_determinedMarginBeforeQuirk; }
-        bool marginBeforeQuirk() const { return m_marginBeforeQuirk; }
-        bool marginAfterQuirk() const { return m_marginAfterQuirk; }
+        bool hasMarginBeforeQuirk() const { return m_hasMarginBeforeQuirk; }
+        bool hasMarginAfterQuirk() const { return m_hasMarginAfterQuirk; }
         LayoutUnit positiveMargin() const { return m_positiveMargin; }
         LayoutUnit negativeMargin() const { return m_negativeMargin; }
         bool discardMargin() const { return m_discardMargin; }
@@ -1071,7 +1081,7 @@ protected:
     bool pushToNextPageWithMinimumLogicalHeight(LayoutUnit& adjustment, LayoutUnit logicalOffset, LayoutUnit minimumLogicalHeight) const;
 
     LayoutUnit adjustForUnsplittableChild(RenderBox* child, LayoutUnit logicalOffset, bool includeMargins = false); // If the child is unsplittable and can't fit on the current page, return the top of the next page/column.
-    void adjustLinePositionForPagination(RootInlineBox*, LayoutUnit& deltaOffset); // Computes a deltaOffset value that put a line at the top of the next page if it doesn't fit on the current page.
+    void adjustLinePositionForPagination(RootInlineBox*, LayoutUnit& deltaOffset, RenderFlowThread*); // Computes a deltaOffset value that put a line at the top of the next page if it doesn't fit on the current page.
     LayoutUnit adjustBlockChildForPagination(LayoutUnit logicalTopAfterClear, LayoutUnit estimateWithoutPagination, RenderBox* child, bool atBeforeSideOfBlock);
 
     // Adjust from painting offsets to the local coords of this renderer
@@ -1080,9 +1090,9 @@ protected:
     // This function is called to test a line box that has moved in the block direction to see if it has ended up in a new
     // region/page/column that has a different available line width than the old one. Used to know when you have to dirty a
     // line, i.e., that it can't be re-used.
-    bool lineWidthForPaginatedLineChanged(RootInlineBox*, LayoutUnit lineDelta = 0) const;
+    bool lineWidthForPaginatedLineChanged(RootInlineBox*, LayoutUnit lineDelta, RenderFlowThread*) const;
 
-    bool logicalWidthChangedInRegions() const;
+    bool logicalWidthChangedInRegions(RenderFlowThread*) const;
 
     virtual bool requiresColumns(int desiredColumnCount) const;
 
@@ -1235,7 +1245,9 @@ protected:
     RenderObjectChildList m_children;
     RenderLineBoxList m_lineBoxes;   // All of the root line boxes created for this block flow.  For example, <div>Hello<br>world.</div> will have two total lines for the <div>.
 
-    mutable signed m_lineHeight : 29;
+    mutable signed m_lineHeight : 27;
+    unsigned m_hasMarginBeforeQuirk : 1; // Note these quirk values can't be put in RenderBlockRareData since they are set too frequently.
+    unsigned m_hasMarginAfterQuirk : 1;
     unsigned m_beingDestroyed : 1;
     unsigned m_hasMarkupTruncation : 1;
     unsigned m_hasBorderOrPaddingLogicalWidthChanged : 1;

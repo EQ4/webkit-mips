@@ -318,6 +318,9 @@ public:
     bool drawsTransparentBackground() const { return m_drawsTransparentBackground; }
     void setDrawsTransparentBackground(bool);
 
+    WebCore::Color underlayColor() const { return m_underlayColor; }
+    void setUnderlayColor(const WebCore::Color&);
+
     void viewWillStartLiveResize();
     void viewWillEndLiveResize();
 
@@ -753,6 +756,13 @@ public:
 
     void didReceiveAuthenticationChallengeProxy(uint64_t frameID, PassRefPtr<AuthenticationChallengeProxy>);
 
+    int64_t spellDocumentTag();
+    void didFinishCheckingText(uint64_t requestID, const Vector<WebCore::TextCheckingResult>&) const;
+    void didCancelCheckingText(uint64_t requestID) const;
+
+    void connectionWillOpen(CoreIPC::Connection*);
+    void connectionWillClose(CoreIPC::Connection*);
+
     static String pluginInformationBundleIdentifierKey();
     static String pluginInformationBundleVersionKey();
     static String pluginInformationDisplayNameKey();
@@ -948,7 +958,6 @@ private:
 #endif
 
     // Spelling and grammar.
-    int64_t spellDocumentTag();
 #if USE(UNIFIED_TEXT_CHECKING)
     void checkTextOfParagraph(const String& text, uint64_t checkingTypes, Vector<WebCore::TextCheckingResult>& results);
 #endif
@@ -960,6 +969,7 @@ private:
     void getGuessesForWord(const String& word, const String& context, Vector<String>& guesses);
     void learnWord(const String& word);
     void ignoreWord(const String& word);
+    void requestCheckingOfString(uint64_t requestID, const WebCore::TextCheckingRequestData&);
 
     void setFocus(bool focused);
     void takeFocus(uint32_t direction);
@@ -1132,6 +1142,8 @@ private:
 
     bool m_drawsBackground;
     bool m_drawsTransparentBackground;
+
+    WebCore::Color m_underlayColor;
 
     bool m_areMemoryCacheClientCallsEnabled;
 

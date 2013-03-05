@@ -235,12 +235,27 @@ void NetworkJob::handleNotifyStatusReceived(int status, const String& message)
 
 void NetworkJob::notifyHeadersReceived(const BlackBerry::Platform::NetworkRequest::HeaderList& headers)
 {
+    bool cookiesEnabled = m_frame && m_frame->loader() && m_frame->loader()->client()
+        && static_cast<FrameLoaderClientBlackBerry*>(m_frame->loader()->client())->cookiesEnabled();
+
     BlackBerry::Platform::NetworkRequest::HeaderList::const_iterator endIt = headers.end();
     for (BlackBerry::Platform::NetworkRequest::HeaderList::const_iterator it = headers.begin(); it != endIt; ++it) {
+
+        // Handle Set-Cookie headers immediately, even if loading is being deferred, since any request
+        // created while loading is deferred should include all cookies received. (This especially
+        // affects Set-Cookie headers sent with a 401 response - often this causes an auth dialog to be
+        // opened, which defers loading, but the followup request using the credentials from the dialog
+        // needs to include the cookie.)
+        //
+        // This is safe because handleSetCookieHeader only updates the cookiejar, it doesn't call back
+        // into the loader.
+        String keyString(it->first);
+        if (cookiesEnabled && equalIgnoringCase(keyString, "set-cookie"))
+            handleSetCookieHeader(it->second);
+
         if (shouldDeferLoading())
             m_deferredData.deferHeaderReceived(it->first, it->second);
         else {
-            String keyString(it->first);
             String valueString;
             if (equalIgnoringCase(keyString, "Location")) {
                 // Location, like all headers, is supposed to be Latin-1. But some sites (wikipedia) send it in UTF-8.
@@ -388,9 +403,6 @@ void NetworkJob::handleNotifyHeaderReceived(const String& key, const String& val
         m_contentType = value.lower();
     else if (lowerKey == "content-disposition")
         m_contentDisposition = value;
-    else if (lowerKey == "set-cookie" && m_frame && m_frame->loader() && m_frame->loader()->client()
-        && static_cast<FrameLoaderClientBlackBerry*>(m_frame->loader()->client())->cookiesEnabled())
-        handleSetCookieHeader(value);
     else if (equalIgnoringCase(key, BlackBerry::Platform::NetworkRequest::HEADER_BLACKBERRY_FTP))
         handleFTPHeader(value);
 
@@ -839,6 +851,7 @@ NetworkJob::SendRequestResult NetworkJob::sendRequestWithCredentials(ProtectionS
 
     // We've got the scheme and realm. Now we need a username and password.
     Credential credential;
+
     if (!requireCredentials) {
         // Don't overwrite any existing credentials with the empty credential
         updateCurrentWebChallenge(AuthenticationChallenge(protectionSpace, credential, 0, m_response, ResourceError()), /* allowOverwrite */ false);
@@ -983,7 +996,8 @@ void NetworkJob::purgeCredentials(AuthenticationChallenge& challenge)
     CredentialStorage::remove(challenge.protectionSpace());
     challenge.setStored(false);
 #if ENABLE(BLACKBERRY_CREDENTIAL_PERSIST)
-    credentialBackingStore().removeLogin(m_response.url(), challenge.protectionSpace());
+    if (challenge.proposedCredential() == credentialBackingStore().getLogin(challenge.protectionSpace()))
+        credentialBackingStore().removeLogin(challenge.protectionSpace(), challenge.proposedCredential().user());
 #endif
 }
 

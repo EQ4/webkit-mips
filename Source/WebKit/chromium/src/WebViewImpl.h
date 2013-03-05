@@ -302,6 +302,7 @@ public:
                                     unsigned inactiveBackgroundColor,
                                     unsigned inactiveForegroundColor);
     virtual void performCustomContextMenuAction(unsigned action);
+    virtual void showContextMenu();
     virtual void addPageOverlay(WebPageOverlay*, int /* zOrder */);
     virtual void removePageOverlay(WebPageOverlay*);
 #if ENABLE(BATTERY_STATUS)
@@ -453,7 +454,6 @@ public:
     }
 
     WebCore::IntSize dipSize() const;
-    WebCore::IntSize layoutSize() const;
     WebCore::IntSize scaledSize(float) const;
 
     // Set the disposition for how this webview is to be initially shown.
@@ -898,8 +898,6 @@ private:
     OwnPtr<LinkHighlight> m_linkHighlight;
 #endif
     OwnPtr<ValidationMessageClientImpl> m_validationMessage;
-
-    bool m_suppressInvalidations;
 
     bool m_showFPSCounter;
     bool m_showPaintRects;

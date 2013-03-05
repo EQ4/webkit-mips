@@ -192,7 +192,7 @@ static CFURLRequestRef willSendRequest(CFURLConnectionRef conn, CFURLRequestRef 
     if (request.isNull())
         return 0;
 
-    cfRequest = request.cfURLRequest();
+    cfRequest = request.cfURLRequest(UpdateHTTPBody);
 
     CFRetain(cfRequest);
     return cfRequest;
@@ -218,7 +218,7 @@ static void didReceiveResponse(CFURLConnectionRef conn, CFURLResponseRef cfRespo
     if (statusCode != 304)
         adjustMIMETypeIfNecessary(cfResponse);
 
-    if (_CFURLRequestCopyProtocolPropertyForKey(handle->firstRequest().cfURLRequest(), CFSTR("ForceHTMLMIMEType")))
+    if (_CFURLRequestCopyProtocolPropertyForKey(handle->firstRequest().cfURLRequest(DoNotUpdateHTTPBody), CFSTR("ForceHTMLMIMEType")))
         wkSetCFURLResponseMIMEType(cfResponse, CFSTR("text/html"));
 #else
     if (!CFURLResponseGetMIMEType(cfResponse)) {
@@ -379,22 +379,6 @@ ResourceHandle::~ResourceHandle()
     LOG(Network, "CFNet - Destroying job %p (%s)", this, d->m_firstRequest.url().string().utf8().data());
 }
 
-static CFDictionaryRef createConnectionProperties(bool shouldUseCredentialStorage)
-{
-    static const CFStringRef webKitPrivateSessionCF = CFSTR("WebKitPrivateSession");
-    static const CFStringRef _kCFURLConnectionSessionID = CFSTR("_kCFURLConnectionSessionID");
-    static const CFStringRef kCFURLConnectionSocketStreamProperties = CFSTR("kCFURLConnectionSocketStreamProperties");
-
-    CFDictionaryRef sessionID = shouldUseCredentialStorage ?
-        CFDictionaryCreate(0, 0, 0, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks) :
-        CFDictionaryCreate(0, (const void**)&_kCFURLConnectionSessionID, (const void**)&webKitPrivateSessionCF, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-
-    CFDictionaryRef propertiesDictionary = CFDictionaryCreate(0, (const void**)&kCFURLConnectionSocketStreamProperties, (const void**)&sessionID, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
-
-    CFRelease(sessionID);
-    return propertiesDictionary;
-}
-
 void ResourceHandle::createCFURLConnection(bool shouldUseCredentialStorage, bool shouldContentSniff)
 {
     if ((!d->m_user.isEmpty() || !d->m_pass.isEmpty()) && !firstRequest().url().protocolIsInHTTPFamily()) {
@@ -425,7 +409,7 @@ void ResourceHandle::createCFURLConnection(bool shouldUseCredentialStorage, bool
         applyBasicAuthorizationHeader(firstRequest(), d->m_initialCredential);
     }
 
-    RetainPtr<CFMutableURLRequestRef> request = adoptCF(CFURLRequestCreateMutableCopy(kCFAllocatorDefault, firstRequest().cfURLRequest()));
+    RetainPtr<CFMutableURLRequestRef> request = adoptCF(CFURLRequestCreateMutableCopy(kCFAllocatorDefault, firstRequest().cfURLRequest(UpdateHTTPBody)));
     wkSetRequestStorageSession(d->m_storageSession.get(), request.get());
     
     if (!shouldContentSniff)
@@ -473,9 +457,22 @@ void ResourceHandle::createCFURLConnection(bool shouldUseCredentialStorage, bool
         0
 #endif
     };
-    RetainPtr<CFDictionaryRef> connectionProperties(AdoptCF, createConnectionProperties(shouldUseCredentialStorage));
 
-    d->m_connection.adoptCF(CFURLConnectionCreateWithProperties(0, request.get(), reinterpret_cast<CFURLConnectionClient*>(&client), connectionProperties.get()));
+    CFMutableDictionaryRef streamProperties  = CFDictionaryCreateMutable(0, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    if (!shouldUseCredentialStorage)
+        CFDictionarySetValue(streamProperties, CFSTR("_kCFURLConnectionSessionID"), CFSTR("WebKitPrivateSession"));
+
+#if PLATFORM(IOS) || (PLATFORM(MAC) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090)
+    RetainPtr<CFDataRef> sourceApplicationAuditData = d->m_context->sourceApplicationAuditData();
+    if (sourceApplicationAuditData)
+        CFDictionarySetValue(streamProperties, CFSTR("kCFStreamPropertySourceApplication"), sourceApplicationAuditData.get());
+#endif
+
+    static const CFStringRef kCFURLConnectionSocketStreamProperties = CFSTR("kCFURLConnectionSocketStreamProperties");
+    RetainPtr<CFDictionaryRef> propertiesDictionary = adoptCF(CFDictionaryCreate(0, (const void**)&kCFURLConnectionSocketStreamProperties, (const void**)&streamProperties, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));
+    CFRelease(streamProperties);
+
+    d->m_connection.adoptCF(CFURLConnectionCreateWithProperties(0, request.get(), reinterpret_cast<CFURLConnectionClient*>(&client), propertiesDictionary.get()));
 }
 
 bool ResourceHandle::start()

@@ -103,6 +103,7 @@
 #include <WebCore/HTMLPlugInElement.h>
 #include <WebCore/HistoryItem.h>
 #include <WebCore/KeyboardEvent.h>
+#include <WebCore/MIMETypeRegistry.h>
 #include <WebCore/MouseEvent.h>
 #include <WebCore/Page.h>
 #include <WebCore/PlatformKeyboardEvent.h>
@@ -237,7 +238,6 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 #if PLATFORM(MAC)
     , m_pdfPluginEnabled(false)
     , m_windowIsVisible(false)
-    , m_isSmartInsertDeleteEnabled(parameters.isSmartInsertDeleteEnabled)
     , m_layerHostingMode(parameters.layerHostingMode)
     , m_keyboardEventBeingInterpreted(0)
 #elif PLATFORM(GTK)
@@ -346,6 +346,8 @@ WebPage::WebPage(uint64_t pageID, const WebPageCreationParameters& parameters)
 
     setDrawsBackground(parameters.drawsBackground);
     setDrawsTransparentBackground(parameters.drawsTransparentBackground);
+
+    setUnderlayColor(parameters.underlayColor);
 
     setPaginationMode(parameters.paginationMode);
     setPaginationBehavesLikeColumns(parameters.paginationBehavesLikeColumns);
@@ -559,6 +561,16 @@ EditorState WebPage::editorState() const
     ASSERT(frame);
 
     EditorState result;
+
+    if (PluginView* pluginView = focusedPluginViewForFrame(frame)) {
+        if (!pluginView->getSelectionString().isNull()) {
+            result.selectionIsNone = false;
+            result.selectionIsRange = true;
+            result.isInPlugin = true;
+            return result;
+        }
+    }
+
     result.selectionIsNone = frame->selection()->isNone();
     result.selectionIsRange = frame->selection()->isRange();
     result.isContentEditable = frame->selection()->isContentEditable();
@@ -691,7 +703,7 @@ PassRefPtr<ImmutableArray> WebPage::trackedRepaintRects()
     return ImmutableArray::adopt(vector);
 }
 
-static PluginView* focusedPluginViewForFrame(Frame* frame)
+PluginView* WebPage::focusedPluginViewForFrame(Frame* frame)
 {
     if (!frame->document()->isPluginDocument())
         return 0;
@@ -705,7 +717,7 @@ static PluginView* focusedPluginViewForFrame(Frame* frame)
     return pluginView;
 }
 
-static PluginView* pluginViewForFrame(Frame* frame)
+PluginView* WebPage::pluginViewForFrame(Frame* frame)
 {
     if (!frame->document()->isPluginDocument())
         return 0;
@@ -1234,7 +1246,6 @@ void WebPage::setUseFixedLayout(bool fixed)
 #if USE(COORDINATED_GRAPHICS)
     m_page->settings()->setAcceleratedCompositingForFixedPositionEnabled(fixed);
     m_page->settings()->setFixedPositionCreatesStackingContext(fixed);
-    m_page->settings()->setApplyDeviceScaleFactorInCompositor(fixed);
     m_page->settings()->setApplyPageScaleFactorInCompositor(fixed);
 #endif
 
@@ -2390,6 +2401,10 @@ void WebPage::updatePreferences(const WebPreferencesStore& store)
 #endif
 
     settings->setLogsPageMessagesToSystemConsoleEnabled(store.getBoolValueForKey(WebPreferencesKey::logsPageMessagesToSystemConsoleEnabledKey()));
+    settings->setAsynchronousSpellCheckingEnabled(store.getBoolValueForKey(WebPreferencesKey::asynchronousSpellCheckingEnabledKey()));
+
+    settings->setSmartInsertDeleteEnabled(store.getBoolValueForKey(WebPreferencesKey::smartInsertDeleteEnabledKey()));
+    settings->setShowsURLsInToolTips(store.getBoolValueForKey(WebPreferencesKey::showsURLsInToolTipsEnabledKey()));
 
     platformPreferencesDidChange(store);
 
@@ -3762,6 +3777,11 @@ void WebPage::cancelComposition()
 }
 #endif
 
+void WebPage::didChangeSelection()
+{
+    send(Messages::WebPageProxy::EditorStateChanged(editorState()));
+}
+
 void WebPage::setMainFrameInViewSourceMode(bool inViewSourceMode)
 {
     m_mainFrame->coreFrame()->setInViewSourceMode(inViewSourceMode);
@@ -3780,6 +3800,54 @@ void WebPage::setMinimumLayoutWidth(double minimumLayoutWidth)
         corePage()->mainFrame()->view()->enableAutoSizeMode(true, IntSize(minimumLayoutWidth, 1), IntSize(maximumSize, maximumSize));
     else
         corePage()->mainFrame()->view()->enableAutoSizeMode(false, IntSize(), IntSize());
+}
+
+bool WebPage::isSmartInsertDeleteEnabled()
+{
+    return m_page->settings()->smartInsertDeleteEnabled();
+}
+
+void WebPage::setSmartInsertDeleteEnabled(bool enabled)
+{
+    m_page->settings()->setSmartInsertDeleteEnabled(enabled);
+}
+
+bool WebPage::canShowMIMEType(const String& MIMEType) const
+{
+    if (MIMETypeRegistry::canShowMIMEType(MIMEType))
+        return true;
+
+    if (PluginData* pluginData = m_page->pluginData()) {
+        if (pluginData->supportsMimeType(MIMEType) && m_page->settings()->arePluginsEnabled())
+            return true;
+    }
+
+    return false;
+}
+
+void WebPage::addTextCheckingRequest(uint64_t requestID, PassRefPtr<TextCheckingRequest> request)
+{
+    m_pendingTextCheckingRequestMap.add(requestID, request);
+}
+
+void WebPage::didFinishCheckingText(uint64_t requestID, const Vector<TextCheckingResult>& result)
+{
+    TextCheckingRequest* request = m_pendingTextCheckingRequestMap.get(requestID).get();
+    if (!request)
+        return;
+
+    request->didSucceed(result);
+    m_pendingTextCheckingRequestMap.remove(requestID);
+}
+
+void WebPage::didCancelCheckingText(uint64_t requestID)
+{
+    TextCheckingRequest* request = m_pendingTextCheckingRequestMap.get(requestID).get();
+    if (!request)
+        return;
+
+    request->didCancel();
+    m_pendingTextCheckingRequestMap.remove(requestID);
 }
 
 } // namespace WebKit

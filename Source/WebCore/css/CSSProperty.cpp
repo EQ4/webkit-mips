@@ -489,6 +489,11 @@ bool CSSProperty::isInheritedProperty(CSSPropertyID propertyID)
     case CSSPropertyTextUnderlineStyle:
     case CSSPropertyTextUnderlineWidth:
     case CSSPropertyTop:
+    case CSSPropertyTransition:
+    case CSSPropertyTransitionDelay:
+    case CSSPropertyTransitionDuration:
+    case CSSPropertyTransitionProperty:
+    case CSSPropertyTransitionTimingFunction:
     case CSSPropertyUnicodeBidi:
     case CSSPropertyUnicodeRange:
     case CSSPropertyVerticalAlign:
@@ -578,6 +583,8 @@ bool CSSProperty::isInheritedProperty(CSSPropertyID propertyID)
     case CSSPropertyWebkitGridAutoFlow:
     case CSSPropertyWebkitGridColumns:
     case CSSPropertyWebkitGridRows:
+    case CSSPropertyWebkitGridStart:
+    case CSSPropertyWebkitGridBefore:
     case CSSPropertyWebkitGridColumn:
     case CSSPropertyWebkitGridRow:
     case CSSPropertyWebkitLineClamp:

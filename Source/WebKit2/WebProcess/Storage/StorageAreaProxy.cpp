@@ -27,6 +27,7 @@
 #include "StorageAreaProxy.h"
 
 #include "SecurityOriginData.h"
+#include "StorageAreaProxyMessages.h"
 #include "StorageManagerMessages.h"
 #include "StorageNamespaceProxy.h"
 #include "WebProcess.h"
@@ -58,11 +59,13 @@ StorageAreaProxy::StorageAreaProxy(StorageNamespaceProxy* storageNamespaceProxy,
     , m_storageAreaID(generateStorageAreaID())
 {
     WebProcess::shared().connection()->send(Messages::StorageManager::CreateStorageArea(m_storageAreaID, storageNamespaceProxy->storageNamespaceID(), SecurityOriginData::fromSecurityOrigin(securityOrigin.get())), 0);
+    WebProcess::shared().addMessageReceiver(Messages::StorageAreaProxy::messageReceiverName(), m_storageAreaID, this);
 }
 
 StorageAreaProxy::~StorageAreaProxy()
 {
     WebProcess::shared().connection()->send(Messages::StorageManager::DestroyStorageArea(m_storageAreaID), 0);
+    WebProcess::shared().removeMessageReceiver(Messages::StorageAreaProxy::messageReceiverName(), m_storageAreaID);
 }
 
 unsigned StorageAreaProxy::length(ExceptionCode& ec, Frame* sourceFrame)
@@ -80,11 +83,19 @@ unsigned StorageAreaProxy::length(ExceptionCode& ec, Frame* sourceFrame)
     return m_storageMap->length();
 }
 
-String StorageAreaProxy::key(unsigned index, ExceptionCode&, Frame* sourceFrame)
+String StorageAreaProxy::key(unsigned index, ExceptionCode& ec, Frame* sourceFrame)
 {
-    // FIXME: Implement this.
-    ASSERT_NOT_REACHED();
-    return String();
+    ec = 0;
+    if (!canAccessStorage(sourceFrame)) {
+        ec = SECURITY_ERR;
+        return String();
+    }
+    if (disabledByPrivateBrowsingInFrame(sourceFrame))
+        return String();
+
+    loadValuesIfNeeded();
+
+    return m_storageMap->key(index);
 }
 
 String StorageAreaProxy::getItem(const String& key, ExceptionCode& ec, Frame* sourceFrame)
@@ -131,7 +142,7 @@ void StorageAreaProxy::setItem(const String& key, const String& value, Exception
     if (oldValue == value)
         return;
 
-    WebProcess::shared().connection()->send(Messages::StorageManager::SetItem(m_storageAreaID, key, value), 0);
+    WebProcess::shared().connection()->send(Messages::StorageManager::SetItem(m_storageAreaID, key, value, sourceFrame->document()->url()), 0);
 }
 
 void StorageAreaProxy::removeItem(const String& key, ExceptionCode&, Frame* sourceFrame)
@@ -146,10 +157,19 @@ void StorageAreaProxy::clear(ExceptionCode&, Frame* sourceFrame)
     ASSERT_NOT_REACHED();
 }
 
-bool StorageAreaProxy::contains(const String& key, ExceptionCode&, Frame* sourceFrame)
+bool StorageAreaProxy::contains(const String& key, ExceptionCode& ec, Frame* sourceFrame)
 {
-    // FIXME: Implement this.
-    return false;
+    ec = 0;
+    if (!canAccessStorage(sourceFrame)) {
+        ec = SECURITY_ERR;
+        return false;
+    }
+    if (disabledByPrivateBrowsingInFrame(sourceFrame))
+        return false;
+
+    loadValuesIfNeeded();
+
+    return m_storageMap->contains(key);
 }
 
 bool StorageAreaProxy::canAccessStorage(Frame* frame)
@@ -159,8 +179,6 @@ bool StorageAreaProxy::canAccessStorage(Frame* frame)
 
 size_t StorageAreaProxy::memoryBytesUsedByCache()
 {
-    // FIXME: Implement this.
-    ASSERT_NOT_REACHED();
     return 0;
 }
 
@@ -178,6 +196,17 @@ void StorageAreaProxy::closeDatabaseIfIdle()
 {
     // FIXME: Implement this.
     ASSERT_NOT_REACHED();
+}
+
+
+void StorageAreaProxy::didSetItem(const String& key, bool quotaError)
+{
+    // FIXME: Implement this.
+}
+
+void StorageAreaProxy::dispatchStorageEvent(const String& key, const String& oldValue, const String& newValue, const String& urlString)
+{
+    // FIXME: Implement this.
 }
 
 bool StorageAreaProxy::disabledByPrivateBrowsingInFrame(const Frame* sourceFrame) const

@@ -59,6 +59,7 @@
 #include <WebCore/PageVisibilityState.h>
 #include <WebCore/PlatformScreen.h>
 #include <WebCore/ScrollTypes.h>
+#include <WebCore/TextChecking.h>
 #include <WebCore/WebCoreKeyboardUIMode.h>
 #include <wtf/HashMap.h>
 #include <wtf/OwnPtr.h>
@@ -116,8 +117,10 @@ namespace WebCore {
     class ResourceResponse;
     class ResourceRequest;
     class SharedBuffer;
+    class TextCheckingRequest;
     class VisibleSelection;
     struct KeypressCommand;
+    struct TextCheckingResult;
 }
 
 namespace WebKit {
@@ -328,6 +331,9 @@ public:
     bool drawsBackground() const { return m_drawsBackground; }
     bool drawsTransparentBackground() const { return m_drawsTransparentBackground; }
 
+    void setUnderlayColor(const WebCore::Color& color) { m_underlayColor = color; }
+    WebCore::Color underlayColor() const { return m_underlayColor; }
+
     void stopLoading();
     void stopLoadingFrame(uint64_t frameID);
     void setDefersLoading(bool deferLoading);
@@ -427,6 +433,8 @@ public:
     void cancelComposition();
 #endif
 
+    void didChangeSelection();
+
 #if PLATFORM(MAC)
     void registerUIProcessAccessibilityTokens(const CoreIPC::DataReference& elemenToken, const CoreIPC::DataReference& windowToken);
     WKAccessibilityWebPageObject* accessibilityRemoteObject();
@@ -480,8 +488,10 @@ public:
     void speak(const String&);
     void stopSpeaking();
 
-    bool isSmartInsertDeleteEnabled() const { return m_isSmartInsertDeleteEnabled; }
 #endif
+
+    bool isSmartInsertDeleteEnabled();
+    void setSmartInsertDeleteEnabled(bool);
 
     void replaceSelectionWithText(WebCore::Frame*, const String&);
     void clearSelection();
@@ -604,6 +614,12 @@ public:
 
     void setMinimumLayoutWidth(double);
     double minimumLayoutWidth() const { return m_minimumLayoutWidth; }
+
+    bool canShowMIMEType(const String& MIMEType) const;
+
+    void addTextCheckingRequest(uint64_t requestID, PassRefPtr<WebCore::TextCheckingRequest>);
+    void didFinishCheckingText(uint64_t requestID, const Vector<WebCore::TextCheckingResult>&);
+    void didCancelCheckingText(uint64_t requestID);
 
 private:
     WebPage(uint64_t pageID, const WebPageCreationParameters&);
@@ -768,10 +784,6 @@ private:
     void capitalizeWord();
 #endif
 
-#if PLATFORM(MAC)
-    void setSmartInsertDeleteEnabled(bool isSmartInsertDeleteEnabled) { m_isSmartInsertDeleteEnabled = isSmartInsertDeleteEnabled; }
-#endif
-
 #if ENABLE(CONTEXT_MENUS)
     void didSelectItemFromActiveContextMenu(const WebContextMenuItemData&);
 #endif
@@ -784,6 +796,9 @@ private:
     void setMainFrameInViewSourceMode(bool);
 
     static bool platformCanHandleRequest(const WebCore::ResourceRequest&);
+
+    static PluginView* focusedPluginViewForFrame(WebCore::Frame*);
+    static PluginView* pluginViewForFrame(WebCore::Frame*);
 
     OwnPtr<WebCore::Page> m_page;
     RefPtr<WebFrame> m_mainFrame;
@@ -798,10 +813,14 @@ private:
 
     HashSet<PluginView*> m_pluginViews;
 
+    HashMap<uint64_t, RefPtr<WebCore::TextCheckingRequest> > m_pendingTextCheckingRequestMap;
+
     bool m_useFixedLayout;
 
     bool m_drawsBackground;
     bool m_drawsTransparentBackground;
+
+    WebCore::Color m_underlayColor;
 
     bool m_isInRedo;
     bool m_isClosed;
@@ -821,9 +840,6 @@ private:
 
     // Whether the containing window is visible or not.
     bool m_windowIsVisible;
-
-    // Whether smart insert/delete is enabled or not.
-    bool m_isSmartInsertDeleteEnabled;
 
     // The frame of the containing window in screen coordinates.
     WebCore::IntRect m_windowFrameInScreenCoordinates;

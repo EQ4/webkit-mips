@@ -965,6 +965,7 @@ void InputHandler::updateFormState()
     if (!m_nextFocusableTextElement && !m_previousFocusableTextElement) {
         m_hasSubmitButton = false;
         InputLog(Platform::LogLevelInfo, "InputHandler::updateFormState no valid elements found, clearing state.");
+    }
 }
 
 void InputHandler::focusNextField()
@@ -1381,22 +1382,13 @@ void InputHandler::ensureFocusTextElementVisible(CaretScrollType scrollType)
         }
     }
 
-    if (destinationScrollLocation != mainFrameView->scrollPosition() || zoomScaleRequired != m_webPage->currentScale()) {
-        InputLog(Platform::LogLevelInfo,
-            "InputHandler::ensureFocusTextElementVisible zooming in to %f from %f and scrolling to point %s from %s",
-            zoomScaleRequired, m_webPage->currentScale(),
-            Platform::IntPoint(destinationScrollLocation).toString().c_str(),
-            Platform::IntPoint(mainFrameView->scrollPosition()).toString().c_str());
+    InputLog(Platform::LogLevelInfo,
+        "InputHandler::ensureFocusTextElementVisible zooming in to %f from %f and scrolling to point %s from %s",
+        zoomScaleRequired, m_webPage->currentScale(),
+        Platform::IntPoint(destinationScrollLocation).toString().c_str(),
+        Platform::IntPoint(mainFrameView->scrollPosition()).toString().c_str());
 
-        // Animate to given scroll position & zoom level
-        m_webPage->m_finalBlockPoint = WebCore::FloatPoint(destinationScrollLocation);
-        m_webPage->m_blockZoomFinalScale = zoomScaleRequired;
-        m_webPage->m_shouldReflowBlock = false;
-        m_webPage->m_userPerformedManualZoom = true;
-        m_webPage->m_userPerformedManualScroll = true;
-        m_webPage->m_shouldConstrainScrollingToContentEdge = shouldConstrainScrollingToContentEdge;
-        m_webPage->client()->animateBlockZoom(zoomScaleRequired, m_webPage->m_finalBlockPoint);
-    }
+    m_webPage->animateToScaleAndDocumentScrollPosition(zoomScaleRequired, WebCore::FloatPoint(destinationScrollLocation), shouldConstrainScrollingToContentEdge);
 }
 
 void InputHandler::ensureFocusPluginElementVisible()
@@ -1674,6 +1666,14 @@ void InputHandler::cancelSelection()
     setCursorPosition(selectionStartPosition);
 }
 
+bool InputHandler::isNavigationKey(unsigned character) const
+{
+    return character == KEYCODE_UP
+        || character == KEYCODE_DOWN
+        || character == KEYCODE_LEFT
+        || character == KEYCODE_RIGHT;
+}
+
 bool InputHandler::handleKeyboardInput(const Platform::KeyboardEvent& keyboardEvent, bool changeIsPartOfComposition)
 {
     InputLog(Platform::LogLevelInfo,
@@ -1703,8 +1703,12 @@ bool InputHandler::handleKeyboardInput(const Platform::KeyboardEvent& keyboardEv
     // If we aren't specifically part of a composition, fail, IMF should never send key input
     // while composing text. If IMF has failed, we should have already finished the
     // composition manually. There is a caveat for KeyUp which is explained above.
-    if (!changeIsPartOfComposition && compositionActive())
-        removeAttributedTextMarker();
+    if (!changeIsPartOfComposition && compositionActive()) {
+        if (type == Platform::KeyboardEvent::KeyDown && isNavigationKey(keyboardEvent.character()))
+            removeAttributedTextMarker();
+        else
+            return false;
+    }
 
     ProcessingChangeGuard guard(this);
 

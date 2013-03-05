@@ -50,6 +50,7 @@ class KURL;
 class Node;
 class Range;
 class SubstituteData;
+struct FrameLoadRequest;
 struct WindowFeatures;
 }
 
@@ -77,7 +78,7 @@ public:
     virtual WebString assignedName() const;
     virtual void setName(const WebString&);
     virtual long long identifier() const;
-    virtual WebVector<WebIconURL> iconURLs(int iconTypes) const;
+    virtual WebVector<WebIconURL> iconURLs(int iconTypesMask) const;
     virtual WebSize scrollOffset() const;
     virtual void setScrollOffset(const WebSize&);
     virtual WebSize minimumScrollOffset() const;

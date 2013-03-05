@@ -1,3 +1,86 @@
+2013-03-03  Adam Barth  <abarth@webkit.org>
+
+        Unreviewed rollout of http://trac.webkit.org/r144530
+        As described in https://bugs.webkit.org/show_bug.cgi?id=111167 and
+        https://bugs.webkit.org/show_bug.cgi?id=111035, this patch caused a
+        large number of ASSERTs in chromium-win.
+
+        * webkit/webkitwebpolicydecision.cpp:
+
+2013-03-02  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move computedStyleIncludingVisitedInfo from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109772
+
+        Reviewed by Andreas Kling.
+
+        * WebCoreSupport/DumpRenderTreeSupportGtk.cpp:
+        * WebCoreSupport/DumpRenderTreeSupportGtk.h:
+        (DumpRenderTreeSupportGtk):
+
+2013-02-28  Alexey Proskuryakov  <ap@apple.com>
+
+        Reduce amount of rebuilding when touching networking headers
+        https://bugs.webkit.org/show_bug.cgi?id=111035
+
+        Reviewed by Eric Seidel.
+
+        Adding includes that are now necessary because WebCore headers don't have them
+        any more.
+
+        * webkit/webkitwebpolicydecision.cpp:
+
+2013-03-01  Jason Anderssen  <janderssen@gmail.com>
+
+        Move markerTextForListItem from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=110939
+
+        Reviewed by Benjamin Poulain.
+
+        * WebCoreSupport/DumpRenderTreeSupportGtk.cpp:
+        * WebCoreSupport/DumpRenderTreeSupportGtk.h:
+        (DumpRenderTreeSupportGtk):
+
+2013-03-01  Martin Robinson  <mrobinson@igalia.com>
+
+        [GTK] Expose more of the configuration step to the gyp build
+        https://bugs.webkit.org/show_bug.cgi?id=111213
+
+        Reviewed by Dirk Pranke.
+
+        Expose more of the configuration phase to the gyp build, including WebKit features
+        and binary paths.
+
+        * gyp/Configuration.gypi.in: Add templatized gyp variables for the new configuration bits.
+        * gyp/autogen.sh: Properly link up the WebKit features script. So we can access it
+        relatively as if we were at the top-level of the source directory.
+        * gyp/configure.ac: Export the WebKit features.
+
+2013-03-01  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144422 and r144424.
+        http://trac.webkit.org/changeset/144422
+        http://trac.webkit.org/changeset/144424
+        https://bugs.webkit.org/show_bug.cgi?id=111167
+
+        Caused over 20 tests to fail assertion on Chromium Win port as
+        ASSERTION FAILED: m_platformRequestUpdated (Requested by
+        toyoshim on #webkit).
+
+        * webkit/webkitwebpolicydecision.cpp:
+
+2013-02-28  Alexey Proskuryakov  <ap@apple.com>
+
+        Reduce amount of rebuilding when touching networking headers
+        https://bugs.webkit.org/show_bug.cgi?id=111035
+
+        Reviewed by Eric Seidel.
+
+        Adding includes that are now necessary because WebCore headers don't have them
+        any more.
+
+        * webkit/webkitwebpolicydecision.cpp:
+
 2013-02-26  Martin Robinson  <mrobinson@igalia.com>
 
         REGRESSION (r143619): Crashes in three layout tests

@@ -262,14 +262,36 @@ void WebViewHost::didAutoResize(const WebSize& newSize)
     setWindowRect(WebRect(0, 0, newSize.width, newSize.height));
 }
 
+class WebViewHostDRTLayerTreeViewClient : public webkit_support::DRTLayerTreeViewClient {
+public:
+    explicit WebViewHostDRTLayerTreeViewClient(WebViewHost* host)
+        : m_host(host) { }
+    virtual ~WebViewHostDRTLayerTreeViewClient() { }
+
+    virtual void Layout() { m_host->webView()->layout(); }
+    virtual void ScheduleComposite() { m_host->proxy()->scheduleComposite(); }
+
+private:
+    WebViewHost* m_host;
+};
+
 void WebViewHost::initializeLayerTreeView(WebLayerTreeViewClient* client, const WebLayer& rootLayer, const WebLayerTreeView::Settings& settings)
 {
-    if (m_shell->softwareCompositingEnabled())
-        m_layerTreeView = adoptPtr(webkit_support::CreateLayerTreeViewSoftware(client));
-    else
-        m_layerTreeView = adoptPtr(webkit_support::CreateLayerTreeView3d(client));
+    m_layerTreeViewClient = adoptPtr(new WebViewHostDRTLayerTreeViewClient(this));
+    if (m_shell->softwareCompositingEnabled()) {
+        m_layerTreeView = adoptPtr(webkit_support::CreateLayerTreeView(
+            webkit_support::SOFTWARE_CONTEXT,
+            m_layerTreeViewClient.get(),
+            m_shell->webCompositorThread()));
+    } else {
+        m_layerTreeView = adoptPtr(webkit_support::CreateLayerTreeView(
+            webkit_support::MESA_CONTEXT,
+            m_layerTreeViewClient.get(),
+            m_shell->webCompositorThread()));
+    }
 
     ASSERT(m_layerTreeView);
+    updateViewportSize();
     m_layerTreeView->setRootLayer(rootLayer);
     m_layerTreeView->setSurfaceReady();
 }
@@ -287,12 +309,10 @@ void WebViewHost::scheduleAnimation()
 
 void WebViewHost::didFocus()
 {
-    m_shell->setFocus(webWidget(), true);
 }
 
 void WebViewHost::didBlur()
 {
-    m_shell->setFocus(webWidget(), false);
 }
 
 WebScreenInfo WebViewHost::screenInfo()
@@ -352,6 +372,7 @@ void WebViewHost::setWindowRect(const WebRect& rect)
     int width = m_windowRect.width - border2;
     int height = m_windowRect.height - border2;
     webWidget()->resize(WebSize(width, height));
+    updateViewportSize();
 }
 
 WebRect WebViewHost::rootWindowRect()
@@ -603,11 +624,15 @@ void WebViewHost::setDatabaseQuota(int quota)
 void WebViewHost::setDeviceScaleFactor(float deviceScaleFactor)
 {
     webView()->setDeviceScaleFactor(deviceScaleFactor);
+    updateViewportSize();
 }
 
-void WebViewHost::setFocus(bool focused)
+void WebViewHost::setFocus(WebTestProxyBase* proxy, bool focused)
 {
-    m_shell->setFocus(m_shell->webView(), focused);
+    for (size_t i = 0; i < m_shell->windowList().size(); ++i) {
+        if (m_shell->windowList()[i]->proxy() == proxy)
+            m_shell->setFocus(m_shell->windowList()[i]->webWidget(), focused);
+    }
 }
 
 void WebViewHost::setAcceptAllCookies(bool acceptCookies)
@@ -925,6 +950,16 @@ void WebViewHost::updateSessionHistory(WebFrame* frame)
         return;
 
     entry->setContentState(historyItem);
+}
+
+void WebViewHost::updateViewportSize()
+{
+    if (!m_layerTreeView)
+        return;
+
+    WebSize deviceViewportSize(webWidget()->size().width * webView()->deviceScaleFactor(),
+        webWidget()->size().height * webView()->deviceScaleFactor());
+    m_layerTreeView->setViewportSize(webWidget()->size(), deviceViewportSize);
 }
 
 void WebViewHost::printFrameDescription(WebFrame* webframe)

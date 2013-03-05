@@ -680,16 +680,6 @@ static JSValueRef keepWebHistoryCallback(JSContextRef context, JSObjectRef funct
     return JSValueMakeUndefined(context);
 }
 
-static JSValueRef computedStyleIncludingVisitedInfoCallback(JSContextRef context, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
-{
-    if (argumentCount != 1)
-        return JSValueMakeUndefined(context);
-    
-    // Has mac implementation
-    TestRunner* controller = static_cast<TestRunner*>(JSObjectGetPrivate(thisObject));
-    return controller->computedStyleIncludingVisitedInfo(context, arguments[0]);
-}
-
 static JSValueRef notifyDoneCallback(JSContextRef context, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
 {
     // Has mac & windows implementation
@@ -1765,14 +1755,6 @@ static JSValueRef abortModalCallback(JSContextRef context, JSObjectRef function,
     return JSValueMakeUndefined(context);
 }
 
-static JSValueRef markerTextForListItemCallback(JSContextRef context, JSObjectRef, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
-{
-    TestRunner* controller = static_cast<TestRunner*>(JSObjectGetPrivate(thisObject));
-    if (argumentCount < 1)
-        return JSValueMakeUndefined(context);
-    return JSValueMakeString(context, controller->markerTextForListItem(context, arguments[0]).get());
-}
-
 static JSValueRef authenticateSessionCallback(JSContextRef context, JSObjectRef, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception)
 {
     // authenticateSession(url, username, password)
@@ -2078,7 +2060,6 @@ JSStaticFunction* TestRunner::staticFunctions()
         { "clearBackForwardList", clearBackForwardListCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "clearPersistentUserStyleSheet", clearPersistentUserStyleSheetCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "closeWebInspector", closeWebInspectorCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
-        { "computedStyleIncludingVisitedInfo", computedStyleIncludingVisitedInfoCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "decodeHostName", decodeHostNameCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "disallowIncreaseForApplicationCacheQuota", disallowIncreaseForApplicationCacheQuotaCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "dispatchPendingLoadRequests", dispatchPendingLoadRequestsCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
@@ -2116,7 +2097,6 @@ JSStaticFunction* TestRunner::staticFunctions()
         { "isCommandEnabled", isCommandEnabledCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "keepWebHistory", keepWebHistoryCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "numberOfPendingGeolocationPermissionRequests", numberOfPendingGeolocationPermissionRequestsCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
-        { "markerTextForListItem", markerTextForListItemCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "notifyDone", notifyDoneCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "overridePreference", overridePreferenceCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },
         { "pathToLocalResource", pathToLocalResourceCallback, kJSPropertyAttributeReadOnly | kJSPropertyAttributeDontDelete },

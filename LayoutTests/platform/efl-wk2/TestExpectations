@@ -224,9 +224,8 @@ webkit.org/b/103883 css3/selectors3/xml/css3-modsel-1.xml [ Failure Pass ]
 webkit.org/b/103883 css3/selectors3/xhtml/css3-modsel-1.xml [ Failure Pass ]
 
 # Assertion failure and incorrect results on our port after r140999 (webkit.org/b/106142)
-webkit.org/b/108257 compositing/overflow/automatically-opt-into-composited-scrolling.html [ Crash Failure ]
-webkit.org/b/108257 compositing/overflow/composited-scrolling-creates-a-stacking-container.html [ Crash Failure ]
-webkit.org/b/108257 compositing/overflow/clip-content-under-overflow-controls.html [ Crash Pass ]
+webkit.org/b/108257 compositing/overflow/automatically-opt-into-composited-scrolling.html [ Failure ]
+webkit.org/b/108257 compositing/overflow/composited-scrolling-creates-a-stacking-container.html [ Failure ]
 
 # Asserts when destroying WebCore::Database (possibly because r141207)
 webkit.org/b/108355 fast/js/caller-property.html [ Crash Pass ]
@@ -326,7 +325,13 @@ Bug(EFL) fast/events/touch/basic-single-touch-events.html [ Failure ]
 
 # Needs grammar checking
 Bug(EFL) editing/spelling/grammar-edit-word.html [ Failure ]
+Bug(EFL) editing/spelling/grammar-markers.html [ Failure ]
+Bug(EFL) editing/spelling/grammar-markers-hidpi.html [ Failure ]
+Bug(EFL) editing/spelling/grammar-paste.html [ Failure ]
 Bug(EFL) editing/spelling/markers.html [ Failure ]
+
+# EFL's text checker doesn't support the text replacement feature.
+Bug(EFL) editing/spelling/spelling-marker-description.html [ Failure ]
 
 # Fails because MutationObservers are not notified at end-of-task.
 webkit.org/b/78290 fast/dom/MutationObserver/end-of-task-delivery.html [ Failure ]

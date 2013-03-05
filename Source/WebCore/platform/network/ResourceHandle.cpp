@@ -27,7 +27,6 @@
 #include "ResourceHandle.h"
 #include "ResourceHandleInternal.h"
 
-#include "BlobRegistry.h"
 #include "Logging.h"
 #include "NetworkingContext.h"
 #include "ResourceHandleClient.h"
@@ -148,7 +147,7 @@ void ResourceHandle::setClient(ResourceHandleClient* client)
     d->m_client = client;
 }
 
-ResourceRequest& ResourceHandle::firstRequest()
+ResourceRequest& ResourceHandle::firstRequest() const
 {
     return d->m_firstRequest;
 }

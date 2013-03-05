@@ -231,29 +231,6 @@ public:
     using ContainerNode::ref;
     using ContainerNode::deref;
 
-    // Nodes belonging to this document hold guard references -
-    // these are enough to keep the document from being destroyed, but
-    // not enough to keep it from removing its children. This allows a
-    // node that outlives its document to still have a valid document
-    // pointer without introducing reference cycles.
-    void guardRef()
-    {
-        ASSERT(!m_deletionHasBegun);
-        ++m_guardRefCount;
-    }
-
-    void guardDeref()
-    {
-        ASSERT(!m_deletionHasBegun);
-        --m_guardRefCount;
-        if (!m_guardRefCount && !refCount()) {
-#ifndef NDEBUG
-            m_deletionHasBegun = true;
-#endif
-            delete this;
-        }
-    }
-
     Element* getElementById(const AtomicString& id) const;
 
     virtual bool canContainRangeEndPoint() const { return true; }
@@ -943,7 +920,8 @@ public:
     bool hasNodesWithPlaceholderStyle() const { return m_hasNodesWithPlaceholderStyle; }
     void setHasNodesWithPlaceholderStyle() { m_hasNodesWithPlaceholderStyle = true; }
 
-    const Vector<IconURL>& iconURLs();
+    const Vector<IconURL>& shortcutIconURLs();
+    const Vector<IconURL>& iconURLs(int iconTypesMask);
     void addIconURL(const String& url, const String& mimeType, const String& size, IconType);
 
     void setUseSecureKeyboardEntryWhenActive(bool);
@@ -1225,8 +1203,8 @@ private:
     friend class Node;
     friend class IgnoreDestructiveWriteCountIncrementer;
 
-    void removedLastRef();
-    
+    virtual void dispose() OVERRIDE;
+
     void detachParser();
 
     typedef void (*ArgumentsCallback)(const String& keyString, const String& valueString, Document*, void* data);
@@ -1293,8 +1271,6 @@ private:
 
     void addListenerType(ListenerType listenerType) { m_listenerTypes |= listenerType; }
     void addMutationEventListenerTypeIfEnabled(ListenerType);
-
-    int m_guardRefCount;
 
     void styleResolverThrowawayTimerFired(Timer<Document>*);
     Timer<Document> m_styleResolverThrowawayTimer;
@@ -1615,10 +1591,9 @@ inline Node::Node(Document* document, ConstructionType type)
     , m_previous(0)
     , m_next(0)
 {
-    if (document)
-        document->guardRef();
-    else
+    if (!m_treeScope)
         m_treeScope = TreeScope::noDocumentInstance();
+    m_treeScope->guardRef();
 
 #if !defined(NDEBUG) || (defined(DUMP_NODE_STATISTICS) && DUMP_NODE_STATISTICS)
     trackForDebugging();

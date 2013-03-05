@@ -1,3 +1,579 @@
+2013-03-04  Andreas Kling  <akling@apple.com>
+
+        Unused Structure property tables waste 14MB on Membuster.
+        <http://webkit.org/b/110854>
+        <rdar://problem/13292104>
+
+        Reviewed by Geoffrey Garen.
+
+        Turn PropertyTable into a GC object and have Structure drop unpinned tables when marking.
+        14 MB progression on Membuster3.
+
+        * CMakeLists.txt:
+        * GNUmakefile.list.am:
+        * JavaScriptCore.gypi:
+        * JavaScriptCore.vcxproj/JavaScriptCore.vcxproj:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * Target.pri:
+
+            Added PropertyTable.cpp.
+
+        * runtime/PropertyTable.cpp: Added.
+        (JSC::PropertyTable::create):
+        (JSC::PropertyTable::clone):
+        (JSC::PropertyTable::PropertyTable):
+        (JSC::PropertyTable::destroy):
+        (JSC::PropertyTable::~PropertyTable):
+        (JSC::PropertyTable::visitChildren):
+
+            Moved marking of property table values here from Structure::visitChildren().
+
+        * runtime/WriteBarrier.h:
+        (JSC::WriteBarrierBase::get):
+
+            Move m_cell to a local before using it multiple times. This avoids a multiple-access race when
+            Structure::checkOffsetConsistency() is used in assertions on the main thread while a marking thread
+            zaps the property table.
+
+        * runtime/Structure.h:
+        (JSC::Structure::materializePropertyMapIfNecessary):
+        (JSC::Structure::materializePropertyMapIfNecessaryForPinning):
+        * runtime/StructureInlines.h:
+        (JSC::Structure::propertyTable):
+
+            Added a getter for the Structure's PropertyTable that ASSERTs GC currently isn't active.
+            Because GC can zap an unpinned property table at any time, it's not entirely safe to access it.
+            Renamed the variable itself to m_propertyTableUnsafe to force call sites into explaining themselves.
+
+        (JSC::Structure::putWillGrowOutOfLineStorage):
+        (JSC::Structure::checkOffsetConsistency):
+
+            Moved these out of Structure.h to break header dependency cycle between Structure/PropertyTable.
+
+        * runtime/Structure.cpp:
+        (JSC::Structure::visitChildren):
+
+            Null out m_propertyTable if the table is unpinned. This'll cause the table to get GC'd.
+
+        * runtime/JSGlobalData.h:
+        * runtime/JSGlobalData.cpp:
+        (JSC::JSGlobalData::JSGlobalData):
+
+            Add a global propertyTableStructure.
+
+        * runtime/PropertyMapHashTable.h:
+        (PropertyTable):
+        (JSC::PropertyTable::createStructure):
+        (JSC::PropertyTable::copy):
+
+            Make PropertyTable a GC object.
+
+        * runtime/Structure.cpp:
+        (JSC::Structure::dumpStatistics):
+        (JSC::Structure::materializePropertyMap):
+        (JSC::Structure::despecifyDictionaryFunction):
+        (JSC::Structure::addPropertyTransition):
+        (JSC::Structure::changePrototypeTransition):
+        (JSC::Structure::despecifyFunctionTransition):
+        (JSC::Structure::attributeChangeTransition):
+        (JSC::Structure::toDictionaryTransition):
+        (JSC::Structure::sealTransition):
+        (JSC::Structure::freezeTransition):
+        (JSC::Structure::preventExtensionsTransition):
+        (JSC::Structure::nonPropertyTransition):
+        (JSC::Structure::isSealed):
+        (JSC::Structure::isFrozen):
+        (JSC::Structure::flattenDictionaryStructure):
+        (JSC::Structure::pin):
+        (JSC::Structure::copyPropertyTable):
+        (JSC::Structure::copyPropertyTableForPinning):
+        (JSC::Structure::get):
+        (JSC::Structure::despecifyFunction):
+        (JSC::Structure::despecifyAllFunctions):
+        (JSC::Structure::putSpecificValue):
+        (JSC::Structure::remove):
+        (JSC::Structure::createPropertyMap):
+        (JSC::Structure::getPropertyNamesFromStructure):
+        (JSC::Structure::checkConsistency):
+
+2013-03-04  Chris Fleizach  <cfleizach@apple.com>
+
+        Support WebSpeech - Speech Synthesis
+        https://bugs.webkit.org/show_bug.cgi?id=106742
+
+        Reviewed by Simon Fraser.
+
+        Enable speech synthesis for the Mac.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-03-04  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Remove contextInternalContext from JSContextInternal.h
+        https://bugs.webkit.org/show_bug.cgi?id=111356
+
+        Reviewed by Geoffrey Garen.
+
+        We don't need it any more since we have globalContextRef in JSContext.
+
+        * API/JSContext.mm:
+        * API/JSContextInternal.h:
+        * API/JSValue.mm:
+        (+[JSValue valueWithBool:inContext:]):
+        (+[JSValue valueWithDouble:inContext:]):
+        (+[JSValue valueWithInt32:inContext:]):
+        (+[JSValue valueWithUInt32:inContext:]):
+        (+[JSValue valueWithNewObjectInContext:]):
+        (+[JSValue valueWithNewArrayInContext:]):
+        (+[JSValue valueWithNewRegularExpressionFromPattern:flags:inContext:]):
+        (+[JSValue valueWithNewErrorFromMessage:inContext:]):
+        (+[JSValue valueWithNullInContext:]):
+        (+[JSValue valueWithUndefinedInContext:]):
+        (-[JSValue toBool]):
+        (-[JSValue toDouble]):
+        (-[JSValue toNumber]):
+        (-[JSValue toString]):
+        (-[JSValue toDate]):
+        (-[JSValue toArray]):
+        (-[JSValue toDictionary]):
+        (-[JSValue valueForProperty:]):
+        (-[JSValue setValue:forProperty:]):
+        (-[JSValue deleteProperty:]):
+        (-[JSValue hasProperty:]):
+        (-[JSValue valueAtIndex:]):
+        (-[JSValue setValue:atIndex:]):
+        (-[JSValue isUndefined]):
+        (-[JSValue isNull]):
+        (-[JSValue isBoolean]):
+        (-[JSValue isNumber]):
+        (-[JSValue isString]):
+        (-[JSValue isObject]):
+        (-[JSValue isEqualToObject:]):
+        (-[JSValue isEqualWithTypeCoercionToObject:]):
+        (-[JSValue isInstanceOf:]):
+        (-[JSValue callWithArguments:]):
+        (-[JSValue constructWithArguments:]):
+        (-[JSValue invokeMethod:withArguments:]):
+        (valueToObject):
+        (objectToValueWithoutCopy):
+        (objectToValue):
+        (-[JSValue initWithValue:inContext:]):
+        (-[JSValue dealloc]):
+        (-[JSValue description]):
+        * API/JSWrapperMap.mm:
+        (createObjectWithCustomBrand):
+        (-[JSObjCClassInfo allocateConstructorAndPrototypeWithSuperClassInfo:]):
+        (-[JSObjCClassInfo wrapperForObject:]):
+        (-[JSWrapperMap jsWrapperForObject:]):
+        * API/ObjCCallbackFunction.mm:
+        (ObjCCallbackFunction::call):
+        (objCCallbackFunctionForInvocation):
+
+2013-03-04  Andreas Kling  <akling@apple.com>
+
+        Add simple vector traits for JSC::Identifier.
+        <http://webkit.org/b/111323>
+
+        Reviewed by Geoffrey Garen.
+
+        Identifiers are really just Strings, giving them simple vector traits makes
+        Vector move them with memcpy() instead of churning the refcounts.
+
+        * runtime/Identifier.h:
+        (WTF):
+
+2013-03-04  Kunihiko Sakamoto  <ksakamoto@chromium.org>
+
+        Add build flag for FontLoader
+        https://bugs.webkit.org/show_bug.cgi?id=111289
+
+        Reviewed by Benjamin Poulain.
+
+        Add ENABLE_FONT_LOAD_EVENTS build flag (disabled by default).
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-03-03  Andreas Kling  <akling@apple.com>
+
+        Shrink JSC::HashTable entries.
+        <http://webkit.org/b/111275>
+        <rdar://problem/13333511>
+
+        Reviewed by Anders Carlsson.
+
+        Move the Intrinsic value out of the function-specific part of the union,
+        and store it next to m_attributes. Reduces the size of HashEntry by 8 bytes.
+
+        990 kB progression on Membuster3. (PTUS: 797 kB)
+
+        * runtime/Lookup.h:
+        (JSC::HashEntry::initialize):
+        (JSC::HashEntry::intrinsic):
+        (HashEntry):
+
+2013-03-01  David Kilzer  <ddkilzer@apple.com>
+
+        BUILD FIX: testapi should link to Foundation, not CoreFoundation
+
+        * JavaScriptCore.xcodeproj/project.pbxproj: Change testapi to
+        link to Foundation.framework instead of CoreFoundation.framework
+        since it uses NS types.
+
+2013-03-01  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Objective-C API: Passing JS functions to Objective-C callbacks causes JSValue to leak
+        https://bugs.webkit.org/show_bug.cgi?id=107836
+
+        Reviewed by Oliver Hunt.
+
+        We've decided to remove support for this feature from the API because there's no way to automatically manage 
+        the memory for clients in a satisfactory manner. Clients can still pass JS functions to Objective-C methods, 
+        but the methods must accept plain JSValues instead of Objective-C blocks.
+
+        We now ignore functions that are part of a protocol that inherits from JSExport that accept blocks as arguments.
+
+        * API/JSBlockAdaptor.h: Removed.
+        * API/JSBlockAdaptor.mm: Removed.
+        * API/ObjCCallbackFunction.mm:
+        (ArgumentTypeDelegate::typeBlock): Return nil to signal that we want to ignore this function when copying it
+        to the object from the protocol.
+        * API/tests/testapi.mm: Added a test to make sure that we ignore methods declared as part of a JSExport-ed protocol
+        that have block arguments.
+        (-[TestObject bogusCallback:]):
+        * JavaScriptCore.gypi: Updated build files.
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+
+2013-03-01  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG Branch(LogicalNot) peephole should not try to optimize and work-around the case where LogicalNot may be otherwise live
+        https://bugs.webkit.org/show_bug.cgi?id=111209
+
+        Reviewed by Oliver Hunt.
+        
+        Even if it is then everything will work just fine. It's not necessary to check the ref count here.
+
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+
+2013-03-01  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CSE phase shouldn't rely on ref count of nodes, since it doesn't have to
+        https://bugs.webkit.org/show_bug.cgi?id=111205
+
+        Reviewed by Oliver Hunt.
+        
+        I don't understand the intuition behind setLocalStoreElimination() validating that the SetLocal's ref count
+        is 1. I believe this is a hold-over from when setLocalStoreElimination() would match one SetLocal to another,
+        and then try to eliminate the first SetLocal. But that's not how it works now. Now, setLocalStoreElimination()
+        is actually Flush elimination: it eliminates any Flush that anchors a SetLocal if it proves that every path
+        from the SetLocal to the Flush is devoid of operations that may observe the local. It doesn't actually kill
+        the SetLocal itself: if the SetLocal is live because of other things (other Flushes or GetLocals in other
+        basic blocks), then the SetLocal will naturally still be alive because th Flush was only keeping the SetLocal
+        alive by one count rather than being solely responsible for its liveness.
+
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::setLocalStoreElimination):
+        (JSC::DFG::CSEPhase::eliminate):
+        (JSC::DFG::CSEPhase::performNodeCSE):
+
+2013-03-01  Filip Pizlo  <fpizlo@apple.com>
+
+        Rename MovHint to MovHintEvent so I can create a NodeType called MovHint
+
+        Rubber stamped by Mark Hahnenberg.
+        
+        This is similar to the SetLocal/SetLocalEvent naming scheme, where SetLocal is the
+        NodeType and SetLocalEvent is the VariableEventKind.
+
+        * dfg/DFGVariableEvent.cpp:
+        (JSC::DFG::VariableEvent::dump):
+        * dfg/DFGVariableEvent.h:
+        (JSC::DFG::VariableEvent::movHint):
+        (JSC::DFG::VariableEvent::id):
+        (JSC::DFG::VariableEvent::operand):
+        (VariableEvent):
+        * dfg/DFGVariableEventStream.cpp:
+        (JSC::DFG::VariableEventStream::reconstruct):
+
+2013-03-01  Raphael Kubo da Costa  <raphael.kubo.da.costa@intel.com>
+
+        [JSC] Fix sign comparison warning/error after r144340.
+        https://bugs.webkit.org/show_bug.cgi?id=111164
+
+        Reviewed by Mark Hahnenberg.
+
+        gcc (both 4.2.1 and 4.7.2) complain about comparing signed and
+        unsigned terms (clang accepts it just fine).
+
+        Work around that by casting the 1 to an uintptr_t as well.
+
+        * dfg/DFGEdge.h:
+        (JSC::DFG::Edge::makeWord):
+
+2013-02-28  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CFA should not do liveness pruning
+        https://bugs.webkit.org/show_bug.cgi?id=111119
+
+        Reviewed by Mark Hahnenberg.
+        
+        It adds complexity and probably buys nothing.  Moreover, I'm transitioning to having
+        liveness only available at the bitter end of compilation, so this will stop working
+        after https://bugs.webkit.org/show_bug.cgi?id=109389 anyway.
+
+        * dfg/DFGAbstractState.cpp:
+        (JSC::DFG::AbstractState::initialize):
+        (JSC::DFG::AbstractState::mergeStateAtTail):
+
+2013-02-28  Filip Pizlo  <fpizlo@apple.com>
+
+        Don't try to emit profiling if you don't have the DFG JIT.
+
+        Rubber stamped by Mark Hahnenberg.
+
+        * jit/JIT.h:
+        (JSC::JIT::shouldEmitProfiling):
+
+2013-02-28  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG Phantom node should be honest about the fact that it can exit
+        https://bugs.webkit.org/show_bug.cgi?id=111115
+
+        Reviewed by Mark Hahnenberg.
+        
+        The chances of this having cause serious issues are low, since most clients of the
+        NodeDoesNotExit flag run after CFA and CFA updates this properly. But one possible
+        case of badness is if the ByteCodeParser inserted a Phantom with a type check in
+        between a LogicalNot and a Branch; then that peephole optimization in Fixup might
+        go slightly wrong.
+
+        * dfg/DFGNodeType.h:
+        (DFG):
+
+2013-02-28  Mark Hahnenberg  <mhahnenberg@apple.com>
+
+        Add casts in DFGGPRInfo.h to suppress warnings
+        https://bugs.webkit.org/show_bug.cgi?id=111104
+
+        Reviewed by Filip Pizlo.
+
+        With certain flags on, we get compiler warnings on ARM. We should do the proper casts to make these warnings go away.
+
+        * dfg/DFGGPRInfo.h:
+        (JSC::DFG::GPRInfo::toIndex):
+        (JSC::DFG::GPRInfo::debugName):
+
+2013-02-28  Filip Pizlo  <fpizlo@apple.com>
+
+        It should be easy to determine if a DFG node exits forward or backward when doing type checks
+        https://bugs.webkit.org/show_bug.cgi?id=111102
+
+        Reviewed by Mark Hahnenberg.
+        
+        This adds a NodeExitsForward flag, which tells you the exit directionality of
+        type checks performed by the node. Even if you convert the node to a Phantom
+        and use the Edge UseKind for type checks, you'll still get the same exit
+        directionality that the original node would have wanted.
+
+        * dfg/DFGArgumentsSimplificationPhase.cpp:
+        (JSC::DFG::ArgumentsSimplificationPhase::run):
+        * dfg/DFGArrayifySlowPathGenerator.h:
+        (JSC::DFG::ArrayifySlowPathGenerator::ArrayifySlowPathGenerator):
+        * dfg/DFGCFGSimplificationPhase.cpp:
+        (JSC::DFG::CFGSimplificationPhase::run):
+        (JSC::DFG::CFGSimplificationPhase::mergeBlocks):
+        * dfg/DFGCPSRethreadingPhase.cpp:
+        (JSC::DFG::CPSRethreadingPhase::canonicalizeFlushOrPhantomLocalFor):
+        * dfg/DFGCSEPhase.cpp:
+        (JSC::DFG::CSEPhase::setReplacement):
+        (JSC::DFG::CSEPhase::eliminate):
+        (JSC::DFG::CSEPhase::performNodeCSE):
+        * dfg/DFGConstantFoldingPhase.cpp:
+        (JSC::DFG::ConstantFoldingPhase::foldConstants):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::checkArray):
+        * dfg/DFGNode.h:
+        (Node):
+        (JSC::DFG::Node::setOpAndDefaultNonExitFlags):
+        (JSC::DFG::Node::convertToPhantom):
+        * dfg/DFGNodeFlags.cpp:
+        (JSC::DFG::nodeFlagsAsString):
+        * dfg/DFGNodeFlags.h:
+        (DFG):
+        * dfg/DFGNodeType.h:
+        (DFG):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::SpeculativeJIT::backwardSpeculationCheck):
+        (DFG):
+        (JSC::DFG::SpeculativeJIT::speculationCheck):
+        (JSC::DFG::SpeculativeJIT::speculationWatchpoint):
+        (JSC::DFG::SpeculativeJIT::forwardSpeculationCheck):
+        (JSC::DFG::SpeculativeJIT::backwardTypeCheck):
+        (JSC::DFG::SpeculativeJIT::typeCheck):
+        (JSC::DFG::SpeculativeJIT::forwardTypeCheck):
+        (JSC::DFG::SpeculativeJIT::fillStorage):
+        (JSC::DFG::SpeculativeJIT::compile):
+        (JSC::DFG::SpeculativeJIT::checkArgumentTypes):
+        (JSC::DFG::SpeculativeJIT::compileValueToInt32):
+        (JSC::DFG::SpeculativeJIT::compileInt32ToDouble):
+        * dfg/DFGSpeculativeJIT.h:
+        (SpeculativeJIT):
+        (JSC::DFG::SpeculateIntegerOperand::SpeculateIntegerOperand):
+        (JSC::DFG::SpeculateIntegerOperand::gpr):
+        (SpeculateIntegerOperand):
+        (JSC::DFG::SpeculateDoubleOperand::SpeculateDoubleOperand):
+        (JSC::DFG::SpeculateDoubleOperand::fpr):
+        (SpeculateDoubleOperand):
+        (JSC::DFG::SpeculateCellOperand::SpeculateCellOperand):
+        (JSC::DFG::SpeculateCellOperand::gpr):
+        (SpeculateCellOperand):
+        (JSC::DFG::SpeculateBooleanOperand::SpeculateBooleanOperand):
+        (JSC::DFG::SpeculateBooleanOperand::gpr):
+        (SpeculateBooleanOperand):
+        * dfg/DFGSpeculativeJIT32_64.cpp:
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntInternal):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateInt):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntStrict):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateDouble):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateCell):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateBoolean):
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntInternal):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateInt):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateIntStrict):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateDouble):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateCell):
+        (JSC::DFG::SpeculativeJIT::fillSpeculateBoolean):
+        (JSC::DFG::SpeculativeJIT::compile):
+
+2013-02-28  Filip Pizlo  <fpizlo@apple.com>
+
+        CodeBlock::valueProfile() has a bogus assertion
+        https://bugs.webkit.org/show_bug.cgi?id=111106
+        <rdar://problem/13131427>
+
+        Reviewed by Mark Hahnenberg.
+        
+        This was just a bad assertion: m_bytecodeOffset == -1 means that the value profile is constructed but not initialized.
+        ValueProfile constructs itself in a safe way; you can call any method you want on a constructed but not initialized
+        ValueProfile. CodeBlock first constructs all ValueProfiles (by growing the ValueProfile vector) and then initializes
+        their m_bytecodeOffset later. This is necessary because the initialization is linking bytecode instructions to their
+        ValueProfiles, so at that point we don't want the ValueProfile vector to resize, which implies that we want all of
+        them to already be constructed. A GC can happen during this phase, and the GC may want to walk all ValueProfiles.
+        This is safe, but one of the ValueProfile getters (CodeBlock::valueProfile()) was asserting that any value profile
+        you get has had its m_bytecodeOffset initialized. This need not be the case and nothing will go wrong if it isn't.
+
+        The solution is to remove the assertion, which I believe was put there to ensure that my m_valueProfiles refactoring
+        a long time ago was sound: it used to be that a ValueProfile with m_bytecodeOffset == -1 was an argument profile; now
+        all argument profiles are in m_argumentValueProfiles instead. I think it's safe to say that this refactoring was done
+        soundly since it was a long time ago. So we should kill the assertion - I don't see an easy way to make the assertion
+        sound with respect to the GC-during-CodeBlock-construction issue, and I don't believe that the assertion is buying us
+        anything at this point.
+
+        * bytecode/CodeBlock.h:
+        (JSC::CodeBlock::valueProfile):
+
+2013-02-27  Filip Pizlo  <fpizlo@apple.com>
+
+        DFG CFA should leave behind information in Edge that says if the Edge's type check is proven to succeed
+        https://bugs.webkit.org/show_bug.cgi?id=110840
+
+        Reviewed by Mark Hahnenberg.
+        
+        This doesn't add any observable functionality to the compiler, yet. But it does give
+        every phase that runs after CFA the ability to know, in O(1) time, whether an edge
+        will need to execute a type check.
+
+        * dfg/DFGAbstractState.h:
+        (JSC::DFG::AbstractState::filterEdgeByUse):
+        (JSC::DFG::AbstractState::filterByType):
+        * dfg/DFGCommon.cpp:
+        (WTF):
+        (WTF::printInternal):
+        * dfg/DFGCommon.h:
+        (JSC::DFG::isProved):
+        (DFG):
+        (JSC::DFG::proofStatusForIsProved):
+        (WTF):
+        * dfg/DFGEdge.cpp:
+        (JSC::DFG::Edge::dump):
+        * dfg/DFGEdge.h:
+        (JSC::DFG::Edge::Edge):
+        (JSC::DFG::Edge::setNode):
+        (JSC::DFG::Edge::useKindUnchecked):
+        (JSC::DFG::Edge::setUseKind):
+        (Edge):
+        (JSC::DFG::Edge::proofStatusUnchecked):
+        (JSC::DFG::Edge::proofStatus):
+        (JSC::DFG::Edge::setProofStatus):
+        (JSC::DFG::Edge::isProved):
+        (JSC::DFG::Edge::needsCheck):
+        (JSC::DFG::Edge::shift):
+        (JSC::DFG::Edge::makeWord):
+
+2013-02-28  Simon Hausmann  <simon.hausmann@digia.com>
+
+        [Qt][Mac] Fix massive parallel builds
+
+        Reviewed by Tor Arne Vestbø.
+
+        There exists a race condition that LLIntDesiredOffsets.h is written to
+        by two parllel instances of the ruby script. This patch ensures that similar to the output file,
+        the generated file is also prefixed according to the build configuration.
+
+        * LLIntOffsetsExtractor.pro:
+
+2013-02-27  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144168.
+        http://trac.webkit.org/changeset/144168
+        https://bugs.webkit.org/show_bug.cgi?id=111019
+
+        It broke the build and tronical is unavailable (Requested by
+        Ossy_night on #webkit).
+
+        * LLIntOffsetsExtractor.pro:
+
+2013-02-26  Filip Pizlo  <fpizlo@apple.com>
+
+        Disable some unsound DFG DCE
+        https://bugs.webkit.org/show_bug.cgi?id=110948
+
+        Reviewed by Michael Saboff.
+        
+        DCE of bitops is not sound since the bitops might call some variant of valueOf.
+        
+        This used to work right because ValueToInt32 was MustGenerate. From the DFG IR
+        standpoint it feels weird to make ValueToInt32 be MustGenerate since that node is
+        implemented entirely as a pure conversion. If we ever gave the DFG the ability to
+        do effectful bitops, we would most likely implement them as special nodes not
+        related to the ValueToInt32 and bitop nodes we have now.
+        
+        This change is performance neutral.
+
+        * dfg/DFGNodeType.h:
+        (DFG):
+
+2013-02-27  Glenn Adams  <glenn@skynav.com>
+
+        Add ENABLE_CSS3_TEXT_LINE_BREAK flag.
+        https://bugs.webkit.org/show_bug.cgi?id=110944
+
+        Reviewed by Dean Jackson.
+
+        * Configurations/FeatureDefines.xcconfig:
+
+2013-02-27  Julien Brianceau   <jbrianceau@nds.com>
+
+        Fix build when DFG_JIT is not enabled
+        https://bugs.webkit.org/show_bug.cgi?id=110991
+
+        Reviewed by Csaba Osztrogonác.
+
+        * jit/JIT.h:
+        (JSC::JIT::canBeOptimizedOrInlined):
+
 2013-02-27  Simon Hausmann  <simon.hausmann@digia.com>
 
         [Qt][Mac] Fix massive parallel builds

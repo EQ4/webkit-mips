@@ -197,7 +197,7 @@ bool GraphicsContext3DPrivate::prepareBuffer() const
 }
 
 #if USE(TEXTURE_MAPPER_GL)
-void GraphicsContext3DPrivate::paintToTextureMapper(TextureMapper*, const FloatRect& /* target */, const TransformationMatrix&, float /* opacity */, BitmapTexture* /* mask */)
+void GraphicsContext3DPrivate::paintToTextureMapper(TextureMapper*, const FloatRect& /* target */, const TransformationMatrix&, float /* opacity */)
 {
     notImplemented();
 }
@@ -234,7 +234,7 @@ uint32_t GraphicsContext3DPrivate::copyToGraphicsSurface()
 
     m_sharedSurface->updateContents(m_context->m_texture);
     makeContextCurrent();
-    glBindFramebuffer(GL_FRAMEBUFFER,  m_context->m_boundFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER,  m_context->m_state.boundFBO);
     return 0;
 }
 

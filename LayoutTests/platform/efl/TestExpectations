@@ -691,10 +691,6 @@ webkit.org/b/105870 webaudio/audionode-connect-order.html [ Pass Crash ]
 webkit.org/b/105879 editing/pasteboard/4806874.html [ Pass Crash ]
 webkit.org/b/105879 editing/spelling/spelling-insert-html.html [ Pass Crash ]
 
-# Tests started to crash after r139141.
-webkit.org/b/106412 editing/execCommand/insert-list-xml.xhtml [ Crash ]
-webkit.org/b/106412 editing/style/justify-without-enclosing-block.xhtml [ Crash ]
-
 # Media regressions after updating to gstreamer 1.0.
 webkit.org/b/104809 media/adopt-node-crash.html [ Crash ]
 webkit.org/b/104809 media/video-src.html [ Crash Pass ]
@@ -1025,6 +1021,10 @@ webkit.org/b/84338 editing/pasteboard/smart-paste-006.html [ Failure ]
 webkit.org/b/84338 editing/pasteboard/smart-paste-in-text-control.html [ Failure ]
 webkit.org/b/84338 editing/pasteboard/style-from-rules.html [ Failure ]
 webkit.org/b/84338 editing/pasteboard/testcase-9507.html [ Failure ]
+webkit.org/b/84338 editing/spelling/spellcheck-async-mutation.html [ Failure ]
+webkit.org/b/84338 editing/spelling/spellcheck-queue.html [ Failure ]
+webkit.org/b/84338 editing/spelling/spellcheck-paste-disabled.html [ Failure ]
+webkit.org/b/84338 editing/spelling/spellcheck-paste.html [ Failure ]
 webkit.org/b/84338 editing/style/apply-through-end-of-document.html [ Failure ]
 webkit.org/b/84338 editing/style/non-inheritable-styles.html [ Failure ]
 webkit.org/b/84338 editing/style/smoosh-styles-003.html [ Failure ]
@@ -1417,15 +1417,6 @@ webkit.org/b/88138 http/tests/media/video-buffered.html [ Failure ]
 webkit.org/b/89830 fast/text/hyphen-min-preferred-width.html [ ImageOnlyFailure ]
 webkit.org/b/89830 fast/text/hyphenate-locale.html [ Skip ]
 
-# EFL's LayoutTestController does not implement setAsynchronousSpellCheckingEnabled
-webkit.org/b/86637 editing/spelling/spellcheck-async.html [ Failure ]
-webkit.org/b/86637 editing/spelling/spellcheck-async-mutation.html [ Failure ]
-webkit.org/b/86637 editing/spelling/spellcheck-paste.html [ Failure ]
-webkit.org/b/86637 editing/spelling/spellcheck-paste-disabled.html [ Failure ]
-webkit.org/b/86637 editing/spelling/spellcheck-queue.html [ Failure ]
-webkit.org/b/86637 editing/spelling/spellcheck-sequencenum.html [ Failure ]
-webkit.org/b/86637 editing/spelling/spelling-marker-description.html [ Failure ]
-
 # Missing test infrastructure, no gamepads available.
 Bug(EFL) gamepad/gamepad-polling-access.html [ Failure ]
 
@@ -1495,13 +1486,8 @@ fast/forms/week-multiple-fields
 
 webkit.org/b/93976 fast/css-generated-content/quotes-lang.html [ ImageOnlyFailure ]
 
-webkit.org/b/93247 [ Debug ] fast/lists/list-marker-remove-crash.html [ Crash ]
-
 # This has always failed on Gtk/Efl - exposed by bug 89826
 webkit.org/b/94009 css2.1/20110323/c541-word-sp-000.htm [ ImageOnlyFailure ]
-
-# REGRESSION (r137487): Crashes in editing/execCommand/indent-paragraphs.html on GTK, EFL.
-webkit.org/b/105042 editing/execCommand/indent-paragraphs.html [ Crash ]
 
 # Requires CSS_COMPOSITING to be turned on
 webkit.org/b/94024 css3/compositing [ Skip ]
@@ -1715,7 +1701,6 @@ webkit.org/b/104571 http/tests/xmlhttprequest/origin-exact-matching.html [ Failu
 # Rendering failure, also missing expected results:
 webkit.org/b/105093 compositing/webgl/webgl-background-color.html [ Skip ]
 webkit.org/b/105093 compositing/webgl/webgl-nonpremultiplied-blend.html [ Skip ]
-webkit.org/b/105093 compositing/webgl/webgl-reflection.html [ Skip ]
 
 # WebProcess timeouts
 webkit.org/b/102464 [ Debug ] fast/images/webgl-teximage2d.html [ Pass Timeout ]
@@ -1876,3 +1861,13 @@ webkit.org/b/110654 svg/custom/foreign-object-skew.svg [ Failure ]
 webkit.org/b/110654 tables/mozilla/bugs/bug92647-2.html [ Failure ]
 # New test
 webkit.org/b/110654 css3/flexbox/button.html [ Failure ]
+
+# Need support for ResourceHandle::didChangePriority and DRT support
+webkit.org/b/111016 http/tests/loading/promote-img-preload-priority.html [ Failure ]
+
+webkit.org/b/111058 plugins/plugin-clip-subframe.html [ Failure ]
+
+# Newly added tests in r144190 are failing.
+webkit.org/b/111172 compositing/overlap-blending/children-opacity-huge.html [ ImageOnlyFailure ]
+webkit.org/b/111172 compositing/overlap-blending/children-opacity-no-overlap.html [ ImageOnlyFailure ]
+webkit.org/b/111172 compositing/overlap-blending/reflection-opacity-huge.html [ ImageOnlyFailure ]

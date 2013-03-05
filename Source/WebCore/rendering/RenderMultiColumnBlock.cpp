@@ -103,22 +103,11 @@ bool RenderMultiColumnBlock::relayoutForPagination(bool, LayoutUnit, LayoutState
     return false;
 }
 
-static PassRefPtr<RenderStyle> createMultiColumnFlowThreadStyle(RenderStyle* parentStyle)
-{
-    RefPtr<RenderStyle> newStyle(RenderStyle::create());
-    newStyle->inheritFrom(parentStyle);
-    newStyle->setDisplay(BLOCK);
-    newStyle->setPosition(RelativePosition);
-    newStyle->setZIndex(0);
-    newStyle->font().update(0);
-    return newStyle.release();
-}
-
 void RenderMultiColumnBlock::addChild(RenderObject* newChild, RenderObject* beforeChild)
 {
     if (!m_flowThread) {
         m_flowThread = new (renderArena()) RenderMultiColumnFlowThread(document());
-        m_flowThread->setStyle(createMultiColumnFlowThreadStyle(style()));
+        m_flowThread->setStyle(RenderStyle::createAnonymousStyleWithDisplay(style(), BLOCK));
         RenderBlock::addChild(m_flowThread); // Always put the flow thread at the end.
     }
 
@@ -160,6 +149,15 @@ void RenderMultiColumnBlock::ensureColumnSets()
         RenderBlock::addChild(columnSet, firstChild());
     }
     columnSet->setRequiresBalancing(requiresBalancing());
+}
+
+void RenderMultiColumnBlock::layoutBlock(bool relayoutChildren, LayoutUnit pageLogicalHeight)
+{
+    RenderBlock::layoutBlock(relayoutChildren, pageLogicalHeight);
+    
+    // Shift the flow thread back up to the top of the block.
+    if (flowThread())
+        flowThread()->setLogicalTop(borderBefore() + paddingBefore());
 }
 
 const char* RenderMultiColumnBlock::renderName() const

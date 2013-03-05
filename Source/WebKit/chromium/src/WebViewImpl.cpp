@@ -453,7 +453,6 @@ WebViewImpl::WebViewImpl(WebViewClient* client)
     , m_flingModifier(0)
     , m_flingSourceDevice(false)
     , m_validationMessage(ValidationMessageClientImpl::create(*client))
-    , m_suppressInvalidations(false)
     , m_showFPSCounter(false)
     , m_showPaintRects(false)
     , m_showDebugBorders(false)
@@ -1815,20 +1814,9 @@ void WebViewImpl::updateBatteryStatus(const WebBatteryStatus& status)
 }
 #endif
 
-void WebViewImpl::animate(double)
+void WebViewImpl::animate(double monotonicFrameBeginTime)
 {
-#if ENABLE(REQUEST_ANIMATION_FRAME)
-    double monotonicFrameBeginTime = monotonicallyIncreasingTime();
-
-#if USE(ACCELERATED_COMPOSITING)
-    // In composited mode, we always go through the compositor so it can apply
-    // appropriate flow-control mechanisms.
-    if (isAcceleratedCompositingActive())
-        m_layerTreeView->updateAnimations(monotonicFrameBeginTime);
-    else
-#endif
-        updateAnimations(monotonicFrameBeginTime);
-#endif
+    updateAnimations(monotonicFrameBeginTime);
 }
 
 void WebViewImpl::willBeginFrame()
@@ -1844,6 +1832,9 @@ void WebViewImpl::didBeginFrame()
 
 void WebViewImpl::updateAnimations(double monotonicFrameBeginTime)
 {
+    if (!monotonicFrameBeginTime)
+        monotonicFrameBeginTime = monotonicallyIncreasingTime();
+
 #if ENABLE(REQUEST_ANIMATION_FRAME)
     TRACE_EVENT0("webkit", "WebViewImpl::updateAnimations");
 
@@ -1855,6 +1846,8 @@ void WebViewImpl::updateAnimations(double monotonicFrameBeginTime)
             m_gestureAnimation.clear();
             if (m_layerTreeView)
                 m_layerTreeView->didStopFlinging();
+
+            mainFrameImpl()->frame()->eventHandler()->clearGestureScrollNodes();
         }
     }
 
@@ -2291,10 +2284,6 @@ WebTextInputInfo WebViewImpl::textInputInfo()
     if (!focused)
         return info;
 
-    Editor* editor = focused->editor();
-    if (!editor || !editor->canEdit())
-        return info;
-
     FrameSelection* selection = focused->selection();
     if (!selection)
         return info;
@@ -2305,6 +2294,10 @@ WebTextInputInfo WebViewImpl::textInputInfo()
 
     info.type = textInputType();
     if (info.type == WebTextInputTypeNone)
+        return info;
+
+    Editor* editor = focused->editor();
+    if (!editor || !editor->canEdit())
         return info;
 
     info.value = plainText(rangeOfContents(node).get());
@@ -2375,6 +2368,14 @@ WebTextInputType WebViewImpl::textInputType()
             return WebTextInputTypeNone;
         return WebTextInputTypeTextArea;
     }
+
+#if ENABLE(INPUT_MULTIPLE_FIELDS_UI)
+    if (node->isHTMLElement()) {
+        HTMLElement* element = toHTMLElement(node);
+        if (element->isDateTimeFieldElement())
+            return WebTextInputTypeDateTimeField;
+    }
+#endif
 
     if (node->shouldUseInputMethod())
         return WebTextInputTypeContentEditable;
@@ -3147,20 +3148,6 @@ IntSize WebViewImpl::contentsSize() const
     return root->documentRect().size();
 }
 
-IntSize WebViewImpl::layoutSize() const
-{
-    if (!isFixedLayoutModeEnabled())
-        return m_size;
-
-    IntSize contentSize = contentsSize();
-
-    if (fixedLayoutSize().width >= contentSize.width())
-        return fixedLayoutSize();
-
-    float aspectRatio = static_cast<float>(m_size.height) / m_size.width;
-    return IntSize(contentSize.width(), contentSize.width() * aspectRatio);
-}
-
 void WebViewImpl::computePageScaleFactorLimits()
 {
     if (!mainFrame() || !page() || !page()->mainFrame() || !page()->mainFrame()->view())
@@ -3680,6 +3667,18 @@ void WebViewImpl::performCustomContextMenuAction(unsigned action)
     m_page->contextMenuController()->clearContextMenu();
 }
 
+void WebViewImpl::showContextMenu()
+{
+    if (!page())
+        return;
+
+    page()->contextMenuController()->clearContextMenu();
+    m_contextMenuAllowed = true;
+    if (Frame* focusedFrame = page()->focusController()->focusedOrMainFrame())
+        focusedFrame->eventHandler()->sendContextMenuEventForKey();
+    m_contextMenuAllowed = false;
+}
+
 // WebView --------------------------------------------------------------------
 
 void WebViewImpl::setIsTransparent(bool isTransparent)
@@ -3991,7 +3990,6 @@ bool WebViewImpl::tabsToLinks() const
 
 void WebViewImpl::suppressInvalidations(bool enable)
 {
-    m_suppressInvalidations = enable;
     if (m_client)
         m_client->suppressCompositorScheduling(enable);
 }
@@ -4270,11 +4268,6 @@ void WebViewImpl::didRecreateOutputSurface(bool success)
 
 void WebViewImpl::scheduleComposite()
 {
-    if  (m_suppressInvalidations) {
-        TRACE_EVENT_INSTANT0("webkit", "WebViewImpl invalidations suppressed");
-        return;
-    }
-
     ASSERT(!Platform::current()->compositorSupport()->isThreadingEnabled());
     m_client->scheduleComposite();
 }
@@ -4285,15 +4278,7 @@ void WebViewImpl::updateLayerTreeViewport()
         return;
 
     FrameView* view = page()->mainFrame()->view();
-
-    IntSize layoutViewportSize = layoutSize();
-    IntSize deviceViewportSize = m_size;
-    if (m_webSettings->applyDeviceScaleFactorInCompositor())
-        deviceViewportSize.scale(deviceScaleFactor());
-
-    m_nonCompositedContentHost->setViewport(deviceViewportSize, view->contentsSize(), view->scrollPosition(), view->scrollOrigin());
-
-    m_layerTreeView->setViewportSize(layoutViewportSize, deviceViewportSize);
+    m_nonCompositedContentHost->setViewport(m_size, view->contentsSize(), view->scrollPosition(), view->scrollOrigin());
     m_layerTreeView->setPageScaleFactorAndLimits(pageScaleFactor(), m_minimumPageScaleFactor, m_maximumPageScaleFactor);
 }
 

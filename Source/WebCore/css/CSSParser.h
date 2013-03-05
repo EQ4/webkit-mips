@@ -94,6 +94,7 @@ public:
     static PassRefPtr<StylePropertySet> parseInlineStyleDeclaration(const String&, Element*);
     PassOwnPtr<MediaQuery> parseMediaQuery(const String&);
 
+    void addPropertyWithPrefixingVariant(CSSPropertyID, PassRefPtr<CSSValue>, bool important, bool implicit = false);
     void addProperty(CSSPropertyID, PassRefPtr<CSSValue>, bool important, bool implicit = false);
     void rollbackLastProperties(int num);
     bool hasProperties() const { return !m_parsedProperties.isEmpty(); }
@@ -151,7 +152,7 @@ public:
     bool parseTransformOriginShorthand(RefPtr<CSSValue>&, RefPtr<CSSValue>&, RefPtr<CSSValue>&);
     bool parseCubicBezierTimingFunctionValue(CSSParserValueList*& args, double& result);
     bool parseAnimationProperty(CSSPropertyID, RefPtr<CSSValue>&, AnimationParseContext&);
-    bool parseTransitionShorthand(bool important);
+    bool parseTransitionShorthand(CSSPropertyID, bool important);
     bool parseAnimationShorthand(bool important);
 
     bool cssGridLayoutEnabled() const;
@@ -182,7 +183,8 @@ public:
     bool parseColorFromValue(CSSParserValue*, RGBA32&);
     void parseSelector(const String&, CSSSelectorList&);
 
-    static bool fastParseColor(RGBA32&, const String&, bool strict);
+    template<typename StringType>
+    static bool fastParseColor(RGBA32&, const StringType&, bool strict);
 
     bool parseLineHeight(bool important);
     bool parseFontSize(bool important);

@@ -120,6 +120,7 @@ public:
     bool shouldInterceptPostMessage() const;
     bool isSmartInsertDeleteEnabled() const;
     bool isSelectTrailingWhitespaceEnabled() const;
+    bool shouldDumpResourcePriorities() const;
 #if ENABLE_NOTIFICATIONS
     WebKit::WebNotificationPresenter* notificationPresenter() const;
 #endif
@@ -238,7 +239,6 @@ private:
 
     void startSpeechInput(const CppArgumentList&, CppVariant*);
 
-    void markerTextForListItem(const CppArgumentList&, CppVariant*);
     void findString(const CppArgumentList&, CppVariant*);
 
     // Expects the first argument to be an input element and the second argument to be a string value.
@@ -419,6 +419,11 @@ private:
 
     // Causes WillSendRequest to return an empty request.
     void setWillSendRequestReturnsNull(const CppArgumentList&, CppVariant*);
+
+    // This function sets a flag that tells the test_shell to dump a descriptive
+    // line for each resource load's priority and any time that priority
+    // changes. It takes no arguments, and ignores any that may be present.
+    void dumpResourceRequestPriorities(const CppArgumentList&, CppVariant*);
 
     ///////////////////////////////////////////////////////////////////////////
     // Methods interacting with the WebTestProxy
@@ -668,6 +673,8 @@ private:
     bool m_smartInsertDeleteEnabled;
 
     bool m_selectTrailingWhitespaceEnabled;
+
+    bool m_shouldDumpResourcePriorities;
 
     std::set<std::string> m_httpHeadersToClear;
 

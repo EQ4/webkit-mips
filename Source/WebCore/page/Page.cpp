@@ -438,9 +438,7 @@ void Page::setGroupName(const String& name)
 
 const String& Page::groupName() const
 {
-    DEFINE_STATIC_LOCAL(String, nullString, ());
-    // FIXME: Why not just return String()?
-    return m_group ? m_group->name() : nullString;
+    return m_group ? m_group->name() : nullAtom.string();
 }
 
 void Page::initGroup()
@@ -748,6 +746,9 @@ void Page::setPageScaleFactor(float scale, const IntPoint& origin)
 #if USE(ACCELERATED_COMPOSITING)
     mainFrame()->deviceOrPageScaleFactorChanged();
 #endif
+
+    if (view && view->fixedElementsLayoutRelativeToFrame())
+        view->setViewportConstrainedObjectsNeedLayout();
 
     if (view && view->scrollPosition() != origin) {
         if (!m_settings->applyPageScaleFactorInCompositor() && document->renderer() && document->renderer()->needsLayout() && view->didFirstLayout())
@@ -1280,7 +1281,8 @@ void Page::resetRelevantPaintedObjectCounter()
 {
     m_isCountingRelevantRepaintedObjects = false;
     m_relevantUnpaintedRenderObjects.clear();
-    m_relevantPaintedRegion = Region();
+    m_topRelevantPaintedRegion = Region();
+    m_bottomRelevantPaintedRegion = Region();
     m_relevantUnpaintedRegion = Region();
 }
 
@@ -1330,13 +1332,38 @@ void Page::addRelevantRepaintedObject(RenderObject* object, const LayoutRect& ob
         m_relevantUnpaintedRegion.subtract(snappedPaintRect);
     }
 
-    m_relevantPaintedRegion.unite(snappedPaintRect);
-    
+    // Split the relevantRect into a top half and a bottom half. Making sure we have coverage in
+    // both halves helps to prevent cases where we have a fully loaded menu bar or masthead with
+    // no content beneath that.
+    LayoutRect topRelevantRect = relevantRect;
+    topRelevantRect.contract(LayoutSize(0, relevantRect.height() / 2));
+    LayoutRect bottomRelevantRect = topRelevantRect;
+    bottomRelevantRect.setY(relevantRect.height() / 2);
+
+    // If the rect straddles both Regions, split it appropriately.
+    if (topRelevantRect.intersects(snappedPaintRect) && bottomRelevantRect.intersects(snappedPaintRect)) {
+        IntRect topIntersection = snappedPaintRect;
+        topIntersection.intersect(pixelSnappedIntRect(topRelevantRect));
+        m_topRelevantPaintedRegion.unite(topIntersection);
+
+        IntRect bottomIntersection = snappedPaintRect;
+        bottomIntersection.intersect(pixelSnappedIntRect(bottomRelevantRect));
+        m_bottomRelevantPaintedRegion.unite(bottomIntersection);
+    } else if (topRelevantRect.intersects(snappedPaintRect))
+        m_topRelevantPaintedRegion.unite(snappedPaintRect);
+    else
+        m_bottomRelevantPaintedRegion.unite(snappedPaintRect);
+
+    float topPaintedArea = m_topRelevantPaintedRegion.totalArea();
+    float bottomPaintedArea = m_bottomRelevantPaintedRegion.totalArea();
     float viewArea = relevantRect.width() * relevantRect.height();
-    float ratioOfViewThatIsPainted = m_relevantPaintedRegion.totalArea() / viewArea;
+
+    float ratioThatIsPaintedOnTop = topPaintedArea / viewArea;
+    float ratioThatIsPaintedOnBottom = bottomPaintedArea / viewArea;
     float ratioOfViewThatIsUnpainted = m_relevantUnpaintedRegion.totalArea() / viewArea;
 
-    if (ratioOfViewThatIsPainted > gMinimumPaintedAreaRatio && ratioOfViewThatIsUnpainted < gMaximumUnpaintedAreaRatio) {
+    if (ratioThatIsPaintedOnTop > (gMinimumPaintedAreaRatio / 2) && ratioThatIsPaintedOnBottom > (gMinimumPaintedAreaRatio / 2)
+        && ratioOfViewThatIsUnpainted < gMaximumUnpaintedAreaRatio) {
         m_isCountingRelevantRepaintedObjects = false;
         resetRelevantPaintedObjectCounter();
         if (Frame* frame = mainFrame())
@@ -1446,7 +1473,8 @@ void Page::reportMemoryUsage(MemoryObjectInfo* memoryObjectInfo) const
     info.addMember(m_group, "group");
     info.addMember(m_sessionStorage, "sessionStorage");
     info.addMember(m_relevantUnpaintedRenderObjects, "relevantUnpaintedRenderObjects");
-    info.addMember(m_relevantPaintedRegion, "relevantPaintedRegion");
+    info.addMember(m_topRelevantPaintedRegion, "relevantPaintedRegion");
+    info.addMember(m_bottomRelevantPaintedRegion, "relevantPaintedRegion");
     info.addMember(m_relevantUnpaintedRegion, "relevantUnpaintedRegion");
     info.addMember(m_seenPlugins, "seenPlugins");
     info.addMember(m_seenMediaEngines, "seenMediaEngines");

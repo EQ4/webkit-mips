@@ -128,9 +128,9 @@ Evas_Object* WebView::evasObject()
     return m_ewkView->evasObject();
 }
 
-void WebView::setThemePath(WKStringRef theme)
+void WebView::setThemePath(const String& theme)
 {
-    m_page->setThemePath(toWTFString(theme).utf8().data());
+    m_page->setThemePath(theme);
 }
 
 void WebView::setDrawsBackground(bool drawsBackground)
@@ -196,14 +196,14 @@ void WebView::didCommitLoad()
 
 void WebView::updateViewportSize()
 {
+    FloatSize size = m_ewkView->size();
+    // The viewport controller expects sizes in UI units, and not raw device units.
+    size.scale(1 / m_page->deviceScaleFactor());
     if (m_page->useFixedLayout()) {
-        FloatSize size = m_ewkView->size();
-        // The viewport controller expects sizes in UI units, and not raw device units.
-        size.scale(1 / m_page->deviceScaleFactor());
         m_ewkView->pageViewportController()->didChangeViewportSize(size);
         return;
     }
-    m_page->drawingArea()->setVisibleContentsRect(IntRect(roundedIntPoint(m_ewkView->pagePosition()), m_ewkView->size()), FloatPoint());
+    m_page->drawingArea()->setVisibleContentsRect(FloatRect(m_ewkView->pagePosition(), size), FloatPoint());
 }
 
 void WebView::didChangeContentsSize(const WebCore::IntSize& size)
@@ -297,32 +297,12 @@ bool WebView::isViewInWindow()
 
 void WebView::processDidCrash()
 {
-    // Check if loading was ongoing, when web process crashed.
-    double loadProgress = ewk_view_load_progress_get(m_ewkView->evasObject());
-    if (loadProgress >= 0 && loadProgress < 1) {
-        loadProgress = 1;
-        m_ewkView->smartCallback<LoadProgress>().call(&loadProgress);
-    }
-
-    m_ewkView->smartCallback<TooltipTextUnset>().call();
-
-    bool handled = false;
-    m_ewkView->smartCallback<WebProcessCrashed>().call(&handled);
-
-    if (!handled) {
-        CString url = m_page->urlAtProcessExit().utf8();
-        WARN("WARNING: The web process experienced a crash on '%s'.\n", url.data());
-
-        // Display an error page
-        ewk_view_html_string_load(m_ewkView->evasObject(), "The web process has crashed.", 0, url.data());
-    }
+    m_client.webProcessCrashed(this, m_page->urlAtProcessExit());
 }
 
 void WebView::didRelaunchProcess()
 {
-    const char* themePath = m_ewkView->themePath();
-    if (themePath)
-        m_page->setThemePath(themePath);
+    m_client.webProcessDidRelaunch(this);
 }
 
 void WebView::pageClosed()

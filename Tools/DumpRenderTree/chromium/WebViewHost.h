@@ -58,6 +58,7 @@ struct WebWindowFeatures;
 }
 
 namespace webkit_support {
+class DRTLayerTreeViewClient;
 class MediaStreamUtil;
 class TestMediaStreamClient;
 }
@@ -105,7 +106,7 @@ class WebViewHost : public WebKit::WebViewClient, public WebKit::WebFrameClient,
     virtual void clearAllDatabases() OVERRIDE;
     virtual void setDatabaseQuota(int) OVERRIDE;
     virtual void setDeviceScaleFactor(float) OVERRIDE;
-    virtual void setFocus(bool) OVERRIDE;
+    virtual void setFocus(WebTestRunner::WebTestProxyBase*, bool) OVERRIDE;
     virtual void setAcceptAllCookies(bool) OVERRIDE;
     virtual std::string pathToLocalResource(const std::string& url) OVERRIDE;
     virtual void setLocale(const std::string&) OVERRIDE;
@@ -233,6 +234,8 @@ private:
 
     bool hasWindow() const { return m_hasWindow; }
 
+    void updateViewportSize();
+
 #if ENABLE(MEDIA_STREAM)
     webkit_support::TestMediaStreamClient* testMediaStreamClient();
 #endif
@@ -278,6 +281,7 @@ private:
     WebTestRunner::WebTaskList m_taskList;
     Vector<WebKit::WebWidget*> m_popupmenus;
 
+    OwnPtr<webkit_support::DRTLayerTreeViewClient> m_layerTreeViewClient;
     OwnPtr<WebKit::WebLayerTreeView> m_layerTreeView;
 };
 

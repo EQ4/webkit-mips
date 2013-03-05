@@ -45,6 +45,7 @@
 #import <WebCore/GeolocationPosition.h>
 #import <WebKit/DOMDocument.h>
 #import <WebKit/DOMElement.h>
+#import <WebKit/DOMHTMLInputElementPrivate.h>
 #import <WebKit/WebApplicationCache.h>
 #import <WebKit/WebBackForwardList.h>
 #import <WebKit/WebCoreStatistics.h>
@@ -271,21 +272,6 @@ void TestRunner::keepWebHistory()
         [WebHistory setOptionalSharedHistory:history];
         [history release];
     }
-}
-
-JSValueRef TestRunner::computedStyleIncludingVisitedInfo(JSContextRef context, JSValueRef value)
-{   
-    return [[mainFrame webView] _computedStyleIncludingVisitedInfo:context forElement:value];
-}
-
-JSRetainPtr<JSStringRef> TestRunner::markerTextForListItem(JSContextRef context, JSValueRef nodeObject) const
-{
-    DOMElement *element = [DOMElement _DOMElementFromJSContext:context value:nodeObject];
-    if (!element)
-        return JSRetainPtr<JSStringRef>();
-
-    JSRetainPtr<JSStringRef> markerText(Adopt, JSStringCreateWithCFString((CFStringRef)[element _markerTextForListItem]));
-    return markerText;
 }
 
 int TestRunner::numberOfPendingGeolocationPermissionRequests()
@@ -602,7 +588,7 @@ void TestRunner::setValueForUser(JSContextRef context, JSValueRef nodeObject, JS
         return;
 
     RetainPtr<CFStringRef> valueCF(AdoptCF, JSStringCopyCFString(kCFAllocatorDefault, value));
-    [(DOMHTMLInputElement *)element _setValueForUser:(NSString *)valueCF.get()];
+    [(DOMHTMLInputElement *)element setValueForUser:(NSString *)valueCF.get()];
 }
 
 void TestRunner::setViewModeMediaFeature(JSStringRef mode)

@@ -51,6 +51,7 @@
 #include <WebCore/ApplicationCache.h>
 #include <WebCore/ApplicationCacheStorage.h>
 #include <WebCore/Frame.h>
+#include <WebCore/FrameLoader.h>
 #include <WebCore/FrameView.h>
 #include <WebCore/GCController.h>
 #include <WebCore/GeolocationClient.h>
@@ -344,6 +345,13 @@ void InjectedBundle::removeOriginAccessWhitelistEntry(const String& sourceOrigin
 void InjectedBundle::resetOriginAccessWhitelists()
 {
     SecurityPolicy::resetOriginAccessWhitelists();
+}
+
+void InjectedBundle::setAsynchronousSpellCheckingEnabled(WebPageGroupProxy* pageGroup, bool enabled)
+{
+    const HashSet<Page*>& pages = PageGroup::pageGroup(pageGroup->identifier())->pages();
+    for (HashSet<Page*>::iterator iter = pages.begin(); iter != pages.end(); ++iter)
+        (*iter)->settings()->setAsynchronousSpellCheckingEnabled(enabled);
 }
 
 void InjectedBundle::clearAllDatabases()

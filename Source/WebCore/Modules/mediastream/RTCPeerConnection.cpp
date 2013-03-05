@@ -39,6 +39,7 @@
 #include "Event.h"
 #include "ExceptionCode.h"
 #include "Frame.h"
+#include "FrameLoader.h"
 #include "FrameLoaderClient.h"
 #include "MediaConstraintsImpl.h"
 #include "MediaStreamEvent.h"
@@ -428,6 +429,21 @@ MediaStreamVector RTCPeerConnection::getLocalStreams() const
 MediaStreamVector RTCPeerConnection::getRemoteStreams() const
 {
     return m_remoteStreams;
+}
+
+MediaStream* RTCPeerConnection::getStreamById(const String& streamId)
+{
+    for (MediaStreamVector::iterator iter = m_localStreams.begin(); iter != m_localStreams.end(); ++iter) {
+        if ((*iter)->id() == streamId)
+            return iter->get();
+    }
+
+    for (MediaStreamVector::iterator iter = m_remoteStreams.begin(); iter != m_remoteStreams.end(); ++iter) {
+        if ((*iter)->id() == streamId)
+            return iter->get();
+    }
+
+    return 0;
 }
 
 void RTCPeerConnection::getStats(PassRefPtr<RTCStatsCallback> successCallback, PassRefPtr<MediaStreamTrack> selector)

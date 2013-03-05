@@ -782,7 +782,9 @@ void RenderLayerCompositor::addToOverlapMap(OverlapMap& overlapMap, RenderLayer*
     }
 
     IntRect clipRect = pixelSnappedIntRect(layer->backgroundClipRect(RenderLayer::ClipRectsContext(rootRenderLayer(), 0, AbsoluteClipRects)).rect()); // FIXME: Incorrect for CSS regions.
-    clipRect.scale(pageScaleFactor());
+    if (Settings* settings = m_renderView->document()->settings())
+        if (!settings->applyPageScaleFactorInCompositor())
+            clipRect.scale(pageScaleFactor());
     clipRect.intersect(layerBounds);
     overlapMap.add(layer, clipRect);
 }
@@ -1218,9 +1220,10 @@ void RenderLayerCompositor::frameViewDidScroll()
     if (ScrollingCoordinator* scrollingCoordinator = this->scrollingCoordinator()) {
         if (scrollingCoordinator->coordinatesScrollingForFrameView(frameView))
             return;
-        if (Settings* settings = m_renderView->document()->settings())
+        if (Settings* settings = m_renderView->document()->settings()) {
             if (settings->compositedScrollingForFramesEnabled())
                 scrollingCoordinator->scrollableAreaScrollLayerDidChange(frameView);
+        }
     }
 
     m_scrollLayer->setPosition(FloatPoint(-scrollPosition.x(), -scrollPosition.y()));
@@ -1670,7 +1673,7 @@ bool RenderLayerCompositor::canBeComposited(const RenderLayer* layer) const
 {
     // FIXME: We disable accelerated compositing for elements in a RenderFlowThread as it doesn't work properly.
     // See http://webkit.org/b/84900 to re-enable it.
-    return m_hasAcceleratedCompositing && layer->isSelfPaintingLayer() && !layer->renderer()->inRenderFlowThread();
+    return m_hasAcceleratedCompositing && layer->isSelfPaintingLayer() && layer->renderer()->flowThreadState() == RenderObject::NotInsideFlowThread;
 }
 
 bool RenderLayerCompositor::requiresOwnBackingStore(const RenderLayer* layer, const RenderLayer* compositingAncestorLayer) const
@@ -2146,9 +2149,10 @@ bool RenderLayerCompositor::requiresCompositingForPosition(RenderObject* rendere
         return false;
 
     // FIXME: acceleratedCompositingForFixedPositionEnabled should probably be renamed acceleratedCompositingForViewportConstrainedPositionEnabled().
-    if (Settings* settings = m_renderView->document()->settings())
+    if (Settings* settings = m_renderView->document()->settings()) {
         if (!settings->acceleratedCompositingForFixedPositionEnabled())
             return false;
+    }
 
     if (isSticky)
         return true;
@@ -2452,7 +2456,7 @@ void RenderLayerCompositor::updateOverflowControlsLayers()
             m_layerForOverhangAreas->setDrawsContent(false);
             m_layerForOverhangAreas->setSize(m_renderView->frameView()->frameRect().size());
 
-            ScrollbarTheme::theme()->setUpOverhangAreasLayerContents(m_layerForOverhangAreas.get());
+            ScrollbarTheme::theme()->setUpOverhangAreasLayerContents(m_layerForOverhangAreas.get(), this->page()->chrome()->client()->underlayColor());
 
             // We want the overhang areas layer to be positioned below the frame contents,
             // so insert it below the clip layer.
@@ -2866,7 +2870,7 @@ FixedPositionViewportConstraints RenderLayerCompositor::computeFixedViewportCons
     FrameView* frameView = m_renderView->frameView();
     LayoutRect viewportRect = frameView->viewportConstrainedVisibleContentRect();
 
-    FixedPositionViewportConstraints constraints = FixedPositionViewportConstraints();
+    FixedPositionViewportConstraints constraints;
 
     GraphicsLayer* graphicsLayer = layer->backing()->graphicsLayer();
 
@@ -2904,7 +2908,7 @@ StickyPositionViewportConstraints RenderLayerCompositor::computeStickyViewportCo
     FrameView* frameView = m_renderView->frameView();
     LayoutRect viewportRect = frameView->viewportConstrainedVisibleContentRect();
 
-    StickyPositionViewportConstraints constraints = StickyPositionViewportConstraints();
+    StickyPositionViewportConstraints constraints;
 
     RenderBoxModelObject* renderer = toRenderBoxModelObject(layer->renderer());
 

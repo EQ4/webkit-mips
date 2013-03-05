@@ -1,3 +1,740 @@
+2013-03-05  Alexei Filippov  <alph@chromium.org>
+
+        Web Inspector: Add a renderer process memory size test.
+        https://bugs.webkit.org/show_bug.cgi?id=111337
+
+        Reviewed by Yury Semikhatsky.
+
+        The test checks that the renderer process memory size
+        is obtained from the browser and reported to the inspector
+        frontend correctly.
+
+        * src/js/Tests.js:
+        (.TestSuite.prototype.testRendererProcessNativeMemorySize.checkFuzzyValue):
+        (.TestSuite.prototype.testRendererProcessNativeMemorySize.step2):
+
+2013-03-04  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: cellForColumnAndRow fails for tables with hidden table cells
+        https://bugs.webkit.org/show_bug.cgi?id=110050
+
+        Reviewed by Tim Horton.
+
+        * src/WebAccessibilityObject.cpp:
+        (WebKit::WebAccessibilityObject::cellColumnIndex):
+        (WebKit::WebAccessibilityObject::cellColumnSpan):
+        (WebKit::WebAccessibilityObject::cellRowIndex):
+        (WebKit::WebAccessibilityObject::cellRowSpan):
+
+2013-03-04  Kunihiko Sakamoto  <ksakamoto@chromium.org>
+
+        [Chromium] Add runtime flag for font load events
+        https://bugs.webkit.org/show_bug.cgi?id=111296
+
+        Reviewed by Kent Tamura.
+
+        Add a runtime feature flag for FontLoader interface (disabled by default),
+        and enable ENABLE_FONT_LOAD_EVENTS build flag for chromium.
+
+        * features.gypi:
+        * public/WebRuntimeFeatures.h:
+        (WebRuntimeFeatures):
+        * src/WebRuntimeFeatures.cpp:
+        (WebKit::WebRuntimeFeatures::enableFontLoadEvents):
+        (WebKit):
+        (WebKit::WebRuntimeFeatures::isFontLoadEventsEnabled):
+
+2013-03-04  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r185990.  Requested by
+        jamesr_ via sheriffbot.
+
+        * DEPS:
+
+2013-02-26  Kentaro Hara  <haraken@chromium.org>
+
+        [chromium] Implement TRACE_EVENT macros for sampling profiling
+        https://bugs.webkit.org/show_bug.cgi?id=110932
+
+        Reviewed by Adam Barth.
+
+        We are implementing TRACE_EVENT macros for sampling profiling.
+        It works in the following mechanism:
+
+        - Chromium defines global state variables for sampling profiling.
+        (i.e. g_trace_state0, g_trace_state1, g_trace_state2 in trace_event.h)
+
+        - WebKit gets the addresses of the global state variables at the
+        initialization step. (i.e. EventTracer::initialize())
+
+        - WebKit updates the global states by using TRACE_EVENT_SAMPLING_STATE()
+        macros every time WebKit changes its state. (e.g. DOM attribute
+        getters/setters/methods)
+
+        - A sampling thread running in Chrome reads the global states
+        periodically and visualizes the profiling results into about://tracing.
+
+        This patch implements (1) a WebKit API to get the addresses of
+        the global states and (2) the TRACE_EVENT_SAMPLING_STATE() macro.
+
+        * src/WebKit.cpp:
+        (WebKit::initializeWithoutV8):
+
+2013-03-04  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Roll chromium DEPS 185662 -> 185963
+
+        Roll roll roll the deps
+          Gently from downstream.
+        Merrily merrily merrily merrily
+          Green bots are but a dream.
+
+        * DEPS:
+
+2013-03-04  Tony Chang  <tony@chromium.org>
+
+        Unreviewed, rolling out r144562.
+        http://trac.webkit.org/changeset/144562
+        https://bugs.webkit.org/show_bug.cgi?id=85642
+
+        Caused KeyPadInsert faluires in webkit_unittests
+
+        * WebKit.gypi:
+        * tests/KeyCodeConversionTestGtk.cpp: Removed.
+
+2013-03-04  Levi Weintraub  <leviw@chromium.org>
+
+        Add support for 8 bit TextRuns on Chromium Linux & Mac
+        https://bugs.webkit.org/show_bug.cgi?id=99393
+
+        Reviewed by Eric Seidel.
+
+        Enabling 8 bit text runs for Linux and Mac platforms.
+
+        * features.gypi:
+
+2013-03-04  Peter Beverloo  <peter@chromium.org>
+
+        [Chromium] Add a new dependency on jsr-305 for Android
+        https://bugs.webkit.org/show_bug.cgi?id=111340
+
+        Unreviewed build fix; new Android dependency. This is
+        currently breaking gyp generation on the Android bots.
+
+        * DEPS:
+
+2013-03-04  Aaron Colwell  <acolwell@chromium.org>
+
+        Remove unused return value from SourceBufferPrivate::abort() and WebSourceBuffer::abort().
+        https://bugs.webkit.org/show_bug.cgi?id=111195
+
+        Reviewed by Adam Barth.
+
+        * public/WebSourceBuffer.h:
+        (WebSourceBuffer):
+        * src/SourceBufferPrivateImpl.cpp:
+        (WebKit::SourceBufferPrivateImpl::abort):
+        * src/SourceBufferPrivateImpl.h:
+        (SourceBufferPrivateImpl):
+        * src/WebMediaPlayerClientImpl.cpp:
+        (WebSourceBufferImpl):
+        (WebKit::WebSourceBufferImpl::abort):
+
+2013-03-04  Andrey Lushnikov  <lushnikov@chromium.org>
+
+        Web Inspector: add Ace editor experiment
+        https://bugs.webkit.org/show_bug.cgi?id=111191
+
+        Reviewed by Pavel Feldman.
+
+        Add target to concatenate js files for Ace Text Editor.
+
+        * WebKit.gyp:
+
+2013-03-04  Kunihiko Sakamoto  <ksakamoto@chromium.org>
+
+        Add build flag for FontLoader
+        https://bugs.webkit.org/show_bug.cgi?id=111289
+
+        Reviewed by Benjamin Poulain.
+
+        Add ENABLE_FONT_LOAD_EVENTS build flag (disabled by default).
+
+        * features.gypi:
+
+2013-03-04  Andrey Lushnikov  <lushnikov@chromium.org>
+
+        Web Inspector: add runtime flag to determine if inspector's source files were flattened.
+        https://bugs.webkit.org/show_bug.cgi?id=111184
+
+        Reviewed by Pavel Feldman.
+
+        Included "buildSystemOnly.js" in devtools.html by generate_devtools_html.py script.
+
+        * WebKit.gyp:
+        * scripts/generate_devtools_html.py: Add script tag to include buildSystemOnly.js
+        (write_devtools_html):
+
+2013-03-03  Alexandre Elias  <aelias@chromium.org>
+
+        [chromium] Remove WebLayerTreeView::setViewportSize call
+        https://bugs.webkit.org/show_bug.cgi?id=110727
+
+        Reviewed by James Robinson.
+
+        After https://codereview.chromium.org/12328080 lands,
+        setViewportSize is called from the Chromium side. The multiplication
+        by deviceScaleFactor here was prone to off-by-one errors.
+        The layoutSize() function was only used here so delete it as well.
+
+        DumpRenderTree WebViewHost must now call this method as well.
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::updateLayerTreeViewport):
+        * src/WebViewImpl.h:
+        (WebViewImpl):
+
+2013-03-03  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144567.
+        http://trac.webkit.org/changeset/144567
+        https://bugs.webkit.org/show_bug.cgi?id=111266
+
+        Does not compile on apple-win (Requested by abarth on
+        #webkit).
+
+        * public/WebFrame.h:
+        * src/WebFrameImpl.cpp:
+        (WebKit::WebFrameImpl::iconURLs):
+        * src/WebFrameImpl.h:
+        (WebFrameImpl):
+
+2013-03-03  Mike West  <mkwst@chromium.org>
+
+        CSP 1.1: Support CSP 1.1 directives on the unprefixed header.
+        https://bugs.webkit.org/show_bug.cgi?id=111254
+
+        Reviewed by Adam Barth.
+
+        The enum names no longer made sense: the difference between the
+        canonical 'Content-Security-Policy' header and 'X-WebKit-CSP' is the
+        prefix, not the functionality. This patch renames them for clarity.
+
+        * public/WebContentSecurityPolicy.h:
+        * src/AssertMatchingEnums.cpp:
+            Rename the Chromium side of the enums.
+
+2013-03-03  Adam Barth  <abarth@webkit.org>
+
+        Unreviewed attempted build fix. Adds back some includes removed in
+        http://trac.webkit.org/changeset/144565.
+
+        * src/ApplicationCacheHost.cpp:
+        * src/AssociatedURLLoader.cpp:
+        * src/EditorClientImpl.cpp:
+        * src/SharedWorkerRepository.cpp:
+        * src/WebDataSourceImpl.cpp:
+        * src/WebFrameImpl.h:
+        (WebCore):
+        * src/WebNode.cpp:
+        * src/WebSharedWorkerImpl.cpp:
+        * tests/FrameLoaderClientImplTest.cpp:
+
+2013-03-03  Adam Barth  <abarth@webkit.org>
+
+        Unreviewed rollout of http://trac.webkit.org/r144530
+        As described in https://bugs.webkit.org/show_bug.cgi?id=111167 and
+        https://bugs.webkit.org/show_bug.cgi?id=111035, this patch caused a
+        large number of ASSERTs in chromium-win.
+
+        * src/ApplicationCacheHost.cpp:
+        * src/AssociatedURLLoader.cpp:
+        * src/EditorClientImpl.cpp:
+        * src/SharedWorkerRepository.cpp:
+        * src/WebDataSourceImpl.cpp:
+        * src/WebFrameImpl.h:
+        (WebCore):
+        * src/WebNode.cpp:
+        * src/WebSharedWorkerImpl.cpp:
+        * tests/FrameLoaderClientImplTest.cpp:
+
+2013-03-03  Ankur Taly  <ataly@google.com>
+
+        WebKit API for enabling DOM logging for certain worlds
+        https://bugs.webkit.org/show_bug.cgi?id=110779
+
+        Reviewed by Kentaro Hara.
+
+        * WebKit.gyp:
+
+2013-03-03  James Weatherall  <wez@chromium.org>
+
+        keydown and keyup events have zero keycode for some numeric pad keys under Chromium on Linux
+        https://bugs.webkit.org/show_bug.cgi?id=85642
+
+        Add tests to verify that the fixed keys generate the same keyCode values as their equivalents.
+
+        Reviewed by Adam Barth.
+
+        * WebKit.gypi:
+        * tests/KeyCodeConversionTestGtk.cpp: Added.
+        (WebCore):
+        (WebCore::TEST):
+
+2013-02-18  Darin Adler  <darin@apple.com>
+
+        Cut down the number of source files that depend on Clipboard.h
+        https://bugs.webkit.org/show_bug.cgi?id=110030
+
+        Reviewed by Ryosuke Niwa.
+
+        * src/SharedWorkerRepository.cpp: Add include of ResourceResponse.h
+        here. We used to get this indirectly through Clipboard.h.
+
+2013-02-28  Alexey Proskuryakov  <ap@apple.com>
+
+        Reduce amount of rebuilding when touching networking headers
+        https://bugs.webkit.org/show_bug.cgi?id=111035
+
+        Reviewed by Eric Seidel.
+
+        Adding includes that are now necessary because WebCore headers don't have them
+        any more.
+
+        * src/ApplicationCacheHost.cpp:
+        * src/AssociatedURLLoader.cpp:
+        * src/EditorClientImpl.cpp:
+        * src/SharedWorkerRepository.cpp:
+        * src/WebDataSourceImpl.cpp:
+        * src/WebFrameImpl.h:
+        * src/WebNode.cpp:
+        * src/WebSharedWorkerImpl.cpp:
+        * tests/FrameLoaderClientImplTest.cpp:
+
+2013-03-01  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r185662.  Requested by
+        "James Robinson" <jamesr@chromium.org> via sheriffbot.
+
+        * DEPS:
+
+2013-03-01  Terry Anderson  <tdanderson@chromium.org>
+
+        EventHandler::handleGestureScrollUpdate() should invoke the user-generated scroll routines 
+        so its behavior matches other user-initiated scrolls
+        https://bugs.webkit.org/show_bug.cgi?id=109769
+
+        Reviewed by James Robinson.
+
+        Clear the nodes corresponding to a fling scroll event when the event ends.
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::updateAnimations):
+
+2013-03-01  David Dorwin  <ddorwin@chromium.org>
+
+        [chromium] Revert r143827 to restore WebHelperPluginImpl's call to frameDetached()
+        https://bugs.webkit.org/show_bug.cgi?id=111232
+
+        Reviewed by Adam Barth.
+
+        This patch reverts r143827, which causes a crash in failure conditions:
+        http://crbug.com/178848
+
+        * src/WebHelperPluginImpl.cpp:
+        (WebKit::WebHelperPluginImpl::destoryPage):
+
+2013-03-01  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144422 and r144424.
+        http://trac.webkit.org/changeset/144422
+        http://trac.webkit.org/changeset/144424
+        https://bugs.webkit.org/show_bug.cgi?id=111167
+
+        Caused over 20 tests to fail assertion on Chromium Win port as
+        ASSERTION FAILED: m_platformRequestUpdated (Requested by
+        toyoshim on #webkit).
+
+        * src/ApplicationCacheHost.cpp:
+        * src/AssociatedURLLoader.cpp:
+        * src/EditorClientImpl.cpp:
+        * src/SharedWorkerRepository.cpp:
+        * src/WebDataSourceImpl.cpp:
+        * src/WebFrameImpl.h:
+        (WebCore):
+        * src/WebNode.cpp:
+        * src/WebSharedWorkerImpl.cpp:
+        * tests/FrameLoaderClientImplTest.cpp:
+
+2013-03-01  Jochen Eisinger  <jochen@chromium.org>
+
+        REGRESSION(r144422): Broke compilation on chromium-mac
+        https://bugs.webkit.org/show_bug.cgi?id=111150
+
+        Unreviewed build fix.
+
+        * src/WebFrameImpl.h:
+        (WebCore):
+
+2013-02-28  Alexey Proskuryakov  <ap@apple.com>
+
+        Reduce amount of rebuilding when touching networking headers
+        https://bugs.webkit.org/show_bug.cgi?id=111035
+
+        Reviewed by Eric Seidel.
+
+        Adding includes that are now necessary because WebCore headers don't have them
+        any more.
+
+        * src/ApplicationCacheHost.cpp:
+        * src/AssociatedURLLoader.cpp:
+        * src/EditorClientImpl.cpp:
+        * src/SharedWorkerRepository.cpp:
+        * src/WebDataSourceImpl.cpp:
+        * src/WebFrameImpl.h:
+        * src/WebNode.cpp:
+        * src/WebSharedWorkerImpl.cpp:
+        * tests/FrameLoaderClientImplTest.cpp:
+
+2013-02-28  Ankur Taly  <ataly@google.com>
+
+        WebKit API for enabling DOM logging for certain worlds
+        https://bugs.webkit.org/show_bug.cgi?id=110779
+
+        Reviewed by Adam Barth.
+
+        This patch adds initial plumbing for enabling logging of DOM
+        activity by JavaScript code running withing v8, on a 
+        per-world basis. In particular it adds methods to the chromium
+        WebKit API for associating a logger object with world ids for which
+        DOM activity logging is enabled.
+
+
+        * WebKit.gyp:
+        * public/WebDOMActivityLogger.h: Added.
+        (v8):
+        (WebKit):
+        (WebDOMActivityLogger):
+        (WebKit::WebDOMActivityLogger::~WebDOMActivityLogger):
+        (WebKit::WebDOMActivityLogger::log):
+        * src/WebDOMActivityLogger.cpp: Added.
+        (WebKit):
+        (DOMActivityLoggerContainer):
+        (WebKit::DOMActivityLoggerContainer::DOMActivityLoggerContainer):
+        (WebKit::DOMActivityLoggerContainer::~DOMActivityLoggerContainer):
+        (WebKit::DOMActivityLoggerContainer::log):
+        (WebKit::hasDOMActivityLogger):
+        (WebKit::setDOMActivityLogger):
+
+2013-02-28  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r185341.  Requested by
+        "James Robinson" <jamesr@chromium.org> via sheriffbot.
+
+        * DEPS:
+
+2013-02-28  Varun Jain  <varunjain@chromium.org>
+
+        Add new webkit API to invoke a context menu.
+        https://bugs.webkit.org/show_bug.cgi?id=111040
+
+        Reviewed by Adam Barth.
+
+        * public/WebView.h:
+        (WebView):
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::showContextMenu):
+        (WebKit):
+        * src/WebViewImpl.h:
+
+2013-02-28  Aaron Colwell  <acolwell@chromium.org>
+
+        Factor SourceBuffer methods out of MediaSourcePrivate & WebMediaSource
+        into SourceBufferPrivate & WebSourceBuffer respectively.
+        https://bugs.webkit.org/show_bug.cgi?id=110798
+
+        Reviewed by Adam Barth, Jer Noble.
+
+        * WebKit.gyp:
+        * public/WebMediaSourceClient.h:
+        (WebKit):
+        (WebMediaSourceClient):
+        * public/WebSourceBuffer.h: 
+        (WebKit):
+        (WebSourceBuffer): Contains SourceBuffer methods extracted from WebMediaSource.
+        (WebKit::WebSourceBuffer::~WebSourceBuffer):
+        * src/AssertMatchingEnums.cpp:
+        * src/MediaSourcePrivateImpl.cpp:
+        (WebKit):
+        (WebKit::MediaSourcePrivateImpl::MediaSourcePrivateImpl):
+        (WebKit::MediaSourcePrivateImpl::addSourceBuffer):
+        (WebKit::MediaSourcePrivateImpl::duration):
+        (WebKit::MediaSourcePrivateImpl::setDuration):
+        (WebKit::MediaSourcePrivateImpl::endOfStream):
+        * src/MediaSourcePrivateImpl.h:
+        (WebKit):
+        (MediaSourcePrivateImpl): Adapts MediaSourcePrivate interface to WebMediaSourceClient.
+        (WebKit::MediaSourcePrivateImpl::~MediaSourcePrivateImpl):
+        * src/SourceBufferPrivateImpl.cpp:
+        (WebKit):
+        (WebKit::SourceBufferPrivateImpl::SourceBufferPrivateImpl):
+        (WebKit::SourceBufferPrivateImpl::buffered):
+        (WebKit::SourceBufferPrivateImpl::append):
+        (WebKit::SourceBufferPrivateImpl::abort):
+        (WebKit::SourceBufferPrivateImpl::setTimestampOffset):
+        (WebKit::SourceBufferPrivateImpl::removedFromMediaSource):
+        * src/SourceBufferPrivateImpl.h:
+        (WebKit):
+        (SourceBufferPrivateImpl): Adapts SourceBufferPrivate interface to WebSourceBuffer.
+        (WebKit::SourceBufferPrivateImpl::~SourceBufferPrivateImpl):
+        * src/WebMediaPlayerClientImpl.cpp:
+        (WebMediaSourceClientImpl):
+        (WebKit):
+        (WebSourceBufferImpl): Temporary implementation of WebSourceBuffer to keep things working
+                               until the Chromium side changes land.
+        (WebKit::WebMediaSourceClientImpl::addSourceBuffer):
+        (WebKit::WebMediaSourceClientImpl::duration):
+        (WebKit::WebMediaSourceClientImpl::setDuration):
+        (WebKit::WebMediaSourceClientImpl::endOfStream):
+        (WebKit::WebSourceBufferImpl::WebSourceBufferImpl):
+        (WebKit::WebSourceBufferImpl::buffered):
+        (WebKit::WebSourceBufferImpl::append):
+        (WebKit::WebSourceBufferImpl::abort):
+        (WebKit::WebSourceBufferImpl::setTimestampOffset):
+        (WebKit::WebSourceBufferImpl::removedFromMediaSource):
+        * src/WebMediaSourceImpl.cpp:
+
+2013-02-28  David Grogan  <dgrogan@chromium.org>
+
+        IndexedDB: IO error when checking schema should destroy LevelDB directory
+        https://bugs.webkit.org/show_bug.cgi?id=110675
+
+        Reviewed by Adam Barth.
+
+        * WebKit.gyp:
+        This was cargo-culted. The component build wouldn't run otherwise.
+
+        * WebKit.gypi:
+        * tests/IDBCleanupOnIOErrorTest.cpp: Added.
+
+2013-02-28  Stephen Chenney  <schenney@chromium.org>
+
+        RenderTableCellDeathTest unit test fails on mac
+        https://bugs.webkit.org/show_bug.cgi?id=110992
+
+        Unreviewed revert of all changes. The problem seems to have resolved.
+
+        * tests/RenderTableCellTest.cpp: Remove Mac disable code.
+
+2013-02-28  Takashi Toyoshima  <toyoshim@chromium.org>
+
+        Unreviewed, quick test breakage fix for android
+        https://bugs.webkit.org/show_bug.cgi?id=110740
+
+        Patch by Seigo Nonaka <nona@chromium.org> on 2013-02-27
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::textInputInfo): Reconstruct condition check order
+
+2013-02-28  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed.  Rolled Chromium DEPS to r184931.  Requested by
+        "Takashi Toyoshima" <toyoshim@chromium.org> via sheriffbot.
+
+        * DEPS:
+
+2013-02-27  Seigo Nonaka  <nona@chromium.org>
+
+        [Chromium] Should not return WebTextInputTypeNone for date input element.
+        https://bugs.webkit.org/show_bug.cgi?id=110740
+
+        Reviewed by Kent Tamura.
+
+        In the case of Windows 8, text input state including on-screen keyboard is controlled by the
+        value of WebTextInputType returned from WebViewImpl::textInputType().
+        In past, it returned WebTextInputTypeDate for date text input but now it returns
+        WebTextInputTypeNone.
+        WebTextInputTypeNone is used for non editable node, so on-screen keyboard will be hidden if
+        the date text input is focused.  So there is no way to input on Windows 8 tablet without
+        physical keyboard except tapping small up/down arrow.
+
+        * public/WebTextInputType.h: Introduces WebTextInputTypeDateTimeField.
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::textInputInfo): Fills type filed regardless of editable or not. It is
+        safe because textInputType returns editable type only for known editable element.
+        (WebKit::WebViewImpl::textInputType): Returns WebTextInputTypeDateTimeField for the date
+        time field element.
+
+2013-02-27  James Simonsen  <simonjam@chromium.org>
+
+        [chromium] Lower priority of preloaded images
+        https://bugs.webkit.org/show_bug.cgi?id=110527
+
+        Plumb the didChangePriority signal into DRT so it can be tested.
+
+        Reviewed by Nate Chapin.
+
+        * public/WebFrameClient.h:
+        (WebKit):
+        (WebKit::WebFrameClient::didChangeResourcePriority):
+        (WebFrameClient):
+        * src/FrameLoaderClientImpl.cpp:
+        (WebKit::FrameLoaderClientImpl::dispatchDidChangeResourcePriority):
+        (WebKit):
+        * src/FrameLoaderClientImpl.h:
+        (FrameLoaderClientImpl):
+
+2013-02-27  Min Qin  <qinmin@chromium.org>
+
+        Unlock partially decoded images after passing them to the ImageDecodingStore
+        https://bugs.webkit.org/show_bug.cgi?id=110778
+
+        Reviewed by Stephen White.
+
+        Test for testing that image frames are unlocked after passing to ImageDecodingStore.
+
+        * tests/ImageFrameGeneratorTest.cpp:
+        (WebCore::ImageFrameGeneratorTest::SetUp):
+        (WebCore::ImageFrameGeneratorTest::frameBuffersUnlocked):
+        (ImageFrameGeneratorTest):
+        (WebCore::ImageFrameGeneratorTest::frameBuffersLocked):
+        (WebCore::TEST_F):
+        * tests/MockImageDecoder.h:
+        (WebCore::MockImageDecoderClient::frameBuffersLocked):
+        (WebCore::MockImageDecoderClient::frameBuffersUnlocked):
+        (WebCore::MockImageDecoder::unlockFrameBuffers):
+        (WebCore::MockImageDecoder::lockFrameBuffers):
+        (MockImageDecoder):
+
+2013-02-27  John Bauman  <jbauman@chromium.org>
+
+        Plugin in iframe may not display
+        https://bugs.webkit.org/show_bug.cgi?id=109879
+
+        Reviewed by Simon Fraser.
+
+        Use clipRectChanged to update the geometry.
+
+        * src/WebPluginContainerImpl.cpp:
+        (WebKit::WebPluginContainerImpl::clipRectChanged):
+        * src/WebPluginContainerImpl.h:
+
+2013-02-27  Stephen Chenney  <schenney@chromium.org>
+
+        RenderTableCellDeathTest unit test fails on mac
+        https://bugs.webkit.org/show_bug.cgi?id=110992
+
+        Unreviewed second attempt. Trying to get the right define for the OS.
+
+        * tests/RenderTableCellTest.cpp:
+
+2013-02-27  Stephen Chenney  <schenney@chromium.org>
+
+        RenderTableCellDeathTest unit test fails on mac
+        https://bugs.webkit.org/show_bug.cgi?id=110992
+
+        Unreviewed disabling of test that is hanging or crashing on Mac.
+
+        * tests/RenderTableCellTest.cpp:
+
+2013-02-27  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Remove suppression invalidation logic from WebViewImpl
+        https://bugs.webkit.org/show_bug.cgi?id=110999
+
+        Reviewed by Adrienne Walker.
+
+        This suppression logic is now handled on the embedder side. In fact, scheduleComposite() is now only used
+        by DumpRenderTree.
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::WebViewImpl):
+        (WebKit::WebViewImpl::suppressInvalidations):
+        (WebKit::WebViewImpl::scheduleComposite):
+        * src/WebViewImpl.h:
+
+2013-02-27  Glenn Adams  <glenn@skynav.com>
+
+        Add ENABLE_CSS3_TEXT_LINE_BREAK flag.
+        https://bugs.webkit.org/show_bug.cgi?id=110944
+
+        Reviewed by Dean Jackson.
+
+        * features.gypi:
+
+2013-02-26  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Remove WebViewImpl::animate shimmy out through compositor
+        https://bugs.webkit.org/show_bug.cgi?id=110935
+
+        Reviewed by Adrienne Walker.
+
+        WebViewImpl::animate() and WebViewImpl::updateAnimations() are confusingly similar. ::animate() implements
+        the WebWidget API and is called by content::RenderWidget and WebViewHost. ::updateAnimations() implements
+        the WebLayerTreeViewClient API and is called by content::RenderWidgetCompositor and by ::animate(). The
+        important part of this indirection is that whenever the compositor is active, all animation calls must
+        route through cc::LayerTreeHost before entering into WebCore's animation code so that the compositor
+        can set the appropriate rate limiting state. Animations may originate from
+        content::RenderWidget::AnimateIfNeeded when in software and single threaded mode or from
+        cc::LayerTreeHost::updateAnimations in threaded compositing mode. In the long ago, content::RenderWidget had no
+        idea if compositing was active or not and always called WebWidget::animate(), so WebViewImpl::animate() had to
+        redirect to the compositor when appropriate.
+        
+        Now (as of chromium r180947) RenderWidget calls WebWidget::animate only when in software mode and otherwise
+        calls directly into the compositor. Thus WebViewImpl::animate() no longer needs to do this check. In a
+        follow-up, WebViewImpl::updateAnimations will go away completely in favor of just calling WebWidget::animate in
+        all cases.
+
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::animate):
+        (WebKit::WebViewImpl::updateAnimations):
+
+2013-02-27  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144179.
+        http://trac.webkit.org/changeset/144179
+        https://bugs.webkit.org/show_bug.cgi?id=110980
+
+        Breaks compilation (Requested by vsevik on #webkit).
+
+        * public/WebTextInputType.h:
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::textInputInfo):
+        (WebKit::WebViewImpl::textInputType):
+
+2013-02-27  Stephen Chenney  <schenney@chromium.org>
+
+        [chromium] GIFImageDecoderTest.parseAndDecodeByteByByte failing on Android
+        https://bugs.webkit.org/show_bug.cgi?id=110922
+
+        Unreviewed build fix.
+
+        * tests/GIFImageDecoderTest.cpp:
+        (WebKit):
+        (WebKit::TEST): Disable the entire test on Android.
+
+2013-02-27  Seigo Nonaka  <nona@chromium.org>
+
+        [Chromium] Should not return WebTextInputTypeNone for date input element.
+        https://bugs.webkit.org/show_bug.cgi?id=110740
+
+        Reviewed by Kent Tamura.
+
+        In the case of Windows 8, text input state including on-screen keyboard is controlled by the
+        value of WebTextInputType returned from WebViewImpl::textInputType().
+        In past, it returned WebTextInputTypeDate for date text input but now it returns
+        WebTextInputTypeNone.
+        WebTextInputTypeNone is used for non editable node, so on-screen keyboard will be hidden if
+        the date text input is focused.  So there is no way to input on Windows 8 tablet without
+        physical keyboard except tapping small up/down arrow.
+
+        * public/WebTextInputType.h: Introduces WebTextInputTypeDateTimeField.
+        * src/WebViewImpl.cpp:
+        (WebKit::WebViewImpl::textInputInfo): Fills type filed regardless of editable or not. It is
+        safe because textInputType returns editable type only for known editable element.
+        (WebKit::WebViewImpl::textInputType): Returns WebTextInputTypeDateTimeField for the date
+        time field element.
+
 2013-02-26  Sheriff Bot  <webkit.review.bot@gmail.com>
 
         Unreviewed, rolling out r144129.

@@ -33,6 +33,7 @@
 #include "CrossOriginAccessControl.h"
 #include "Document.h"
 #include "DocumentLoader.h"
+#include "FrameLoader.h"
 #include "FrameLoaderClient.h"
 #include "InspectorInstrumentation.h"
 #include "KURL.h"
@@ -916,8 +917,8 @@ void CachedResource::setLoadPriority(ResourceLoadPriority loadPriority)
     if (loadPriority == m_loadPriority)
         return;
     m_loadPriority = loadPriority;
-    if (m_loader && m_loader->handle())
-        m_loader->handle()->didChangePriority(loadPriority);
+    if (m_loader)
+        m_loader->didChangePriority(loadPriority);
 }
 
 

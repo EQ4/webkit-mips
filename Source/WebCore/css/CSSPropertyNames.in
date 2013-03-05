@@ -182,11 +182,11 @@ text-underline-mode
 text-underline-style
 text-underline-width
 top
-transition = -webkit-transition
-transition-delay = -webkit-transition-delay
-transition-duration = -webkit-transition-duration
-transition-property = -webkit-transition-property
-transition-timing-function = -webkit-transition-timing-function
+transition
+transition-delay
+transition-duration
+transition-property
+transition-timing-function
 
 unicode-bidi
 unicode-range
@@ -292,6 +292,8 @@ z-index
 -webkit-font-size-delta
 -webkit-grid-columns
 -webkit-grid-rows
+-webkit-grid-start
+-webkit-grid-before
 -webkit-grid-column
 -webkit-grid-row
 -webkit-grid-auto-flow

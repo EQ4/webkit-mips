@@ -417,7 +417,6 @@ uint64_t Document::s_globalTreeVersion = 0;
 Document::Document(Frame* frame, const KURL& url, bool isXHTML, bool isHTML)
     : ContainerNode(0, CreateDocument)
     , TreeScope(this)
-    , m_guardRefCount(0)
     , m_styleResolverThrowawayTimer(this, &Document::styleResolverThrowawayTimerFired)
     , m_lastStyleResolverAccessTime(0)
     , m_activeParserCount(0)
@@ -489,8 +488,6 @@ Document::Document(Frame* frame, const KURL& url, bool isXHTML, bool isHTML)
     , m_templateDocumentHost(0)
 #endif
 {
-    setTreeScope(this);
-
     m_printing = false;
     m_paginatedForScreen = false;
 
@@ -590,7 +587,7 @@ Document::~Document()
     ASSERT(m_ranges.isEmpty());
     ASSERT(!m_styleRecalcTimer.isActive());
     ASSERT(!m_parentTreeScope);
-    ASSERT(!m_guardRefCount);
+    ASSERT(!hasGuardRefCount());
 
 #if ENABLE(TEMPLATE_ELEMENT)
     if (m_templateDocument)
@@ -657,64 +654,45 @@ Document::~Document()
     InspectorCounters::decrementCounter(InspectorCounters::DocumentCounter);
 }
 
-void Document::removedLastRef()
+void Document::dispose()
 {
     ASSERT(!m_deletionHasBegun);
-    if (m_guardRefCount) {
-        // If removing a child removes the last self-only ref, we don't
-        // want the scope to be destructed until after
-        // removeDetachedChildren returns, so we guard ourselves with an
-        // extra self-only ref.
-        guardRef();
-
-        // We must make sure not to be retaining any of our children through
-        // these extra pointers or we will create a reference cycle.
-        m_docType = 0;
-        m_focusedNode = 0;
-        m_hoverNode = 0;
-        m_activeElement = 0;
-        m_titleElement = 0;
-        m_documentElement = 0;
-        m_contextFeatures = ContextFeatures::defaultSwitch();
-        m_userActionElements.documentDidRemoveLastRef();
+    // We must make sure not to be retaining any of our children through
+    // these extra pointers or we will create a reference cycle.
+    m_docType = 0;
+    m_focusedNode = 0;
+    m_hoverNode = 0;
+    m_activeElement = 0;
+    m_titleElement = 0;
+    m_documentElement = 0;
+    m_contextFeatures = ContextFeatures::defaultSwitch();
+    m_userActionElements.documentDidRemoveLastRef();
 #if ENABLE(FULLSCREEN_API)
-        m_fullScreenElement = 0;
-        m_fullScreenElementStack.clear();
+    m_fullScreenElement = 0;
+    m_fullScreenElementStack.clear();
 #endif
 
-        detachParser();
+    detachParser();
 
 #if ENABLE(CUSTOM_ELEMENTS)
-        m_registry.clear();
+    m_registry.clear();
 #endif
 
-        // removeDetachedChildren() doesn't always unregister IDs,
-        // so tear down scope information upfront to avoid having stale references in the map.
-        destroyTreeScopeData();
-        removeDetachedChildren();
+    // removeDetachedChildren() doesn't always unregister IDs,
+    // so tear down scope information upfront to avoid having stale references in the map.
+    destroyTreeScopeData();
+    removeDetachedChildren();
 
-        m_markers->detach();
+    m_markers->detach();
 
-        m_cssCanvasElements.clear();
+    m_cssCanvasElements.clear();
 
 #if ENABLE(REQUEST_ANIMATION_FRAME)
-        // FIXME: consider using ActiveDOMObject.
-        if (m_scriptedAnimationController)
-            m_scriptedAnimationController->clearDocumentPointer();
-        m_scriptedAnimationController.clear();
+    // FIXME: consider using ActiveDOMObject.
+    if (m_scriptedAnimationController)
+        m_scriptedAnimationController->clearDocumentPointer();
+    m_scriptedAnimationController.clear();
 #endif
-
-#ifndef NDEBUG
-        m_inRemovedLastRefFunction = false;
-#endif
-
-        guardDeref();
-    } else {
-#ifndef NDEBUG 
-        m_deletionHasBegun = true; 
-#endif 
-        delete this;
-    }
 }
 
 Element* Document::getElementById(const AtomicString& id) const
@@ -1358,7 +1336,12 @@ KURL Document::baseURI() const
 void Document::setContent(const String& content)
 {
     open();
-    m_parser->append(content);
+    // FIXME: This should probably use insert(), but that's (intentionally)
+    // not implemented for the XML parser as it's normally synonymous with
+    // document.write(). append() will end up yielding, but close() will
+    // pump the tokenizer syncrhonously and finish the parse.
+    m_parser->pinToMainThread();
+    m_parser->append(content.impl());
     close();
 }
 
@@ -2888,20 +2871,20 @@ void Document::processHttpEquiv(const String& equiv, const String& content)
             if (frameLoader->activeDocumentLoader() && frameLoader->activeDocumentLoader()->mainResourceLoader())
                 requestIdentifier = frameLoader->activeDocumentLoader()->mainResourceLoader()->identifier();
             if (frameLoader->shouldInterruptLoadForXFrameOptions(content, url(), requestIdentifier)) {
-                String message = "Refused to display '" + url().string() + "' in a frame because it set 'X-Frame-Options' to '" + content + "'.";
+                String message = "Refused to display '" + url().elidedString() + "' in a frame because it set 'X-Frame-Options' to '" + content + "'.";
                 frameLoader->stopAllLoaders();
                 frame->navigationScheduler()->scheduleLocationChange(securityOrigin(), blankURL(), String());
                 addConsoleMessage(JSMessageSource, ErrorMessageLevel, message, requestIdentifier);
             }
         }
     } else if (equalIgnoringCase(equiv, "content-security-policy"))
-        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::EnforceStableDirectives);
+        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::Enforce);
     else if (equalIgnoringCase(equiv, "content-security-policy-report-only"))
-        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::ReportStableDirectives);
+        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::Report);
     else if (equalIgnoringCase(equiv, "x-webkit-csp"))
-        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::EnforceAllDirectives);
+        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::PrefixedEnforce);
     else if (equalIgnoringCase(equiv, "x-webkit-csp-report-only"))
-        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::ReportAllDirectives);
+        contentSecurityPolicy()->didReceiveHeader(content, ContentSecurityPolicy::PrefixedReport);
 }
 
 // Though isspace() considers \t and \v to be whitespace, Win IE doesn't.
@@ -4494,14 +4477,19 @@ PassRefPtr<XPathResult> Document::evaluate(const String& expression,
     return m_xpathEvaluator->evaluate(expression, contextNode, resolver, type, result, ec);
 }
 
-const Vector<IconURL>& Document::iconURLs()
+const Vector<IconURL>& Document::shortcutIconURLs()
+{
+    // Include any icons where type = link, rel = "shortcut icon".
+    return iconURLs(Favicon);
+}
+
+const Vector<IconURL>& Document::iconURLs(int iconTypesMask)
 {
     m_iconURLs.clear();
 
     if (!head() || !(head()->children()))
         return m_iconURLs;
 
-    // Include any icons where type = link, rel = "shortcut icon".
     RefPtr<HTMLCollection> children = head()->children();
     unsigned int length = children->length();
     for (unsigned int i = 0; i < length; ++i) {
@@ -4509,7 +4497,7 @@ const Vector<IconURL>& Document::iconURLs()
         if (!child->hasTagName(linkTag))
             continue;
         HTMLLinkElement* linkElement = static_cast<HTMLLinkElement*>(child);
-        if (linkElement->iconType() != Favicon)
+        if (!(linkElement->iconType() & iconTypesMask))
             continue;
         if (linkElement->href().isEmpty())
             continue;
@@ -5881,18 +5869,11 @@ void Document::updateHoverActiveState(const HitTestRequest& request, HitTestResu
     bool mustBeInActiveChain = request.active() && request.move();
 
     RefPtr<Node> oldHoverNode = hoverNode();
-    // Clear the :hover chain when the touch gesture is over.
-    if (request.touchRelease()) {
-        if (oldHoverNode) {
-            for (RenderObject* curr = oldHoverNode->renderer(); curr; curr = curr->hoverAncestor()) {
-                if (curr->node() && !curr->isText())
-                    curr->node()->setHovered(false);
-            }
-            setHoverNode(0);
-        }
-        // A touch release can not set new hover or active target.
-        return;
-    }
+
+    // A touch release does not set a new hover target; setting the element we're working with to 0
+    // will clear the chain of hovered elements all the way to the top of the tree.
+    if (request.touchRelease())
+        innerElementInDocument = 0;
 
     // Check to see if the hovered node has changed.
     // If it hasn't, we do not need to do anything.

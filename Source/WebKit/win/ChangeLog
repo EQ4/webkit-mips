@@ -1,3 +1,88 @@
+2013-03-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Windows build fix attempt after r144547.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-03-03  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144567.
+        http://trac.webkit.org/changeset/144567
+        https://bugs.webkit.org/show_bug.cgi?id=111266
+
+        Does not compile on apple-win (Requested by abarth on
+        #webkit).
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-03-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        That was a wrong fix. Revert r144569.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-03-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Windows build fix attempt after r144567.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-03-02  Benjamin Poulain  <benjamin@webkit.org>
+
+        Export a missing symbol after r144547.
+
+        Unreviewed.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-03-02  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Redo r144538 (after r144530).
+
+        * WebCoreSupport/WebFrameNetworkingContext.cpp:
+        * WebCoreSupport/WebFrameNetworkingContext.h:
+        * WebCoreSupport/WebPlatformStrategies.cpp:
+
+2013-03-02  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Yet another build fix attempt after r144530.
+
+        * WebCoreSupport/WebFrameNetworkingContext.cpp:
+        * WebCoreSupport/WebPlatformStrategies.cpp:
+
+2013-03-02  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Another build fix attempt after r144530.
+
+        * WebCoreSupport/WebFrameNetworkingContext.cpp:
+
+2013-03-01  Benjamin Poulain  <bpoulain@apple.com>
+
+        Add a missing symbol after r144524.
+
+        Unreviewed.
+
+        * WebKit.vcproj/WebKitExports.def.in:
+
+2013-02-26  Alexey Proskuryakov  <ap@apple.com>
+
+        Don't add a body to platform request until necessary
+        https://bugs.webkit.org/show_bug.cgi?id=110900
+
+        Reviewed by Brady Eidson.
+
+        WebKit1 behavior is unchanged, body is added on every conversion.
+
+        * WebDownloadCFNet.cpp:
+        (WebDownload::init):
+        (WebDownload::initWithRequest):
+        (WebDownload::willSendRequest):
+        * WebMutableURLRequest.cpp:
+        (WebMutableURLRequest::cfRequest):
+        (WebMutableURLRequest::mutableCopy):
+        * WebView.cpp:
+        (WebView::canHandleRequest):
+
 2013-02-26  Roger Fong  <roger_fong@apple.com>
 
         Unreviewed AppleWin build fix.

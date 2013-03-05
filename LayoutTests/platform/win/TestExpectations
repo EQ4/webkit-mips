@@ -924,12 +924,6 @@ fast/js/constructor-length.html
 # Need to add functionality to DumpRenderTree to handle error pages
 fast/history/back-forward-reset-after-error-handling.html
 
-# Need to implement computedStyleWithVisitedInfo
-fast/history/multiple-classes-visited.html
-fast/history/nested-visited-test.html
-fast/history/self-is-visited.html
-fast/history/sibling-visited-test.html
-
 # ACCELERATED_COMPOSITING tests that have incorrect layout
 compositing/webgl/webgl-background-color.html
 compositing/webgl/webgl-reflection.html
@@ -2298,6 +2292,7 @@ media/video-set-rate-from-pause.html
 media/video-src-change.html
 media/video-timeupdate-reverse-play.html
 media/W3C/video/src/src_removal_does_not_trigger_loadstart.html
+media/video-src-remove.html
 
 # Interactive form validation not enabled on Windows
 fast/forms/number/number-interactive-validation-required.html
@@ -2379,6 +2374,8 @@ http/tests/inspector/network/network-xhr-replay.html
 
 #AX role needs to be updated on Windows, many test cases involve AX role crash or fail
 accessibility/svg-bounds.html
+accessibility/html-html-element-is-ignored.html
+accessibility/loading-iframe-updates-axtree.html
 
 #https://bugs.webkit.org/show_bug.cgi?id=97485
 http/tests/security/sandboxed-iframe-form-top.html
@@ -2654,3 +2651,19 @@ webkit.org/b/110654 svg/custom/foreign-object-skew.svg [ Failure ]
 webkit.org/b/110654 tables/mozilla/bugs/bug92647-2.html [ Failure ]
 # New test
 webkit.org/b/110654 css3/flexbox/button.html [ Failure ]
+
+# Need support for ResourceHandle::didChangePriority and DRT support
+webkit.org/b/111016 http/tests/loading/promote-img-preload-priority.html [ Failure ]
+
+# Disable storage tests
+fast/workers/storage/
+storage/
+
+# Disable document.register tests, ENABLE_CUSTOM_ELEMENT disabled
+fast/dom/custom
+
+# bugs.webkit.org/show_bug.cgi?id=111235
+css3/filters/custom-with-at-rule-syntax
+
+# bugs.webkit.org/show_bug.cgi?id=110447
+editing/spelling/spelling-changed-text.html

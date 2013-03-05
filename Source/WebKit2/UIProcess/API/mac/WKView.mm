@@ -227,6 +227,7 @@ struct WKViewInterpretKeyEventsParameters {
     NSSize _intrinsicContentSize;
     BOOL _expandsToFitContentViaAutoLayout;
     BOOL _isWindowOccluded;
+    BOOL _windowOcclusionDetectionEnabled;
 }
 
 @end
@@ -599,13 +600,22 @@ WEBCORE_COMMAND(yankAndSelect)
 
 - (id)validRequestorForSendType:(NSString *)sendType returnType:(NSString *)returnType
 {
-    BOOL isValidSendType = !sendType || ([PasteboardTypes::forSelection() containsObject:sendType] && !_data->_page->editorState().selectionIsNone);
+    EditorState editorState = _data->_page->editorState();
+    BOOL isValidSendType = NO;
+
+    if (sendType && !editorState.selectionIsNone) {
+        if (editorState.isInPlugin)
+            isValidSendType = [sendType isEqualToString:NSStringPboardType];
+        else
+            isValidSendType = [PasteboardTypes::forSelection() containsObject:sendType];
+    }
+
     BOOL isValidReturnType = NO;
     if (!returnType)
         isValidReturnType = YES;
-    else if ([PasteboardTypes::forEditing() containsObject:returnType] && _data->_page->editorState().isContentEditable) {
+    else if ([PasteboardTypes::forEditing() containsObject:returnType] && editorState.isContentEditable) {
         // We can insert strings in any editable context.  We can insert other types, like images, only in rich edit contexts.
-        isValidReturnType = _data->_page->editorState().isContentRichlyEditable || [returnType isEqualToString:NSStringPboardType];
+        isValidReturnType = editorState.isContentRichlyEditable || [returnType isEqualToString:NSStringPboardType];
     }
     if (isValidSendType && isValidReturnType)
         return self;
@@ -2262,6 +2272,9 @@ static void drawPageBackground(CGContextRef context, WebPageProxy* page, const I
 - (void)_enableWindowOcclusionNotifications
 {
 #if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+    if (![self windowOcclusionDetectionEnabled])
+        return;
+
     NSWindow *window = [self window];
     if (!window)
         return;
@@ -2320,7 +2333,7 @@ static void windowBecameOccluded(uint32_t, void* data, uint32_t dataLength, void
     Vector<WKView *>& allViews = [WKView _allViews];
     for (size_t i = 0, size = allViews.size(); i < size; ++i) {
         WKView *view = allViews[i];
-        if ([[view window] windowNumber] == windowID)
+        if ([[view window] windowNumber] == windowID && [view windowOcclusionDetectionEnabled])
             [view _setIsWindowOccluded:YES];
     }
 }
@@ -3133,6 +3146,7 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     _data->_expandsToFitContentViaAutoLayout = NO;
 
     _data->_intrinsicContentSize = NSMakeSize(NSViewNoInstrinsicMetric, NSViewNoInstrinsicMetric);
+    _data->_windowOcclusionDetectionEnabled = YES;
 
     [self _registerDraggedTypes];
 
@@ -3287,6 +3301,20 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
     _data->_page->setMainFrameIsScrollable(!expandsToFit);
 }
 
+- (NSColor *)underlayColor
+{
+    Color webColor = _data->_page->underlayColor();
+    if (!webColor.isValid())
+        return nil;
+
+    return nsColor(webColor);
+}
+
+- (void)setUnderlayColor:(NSColor *)underlayColor
+{
+    _data->_page->setUnderlayColor(colorFromNSColor(underlayColor));
+}
+
 - (NSView*)fullScreenPlaceholderView
 {
 #if ENABLE(FULLSCREEN_API)
@@ -3319,6 +3347,22 @@ static NSString *pathWithUniqueFilenameForPath(NSString *path)
 - (BOOL)isDeferringViewInWindowChanges
 {
     return _data->_viewInWindowChangesDeferredCount;
+}
+
+- (BOOL)windowOcclusionDetectionEnabled
+{
+    return _data->_windowOcclusionDetectionEnabled;
+}
+
+- (void)setWindowOcclusionDetectionEnabled:(BOOL)flag
+{
+    if (_data->_windowOcclusionDetectionEnabled == flag)
+        return;
+    _data->_windowOcclusionDetectionEnabled = flag;
+    if (flag)
+        [self _enableWindowOcclusionNotifications];
+    else
+        [self _disableWindowOcclusionNotifications];
 }
 
 @end

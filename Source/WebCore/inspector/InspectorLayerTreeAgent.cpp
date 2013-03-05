@@ -41,10 +41,8 @@
 #include "InspectorState.h"
 #include "InstrumentingAgents.h"
 #include "IntRect.h"
-#include "Page.h"
 #include "RenderLayer.h"
 #include "RenderLayerBacking.h"
-#include "RenderLayerCompositor.h"
 #include "RenderView.h"
 
 namespace WebCore {
@@ -53,9 +51,8 @@ namespace LayerTreeAgentState {
 static const char layerTreeAgentEnabled[] = "layerTreeAgentEnabled";
 };
 
-InspectorLayerTreeAgent::InspectorLayerTreeAgent(InstrumentingAgents* instrumentingAgents, InspectorCompositeState* state, Page* page)
+InspectorLayerTreeAgent::InspectorLayerTreeAgent(InstrumentingAgents* instrumentingAgents, InspectorCompositeState* state)
     : InspectorBaseAgent<InspectorLayerTreeAgent>("LayerTree", instrumentingAgents, state)
-    , m_inspectedPage(page)
     , m_frontend(0)
 {
 }
@@ -112,68 +109,74 @@ void InspectorLayerTreeAgent::renderLayerDestroyed(const RenderLayer* renderLaye
     unbind(renderLayer);
 }
 
-void InspectorLayerTreeAgent::getLayerTree(ErrorString*, RefPtr<TypeBuilder::LayerTree::Layer>& object)
+void InspectorLayerTreeAgent::layersForNode(ErrorString* errorString, int nodeId, RefPtr<TypeBuilder::Array<TypeBuilder::LayerTree::Layer> >& layers)
 {
-    object = buildObjectForRootLayer();
+    layers = TypeBuilder::Array<TypeBuilder::LayerTree::Layer>::create();
+
+    Node* node = m_instrumentingAgents->inspectorDOMAgent()->nodeForId(nodeId);
+    if (!node) {
+        *errorString = "Provided node id doesn't match any known node";
+        return;
+    }
+
+    RenderObject* renderer = node->renderer();
+    if (!renderer) {
+        *errorString = "Node for provided node id doesn't have a renderer";
+        return;
+    }
+
+    gatherLayersUsingRenderObjectHierarchy(errorString, renderer, layers);
 }
 
-PassRefPtr<TypeBuilder::LayerTree::Layer> InspectorLayerTreeAgent::buildObjectForRootLayer()
+void InspectorLayerTreeAgent::gatherLayersUsingRenderObjectHierarchy(ErrorString* errorString, RenderObject* renderer, RefPtr<TypeBuilder::Array<TypeBuilder::LayerTree::Layer> >& layers)
 {
-    return buildObjectForLayer(m_inspectedPage->mainFrame()->contentRenderer()->compositor()->rootRenderLayer());
+    if (renderer->hasLayer()) {
+        gatherLayersUsingRenderLayerHierarchy(errorString, toRenderLayerModelObject(renderer)->layer(), layers);
+        return;
+    }
+
+    for (renderer = renderer->firstChild(); renderer; renderer = renderer->nextSibling())
+        gatherLayersUsingRenderObjectHierarchy(errorString, renderer, layers);
 }
 
-PassRefPtr<TypeBuilder::LayerTree::Layer> InspectorLayerTreeAgent::buildObjectForLayer(RenderLayer* renderLayer)
+void InspectorLayerTreeAgent::gatherLayersUsingRenderLayerHierarchy(ErrorString* errorString, RenderLayer* renderLayer, RefPtr<TypeBuilder::Array<TypeBuilder::LayerTree::Layer> >& layers)
 {
-    bool isComposited = renderLayer->isComposited();
+    if (renderLayer->isComposited())
+        layers->addItem(buildObjectForLayer(errorString, renderLayer));
+
+    for (renderLayer = renderLayer->firstChild(); renderLayer; renderLayer = renderLayer->nextSibling())
+        gatherLayersUsingRenderLayerHierarchy(errorString, renderLayer, layers);
+}
+
+PassRefPtr<TypeBuilder::LayerTree::Layer> InspectorLayerTreeAgent::buildObjectForLayer(ErrorString* errorString, RenderLayer* renderLayer)
+{
+    Node* node = renderLayer->renderer()->node();
+    RenderLayerBacking* backing = renderLayer->backing();
 
     // Basic set of properties.
     RefPtr<TypeBuilder::LayerTree::Layer> layerObject = TypeBuilder::LayerTree::Layer::create()
         .setLayerId(bind(renderLayer))
+        .setNodeId(idForNode(errorString, node))
         .setBounds(buildObjectForIntRect(enclosingIntRect(renderLayer->localBoundingBox())))
-        .setIsComposited(isComposited);
+        .setMemory(backing->backingStoreMemoryEstimate())
+        .setCompositedBounds(buildObjectForIntRect(backing->compositedBounds()))
+        .setPaintCount(backing->graphicsLayer()->repaintCount());
 
-    // Optional properties for composited layers only.
-    if (isComposited) {
-        RenderLayerBacking* backing = renderLayer->backing();
-        layerObject->setMemory(backing->backingStoreMemoryEstimate());
-        layerObject->setCompositedBounds(buildObjectForIntRect(backing->compositedBounds()));
-        layerObject->setPaintCount(backing->graphicsLayer()->repaintCount());
-    }
+    if (node && node->shadowHost())
+        layerObject->setIsInShadowTree(true);
 
-    // Process children layers.
-    RefPtr<TypeBuilder::Array<TypeBuilder::LayerTree::Layer> > childrenArray = TypeBuilder::Array<TypeBuilder::LayerTree::Layer>::create();
-
-    renderLayer->updateLayerListsIfNeeded();
-
-    // Check if we have a reflection layer.
-    if (renderLayer->reflectionLayer())
-        childrenArray->addItem(buildObjectForLayer(renderLayer->reflectionLayer()));
-
-    if (renderLayer->isStackingContainer()) {
-        if (Vector<RenderLayer*>* negZOrderList = renderLayer->negZOrderList()) {
-            size_t listSize = negZOrderList->size();
-            for (size_t i = 0; i < listSize; ++i)
-                childrenArray->addItem(buildObjectForLayer(negZOrderList->at(i)));
-        }
-    }
-
-    if (Vector<RenderLayer*>* normalFlowList = renderLayer->normalFlowList()) {
-        size_t listSize = normalFlowList->size();
-        for (size_t i = 0; i < listSize; ++i)
-            childrenArray->addItem(buildObjectForLayer(normalFlowList->at(i)));
-    }
-    
-    if (renderLayer->isStackingContainer()) {
-        if (Vector<RenderLayer*>* posZOrderList = renderLayer->posZOrderList()) {
-            size_t listSize = posZOrderList->size();
-            for (size_t i = 0; i < listSize; ++i)
-                childrenArray->addItem(buildObjectForLayer(posZOrderList->at(i)));
-        }
-    }
-
-    layerObject->setChildLayers(childrenArray);
-    
     return layerObject;
+}
+
+int InspectorLayerTreeAgent::idForNode(ErrorString* errorString, Node* node)
+{
+    InspectorDOMAgent* domAgent = m_instrumentingAgents->inspectorDOMAgent();
+    
+    int nodeId = domAgent->boundNodeId(node);
+    if (!nodeId)
+        nodeId = domAgent->pushNodeToFrontend(errorString, domAgent->boundNodeId(node->document()), node);
+
+    return nodeId;
 }
 
 PassRefPtr<TypeBuilder::LayerTree::IntRect> InspectorLayerTreeAgent::buildObjectForIntRect(const IntRect& rect)
@@ -206,22 +209,6 @@ void InspectorLayerTreeAgent::unbind(const RenderLayer* layer)
 
     m_documentLayerToIdMap.remove(layer);
     m_idToLayer.remove(identifier);
-}
-
-void InspectorLayerTreeAgent::nodeIdForLayerId(ErrorString* errorString, const String& layerId, int* resultNodeId)
-{
-    // Obtain the RenderLayer from the identifier provided.
-    const RenderLayer* renderLayer = m_idToLayer.get(layerId);
-    
-    // Send an error if there is no such registered layer id.
-    if (!renderLayer) {
-        *errorString = "Could not find a bound layer for the provided id";
-        return;
-    }
-    
-    // Get the node id from the DOM agent and return it to the front-end.
-    InspectorDOMAgent* inspectorDOMAgent = m_instrumentingAgents->inspectorDOMAgent();
-    *resultNodeId = inspectorDOMAgent->pushNodePathForRenderLayerToFrontend(renderLayer);
 }
 
 } // namespace WebCore

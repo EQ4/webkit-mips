@@ -30,7 +30,6 @@
 
 #import "AuthenticationChallenge.h"
 #import "AuthenticationMac.h"
-#import "BlobRegistry.h"
 #import "BlockExceptions.h"
 #import "CookieStorage.h"
 #import "CredentialStorage.h"
@@ -171,33 +170,31 @@ void ResourceHandle::createNSURLConnection(id delegate, bool shouldUseCredential
         applyBasicAuthorizationHeader(firstRequest(), d->m_initialCredential);
     }
 
-    NSURLRequest *nsRequest = firstRequest().nsURLRequest();
+    NSURLRequest *nsRequest = firstRequest().nsURLRequest(UpdateHTTPBody);
     if (!shouldContentSniff) {
         NSMutableURLRequest *mutableRequest = [[nsRequest mutableCopy] autorelease];
         wkSetNSURLRequestShouldContentSniff(mutableRequest, NO);
         nsRequest = mutableRequest;
     }
 
-#if PLATFORM(IOS) || __MAC_OS_X_VERSION_MIN_REQUIRED >= 1060
-    ASSERT([NSURLConnection instancesRespondToSelector:@selector(_initWithRequest:delegate:usesCache:maxContentLength:startImmediately:connectionProperties:)]);
-    static bool supportsSettingConnectionProperties = true;
-#else
-    static bool supportsSettingConnectionProperties = [NSURLConnection instancesRespondToSelector:@selector(_initWithRequest:delegate:usesCache:maxContentLength:startImmediately:connectionProperties:)];
-#endif
-
     if (d->m_storageSession)
         nsRequest = [wkCopyRequestWithStorageSession(d->m_storageSession.get(), nsRequest) autorelease];
 
-    if (supportsSettingConnectionProperties) {
-        NSDictionary *sessionID = shouldUseCredentialStorage ? [NSDictionary dictionary] : [NSDictionary dictionaryWithObject:@"WebKitPrivateSession" forKey:@"_kCFURLConnectionSessionID"];
-        NSDictionary *propertyDictionary = [NSDictionary dictionaryWithObject:sessionID forKey:@"kCFURLConnectionSocketStreamProperties"];
-        d->m_connection.adoptNS([[NSURLConnection alloc] _initWithRequest:nsRequest delegate:delegate usesCache:YES maxContentLength:0 startImmediately:NO connectionProperties:propertyDictionary]);
-        return;
-    }
+    ASSERT([NSURLConnection instancesRespondToSelector:@selector(_initWithRequest:delegate:usesCache:maxContentLength:startImmediately:connectionProperties:)]);
 
-    d->m_connection.adoptNS([[NSURLConnection alloc] initWithRequest:nsRequest delegate:delegate startImmediately:NO]);
-    return;
+    NSMutableDictionary *streamProperties = [NSMutableDictionary dictionary];
 
+    if (!shouldUseCredentialStorage)
+        [streamProperties setObject:@"WebKitPrivateSession" forKey:@"_kCFURLConnectionSessionID"];
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+    RetainPtr<CFDataRef> sourceApplicationAuditData = d->m_context->sourceApplicationAuditData();
+    if (sourceApplicationAuditData)
+        [streamProperties setObject:(NSData *)sourceApplicationAuditData.get() forKey:@"kCFStreamPropertySourceApplication"];
+#endif
+
+    NSDictionary *propertyDictionary = [NSDictionary dictionaryWithObject:streamProperties forKey:@"kCFURLConnectionSocketStreamProperties"];
+    d->m_connection.adoptNS([[NSURLConnection alloc] _initWithRequest:nsRequest delegate:delegate usesCache:YES maxContentLength:0 startImmediately:NO connectionProperties:propertyDictionary]);
 }
 
 bool ResourceHandle::start()
@@ -251,7 +248,7 @@ bool ResourceHandle::start()
     else
         d->m_startWhenScheduled = true;
 
-    LOG(Network, "Handle %p starting connection %p for %@", this, connection(), firstRequest().nsURLRequest());
+    LOG(Network, "Handle %p starting connection %p for %@", this, connection(), firstRequest().nsURLRequest(DoNotUpdateHTTPBody));
     
     if (d->m_connection) {
         if (d->m_defersLoading)
@@ -345,7 +342,7 @@ CFStringRef ResourceHandle::synchronousLoadRunLoopMode()
 
 void ResourceHandle::platformLoadResourceSynchronously(NetworkingContext* context, const ResourceRequest& request, StoredCredentials storedCredentials, ResourceError& error, ResourceResponse& response, Vector<char>& data)
 {
-    LOG(Network, "ResourceHandle::platformLoadResourceSynchronously:%@ allowStoredCredentials:%u", request.nsURLRequest(), storedCredentials);
+    LOG(Network, "ResourceHandle::platformLoadResourceSynchronously:%@ allowStoredCredentials:%u", request.nsURLRequest(DoNotUpdateHTTPBody), storedCredentials);
 
     NSError *nsError = nil;
     NSURLResponse *nsURLResponse = nil;
@@ -647,7 +644,7 @@ void ResourceHandle::receivedCancellation(const AuthenticationChallenge& challen
 
     m_handle->willSendRequest(request, redirectResponse);
 
-    return request.nsURLRequest();
+    return request.nsURLRequest(UpdateHTTPBody);
 }
 
 - (BOOL)connectionShouldUseCredentialStorage:(NSURLConnection *)connection
@@ -716,7 +713,7 @@ void ResourceHandle::receivedCancellation(const AuthenticationChallenge& challen
     if (statusCode != 304)
         adjustMIMETypeIfNecessary([r _CFURLResponse]);
 
-    if ([m_handle->firstRequest().nsURLRequest() _propertyForKey:@"ForceHTMLMIMEType"])
+    if ([m_handle->firstRequest().nsURLRequest(DoNotUpdateHTTPBody) _propertyForKey:@"ForceHTMLMIMEType"])
         [r _setMIMEType:@"text/html"];
 
     m_handle->client()->didReceiveResponse(m_handle, r);

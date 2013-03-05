@@ -48,6 +48,7 @@
 #import <WebCore/FocusController.h>
 #import <WebCore/FormState.h>
 #import <WebCore/Frame.h>
+#import <WebCore/FrameLoader.h>
 #import <WebCore/FrameView.h>
 #import <WebCore/GraphicsContext.h>
 #import <WebCore/HTMLElement.h>
@@ -162,7 +163,7 @@ static const char* annotationStyle =
     // FIXME: Implement.
 }
 
-- (void)openWithPreview
+- (void)openWithNativeApplication
 {
     _pdfPlugin->openWithNativeApplication();
 }
@@ -190,6 +191,11 @@ static const char* annotationStyle =
 - (void)pdfLayerController:(PDFLayerController *)pdfLayerController didChangeDisplayMode:(int)mode
 {
     _pdfPlugin->notifyDisplayModeChanged(mode);
+}
+
+- (void)pdfLayerController:(PDFLayerController *)pdfLayerController didChangeSelection:(PDFSelection *)selection
+{
+    _pdfPlugin->notifySelectionChanged(selection);
 }
 
 @end
@@ -957,6 +963,16 @@ void PDFPlugin::focusNextAnnotation()
 void PDFPlugin::focusPreviousAnnotation()
 {
     [m_pdfLayerController.get() activateNextAnnotation:true];
+}
+
+void PDFPlugin::notifySelectionChanged(PDFSelection *)
+{
+    webFrame()->page()->didChangeSelection();
+}
+
+String PDFPlugin::getSelectionString() const
+{
+    return [[m_pdfLayerController.get() currentSelection] string];
 }
 
 } // namespace WebKit

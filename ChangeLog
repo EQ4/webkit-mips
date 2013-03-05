@@ -1,3 +1,74 @@
+2013-03-04  Ruslan Abdikeev  <aruslan@chromium.org>
+
+        <link rel="apple-touch-icon"> tag is not honored on CNN.com, workflowy.com etc
+        https://bugs.webkit.org/show_bug.cgi?id=109061
+
+        Reviewed by Adam Barth.
+
+        * Source/autotools/symbols.filter:
+
+2013-03-04  Kunihiko Sakamoto  <ksakamoto@chromium.org>
+
+        Add build flag for FontLoader
+        https://bugs.webkit.org/show_bug.cgi?id=111289
+
+        Reviewed by Benjamin Poulain.
+
+        Add ENABLE_FONT_LOAD_EVENTS build flag (disabled by default).
+
+        * Source/autotools/SetupWebKitFeatures.m4:
+        * Source/cmake/WebKitFeatures.cmake:
+        * Source/cmakeconfig.h.cmake:
+
+2013-03-03  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144567.
+        http://trac.webkit.org/changeset/144567
+        https://bugs.webkit.org/show_bug.cgi?id=111266
+
+        Does not compile on apple-win (Requested by abarth on
+        #webkit).
+
+        * Source/autotools/symbols.filter:
+
+2013-03-03  Ruslan Abdikeev  <aruslan@chromium.org>
+
+        <link rel="apple-touch-icon"> tag is not honored on CNN.com, workflowy.com etc
+        https://bugs.webkit.org/show_bug.cgi?id=109061
+
+        Reviewed by Adam Barth.
+
+        * Source/autotools/symbols.filter:
+
+2013-03-01  Elliott Sprehn  <esprehn@gmail.com>
+
+        Don't leak Documents when using MutationObserver from extensions
+        https://bugs.webkit.org/show_bug.cgi?id=111234
+
+        Reviewed by Adam Barth.
+
+        * ManualTests/leak-observer-nonmain-world.html: Added.
+
+2013-02-27  Zan Dobersek  <zdobersek@igalia.com>
+
+        [GTK] Disable MathML support in release builds
+        https://bugs.webkit.org/show_bug.cgi?id=110981
+
+        Reviewed by Martin Robinson.
+
+        * Source/autotools/SetupWebKitFeatures.m4: Disable the MathML support in release builds
+        as the code is not yet deemed production-ready.
+
+2013-02-27  Glenn Adams  <glenn@skynav.com>
+
+        Add ENABLE_CSS3_TEXT_LINE_BREAK flag.
+        https://bugs.webkit.org/show_bug.cgi?id=110944
+
+        Reviewed by Dean Jackson.
+
+        * Source/cmake/WebKitFeatures.cmake:
+        * Source/cmakeconfig.h.cmake:
+
 2013-02-24  Laszlo Gombos  <l.gombos@samsung.com>
 
         [EFL] Rename ENABLE_REGIONS to ENABLE_CSS_REGIONS

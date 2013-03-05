@@ -28,7 +28,6 @@
 #include "AccessibilityObject.h"
 #include "AnimationController.h"
 #include "ApplicationCacheStorage.h"
-#include "CSSComputedStyleDeclaration.h"
 #include "Chrome.h"
 #include "ChromeClientGtk.h"
 #include "DOMWrapperWorld.h"
@@ -237,16 +236,6 @@ guint DumpRenderTreeSupportGtk::getPendingUnloadEventCount(WebKitWebFrame* frame
     g_return_val_if_fail(WEBKIT_IS_WEB_FRAME(frame), 0);
 
     return core(frame)->document()->domWindow()->pendingUnloadEventListeners();
-}
-
-CString DumpRenderTreeSupportGtk::markerTextForListItem(WebKitWebFrame* frame, JSContextRef context, JSValueRef nodeObject)
-{
-    JSC::ExecState* exec = toJS(context);
-    Element* element = toElement(toJS(exec, nodeObject));
-    if (!element)
-        return CString();
-
-    return WebCore::markerTextForListItem(element).utf8();
 }
 
 void DumpRenderTreeSupportGtk::clearMainFrameName(WebKitWebFrame* frame)
@@ -702,22 +691,6 @@ bool DumpRenderTreeSupportGtk::elementDoesAutoCompleteForElementWithId(WebKitWeb
 
     HTMLInputElement* inputElement = static_cast<HTMLInputElement*>(coreNode);
     return inputElement->isTextField() && !inputElement->isPasswordField() && inputElement->shouldAutocomplete();
-}
-
-JSValueRef DumpRenderTreeSupportGtk::computedStyleIncludingVisitedInfo(JSContextRef context, JSValueRef nodeObject)
-{
-    JSC::ExecState* exec = toJS(context);
-    if (!nodeObject)
-        return JSValueMakeUndefined(context);
-
-    JSValue jsValue = toJS(exec, nodeObject);
-    if (!jsValue.inherits(&JSElement::s_info))
-        return JSValueMakeUndefined(context);
-
-    JSElement* jsElement = static_cast<JSElement*>(asObject(jsValue));
-    Element* element = jsElement->impl();
-    RefPtr<CSSComputedStyleDeclaration> style = CSSComputedStyleDeclaration::create(element, true);
-    return toRef(exec, toJS(exec, jsElement->globalObject(), style.get()));
 }
 
 void DumpRenderTreeSupportGtk::deliverAllMutationsIfNecessary()

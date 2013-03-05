@@ -467,6 +467,10 @@
 #define ENABLE_FILTERS 0
 #endif
 
+#if !defined(ENABLE_FONT_LOAD_EVENTS)
+#define ENABLE_FONT_LOAD_EVENTS 0
+#endif
+
 #if !defined(ENABLE_FTPDIR)
 #define ENABLE_FTPDIR 1
 #endif
@@ -567,10 +571,6 @@
 
 #if !defined(ENABLE_JAVASCRIPT_I18N_API)
 #define ENABLE_JAVASCRIPT_I18N_API 0
-#endif
-
-#if !defined(JSC_OBJC_API_ENABLED)
-#define JSC_OBJC_API_ENABLED (defined(__clang__) && defined(__APPLE__) && defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1090 && !defined(__i386__))
 #endif
 
 #if !defined(ENABLE_LEGACY_CSS_VENDOR_PREFIXES)

@@ -116,7 +116,6 @@
 #import <WebCore/BackForwardListImpl.h>
 #import <WebCore/MemoryCache.h>
 #import <WebCore/ColorMac.h>
-#import <WebCore/CSSComputedStyleDeclaration.h>
 #import <WebCore/Cursor.h>
 #import <WebCore/DatabaseManager.h>
 #import <WebCore/Document.h>
@@ -3085,6 +3084,19 @@ static Vector<String> toStringVector(NSArray* patterns)
 + (void)_setHTTPPipeliningEnabled:(BOOL)enabled
 {
     ResourceRequest::setHTTPPipeliningEnabled(enabled);
+}
+
+- (void)_setSourceApplicationAuditData:(NSData *)sourceApplicationAuditData
+{
+    if (_private->sourceApplicationAuditData == sourceApplicationAuditData)
+        return;
+
+    _private->sourceApplicationAuditData = adoptNS([sourceApplicationAuditData copy]);
+}
+
+- (NSData *)_sourceApplicationAuditData
+{
+    return _private->sourceApplicationAuditData.get();
 }
 
 @end
@@ -6693,25 +6705,6 @@ static void glibContextIterationCallback(CFRunLoopObserverRef, CFRunLoopActivity
     return 0;
 #endif
 }
-@end
-
-@implementation WebView (WebViewPrivateStyleInfo)
-
-- (JSValueRef)_computedStyleIncludingVisitedInfo:(JSContextRef)context forElement:(JSValueRef)value
-{
-    ExecState* exec = toJS(context);
-    JSLockHolder lock(exec);
-    if (!value)
-        return JSValueMakeUndefined(context);
-    JSC::JSValue jsValue = toJS(exec, value);
-    if (!jsValue.inherits(&JSElement::s_info))
-        return JSValueMakeUndefined(context);
-    JSElement* jsElement = static_cast<JSElement*>(asObject(jsValue));
-    Element* element = jsElement->impl();
-    RefPtr<CSSComputedStyleDeclaration> style = CSSComputedStyleDeclaration::create(element, true);
-    return toRef(exec, toJS(exec, jsElement->globalObject(), style.get()));
-}
-
 @end
 
 @implementation WebView (WebViewFullScreen)

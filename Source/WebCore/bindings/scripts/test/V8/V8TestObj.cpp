@@ -1548,6 +1548,11 @@ static void TestObjReplaceableAttrSetter(v8::Local<v8::String> name, v8::Local<v
     info.This()->ForceSet(name, value);
 }
 
+static void TestObjReplaceableAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    return TestObjV8Internal::TestObjReplaceableAttrSetter(name, value, info);
+}
+
 static v8::Handle<v8::Value> voidMethodMethod(const v8::Arguments& args)
 {
     TestObj* imp = V8TestObj::toNative(args.Holder());
@@ -2891,15 +2896,15 @@ static const V8DOMConfiguration::BatchedAttribute V8TestObjAttrs[] = {
 #endif // ENABLE(Condition1) || ENABLE(Condition2)
 #if ENABLE(Condition1)
     // Attribute 'conditionalAttr4' (Type: 'attribute' ExtAttr: 'Conditional')
-    {"conditionalAttr4", TestObjV8Internal::TestObjConstructorGetter, TestObjV8Internal::TestObjReplaceableAttrSetter, &V8TestObjectA::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    {"conditionalAttr4", TestObjV8Internal::TestObjConstructorGetter, TestObjV8Internal::TestObjReplaceableAttrSetterCallback, &V8TestObjectA::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
 #endif // ENABLE(Condition1)
 #if ENABLE(Condition1) && ENABLE(Condition2)
     // Attribute 'conditionalAttr5' (Type: 'attribute' ExtAttr: 'Conditional')
-    {"conditionalAttr5", TestObjV8Internal::TestObjConstructorGetter, TestObjV8Internal::TestObjReplaceableAttrSetter, &V8TestObjectB::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    {"conditionalAttr5", TestObjV8Internal::TestObjConstructorGetter, TestObjV8Internal::TestObjReplaceableAttrSetterCallback, &V8TestObjectB::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
 #endif // ENABLE(Condition1) && ENABLE(Condition2)
 #if ENABLE(Condition1) || ENABLE(Condition2)
     // Attribute 'conditionalAttr6' (Type: 'attribute' ExtAttr: 'Conditional')
-    {"conditionalAttr6", TestObjV8Internal::TestObjConstructorGetter, TestObjV8Internal::TestObjReplaceableAttrSetter, &V8TestObjectC::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    {"conditionalAttr6", TestObjV8Internal::TestObjConstructorGetter, TestObjV8Internal::TestObjReplaceableAttrSetterCallback, &V8TestObjectC::info, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
 #endif // ENABLE(Condition1) || ENABLE(Condition2)
     // Attribute 'cachedAttribute1' (Type: 'readonly attribute' ExtAttr: 'CachedAttribute')
     {"cachedAttribute1", TestObjV8Internal::cachedAttribute1AttrGetterCallback, 0, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
@@ -2928,7 +2933,7 @@ static const V8DOMConfiguration::BatchedAttribute V8TestObjAttrs[] = {
     // Attribute 'hash' (Type: 'readonly attribute' ExtAttr: '')
     {"hash", TestObjV8Internal::hashAttrGetterCallback, 0, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
     // Attribute 'replaceableAttribute' (Type: 'readonly attribute' ExtAttr: 'Replaceable')
-    {"replaceableAttribute", TestObjV8Internal::replaceableAttributeAttrGetterCallback, TestObjV8Internal::TestObjReplaceableAttrSetter, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
+    {"replaceableAttribute", TestObjV8Internal::replaceableAttributeAttrGetterCallback, TestObjV8Internal::TestObjReplaceableAttrSetterCallback, 0 /* no data */, static_cast<v8::AccessControl>(v8::DEFAULT), static_cast<v8::PropertyAttribute>(v8::None), 0 /* on instance */},
 };
 
 static const V8DOMConfiguration::BatchedMethod V8TestObjMethods[] = {
@@ -3027,7 +3032,7 @@ v8::Handle<v8::Value> V8TestObj::constructorCallback(const v8::Arguments& args)
     return TestObjV8Internal::constructor(args);
 }
 
-static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestObjTemplate(v8::Persistent<v8::FunctionTemplate> desc, v8::Isolate* isolate)
+static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestObjTemplate(v8::Persistent<v8::FunctionTemplate> desc, v8::Isolate* isolate, WrapperWorldType worldType)
 {
     desc->ReadOnlyPrototype();
 
@@ -3158,7 +3163,7 @@ v8::Persistent<v8::FunctionTemplate> V8TestObj::GetRawTemplate(v8::Isolate* isol
     return templ;
 }
 
-v8::Persistent<v8::FunctionTemplate> V8TestObj::GetTemplate(v8::Isolate* isolate)
+v8::Persistent<v8::FunctionTemplate> V8TestObj::GetTemplate(v8::Isolate* isolate, WrapperWorldType worldType)
 {
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->templateMap().find(&info);
@@ -3167,7 +3172,7 @@ v8::Persistent<v8::FunctionTemplate> V8TestObj::GetTemplate(v8::Isolate* isolate
 
     v8::HandleScope handleScope;
     v8::Persistent<v8::FunctionTemplate> templ =
-        ConfigureV8TestObjTemplate(GetRawTemplate(isolate), isolate);
+        ConfigureV8TestObjTemplate(GetRawTemplate(isolate), isolate, worldType);
     data->templateMap().add(&info, templ);
     return templ;
 }
@@ -3199,7 +3204,7 @@ void V8TestObj::installPerContextProperties(v8::Handle<v8::Object> instance, Tes
 void V8TestObj::installPerContextPrototypeProperties(v8::Handle<v8::Object> proto, v8::Isolate* isolate)
 {
     UNUSED_PARAM(proto);
-    v8::Local<v8::Signature> defaultSignature = v8::Signature::New(GetTemplate(isolate));
+    v8::Local<v8::Signature> defaultSignature = v8::Signature::New(GetTemplate(isolate, worldType(isolate)));
     UNUSED_PARAM(defaultSignature); // In some cases, it will not be used.
 
     ScriptExecutionContext* context = toScriptExecutionContext(proto->CreationContext());

@@ -252,6 +252,11 @@ static void TestTypedefsReplaceableAttrSetter(v8::Local<v8::String> name, v8::Lo
     info.This()->ForceSet(name, value);
 }
 
+static void TestTypedefsReplaceableAttrSetterCallback(v8::Local<v8::String> name, v8::Local<v8::Value> value, const v8::AccessorInfo& info)
+{
+    return TestTypedefsV8Internal::TestTypedefsReplaceableAttrSetter(name, value, info);
+}
+
 static v8::Handle<v8::Value> funcMethod(const v8::Arguments& args)
 {
     TestTypedefs* imp = V8TestTypedefs::toNative(args.Holder());
@@ -528,7 +533,7 @@ v8::Handle<v8::Value> V8TestTypedefs::constructorCallback(const v8::Arguments& a
     return TestTypedefsV8Internal::constructor(args);
 }
 
-static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestTypedefsTemplate(v8::Persistent<v8::FunctionTemplate> desc, v8::Isolate* isolate)
+static v8::Persistent<v8::FunctionTemplate> ConfigureV8TestTypedefsTemplate(v8::Persistent<v8::FunctionTemplate> desc, v8::Isolate* isolate, WrapperWorldType worldType)
 {
     desc->ReadOnlyPrototype();
 
@@ -586,7 +591,7 @@ v8::Persistent<v8::FunctionTemplate> V8TestTypedefs::GetRawTemplate(v8::Isolate*
     return templ;
 }
 
-v8::Persistent<v8::FunctionTemplate> V8TestTypedefs::GetTemplate(v8::Isolate* isolate)
+v8::Persistent<v8::FunctionTemplate> V8TestTypedefs::GetTemplate(v8::Isolate* isolate, WrapperWorldType worldType)
 {
     V8PerIsolateData* data = V8PerIsolateData::from(isolate);
     V8PerIsolateData::TemplateMap::iterator result = data->templateMap().find(&info);
@@ -595,7 +600,7 @@ v8::Persistent<v8::FunctionTemplate> V8TestTypedefs::GetTemplate(v8::Isolate* is
 
     v8::HandleScope handleScope;
     v8::Persistent<v8::FunctionTemplate> templ =
-        ConfigureV8TestTypedefsTemplate(GetRawTemplate(isolate), isolate);
+        ConfigureV8TestTypedefsTemplate(GetRawTemplate(isolate), isolate, worldType);
     data->templateMap().add(&info, templ);
     return templ;
 }

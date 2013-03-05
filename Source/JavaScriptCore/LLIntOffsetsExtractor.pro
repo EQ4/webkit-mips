@@ -59,8 +59,8 @@ QMAKE_EXTRA_COMPILERS += llint
 
 macx {
     DESTDIR = $$targetSubDir()
-    llint.output = $$activeBuildConfig()/$$llint.output
-    INCLUDEPATH += $$activeBuildConfig()
+    llint.output = $$targetSubDir()/$$llint.output
+    INCLUDEPATH += $$targetSubDir()
 }
 
 # Compilation of this file will automatically depend on LLIntDesiredOffsets.h

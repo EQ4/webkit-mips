@@ -295,6 +295,7 @@ modules = [
         "dependencies": ["components"],
         "sources": [
             "AuditCategories.js",
+            "AuditController.js",
             "AuditFormatters.js",
             "AuditLauncherView.js",
             "AuditResultView.js",
@@ -336,6 +337,7 @@ modules = [
             "BottomUpProfileDataGridTree.js",
             "CPUProfileView.js",
             "CSSSelectorProfileView.js",
+            "FlameChart.js",
             "HeapSnapshot.js",
             "HeapSnapshotDataGrids.js",
             "HeapSnapshotGridNodes.js",

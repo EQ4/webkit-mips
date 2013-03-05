@@ -198,6 +198,10 @@ static const CSSPropertyID computedProperties[] = {
     CSSPropertyTextOverflow,
     CSSPropertyTextTransform,
     CSSPropertyTop,
+    CSSPropertyTransitionDelay,
+    CSSPropertyTransitionDuration,
+    CSSPropertyTransitionProperty,
+    CSSPropertyTransitionTimingFunction,
     CSSPropertyUnicodeBidi,
     CSSPropertyVerticalAlign,
     CSSPropertyVisibility,
@@ -280,6 +284,8 @@ static const CSSPropertyID computedProperties[] = {
     CSSPropertyWebkitGridAutoFlow,
     CSSPropertyWebkitGridColumns,
     CSSPropertyWebkitGridRows,
+    CSSPropertyWebkitGridStart,
+    CSSPropertyWebkitGridBefore,
     CSSPropertyWebkitGridColumn,
     CSSPropertyWebkitGridRow,
     CSSPropertyWebkitHighlight,
@@ -1924,10 +1930,12 @@ PassRefPtr<CSSValue> CSSComputedStyleDeclaration::getPropertyCSSValue(CSSPropert
         case CSSPropertyWebkitGridRows:
             return valueForGridTrackList(style->gridRows(), style.get(), m_node->document()->renderView());
 
+        case CSSPropertyWebkitGridStart:
         case CSSPropertyWebkitGridColumn:
-            return valueForGridPosition(style->gridItemColumn());
+            return valueForGridPosition(style->gridItemStart());
+        case CSSPropertyWebkitGridBefore:
         case CSSPropertyWebkitGridRow:
-            return valueForGridPosition(style->gridItemRow());
+            return valueForGridPosition(style->gridItemBefore());
 
         case CSSPropertyHeight:
             if (renderer) {
@@ -2517,14 +2525,19 @@ PassRefPtr<CSSValue> CSSComputedStyleDeclaration::getPropertyCSSValue(CSSPropert
         }
         case CSSPropertyWebkitTransformStyle:
             return cssValuePool().createIdentifierValue((style->transformStyle3D() == TransformStyle3DPreserve3D) ? CSSValuePreserve3d : CSSValueFlat);
+        case CSSPropertyTransitionDelay:
         case CSSPropertyWebkitTransitionDelay:
             return getDelayValue(style->transitions());
+        case CSSPropertyTransitionDuration:
         case CSSPropertyWebkitTransitionDuration:
             return getDurationValue(style->transitions());
+        case CSSPropertyTransitionProperty:
         case CSSPropertyWebkitTransitionProperty:
             return getTransitionPropertyValue(style->transitions());
+        case CSSPropertyTransitionTimingFunction:
         case CSSPropertyWebkitTransitionTimingFunction:
             return getTimingFunctionValue(style->transitions());
+        case CSSPropertyTransition:
         case CSSPropertyWebkitTransition: {
             const AnimationList* animList = style->transitions();
             if (animList) {
@@ -2671,6 +2684,10 @@ PassRefPtr<CSSValue> CSSComputedStyleDeclaration::getPropertyCSSValue(CSSPropert
             return getCSSPropertyValuesForShorthandProperties(borderTopShorthand());
         case CSSPropertyBorderWidth:
             return getCSSPropertyValuesForSidesShorthand(borderWidthShorthand());
+        case CSSPropertyWebkitColumnRule:
+            return getCSSPropertyValuesForShorthandProperties(webkitColumnRuleShorthand());
+        case CSSPropertyWebkitColumns:
+            return getCSSPropertyValuesForShorthandProperties(webkitColumnsShorthand());
         case CSSPropertyListStyle:
             return getCSSPropertyValuesForShorthandProperties(listStyleShorthand());
         case CSSPropertyMargin:
@@ -2752,8 +2769,6 @@ PassRefPtr<CSSValue> CSSComputedStyleDeclaration::getPropertyCSSValue(CSSPropert
         /* Unimplemented -webkit- properties */
         case CSSPropertyWebkitAnimation:
         case CSSPropertyWebkitBorderRadius:
-        case CSSPropertyWebkitColumns:
-        case CSSPropertyWebkitColumnRule:
         case CSSPropertyWebkitMarginCollapse:
         case CSSPropertyWebkitMarquee:
         case CSSPropertyWebkitMarqueeSpeed:

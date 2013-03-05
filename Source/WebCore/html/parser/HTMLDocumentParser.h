@@ -36,6 +36,7 @@
 #include "HTMLScriptRunnerHost.h"
 #include "HTMLSourceTracker.h"
 #include "HTMLToken.h"
+#include "HTMLTokenizer.h"
 #include "ScriptableDocumentParser.h"
 #include "SegmentedString.h"
 #include "Timer.h"
@@ -54,7 +55,6 @@ class Document;
 class DocumentFragment;
 class HTMLDocument;
 class HTMLParserScheduler;
-class HTMLTokenizer;
 class HTMLScriptRunner;
 class HTMLTreeBuilder;
 class HTMLResourcePreloader;
@@ -89,6 +89,7 @@ public:
     struct ParsedChunk {
         OwnPtr<CompactHTMLTokenStream> tokens;
         PreloadRequestStream preloads;
+        HTMLTokenizer::State tokenizerState;
         HTMLInputCheckpoint inputCheckpoint;
         TokenPreloadScannerCheckpoint preloadScannerCheckpoint;
     };
@@ -97,7 +98,7 @@ public:
 
 protected:
     virtual void insert(const SegmentedString&) OVERRIDE;
-    virtual void append(const SegmentedString&) OVERRIDE;
+    virtual void append(PassRefPtr<StringImpl>) OVERRIDE;
     virtual void finish() OVERRIDE;
 
     HTMLDocumentParser(HTMLDocument*, bool reportErrors);
@@ -139,7 +140,7 @@ private:
 #if ENABLE(THREADED_HTML_PARSER)
     void startBackgroundParser();
     void stopBackgroundParser();
-    void checkForSpeculationFailure();
+    void validateSpeculations();
     void didFailSpeculation(PassOwnPtr<HTMLToken>, PassOwnPtr<HTMLTokenizer>);
     void processParsedChunkFromBackgroundParser(PassOwnPtr<ParsedChunk>);
     void pumpPendingSpeculations();

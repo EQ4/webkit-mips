@@ -140,7 +140,7 @@ v8::Handle<v8::Value> V8Location::reloadAttrGetterCustom(v8::Local<v8::String> n
 {
     v8::Isolate* isolate = info.GetIsolate();
     static v8::Persistent<v8::FunctionTemplate> privateTemplate = v8::Persistent<v8::FunctionTemplate>::New(isolate, v8::FunctionTemplate::New(V8Location::reloadMethodCustom, v8Undefined(), v8::Signature::New(V8Location::GetRawTemplate(isolate))));
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8Location::GetTemplate(isolate));
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8Location::GetTemplate(isolate, worldType(isolate)));
     if (holder.IsEmpty()) {
         // can only reach here by 'object.__proto__.func', and it should passed
         // domain security check already
@@ -158,7 +158,7 @@ v8::Handle<v8::Value> V8Location::replaceAttrGetterCustom(v8::Local<v8::String> 
 {
     v8::Isolate* isolate = info.GetIsolate();
     static v8::Persistent<v8::FunctionTemplate> privateTemplate = v8::Persistent<v8::FunctionTemplate>::New(isolate, v8::FunctionTemplate::New(V8Location::replaceMethodCustom, v8Undefined(), v8::Signature::New(V8Location::GetRawTemplate(isolate))));
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8Location::GetTemplate(isolate));
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8Location::GetTemplate(isolate, worldType(isolate)));
     if (holder.IsEmpty()) {
         // can only reach here by 'object.__proto__.func', and it should passed
         // domain security check already
@@ -177,7 +177,7 @@ v8::Handle<v8::Value> V8Location::assignAttrGetterCustom(v8::Local<v8::String> n
     v8::Isolate* isolate = info.GetIsolate();
     static v8::Persistent<v8::FunctionTemplate> privateTemplate =
         v8::Persistent<v8::FunctionTemplate>::New(isolate, v8::FunctionTemplate::New(V8Location::assignMethodCustom, v8Undefined(), v8::Signature::New(V8Location::GetRawTemplate(isolate))));
-    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8Location::GetTemplate(isolate));
+    v8::Handle<v8::Object> holder = info.This()->FindInstanceInPrototypeChain(V8Location::GetTemplate(isolate, worldType(isolate)));
     if (holder.IsEmpty()) {
         // can only reach here by 'object.__proto__.func', and it should passed
         // domain security check already
@@ -242,20 +242,6 @@ v8::Handle<v8::Value> V8Location::toStringMethodCustom(const v8::Arguments& args
         return v8::Undefined();
     String result = imp->href();
     return v8String(result, args.GetIsolate());
-}
-
-bool V8Location::indexedSecurityCheck(v8::Local<v8::Object> host, uint32_t index, v8::AccessType type, v8::Local<v8::Value>)
-{
-    // Only allow same origin access
-    Location* imp =  V8Location::toNative(host);
-    return BindingSecurity::shouldAllowAccessToFrame(BindingState::instance(), imp->frame(), DoNotReportSecurityError);
-}
-
-bool V8Location::namedSecurityCheck(v8::Local<v8::Object> host, v8::Local<v8::Value> key, v8::AccessType type, v8::Local<v8::Value>)
-{
-    // Only allow same origin access
-    Location* imp = V8Location::toNative(host);
-    return BindingSecurity::shouldAllowAccessToFrame(BindingState::instance(), imp->frame(), DoNotReportSecurityError);
 }
 
 }  // namespace WebCore

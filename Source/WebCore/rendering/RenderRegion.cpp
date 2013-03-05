@@ -541,7 +541,7 @@ void RenderRegion::computeChildrenStyleInRegion(const RenderObject* object)
             childStyleInRegion = it->value.style;
             objectRegionStyleCached = true;
         } else {
-            if (child->isAnonymous())
+            if (child->isAnonymous() || child->isInFlowRenderFlowThread())
                 childStyleInRegion = RenderStyle::createAnonymousStyleWithDisplay(object->style(), child->style()->display());
             else if (child->isText())
                 childStyleInRegion = RenderStyle::clone(object->style());
@@ -557,9 +557,7 @@ void RenderRegion::computeChildrenStyleInRegion(const RenderObject* object)
 
 void RenderRegion::setObjectStyleInRegion(RenderObject* object, PassRefPtr<RenderStyle> styleInRegion, bool objectRegionStyleCached)
 {
-    ASSERT(object->inRenderFlowThread());
-    if (!object->inRenderFlowThread())
-        return;
+    ASSERT(object->flowThreadContainingBlock());
 
     RefPtr<RenderStyle> objectOriginalStyle = object->style();
     object->setStyleInternal(styleInRegion);

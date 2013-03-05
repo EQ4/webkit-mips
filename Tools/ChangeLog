@@ -1,3 +1,1168 @@
+2013-03-05  Tim Horton  <timothy_horton@apple.com>, Grzegorz Czajkowski  <g.czajkowski@samsung.com>
+
+        [WK2] WTR needs an implementation of setAsynchronousSpellCheckingEnabled
+        https://bugs.webkit.org/show_bug.cgi?id=81042
+
+        Reviewed by Enrica Casucci.
+
+        Add setAsynchronousSpellCheckingEnabled implementation for
+        WebKitTestRunner to have the possibility to test asynchronous
+        spell checking implementation from bug 109577.
+
+        * WebKitTestRunner/InjectedBundle/Bindings/TestRunner.idl:
+        * WebKitTestRunner/InjectedBundle/TestRunner.cpp:
+        (WTR::TestRunner::setAsynchronousSpellCheckingEnabled):
+        * WebKitTestRunner/InjectedBundle/TestRunner.h:
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::resetStateToConsistentValues):
+
+2013-03-05  Tommy Widenflycht  <tommyw@google.com>
+
+        MediaStream API: Add the getStreamById method on RTCPeerConnection
+        https://bugs.webkit.org/show_bug.cgi?id=111311
+
+        Reviewed by Adam Barth.
+
+        Changing mocks to be more realistic.
+
+        * DumpRenderTree/chromium/TestRunner/src/MockWebRTCPeerConnectionHandler.cpp:
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::addStream):
+        (WebTestRunner::MockWebRTCPeerConnectionHandler::removeStream):
+        * DumpRenderTree/chromium/TestRunner/src/WebUserMediaClientMock.cpp:
+        (WebTestRunner::WebUserMediaClientMock::requestUserMedia):
+
+2013-03-05  Jochen Eisinger  <jochen@chromium.org>
+
+        Add content shell bots to garden-o-matic for general failurse
+        https://bugs.webkit.org/show_bug.cgi?id=111168
+
+        Reviewed by Adam Barth.
+
+        All but the WebKit (Content Shell) Android bot is stable enough. While
+        they're not green yet, there must not be any non-layout test failures on
+        them.
+
+        * BuildSlaveSupport/build.webkit.org-config/public_html/TestFailures/scripts/config.js:
+        (.):
+
+2013-03-04  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] remove deprecated WebTestRunner::setFocus API
+        https://bugs.webkit.org/show_bug.cgi?id=111354
+
+        Reviewed by James Robinson.
+
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestDelegate):
+
+2013-03-04  Jochen Eisinger  <jochen@chromium.org>
+
+        Run the bindings generation tests on EWS and CQ bots
+        https://bugs.webkit.org/show_bug.cgi?id=111358
+
+        Reviewed by Adam Barth.
+
+        The tests are super fast and not flaky.
+
+        * Scripts/webkitpy/common/config/ports.py:
+        (DeprecatedPort.run_bindings_tests_command):
+        * Scripts/webkitpy/common/config/ports_mock.py:
+        (MockPort.run_webkit_tests_command):
+        (MockPort):
+        (MockPort.run_bindings_tests_command):
+        * Scripts/webkitpy/tool/commands/download_unittest.py:
+        * Scripts/webkitpy/tool/steps/runtests.py:
+        (RunTests.run):
+        * Scripts/webkitpy/tool/steps/runtests_unittest.py:
+        (RunTestsTest.test_webkit_run_unit_tests):
+        * Scripts/webkitpy/tool/steps/steps_unittest.py:
+
+2013-03-04  Eric Seidel  <eric@webkit.org>
+
+        run-webkit-tests should support --profile and --profiler= just like run-perf-tests does
+        https://bugs.webkit.org/show_bug.cgi?id=111384
+
+        Reviewed by Ryosuke Niwa.
+
+        Sometimes I want to know why various LayoutTests are slow
+        without having to convert them into PerformanceTests in order
+        to use our fancy profiling.  The Driver already knows how to
+        do the right thing, we just need to expose the options to the user.
+
+        Handling of these options is already unittested in the perftests_unittest.
+
+        * Scripts/webkitpy/layout_tests/run_webkit_tests.py:
+        (parse_args):
+
+2013-03-04  Alan Cutter  <alancutter@chromium.org>
+
+        check-webkit-style says "Have to enable auto props in the subversion config file"
+        https://bugs.webkit.org/show_bug.cgi?id=107724
+
+        Reviewed by Tony Chang.
+
+        Added a standard svn config file for WebKit developers to use.
+        Updated the style and commit queue bot build scripts to load this file.
+
+        * EWSTools/GoogleComputeEngine/build-commit-queue.sh:
+        * EWSTools/GoogleComputeEngine/build-feeder-style-sheriffbot.sh:
+        * EWSTools/configure-svn-config.sh: Copied from Tools/EWSTools/GoogleComputeEngine/build-commit-queue.sh.
+        * svn-config: Added.
+
+2013-03-04  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Switch to new webkit_support::CreateLayerTreeView interface
+        https://bugs.webkit.org/show_bug.cgi?id=111285
+
+        Reviewed by Adrienne Walker.
+
+        This removes the need for WebCompositorSupport::initialize and exposes
+        slightly fewer entry points across the repository boundary.
+
+        * DumpRenderTree/chromium/TestShell.cpp:
+        (TestShell::initialize):
+        * DumpRenderTree/chromium/TestShell.h:
+        (TestShell::webCompositorThread):
+        (TestShell):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::initializeLayerTreeView):
+
+2013-03-04  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Get rid of some AppleWin VS2010 build warnings.
+
+        * DumpRenderTree/DumpRenderTree.vcxproj/TestNetscapePlugin/TestNetscapePluginCommon.props:
+
+2013-03-04  David Kilzer  <ddkilzer@apple.com>
+
+        BUILD FIX (r144657): Fix DumpRenderTree build failure on iOS
+
+            Tools/DumpRenderTree/ios/AccessibilityControllerIOS.mm:95:29: error: class method '+stringWithJSStringRef:' not found (return type defaults to 'id') [-Werror,-Wobjc-method-access]
+                NSString *idAttribute = [NSString stringWithJSStringRef:idAttributeRef];
+                                        ^         ~~~~~~~~~~~~~~~~~~~~~
+            1 error generated.
+
+        * DumpRenderTree/ios/AccessibilityControllerIOS.mm: Import
+        AccessibilityCommonMac.h.
+
+2013-03-04  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
+
+        [WK2][EFL] Add callbacks to the WKViewClient to handle Web Process crash and relaunch
+        https://bugs.webkit.org/show_bug.cgi?id=109828
+
+        Reviewed by Kenneth Rohde Christiansen.
+
+        Added API test for newly added Web Process crash and Web Process relaunch WKViewClient
+        callbacks.
+
+        * TestWebKitAPI/CMakeLists.txt:
+
+            Tests located in 'TestWebKitAPI/Tests/WebKit2' subdirectories are also
+            considered.
+
+        * TestWebKitAPI/PlatformEfl.cmake:
+        * TestWebKitAPI/Tests/WebKit2/efl/WKViewClientWebProcessCallbacks.cpp: Added.
+        (TestWebKitAPI):
+        (TestWebKitAPI::didFinishLoadForFrame):
+        (TestWebKitAPI::setPageLoaderClient):
+        (TestWebKitAPI::webProcessCrashed):
+        (TestWebKitAPI::webProcessDidRelaunch):
+        (TestWebKitAPI::setViewClient):
+        (TestWebKitAPI::TEST):
+
+2013-03-04  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Upstream iOS Accessibility DumpRenderTree changes
+        https://bugs.webkit.org/show_bug.cgi?id=111220
+
+        Reviewed by David Kilzer.
+
+        Upstream the iOS changes for accessibility in DumpRenderTree.
+
+        * DumpRenderTree/AccessibilityUIElement.cpp:
+        (headerElementAtIndexCallback):
+        (linkedElementCallback):
+        (elementsForRangeCallback):
+        (increaseTextSelectionCallback):
+        (decreaseTextSelectionCallback):
+        (assistiveTechnologySimulatedFocusCallback):
+        (stringForSelectionCallback):
+        (getIPhoneLabelCallback):
+        (getIPhoneHintCallback):
+        (getIPhoneValueCallback):
+        (getIPhoneIdentifierCallback):
+        (getIPhoneTraitsCallback):
+        (getIPhoneIsElementCallback):
+        (getIPhoneElementTextPositionCallback):
+        (getIPhoneElementTextLengthCallback):
+        (AccessibilityUIElement::getJSClass):
+        * DumpRenderTree/AccessibilityUIElement.h:
+        (AccessibilityUIElement):
+        * DumpRenderTree/DumpRenderTree.xcodeproj/project.pbxproj:
+        * DumpRenderTree/ios: Added.
+        * DumpRenderTree/ios/AccessibilityControllerIOS.mm: Added.
+        (AccessibilityController::AccessibilityController):
+        (AccessibilityController::~AccessibilityController):
+        (AccessibilityController::elementAtPoint):
+        (AccessibilityController::focusedElement):
+        (AccessibilityController::rootElement):
+        (findAccessibleObjectById):
+        (AccessibilityController::accessibleElementById):
+        (AccessibilityController::setLogFocusEvents):
+        (AccessibilityController::setLogScrollingStartEvents):
+        (AccessibilityController::setLogValueChangeEvents):
+        (AccessibilityController::setLogAccessibilityEvents):
+        (AccessibilityController::addNotificationListener):
+        (AccessibilityController::removeNotificationListener):
+        * DumpRenderTree/ios/AccessibilityUIElementIOS.mm: Added.
+        (AccessibilityUIElement::AccessibilityUIElement):
+        (AccessibilityUIElement::~AccessibilityUIElement):
+        (concatenateAttributeAndValue):
+        (AccessibilityUIElement::iphoneLabel):
+        (AccessibilityUIElement::iphoneHint):
+        (AccessibilityUIElement::iphoneValue):
+        (AccessibilityUIElement::iphoneIdentifier):
+        (AccessibilityUIElement::iphoneTraits):
+        (AccessibilityUIElement::iphoneIsElement):
+        (AccessibilityUIElement::iphoneElementTextPosition):
+        (AccessibilityUIElement::iphoneElementTextLength):
+        (AccessibilityUIElement::url):
+        (AccessibilityUIElement::x):
+        (AccessibilityUIElement::y):
+        (AccessibilityUIElement::width):
+        (AccessibilityUIElement::height):
+        (AccessibilityUIElement::clickPointX):
+        (AccessibilityUIElement::clickPointY):
+        (AccessibilityUIElement::getChildren):
+        (AccessibilityUIElement::getChildrenWithRange):
+        (AccessibilityUIElement::childrenCount):
+        (AccessibilityUIElement::elementAtPoint):
+        (AccessibilityUIElement::indexOfChild):
+        (AccessibilityUIElement::getChildAtIndex):
+        (AccessibilityUIElement::headerElementAtIndex):
+        (AccessibilityUIElement::linkedElement):
+        (AccessibilityUIElement::linkedUIElementAtIndex):
+        (AccessibilityUIElement::ariaOwnsElementAtIndex):
+        (AccessibilityUIElement::ariaFlowToElementAtIndex):
+        (AccessibilityUIElement::disclosedRowAtIndex):
+        (AccessibilityUIElement::selectedRowAtIndex):
+        (AccessibilityUIElement::rowAtIndex):
+        (AccessibilityUIElement::titleUIElement):
+        (AccessibilityUIElement::parentElement):
+        (AccessibilityUIElement::disclosedByRow):
+        (AccessibilityUIElement::increaseTextSelection):
+        (AccessibilityUIElement::decreaseTextSelection):
+        (AccessibilityUIElement::stringForSelection):
+        (AccessibilityUIElement::stringForRange):
+        (AccessibilityUIElement::attributedStringForRange):
+        (AccessibilityUIElement::attributedStringRangeIsMisspelled):
+        (AccessibilityUIElement::elementsForRange):
+        (AccessibilityUIElement::getLinkedUIElements):
+        (AccessibilityUIElement::getDocumentLinks):
+        (AccessibilityUIElement::attributesOfLinkedUIElements):
+        (AccessibilityUIElement::attributesOfDocumentLinks):
+        (AccessibilityUIElement::attributesOfChildren):
+        (AccessibilityUIElement::allAttributes):
+        (AccessibilityUIElement::stringAttributeValue):
+        (AccessibilityUIElement::isPressActionSupported):
+        (AccessibilityUIElement::isIncrementActionSupported):
+        (AccessibilityUIElement::isDecrementActionSupported):
+        (AccessibilityUIElement::boolAttributeValue):
+        (AccessibilityUIElement::isAttributeSettable):
+        (AccessibilityUIElement::isAttributeSupported):
+        (AccessibilityUIElement::parameterizedAttributeNames):
+        (AccessibilityUIElement::role):
+        (AccessibilityUIElement::subrole):
+        (AccessibilityUIElement::roleDescription):
+        (AccessibilityUIElement::title):
+        (AccessibilityUIElement::description):
+        (AccessibilityUIElement::orientation):
+        (AccessibilityUIElement::stringValue):
+        (AccessibilityUIElement::language):
+        (AccessibilityUIElement::helpText):
+        (AccessibilityUIElement::intValue):
+        (AccessibilityUIElement::minValue):
+        (AccessibilityUIElement::maxValue):
+        (AccessibilityUIElement::valueDescription):
+        (AccessibilityUIElement::insertionPointLineNumber):
+        (AccessibilityUIElement::isEnabled):
+        (AccessibilityUIElement::isRequired):
+        (AccessibilityUIElement::isFocused):
+        (AccessibilityUIElement::isSelected):
+        (AccessibilityUIElement::isExpanded):
+        (AccessibilityUIElement::isChecked):
+        (AccessibilityUIElement::hierarchicalLevel):
+        (AccessibilityUIElement::ariaIsGrabbed):
+        (AccessibilityUIElement::ariaDropEffects):
+        (AccessibilityUIElement::lineForIndex):
+        (AccessibilityUIElement::boundsForRange):
+        (AccessibilityUIElement::attributesOfColumnHeaders):
+        (AccessibilityUIElement::attributesOfRowHeaders):
+        (AccessibilityUIElement::attributesOfColumns):
+        (AccessibilityUIElement::attributesOfRows):
+        (AccessibilityUIElement::attributesOfVisibleCells):
+        (AccessibilityUIElement::attributesOfHeader):
+        (AccessibilityUIElement::rowCount):
+        (AccessibilityUIElement::columnCount):
+        (AccessibilityUIElement::indexInTable):
+        (AccessibilityUIElement::rowIndexRange):
+        (AccessibilityUIElement::columnIndexRange):
+        (AccessibilityUIElement::cellForColumnAndRow):
+        (AccessibilityUIElement::selectedTextRange):
+        (AccessibilityUIElement::assistiveTechnologySimulatedFocus):
+        (AccessibilityUIElement::setSelectedTextRange):
+        (AccessibilityUIElement::increment):
+        (AccessibilityUIElement::decrement):
+        (AccessibilityUIElement::showMenu):
+        (AccessibilityUIElement::press):
+        (AccessibilityUIElement::accessibilityValue):
+        (AccessibilityUIElement::documentEncoding):
+        (AccessibilityUIElement::documentURI):
+        (_accessibilityNotificationCallback):
+        (AccessibilityUIElement::addNotificationListener):
+        (AccessibilityUIElement::removeNotificationListener):
+        (AccessibilityUIElement::isFocusable):
+        (AccessibilityUIElement::isSelectable):
+        (AccessibilityUIElement::isMultiSelectable):
+        (AccessibilityUIElement::isSelectedOptionActive):
+        (AccessibilityUIElement::isVisible):
+        (AccessibilityUIElement::isOffScreen):
+        (AccessibilityUIElement::isCollapsed):
+        (AccessibilityUIElement::isIgnored):
+        (AccessibilityUIElement::hasPopup):
+        (AccessibilityUIElement::takeFocus):
+        (AccessibilityUIElement::takeSelection):
+        (AccessibilityUIElement::addSelection):
+        (AccessibilityUIElement::removeSelection):
+        (AccessibilityUIElement::uiElementForSearchPredicate):
+        (AccessibilityUIElement::numberAttributeValue):
+
+2013-03-04  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] pass all focus handling methods through the WebTestDelegate
+        https://bugs.webkit.org/show_bug.cgi?id=111328
+
+        Reviewed by Nico Weber.
+
+        In content_shell, the focus handling is asynchronous. To allow for
+        switching the focus synchronously between WebViews, we need to intercept
+        didFocus and didBlur and forward it to the WebTestDelegate.
+
+        * DumpRenderTree/chromium/TestRunner/public/WebTestDelegate.h:
+        (WebTestDelegate):
+        (WebTestRunner::WebTestDelegate::setFocus):
+        * DumpRenderTree/chromium/TestRunner/public/WebTestProxy.h:
+        (WebTestRunner::WebTestProxy::didFocus):
+        (WebTestRunner::WebTestProxy::didBlur):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::setWindowIsKey):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner::WebTestProxyBase::didFocus):
+        (WebTestRunner):
+        (WebTestRunner::WebTestProxyBase::didBlur):
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::didFocus):
+        (WebViewHost::didBlur):
+        (WebViewHost::setFocus):
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebViewHost):
+
+2013-03-04  Claudio Saavedra  <csaavedra@igalia.com>
+
+        [GTK] No need to manually add system paths to jhbuildrc
+        https://bugs.webkit.org/show_bug.cgi?id=110850
+
+        Reviewed by Gustavo Noronha Silva.
+
+        * gtk/jhbuildrc: Remove calls to addpath() for items that jhbuild
+        already takes care of.
+
+2013-03-04  Kinuko Yasuda  <kinuko@chromium.org>
+
+        [chromium] TestWebKitAPI WTF.StringHasher_addCharacters is broken on Chromium Android
+        https://bugs.webkit.org/show_bug.cgi?id=111284
+
+        Disabling the failing two tests on Android.
+
+        Reviewed by Jochen Eisinger.
+
+        * TestWebKitAPI/Tests/WTF/StringHasher.cpp:
+        (TestWebKitAPI):
+        (TestWebKitAPI::TEST):
+
+2013-03-04  Kunihiko Sakamoto  <ksakamoto@chromium.org>
+
+        Add build flag for FontLoader
+        https://bugs.webkit.org/show_bug.cgi?id=111289
+
+        Reviewed by Benjamin Poulain.
+
+        Add ENABLE_FONT_LOAD_EVENTS build flag (disabled by default).
+
+        * Scripts/webkitperl/FeatureList.pm:
+        * qmake/mkspecs/features/features.pri:
+
+2013-03-03  Benjamin Poulain  <benjamin@webkit.org>
+
+        [Mac] Get rid of a useless method from DOMHTMLInputElement
+        https://bugs.webkit.org/show_bug.cgi?id=111279
+
+        Reviewed by Sam Weinig.
+
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        (TestRunner::setValueForUser):
+        The method _setValueForUser: was added for testing. This feature is already
+        exposed by DOMHTMLInputElement as a private API and it is how this code is exercised
+        in real use cases. Get rid of the method created for testing, use the real thing
+        instead.
+
+2013-03-03  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Some perf. tests have variances that differ greatly between runs
+        https://bugs.webkit.org/show_bug.cgi?id=97510
+
+        Reviewed by Benjamin Poulain.
+
+        Use multiple instances of DumpRenderTree or WebKitTestRunner to amortize the effect of the runtime
+        environment on test results (we run each instance after one another, not in parallel).
+
+        We use 4 instances of the test runner, each executing 5 in-process iterations, for the total of 20
+        iterations as it was done previously in single process. These values are hard-coded in perftest.py
+        and runner.js but they are to be configurable in the future.
+
+        Set of 5 iterations obtained by the same test runner is treated as an "iteration group" and each
+        metric now reports an array of the length 4 with each element containing an array of 5 iteration
+        values obtained by each test runner instance as opposed to a flattened array of 20 iteration values.
+
+        Unfortunately, we can use the same trick on Dromaeo because we're already doing only 5 iterations
+        and repeating the entire Dromaeo 4 times will take too long. We need to disable more Dromaeo tests
+        as needed. To this end, added SingleProcessPerfTest to preserve the old behavior.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTestMetric.append_group): Renamed from append.
+        (PerfTestMetric.grouped_iteration_values): Added.
+        (PerfTestMetric.flattened_iteration_values): Renamed from iteration_values.
+
+        (PerfTest.__init__): Takes the number of processes (drivers) to run tests with.
+        This parameter is only used by SingleProcessPerfTest.
+
+        (PerfTest.run): Repeat tests using different driver processes.
+        (PerfTest._run_with_driver): Returns a boolean instead of a list of measured metrics
+        since metrics are shared between multiple drivers (i.e. multiple calls to _run_with_driver).
+        We instead use _ensure_metrics to obtain the matched metrics and store the data there.
+        (PerfTest._ensure_metrics): Added.
+
+        (SingleProcessPerfTest): Added. Used to run Dromaeo tests where running it on 4 different
+        instances of DumpRenderTree/WebKitTestRunner takes too long.
+        (SingleProcessPerfTest.__init__):
+
+        (ReplayPerfTest._run_with_driver): Updated to use _ensure_metrics.
+
+        (PerfTestFactory): Use SingleProcessPerfTest to run Dromaeo tests.
+
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py: Updated various tests that expect
+        _run_with_driver to return a list of metrics. Now it returns a boolean indicating whether
+        the test succeeded or not. Obtain the dictionary of metrics via test._metrics instead.
+
+        (TestPerfTestMetric.test_append): Updated per name and added some test cases for
+        grouped_iteration_values.
+
+        (TestPerfTest._assert_results_are_correct):
+
+        (TestSingleProcessPerfTest): Added.
+        (TestSingleProcessPerfTest.test_use_only_one_process):
+        (TestSingleProcessPerfTest.test_use_only_one_process.run_single):
+
+        (TestReplayPerfTest.test_run_with_driver_accumulates_results):
+        (TestReplayPerfTest.test_run_with_driver_accumulates_memory_results):
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner_integrationtest.py: Updated values of
+        sample standard deviations since we're now running tests 4 times.
+        (MainTest._test_run_with_json_output.mock_upload_json):
+        (MainTest.test_run_with_upload_json_should_generate_perf_webkit_json):
+
+2013-03-03  Alexandre Elias  <aelias@chromium.org>
+
+        [chromium] Remove WebLayerTreeView::setViewportSize call
+        https://bugs.webkit.org/show_bug.cgi?id=110727
+
+        Reviewed by James Robinson.
+
+        After https://codereview.chromium.org/12328080 lands,
+        setViewportSize is called from the Chromium side. The multiplication
+        by deviceScaleFactor here was prone to off-by-one errors.
+        The layoutSize() function was only used here so delete it as well.
+
+        DumpRenderTree WebViewHost must now call this method as well.
+
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHost::initializeLayerTreeView):
+        (WebViewHost::setWindowRect):
+        (WebViewHost::setDeviceScaleFactor):
+        (WebViewHost::updateViewportSize):
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (WebViewHost):
+
+2013-02-27  Darin Adler  <darin@apple.com>
+
+        StringHasher functions require alignment that call sites do not all guarantee
+        https://bugs.webkit.org/show_bug.cgi?id=110171
+
+        Reviewed by Benjamin Poulain.
+
+        * TestWebKitAPI/CMakeLists.txt:
+        * TestWebKitAPI/GNUmakefile.am:
+        * TestWebKitAPI/TestWebKitAPI.gypi:
+        * TestWebKitAPI/TestWebKitAPI.vcxproj/TestWebKitAPI.vcxproj:
+        * TestWebKitAPI/TestWebKitAPI.vcxproj/TestWebKitAPI.vcxproj.filters:
+        * TestWebKitAPI/TestWebKitAPI.xcodeproj/project.pbxproj:
+        * TestWebKitAPI/Tests/WTF/WTF.pro:
+        * TestWebKitAPI/win/TestWebKitAPI.vcproj:
+        Added the StringHasher.cpp file.
+
+        * TestWebKitAPI/Tests/WTF/StringHasher.cpp: Added. Contains a bunch of tests
+        for the functions in the StringHasher class.
+
+2013-03-02  Benjamin Poulain  <bpoulain@apple.com>
+
+        Move computedStyleIncludingVisitedInfo from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=109772
+
+        Reviewed by Andreas Kling.
+
+        * DumpRenderTree/TestRunner.cpp:
+        (TestRunner::staticFunctions):
+        * DumpRenderTree/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+        * DumpRenderTree/efl/TestRunnerEfl.cpp:
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp:
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        * DumpRenderTree/qt/TestRunnerQt.cpp:
+        * DumpRenderTree/qt/TestRunnerQt.h:
+        (TestRunner):
+        * DumpRenderTree/win/TestRunnerWin.cpp:
+        * DumpRenderTree/wx/TestRunnerWx.cpp:
+        * WebKitTestRunner/InjectedBundle/Bindings/TestRunner.idl:
+        * WebKitTestRunner/InjectedBundle/TestRunner.cpp:
+        * WebKitTestRunner/InjectedBundle/TestRunner.h:
+        (TestRunner):
+
+2013-03-01  Ilya Tikhonovsky  <loislo@chromium.org>
+
+        Web Inspector: Native Memory Instrumentation: do not visit raw pointers by default.
+        https://bugs.webkit.org/show_bug.cgi?id=110943
+
+        Reviewed by Yury Semikhatsky.
+
+        Unfortunately in many cases raw pointer may point to an object that has been deleted.
+        There is no working solution to solve this problem in general.
+        It could be solved only on case by case basis.
+
+        * TestWebKitAPI/Tests/WTF/MemoryInstrumentationTest.cpp:
+        * TestWebKitAPI/Tests/WebCore/HeapGraphSerializerTest.cpp:
+        (TestWebKitAPI::TEST):
+
+2013-03-01  Jason Anderssen  <janderssen@gmail.com>
+
+        Move markerTextForListItem from TestRunner to Internals
+        https://bugs.webkit.org/show_bug.cgi?id=110939
+
+        Reviewed by Benjamin Poulain.
+
+        * DumpRenderTree/TestRunner.cpp:
+        (TestRunner::staticFunctions):
+        * DumpRenderTree/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/efl/TestRunnerEfl.cpp:
+        * DumpRenderTree/gtk/TestRunnerGtk.cpp:
+        * DumpRenderTree/mac/TestRunnerMac.mm:
+        * DumpRenderTree/qt/TestRunnerQt.cpp:
+        * DumpRenderTree/qt/TestRunnerQt.h:
+        (TestRunnerQt):
+        * DumpRenderTree/win/TestRunnerWin.cpp:
+        * DumpRenderTree/wx/TestRunnerWx.cpp:
+        * WebKitTestRunner/InjectedBundle/Bindings/TestRunner.idl:
+        * WebKitTestRunner/InjectedBundle/TestRunner.cpp:
+        * WebKitTestRunner/InjectedBundle/TestRunner.h:
+        (TestRunner):
+
+2013-03-01  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Don't use legacy test names when returning results from PerfTest.run
+        https://bugs.webkit.org/show_bug.cgi?id=111148
+
+        Reviewed by Dirk Pranke.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTestMetric.name): Renamed from metric.
+        (PerfTest.test_name_without_file_extension): Extracted from legacy_chromium_bot_compatible_test_name.
+        (PerfTest.run): Use metric name instead of the legacy name to store iteration values.
+        (ChromiumStylePerfTest.parse_and_log_output): Use the metric name to store results as done in PerfTest.run.
+
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTestMetric.test_init_set_time_metric):
+        (TestPerfTestMetric.legacy_chromium_bot_compatible_test_name): Removed. The integration tests test this.
+        (TestReplayPerfTest.test_run_with_driver_accumulates_results):
+        (TestReplayPerfTest.test_run_with_driver_accumulates_memory_results):
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner.__init__):
+        (PerfTestsRunner._generate_results_dict): Updated to iterate over (test, metrics) pair. Use view_source_url
+        to obtain the trac URL instead of hard coding it.
+        (PerfTestsRunner._run_tests_set):
+
+2013-03-01  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Add an extra project that assembles all project build logs on Windows into a single file.
+        https://bugs.webkit.org/show_bug.cgi?id=111202
+
+        This is useful for running VCExpress builds from command line because there is
+        no unified solution output, only per project build logs.
+        The project will be run as the last project in the solution.
+
+        * win/AssembleBuildLogs: Added.
+        * win/AssembleBuildLogs/AssembleBuildLogs.vcxproj: Added.
+        * win/AssembleBuildLogs/AssembleBuildLogs.vcxproj.filters: Added.
+        * win/AssembleBuildLogs/AssembleLogs.cmd: Added.
+        * win/AssembleBuildLogs/README: Added.
+
+2013-03-01  Roger Fong  <roger_fong@apple.com>
+
+        Unreviewed. Increase number of patches processed before clean building on WinEWS bots.
+
+        * EWSTools/start-queue-win.sh:
+
+2013-03-01  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Don't return statistics in PerfTest.run
+        https://bugs.webkit.org/show_bug.cgi?id=111145
+
+        Reviewed by Dirk Pranke.
+
+        Simply return a list of values obtained in each iteration from PerfTest.run.
+        Also simplify various methods as needed.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTestMetric.__init__): Moved the code to convert 'Time' metric to 'FrameRate' and 'Runs'
+        as needed from PerfTestsRunner._generate_results_dict.
+
+        (PerfTestMetric.legacy_chromium_bot_compatible_test_name): Always append the metric name now
+        that we don't have to worry about the backward compatibility here.
+
+        (PerfTestMetric.iteration_values): Added.
+        (PerfTestMetric.unit): Added.
+        (PerfTestMetric.metric_to_unit):
+        (PerfTestMetric.time_unit_to_metric): Extracted from PerfTestsRunner._generate_results_dict.
+
+        (PerfTest.run):
+        (PerfTest.log_statistics): Merged compute_statistics and self.output_statistics.
+
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTestMetric.test_init_set_missing_unit):
+        (TestPerfTestMetric.test_init_set_time_metric): Added.
+        (TestPerfTestMetric.test_legacy_chromium_bot_compatible_test_name):
+        (TestPerfTestMetric.test_append):
+        (TestPerfTestMetric.test_compute_statistics): Removed. Integration tests check some of these
+        test cases and it's not critical to keep math right as they're not used in output JSON anymore.
+        (TestPerfTest._assert_results_are_correct):
+        (TestReplayPerfTest.test_run_with_driver_accumulates_results):
+        (TestReplayPerfTest.test_run_with_driver_accumulates_memory_results):
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner._generate_results_dict):
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner_integrationtest.py:
+        (EventTargetWrapperTestData): The metric name shows up at the end of the test name as expected.
+        (SomeParserTestData): Ditto.
+        (MemoryTestData): Ditto.
+
+2013-03-01  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt] Enable LINK_PREFETCH
+        https://bugs.webkit.org/show_bug.cgi?id=111158
+
+        Reviewed by Simon Hausmann.
+
+        * qmake/mkspecs/features/features.pri:
+
+2013-03-01  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt] Update features.pri with new features
+        https://bugs.webkit.org/show_bug.cgi?id=111157
+
+        Reviewed by Jocelyn Turcotte.
+
+        * qmake/mkspecs/features/features.pri:
+
+2013-03-01  Jochen Eisinger  <jochen@chromium.org>
+
+        [chromium] put WebTestProxy::scheduleComposite back in place
+        https://bugs.webkit.org/show_bug.cgi?id=111146
+
+        Reviewed by Nico Weber.
+
+        The call was removed in http://trac.webkit.org/changeset/144398 because
+        DRT doesn't need it. However, content shell depends on this call.
+
+        * DumpRenderTree/chromium/TestRunner/public/WebTestProxy.h:
+        (WebTestRunner::WebTestProxy::scheduleComposite):
+
+2013-02-28  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Merge PerfTestRunner._run_single_test into PerfTestRunner._run_tests_set
+        https://bugs.webkit.org/show_bug.cgi?id=111142
+
+        Reviewed by Adam Barth.
+
+        Merged _run_single_test into _run_tests_set. The code looks much cleaner now.
+
+        Also removed _print_status since it's never used anywhere.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner.run):
+        (PerfTestsRunner._run_tests_set):
+        * Scripts/webkitpy/performance_tests/perftestsrunner_integrationtest.py:
+        (MainTest.run_test):
+        (MainTest.test_run_test_set):
+        (MainTest.test_run_test_set_kills_drt_per_run):
+        (MainTest.test_run_test_set_for_parser_tests):
+
+2013-02-28  Kiran Muppala  <cmuppala@apple.com>
+
+        Disable window occlusion detection for WebKitTestRunner Web View on Mac
+        https://bugs.webkit.org/show_bug.cgi?id=111116
+
+        Reviewed by Simon Fraser.
+
+        Window occlusion notifications were causing WebKitTestRunner's Web View
+        to be detected as occluded and causing a few JavaScript timer layout
+        tests to fail.  https://bugs.webkit.org/show_bug.cgi?id=111025, fixed this
+        by initializing the page visibility to "visible" after creating the view.
+        But a better solution is to disable window occlusion detection, so that
+        not only the page but also the view is treated as visible.
+
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::createWebViewWithOptions): Remove call to
+        setVisibilityState, since it is no longer necessary.
+        * WebKitTestRunner/mac/PlatformWebViewMac.mm:
+        (WTR::PlatformWebView::PlatformWebView): Disable window occlusion
+        detection for the created WKView.
+
+2013-02-28  Li Yin  <li.yin@intel.com>
+
+        [chromium] Events can't be triggered on MediaStreamTrack
+        https://bugs.webkit.org/show_bug.cgi?id=110930
+
+        Reviewed by Kentaro Hara.
+
+        Related code was moved to MediaStreamCenterChromium::didStopLocalMediaStream
+
+        * DumpRenderTree/chromium/TestRunner/src/MockWebMediaStreamCenter.cpp:
+        (WebTestRunner::MockWebMediaStreamCenter::didStopLocalMediaStream):
+
+2013-02-27  James Robinson  <jamesr@chromium.org>
+
+        [chromium] Use DumpRenderTree-specific interface for DRT's compositor embedding
+        https://bugs.webkit.org/show_bug.cgi?id=111017
+
+        Reviewed by Adam Barth.
+
+        This decouples DumpRenderTree from WebLayerTreeViewClient.
+
+        * DumpRenderTree/chromium/WebViewHost.cpp:
+        (WebViewHostDRTLayerTreeViewClient):
+        (WebViewHostDRTLayerTreeViewClient::WebViewHostDRTLayerTreeViewClient):
+        (WebViewHostDRTLayerTreeViewClient::~WebViewHostDRTLayerTreeViewClient):
+        (WebViewHostDRTLayerTreeViewClient::Layout):
+        (WebViewHostDRTLayerTreeViewClient::ScheduleComposite):
+        (WebViewHost::initializeLayerTreeView):
+        * DumpRenderTree/chromium/WebViewHost.h:
+        (webkit_support):
+        (WebViewHost):
+
+2013-02-28  Ryuan Choi  <ryuan.choi@samsung.com>
+
+        Unreviewed, add my secondary email address to the list.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-28  Philip Rogers  <pdr@google.com>
+
+        Add Philip Rogers as a reviewer.
+
+        Unreviewed update of committers.py.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-28  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Merge more methods on PerfTest
+        https://bugs.webkit.org/show_bug.cgi?id=111030
+
+        Reviewed by Dirk Pranke.
+
+        Merged parse_output into _run_with_driver as it was the only caller. Also merged _should_ignore_line_in_stderr
+        and _should_ignore_line_in_parser_test_result into _filter_output since it was their only caller.
+
+        This makes the control flow a lot more comprehensible.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (PerfTest._run_with_driver):
+        (PerfTest._should_ignore_line):
+        (PerfTest._filter_output):
+
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestPerfTest._assert_results_are_correct):
+        (test_ignored_stderr_lines):
+
+2013-02-28  Robert Hogan  <robert@webkit.org>
+
+        Update my IRC nick
+
+        Unreviewed.
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-28  Andras Becsi  <andras.becsi@digia.com>
+
+        [Qt] Enable thin archives before parsing the project files
+
+        Rubber-stamped by Simon Hausmann.
+
+        The targetSubDir() function can be called before default_post.prf has been
+        parsed therefore the gnu_thin_archives option has to be set in default_pre.prf
+        which is parsed before the main project file.
+        This issue was revealed by r144299 and fixes the clean build.
+
+        * qmake/mkspecs/features/default_post.prf:
+        * qmake/mkspecs/features/default_pre.prf:
+
+2013-02-28  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        [Qt] Enable CANVAS_PATH flag
+        https://bugs.webkit.org/show_bug.cgi?id=108508
+
+        Reviewed by Simon Hausmann.
+
+        Also enable CANVAS_PATH flag for Qt.
+
+        * qmake/mkspecs/features/features.pri:
+
+2013-02-28  Andras Becsi  <andras.becsi@digia.com>
+
+        [Qt][TestWebKitAPI] The activeBuildConfig() function has been replaced with targetSubDir()
+
+        Rubber-stamped by Csaba Osztrogonác.
+
+        Besides suppressing a warning about the non-existing function this
+        fixes the build if there is a subdirectory (eg. debug-and-release).
+
+        * TestWebKitAPI/InjectedBundle.pri:
+        * TestWebKitAPI/TestWebKitAPI.pri:
+
+2013-02-28  Mikhail Pozdnyakov  <mikhail.pozdnyakov@intel.com>
+
+        [EFL][WTR] WTR cannot load injected bundle
+        https://bugs.webkit.org/show_bug.cgi?id=111063
+
+        Reviewed by Csaba Osztrogonác.
+
+        WTR was not able to load injected bundle because of undefined 
+        symbols for AccessibilityUIElement::scrollToMakeVisible(). 
+        Adding empty implementation of this function to AccessibilityUIElementAtk.cpp
+        solves the problem.
+
+        * WebKitTestRunner/InjectedBundle/atk/AccessibilityUIElementAtk.cpp:
+        (WTR::AccessibilityUIElement::scrollToMakeVisible):
+
+2013-02-28  Alberto Garcia  <albgarcia@rim.com>
+
+        [BlackBerry] TestRunnerBlackBerry: remove layerTreeAsText, it's gone from upstream
+        https://bugs.webkit.org/show_bug.cgi?id=110464
+
+        Reviewed by Rob Buis.
+
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+
+2013-02-28  Xan Lopez  <xlopez@rim.com>
+
+        [BlackBerry] DumpRenderTreeSupport: update the set position methods
+        https://bugs.webkit.org/show_bug.cgi?id=110578
+
+        Reviewed by Rob Buis.
+
+        TestRunner::setMockGeolocationPosition() changed in r130416:
+        http://trac.webkit.org/changeset/130416/trunk/Tools/DumpRenderTree/TestRunner.h
+
+        DumpRenderTreeSupport::setMockGeolocationError() was renamed to
+        setMockGeolocationPositionUnavailableError() in r129444:
+        http://trac.webkit.org/changeset/129444/trunk/Source/WebKit/blackberry/WebKitSupport/DumpRenderTreeSupport.h
+
+        * DumpRenderTree/blackberry/TestRunnerBlackBerry.cpp:
+        (TestRunner::setMockGeolocationPosition):
+        (TestRunner::setMockGeolocationPositionUnavailableError):
+
+2013-02-28  Xan Lopez  <xlopez@rim.com>
+
+        [BlackBerry] WorkQueueItemBlackBerry: use the new FrameLoader API
+        https://bugs.webkit.org/show_bug.cgi?id=110465
+
+        Reviewed by Rob Buis.
+
+        * DumpRenderTree/blackberry/WorkQueueItemBlackBerry.cpp:
+        (LoadItem::invoke):
+
+2013-02-27  Ryosuke Niwa  <rniwa@webkit.org>
+
+        PerfTestRunner doesn't need _needs_http and _has_http_lock
+        https://bugs.webkit.org/show_bug.cgi?id=111037
+
+        Reviewed by Adam Barth.
+
+        Delete these variables in favor of using a local variable.
+
+        Member variables are like global variables. They introduce implicit dependencies
+        between member functions.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner.__init__):
+        (PerfTestsRunner._start_http_servers):
+        (PerfTestsRunner):
+        (PerfTestsRunner._stop_http_servers):
+        (PerfTestsRunner.run):
+
+2013-02-27  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144224.
+        http://trac.webkit.org/changeset/144224
+        https://bugs.webkit.org/show_bug.cgi?id=111045
+
+        Caused plugins/pass-different-npp-struct.html to time out
+        (Requested by abarth on #webkit).
+
+        * DumpRenderTree/TestNetscapePlugIn/Tests/PassDifferentNPPStruct.cpp:
+        (PassDifferentNPPStruct::NPP_SetWindow):
+        * DumpRenderTree/TestNetscapePlugIn/main.cpp:
+        (NPP_SetWindow):
+
+2013-02-27  Adam Barth  <abarth@webkit.org>
+
+        [Chromium] Enable threaded HTML parser by default in DumpRenderTree
+        https://bugs.webkit.org/show_bug.cgi?id=110907
+
+        Reviewed by Eric Seidel.
+
+        This patch changes --enable-threaded-html-parser into
+        --disable-threaded-html-parser and thereby enables the threaded HTML
+        parser by default for the Chromium port.
+
+        * DumpRenderTree/chromium/DumpRenderTree.cpp:
+        * DumpRenderTree/chromium/TestRunner/src/WebPreferences.cpp:
+        (WebTestRunner::WebPreferences::reset):
+        * DumpRenderTree/chromium/TestShell.cpp:
+        (TestShell::TestShell):
+
+2013-02-27  Kiran Muppala  <cmuppala@apple.com>
+
+        Initialize page visibility after creating WebKitTestRunner WebView on Mac
+        https://bugs.webkit.org/show_bug.cgi?id=111025
+
+        Reviewed by Simon Fraser.
+
+        Set page visibility to "visible" after creating WebView to override
+        visibility state inferred from window occlusion notifications on Mac.
+
+        * WebKitTestRunner/TestController.cpp:
+        (WTR::TestController::createWebViewWithOptions): Add call to
+        setVisibilityState.
+
+2013-02-27  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Merge PageLoadingPerfTest into ReplayPerfTest
+        https://bugs.webkit.org/show_bug.cgi?id=111027
+
+        Reviewed by Dirk Pranke.
+
+        Merged two classes.
+
+        We should really move ahead with the bug 100991 and get rid of PageLoadingPerfTest
+        part of ReplayPerfTest.
+
+        * Scripts/webkitpy/performance_tests/perftest.py:
+        (ReplayPerfTest): Moved _FORCE_GC_FILE here.
+        (ReplayPerfTest.__init__):
+        (ReplayPerfTest._run_with_driver): Moved from PageLoadingPerfTest.
+        (ReplayPerfTest.run_single): Load the GC page as run_single on PageLoadingPerfTest did.
+        * Scripts/webkitpy/performance_tests/perftest_unittest.py:
+        (TestReplayPerfTest):
+        (TestReplayPerfTest.test_run_single.run_test):
+        (TestReplayPerfTest.test_run_single): Make sure test_time is passed down properly from output.
+        (TestReplayPerfTest.test_run_with_driver_accumulates_results): Renamed from
+        TestPageLoadingPerfTest.test_run.
+        (TestReplayPerfTest.test_run_with_driver_accumulates_results.mock_run_signle):
+        (TestReplayPerfTest.test_run_with_driver_accumulates_memory_results): Renamed from
+        TestPageLoadingPerfTest.test_run_with_memory_output
+        (TestReplayPerfTest.test_run_with_driver_accumulates_memory_results.mock_run_signle):
+        (TestReplayPerfTest.test_prepare_calls_run_single):
+
+2013-02-27  Eric Seidel  <eric@webkit.org>
+
+        Add --additional-drt-flag option to run-perf-tests to make it easy to test runtime options
+        https://bugs.webkit.org/show_bug.cgi?id=111021
+
+        Reviewed by Dirk Pranke.
+
+        The underlying code (which is shared with run-webkit-tests)
+        already knew how to support this option, it just wasn't exposed
+        via the run-perf-tests front-end.  This patch fixes that.
+
+        * Scripts/webkitpy/performance_tests/perftestsrunner.py:
+        (PerfTestsRunner._parse_args):
+
+2013-02-27  Ryosuke Niwa  <rniwa@webkit.org>
+
+        Stop uploading results to webkit-perf.appspot.com
+        https://bugs.webkit.org/show_bug.cgi?id=110954
+
+        Reviewed by Benjamin Poulain.
+
+        Pass in perf.webkit.org instead of webkit-perf.appspot.com as the test results server.
+
+        * BuildSlaveSupport/build.webkit.org-config/master.cfg:
+        (RunAndUploadPerfTests):
+
+2013-02-27  James Simonsen  <simonjam@chromium.org>
+
+        [chromium] Lower priority of preloaded images
+        https://bugs.webkit.org/show_bug.cgi?id=110527
+
+        Plumb the didChangePriority signal into DRT so it can be tested.
+
+        Reviewed by Nate Chapin.
+
+        * DumpRenderTree/chromium/TestRunner/public/WebTestProxy.h:
+        (WebKit):
+        (WebTestRunner::WebTestProxy::didChangeResourcePriority):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.cpp:
+        (WebTestRunner::TestRunner::TestRunner):
+        (WebTestRunner::TestRunner::reset):
+        (WebTestRunner::TestRunner::shouldDumpResourcePriorities):
+        (WebTestRunner):
+        (WebTestRunner::TestRunner::dumpResourceRequestPriorities):
+        * DumpRenderTree/chromium/TestRunner/src/TestRunner.h:
+        (TestRunner):
+        * DumpRenderTree/chromium/TestRunner/src/WebTestProxy.cpp:
+        (WebTestRunner::WebTestProxyBase::assignIdentifierToRequest):
+        (WebTestRunner::WebTestProxyBase::willSendRequest):
+        (WebTestRunner::WebTestProxyBase::didChangeResourcePriority):
+        (WebTestRunner):
+
+2013-02-27  Chris Fleizach  <cfleizach@apple.com>
+
+        AX: Mac platform should support ability to scroll an element into visible
+        https://bugs.webkit.org/show_bug.cgi?id=109860
+
+        Reviewed by Beth Dakin.
+
+        * DumpRenderTree/AccessibilityUIElement.cpp:
+        (scrollToMakeVisibleCallback):
+        (AccessibilityUIElement::getJSClass):
+        * DumpRenderTree/mac/AccessibilityUIElementMac.mm:
+        (AccessibilityUIElement::scrollToMakeVisible):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.cpp:
+        (WTR::AccessibilityUIElement::scrollToMakeVisible):
+        * WebKitTestRunner/InjectedBundle/AccessibilityUIElement.h:
+        (AccessibilityUIElement):
+        * WebKitTestRunner/InjectedBundle/Bindings/AccessibilityUIElement.idl:
+        * WebKitTestRunner/InjectedBundle/mac/AccessibilityUIElementMac.mm:
+        (WTR::AccessibilityUIElement::scrollToMakeVisible):
+        (WTR):
+
+2013-02-27  John Bauman  <jbauman@chromium.org>
+
+        Plugin in iframe may not display
+        https://bugs.webkit.org/show_bug.cgi?id=109879
+
+        Reviewed by Simon Fraser.
+
+        LogNPPSetWindow will be used with other ports as well.
+
+        * DumpRenderTree/DumpRenderTree.gypi:
+        * DumpRenderTree/TestNetscapePlugIn/CMakeLists.txt:
+
+2013-02-27  Jochen Eisinger  <jochen@chromium.org>
+
+        plugins/netscape-plugin-setwindow-size*.html and plugins/pass-different-npp-struct.html should be async
+        https://bugs.webkit.org/show_bug.cgi?id=110973
+
+        Reviewed by Adam Barth.
+
+        There is nothing that ensures that the log messages from the plugin
+        come in before the layout test finished loading.
+
+        * DumpRenderTree/TestNetscapePlugIn/Tests/PassDifferentNPPStruct.cpp:
+        (PassDifferentNPPStruct::NPP_SetWindow):
+        * DumpRenderTree/TestNetscapePlugIn/main.cpp:
+        (NPP_SetWindow):
+
+2013-02-27  Glenn Adams  <glenn@skynav.com>
+
+        Add ENABLE_CSS3_TEXT_LINE_BREAK flag.
+        https://bugs.webkit.org/show_bug.cgi?id=110944
+
+        Reviewed by Dean Jackson.
+
+        * Scripts/webkitperl/FeatureList.pm:
+        * qmake/mkspecs/features/features.pri:
+
+2013-02-27  Yong Li  <yong.li.webkit@outlook.com>
+
+        Unreviewed. Remove myself from watchlist.
+
+        * Scripts/webkitpy/common/config/watchlist:
+
+2013-02-27  Allan Sandfeld Jensen  <allan.jensen@digia.com>
+
+        Switch QtWebKit to GStreamer 1.0.
+        https://bugs.webkit.org/show_bug.cgi?id=106669.
+
+        Original patch by Sebastian Dröge.
+        Reviewed by Csaba Osztrogonác.
+
+        Build with GStreamer 1.0 if available, but support GStreamer 0.10 
+        temporarily to make upgrading easy and the patch suitable for Qt5.
+
+        * qmake/mkspecs/features/features.prf:
+
+2013-02-27  Szilard Ledan  <szledan@inf.u-szeged.hu>
+
+        Unreviewed. Added myself to committers.py
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-27  Sheriff Bot  <webkit.review.bot@gmail.com>
+
+        Unreviewed, rolling out r144192.
+        http://trac.webkit.org/changeset/144192
+        https://bugs.webkit.org/show_bug.cgi?id=110984
+
+        Stored svn password on wrong computer (Requested by kkristof
+        on #webkit).
+
+        * Scripts/webkitpy/common/config/committers.py:
+
+2013-02-27  Szilard Ledan  <szledan@inf.u-szeged.hu>
+
+        Unreviewed. Added myself to committers.py
+
+        * Scripts/webkitpy/common/config/committers.py:
+
 2013-02-27  Ryosuke Niwa  <rniwa@webkit.org>
 
         Build fix after r144155. The report page is located at /api/report, not /api/test/report.

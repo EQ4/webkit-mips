@@ -39,6 +39,8 @@
 
 namespace WebCore {
 
+struct LayerFragment;
+typedef Vector<LayerFragment, 1> LayerFragments;
 class RenderFlowThread;
 class RenderStyle;
 class RenderRegion;
@@ -143,6 +145,9 @@ public:
     bool isAutoLogicalHeightRegionsCountConsistent() const;
 #endif
 
+    void collectLayerFragments(LayerFragments&, const LayoutRect& layerBoundingBox, const LayoutRect& dirtyRect);
+    LayoutRect fragmentsBoundingBox(const LayoutRect& layerBoundingBox);
+
 protected:
     virtual const char* renderName() const = 0;
 
@@ -229,6 +234,7 @@ public:
     ~CurrentRenderFlowThreadMaintainer();
 private:
     RenderFlowThread* m_renderFlowThread;
+    RenderFlowThread* m_previousRenderFlowThread;
 };
 
 } // namespace WebCore

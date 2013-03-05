@@ -513,6 +513,7 @@ set(WebCore_IDL_FILES
     html/canvas/CanvasRenderingContext.idl
     html/canvas/DataView.idl
     html/canvas/DOMPath.idl
+    html/canvas/EXTDrawBuffers.idl
     html/canvas/EXTTextureFilterAnisotropic.idl
     html/canvas/Float32Array.idl
     html/canvas/Float64Array.idl
@@ -521,6 +522,7 @@ set(WebCore_IDL_FILES
     html/canvas/Int8Array.idl
     html/canvas/OESStandardDerivatives.idl
     html/canvas/OESTextureFloat.idl
+    html/canvas/OESTextureHalfFloat.idl
     html/canvas/OESVertexArrayObject.idl
     html/canvas/OESElementIndexUint.idl
     html/canvas/Uint16Array.idl
@@ -529,6 +531,7 @@ set(WebCore_IDL_FILES
     html/canvas/Uint8ClampedArray.idl
     html/canvas/WebGLActiveInfo.idl
     html/canvas/WebGLBuffer.idl
+    html/canvas/WebGLCompressedTextureATC.idl
     html/canvas/WebGLCompressedTextureS3TC.idl
     html/canvas/WebGLContextAttributes.idl
     html/canvas/WebGLContextEvent.idl
@@ -1506,12 +1509,15 @@ set(WebCore_SOURCES
     html/canvas/CanvasRenderingContext2D.cpp
     html/canvas/CanvasStyle.cpp
     html/canvas/DataView.cpp
+    html/canvas/EXTDrawBuffers.cpp
     html/canvas/EXTTextureFilterAnisotropic.cpp
     html/canvas/OESStandardDerivatives.cpp
     html/canvas/OESTextureFloat.cpp
+    html/canvas/OESTextureHalfFloat.cpp
     html/canvas/OESVertexArrayObject.cpp
     html/canvas/OESElementIndexUint.cpp
     html/canvas/WebGLBuffer.cpp
+    html/canvas/WebGLCompressedTextureATC.cpp
     html/canvas/WebGLCompressedTextureS3TC.cpp
     html/canvas/WebGLContextAttributes.cpp
     html/canvas/WebGLContextEvent.cpp
@@ -2053,6 +2059,7 @@ set(WebCore_SOURCES
 
     platform/network/AuthenticationChallengeBase.cpp
     platform/network/BlobData.cpp
+    platform/network/BlobRegistry.cpp
     platform/network/BlobRegistryImpl.cpp
     platform/network/BlobResourceHandle.cpp
     platform/network/Credential.cpp
@@ -2130,6 +2137,7 @@ set(WebCore_SOURCES
     rendering/FixedTableLayout.cpp
     rendering/FlowThreadController.cpp
     rendering/HitTestingTransformState.cpp
+    rendering/HitTestLocation.cpp
     rendering/HitTestResult.cpp
     rendering/InlineBox.cpp
     rendering/InlineFlowBox.cpp
@@ -2622,9 +2630,11 @@ if (ENABLE_WEBGL)
     list(APPEND WebCore_SOURCES
         html/canvas/OESStandardDerivatives.cpp
         html/canvas/OESTextureFloat.cpp
+        html/canvas/OESTextureHalfFloat.cpp
         html/canvas/OESVertexArrayObject.cpp
         html/canvas/OESElementIndexUint.cpp
         html/canvas/WebGLBuffer.cpp
+        html/canvas/WebGLCompressedTextureATC.cpp
         html/canvas/WebGLCompressedTextureS3TC.cpp
         html/canvas/WebGLContextAttributes.cpp
         html/canvas/WebGLContextEvent.cpp
@@ -2647,20 +2657,25 @@ if (ENABLE_WEBGL)
         html/canvas/WebGLUniformLocation.cpp
         html/canvas/WebGLVertexArrayObjectOES.cpp
         html/canvas/WebGLExtension.cpp
+        html/canvas/EXTDrawBuffers.cpp
         html/canvas/EXTTextureFilterAnisotropic.cpp
         html/canvas/OESStandardDerivatives.cpp
         html/canvas/OESTextureFloat.cpp
+        html/canvas/OESTextureHalfFloat.cpp
         html/canvas/OESVertexArrayObject.cpp
         html/canvas/OESElementIndexUint.cpp
     )
     list(APPEND WebCore_IDL_FILES
+        html/canvas/EXTDrawBuffers.idl
         html/canvas/EXTTextureFilterAnisotropic.idl
         html/canvas/OESStandardDerivatives.idl
         html/canvas/OESTextureFloat.idl
+        html/canvas/OESTextureHalfFloat.idl
         html/canvas/OESVertexArrayObject.idl
         html/canvas/OESElementIndexUint.idl
         html/canvas/WebGLActiveInfo.idl
         html/canvas/WebGLBuffer.idl
+        html/canvas/WebGLCompressedTextureATC.idl
         html/canvas/WebGLCompressedTextureS3TC.idl
         html/canvas/WebGLContextAttributes.idl
         html/canvas/WebGLContextEvent.idl

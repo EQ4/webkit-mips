@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2012 Google Inc. All rights reserved.
+ * Copyright (C) 2013 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -657,6 +658,17 @@ size_t Internals::numberOfScopedHTMLStyleChildren(const Node* scope, ExceptionCo
 
     ec = INVALID_ACCESS_ERR;
     return 0;
+}
+
+PassRefPtr<CSSComputedStyleDeclaration> Internals::computedStyleIncludingVisitedInfo(Node* node, ExceptionCode& ec) const
+{
+    if (!node) {
+        ec = INVALID_ACCESS_ERR;
+        return 0;
+    }
+
+    bool allowVisitedStyle = true;
+    return CSSComputedStyleDeclaration::create(node, allowVisitedStyle);
 }
 
 Internals::ShadowRootIfShadowDOMEnabledOrNode* Internals::ensureShadowRoot(Element* host, ExceptionCode& ec)
@@ -1754,9 +1766,9 @@ int Internals::pageNumber(Element* element, float pageWidth, float pageHeight)
     return PrintContext::pageNumberForElement(element, FloatSize(pageWidth, pageHeight));
 }
 
-Vector<String> Internals::iconURLs(Document* document) const
+Vector<String> Internals::iconURLs(Document* document, int iconTypesMask) const
 {
-    Vector<IconURL> iconURLs = document->iconURLs();
+    Vector<IconURL> iconURLs = document->iconURLs(iconTypesMask);
     Vector<String> array;
 
     Vector<IconURL>::const_iterator iter(iconURLs.begin());
@@ -1764,6 +1776,16 @@ Vector<String> Internals::iconURLs(Document* document) const
         array.append(iter->m_iconURL.string());
 
     return array;
+}
+
+Vector<String> Internals::shortcutIconURLs(Document* document) const
+{
+    return iconURLs(document, Favicon);
+}
+
+Vector<String> Internals::allIconURLs(Document* document) const
+{
+    return iconURLs(document, Favicon | TouchIcon | TouchPrecomposedIcon);
 }
 
 int Internals::numberOfPages(float pageWidth, float pageHeight)
@@ -2009,5 +2031,14 @@ void Internals::initializeMockCDM()
     CDM::registerCDMFactory(MockCDM::create, MockCDM::supportsKeySytem);
 }
 #endif
+
+String Internals::markerTextForListItem(Element* element, ExceptionCode& ec)
+{
+    if (!element) {
+        ec = INVALID_ACCESS_ERR;
+        return String();
+    }
+    return WebCore::markerTextForListItem(element);
+}
 
 }

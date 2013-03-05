@@ -375,15 +375,15 @@ void TestRunner::setAlwaysAcceptCookies(bool alwaysAcceptCookies)
     notImplemented();
 }
 
-void TestRunner::setMockGeolocationPosition(double latitude, double longitude, double accuracy)
+void TestRunner::setMockGeolocationPosition(double latitude, double longitude, double accuracy, bool providesAltitude, double altitude, bool providesAltitudeAccuracy, double altitudeAccuracy, bool providesHeading, double heading, bool providesSpeed, double speed)
 {
-    DumpRenderTreeSupport::setMockGeolocationPosition(BlackBerry::WebKit::DumpRenderTree::currentInstance()->page(), latitude, longitude, accuracy);
+    DumpRenderTreeSupport::setMockGeolocationPosition(BlackBerry::WebKit::DumpRenderTree::currentInstance()->page(), latitude, longitude, accuracy, providesAltitude, altitude, providesAltitudeAccuracy, altitudeAccuracy, providesHeading, heading, providesSpeed, speed);
 }
 
-void TestRunner::setMockGeolocationError(int code, JSStringRef message)
+void TestRunner::setMockGeolocationPositionUnavailableError(JSStringRef message)
 {
     String messageStr = jsStringRefToWebCoreString(message);
-    DumpRenderTreeSupport::setMockGeolocationError(BlackBerry::WebKit::DumpRenderTree::currentInstance()->page(), code, messageStr);
+    DumpRenderTreeSupport::setMockGeolocationPositionUnavailableError(BlackBerry::WebKit::DumpRenderTree::currentInstance()->page(), messageStr);
 }
 
 void TestRunner::showWebInspector()
@@ -503,27 +503,6 @@ void TestRunner::apiTestGoToCurrentBackForwardItem()
 void TestRunner::setJavaScriptCanAccessClipboard(bool flag)
 {
     BlackBerry::WebKit::DumpRenderTree::currentInstance()->page()->setJavaScriptCanAccessClipboard(flag);
-}
-
-JSValueRef TestRunner::computedStyleIncludingVisitedInfo(JSContextRef context, JSValueRef value)
-{
-    return DumpRenderTreeSupport::computedStyleIncludingVisitedInfo(context, value);
-}
-
-JSRetainPtr<JSStringRef> TestRunner::layerTreeAsText() const
-{
-    notImplemented();
-    return 0;
-}
-
-JSRetainPtr<JSStringRef> TestRunner::markerTextForListItem(JSContextRef context, JSValueRef nodeObject) const
-{
-    WebCore::Element* element = toElement(toJS(toJS(context), nodeObject));
-    if (!element)
-        return 0;
-
-    JSRetainPtr<JSStringRef> markerText(Adopt, JSStringCreateWithUTF8CString(WebCore::markerTextForListItem(element).utf8().data()));
-    return markerText;
 }
 
 void TestRunner::setPluginsEnabled(bool flag)

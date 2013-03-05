@@ -493,8 +493,7 @@ private:
                 fixDoubleEdge<NumberUse>(node->child1());
 
             Node* logicalNot = node->child1().node();
-            if (logicalNot->op() == LogicalNot
-                && logicalNot->adjustedRefCount() == 1) {
+            if (logicalNot->op() == LogicalNot) {
                 
                 // Make sure that OSR exit can't observe the LogicalNot. If it can,
                 // then we must compute it and cannot peephole around it.
@@ -855,7 +854,7 @@ private:
                     if (previousNode->op() == CheckStructure
                         && previousNode->child1() == array
                         && previousNode->codeOrigin == codeOrigin)
-                        previousNode->setOpAndDefaultFlags(Phantom);
+                        previousNode->convertToPhantom();
                 }
                 
                 m_insertionSet.insertNode(
